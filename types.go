@@ -74,6 +74,78 @@ func (a *AddVoiceToProviderDto) String() string {
 	return fmt.Sprintf("%#v", a)
 }
 
+type AiEdgeCondition struct {
+	Matches []string `json:"matches,omitempty" url:"matches,omitempty"`
+	type_   string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (a *AiEdgeCondition) GetMatches() []string {
+	if a == nil {
+		return nil
+	}
+	return a.Matches
+}
+
+func (a *AiEdgeCondition) Type() string {
+	return a.type_
+}
+
+func (a *AiEdgeCondition) GetExtraProperties() map[string]interface{} {
+	return a.extraProperties
+}
+
+func (a *AiEdgeCondition) UnmarshalJSON(data []byte) error {
+	type embed AiEdgeCondition
+	var unmarshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*a),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*a = AiEdgeCondition(unmarshaler.embed)
+	if unmarshaler.Type != "ai" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", a, "ai", unmarshaler.Type)
+	}
+	a.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *a, "type")
+	if err != nil {
+		return err
+	}
+	a.extraProperties = extraProperties
+	a.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (a *AiEdgeCondition) MarshalJSON() ([]byte, error) {
+	type embed AiEdgeCondition
+	var marshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*a),
+		Type:  "ai",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (a *AiEdgeCondition) String() string {
+	if len(a.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(a); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", a)
+}
+
 type AnalysisPlan struct {
 	// This is the plan for generating the summary of the call. This outputs to `call.analysis.summary`.
 	SummaryPlan *SummaryPlan `json:"summaryPlan,omitempty" url:"summaryPlan,omitempty"`
@@ -128,403 +200,6 @@ func (a *AnalysisPlan) UnmarshalJSON(data []byte) error {
 }
 
 func (a *AnalysisPlan) String() string {
-	if len(a.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(a); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", a)
-}
-
-type AnalyticsOperation struct {
-	// This is the aggregation operation you want to perform.
-	Operation AnalyticsOperationOperation `json:"operation" url:"operation"`
-	// This is the columns you want to perform the aggregation operation on.
-	Column AnalyticsOperationColumn `json:"column" url:"column"`
-	// This is the alias for column name returned. Defaults to `${operation}${column}`.
-	Alias *string `json:"alias,omitempty" url:"alias,omitempty"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (a *AnalyticsOperation) GetOperation() AnalyticsOperationOperation {
-	if a == nil {
-		return ""
-	}
-	return a.Operation
-}
-
-func (a *AnalyticsOperation) GetColumn() AnalyticsOperationColumn {
-	if a == nil {
-		return ""
-	}
-	return a.Column
-}
-
-func (a *AnalyticsOperation) GetAlias() *string {
-	if a == nil {
-		return nil
-	}
-	return a.Alias
-}
-
-func (a *AnalyticsOperation) GetExtraProperties() map[string]interface{} {
-	return a.extraProperties
-}
-
-func (a *AnalyticsOperation) UnmarshalJSON(data []byte) error {
-	type unmarshaler AnalyticsOperation
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*a = AnalyticsOperation(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *a)
-	if err != nil {
-		return err
-	}
-	a.extraProperties = extraProperties
-	a.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (a *AnalyticsOperation) String() string {
-	if len(a.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(a); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", a)
-}
-
-// This is the columns you want to perform the aggregation operation on.
-type AnalyticsOperationColumn string
-
-const (
-	AnalyticsOperationColumnId                               AnalyticsOperationColumn = "id"
-	AnalyticsOperationColumnCost                             AnalyticsOperationColumn = "cost"
-	AnalyticsOperationColumnCostBreakdownLlm                 AnalyticsOperationColumn = "costBreakdown.llm"
-	AnalyticsOperationColumnCostBreakdownStt                 AnalyticsOperationColumn = "costBreakdown.stt"
-	AnalyticsOperationColumnCostBreakdownTts                 AnalyticsOperationColumn = "costBreakdown.tts"
-	AnalyticsOperationColumnCostBreakdownVapi                AnalyticsOperationColumn = "costBreakdown.vapi"
-	AnalyticsOperationColumnCostBreakdownTtsCharacters       AnalyticsOperationColumn = "costBreakdown.ttsCharacters"
-	AnalyticsOperationColumnCostBreakdownLlmPromptTokens     AnalyticsOperationColumn = "costBreakdown.llmPromptTokens"
-	AnalyticsOperationColumnCostBreakdownLlmCompletionTokens AnalyticsOperationColumn = "costBreakdown.llmCompletionTokens"
-	AnalyticsOperationColumnDuration                         AnalyticsOperationColumn = "duration"
-)
-
-func NewAnalyticsOperationColumnFromString(s string) (AnalyticsOperationColumn, error) {
-	switch s {
-	case "id":
-		return AnalyticsOperationColumnId, nil
-	case "cost":
-		return AnalyticsOperationColumnCost, nil
-	case "costBreakdown.llm":
-		return AnalyticsOperationColumnCostBreakdownLlm, nil
-	case "costBreakdown.stt":
-		return AnalyticsOperationColumnCostBreakdownStt, nil
-	case "costBreakdown.tts":
-		return AnalyticsOperationColumnCostBreakdownTts, nil
-	case "costBreakdown.vapi":
-		return AnalyticsOperationColumnCostBreakdownVapi, nil
-	case "costBreakdown.ttsCharacters":
-		return AnalyticsOperationColumnCostBreakdownTtsCharacters, nil
-	case "costBreakdown.llmPromptTokens":
-		return AnalyticsOperationColumnCostBreakdownLlmPromptTokens, nil
-	case "costBreakdown.llmCompletionTokens":
-		return AnalyticsOperationColumnCostBreakdownLlmCompletionTokens, nil
-	case "duration":
-		return AnalyticsOperationColumnDuration, nil
-	}
-	var t AnalyticsOperationColumn
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (a AnalyticsOperationColumn) Ptr() *AnalyticsOperationColumn {
-	return &a
-}
-
-// This is the aggregation operation you want to perform.
-type AnalyticsOperationOperation string
-
-const (
-	AnalyticsOperationOperationSum   AnalyticsOperationOperation = "sum"
-	AnalyticsOperationOperationAvg   AnalyticsOperationOperation = "avg"
-	AnalyticsOperationOperationCount AnalyticsOperationOperation = "count"
-	AnalyticsOperationOperationMin   AnalyticsOperationOperation = "min"
-	AnalyticsOperationOperationMax   AnalyticsOperationOperation = "max"
-)
-
-func NewAnalyticsOperationOperationFromString(s string) (AnalyticsOperationOperation, error) {
-	switch s {
-	case "sum":
-		return AnalyticsOperationOperationSum, nil
-	case "avg":
-		return AnalyticsOperationOperationAvg, nil
-	case "count":
-		return AnalyticsOperationOperationCount, nil
-	case "min":
-		return AnalyticsOperationOperationMin, nil
-	case "max":
-		return AnalyticsOperationOperationMax, nil
-	}
-	var t AnalyticsOperationOperation
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (a AnalyticsOperationOperation) Ptr() *AnalyticsOperationOperation {
-	return &a
-}
-
-type AnalyticsQuery struct {
-	// This is the table you want to query.
-	// This is the list of columns you want to group by.
-	GroupBy []AnalyticsQueryGroupByItem `json:"groupBy,omitempty" url:"groupBy,omitempty"`
-	// This is the name of the query. This will be used to identify the query in the response.
-	Name string `json:"name" url:"name"`
-	// This is the time range for the query.
-	TimeRange *TimeRange `json:"timeRange,omitempty" url:"timeRange,omitempty"`
-	// This is the list of operations you want to perform.
-	Operations []*AnalyticsOperation `json:"operations,omitempty" url:"operations,omitempty"`
-	table      string
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (a *AnalyticsQuery) GetGroupBy() []AnalyticsQueryGroupByItem {
-	if a == nil {
-		return nil
-	}
-	return a.GroupBy
-}
-
-func (a *AnalyticsQuery) GetName() string {
-	if a == nil {
-		return ""
-	}
-	return a.Name
-}
-
-func (a *AnalyticsQuery) GetTimeRange() *TimeRange {
-	if a == nil {
-		return nil
-	}
-	return a.TimeRange
-}
-
-func (a *AnalyticsQuery) GetOperations() []*AnalyticsOperation {
-	if a == nil {
-		return nil
-	}
-	return a.Operations
-}
-
-func (a *AnalyticsQuery) Table() string {
-	return a.table
-}
-
-func (a *AnalyticsQuery) GetExtraProperties() map[string]interface{} {
-	return a.extraProperties
-}
-
-func (a *AnalyticsQuery) UnmarshalJSON(data []byte) error {
-	type embed AnalyticsQuery
-	var unmarshaler = struct {
-		embed
-		Table string `json:"table"`
-	}{
-		embed: embed(*a),
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
-		return err
-	}
-	*a = AnalyticsQuery(unmarshaler.embed)
-	if unmarshaler.Table != "call" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", a, "call", unmarshaler.Table)
-	}
-	a.table = unmarshaler.Table
-	extraProperties, err := internal.ExtractExtraProperties(data, *a, "table")
-	if err != nil {
-		return err
-	}
-	a.extraProperties = extraProperties
-	a.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (a *AnalyticsQuery) MarshalJSON() ([]byte, error) {
-	type embed AnalyticsQuery
-	var marshaler = struct {
-		embed
-		Table string `json:"table"`
-	}{
-		embed: embed(*a),
-		Table: "call",
-	}
-	return json.Marshal(marshaler)
-}
-
-func (a *AnalyticsQuery) String() string {
-	if len(a.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(a); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", a)
-}
-
-type AnalyticsQueryDto struct {
-	// This is the list of metric queries you want to perform.
-	Queries []*AnalyticsQuery `json:"queries,omitempty" url:"queries,omitempty"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (a *AnalyticsQueryDto) GetQueries() []*AnalyticsQuery {
-	if a == nil {
-		return nil
-	}
-	return a.Queries
-}
-
-func (a *AnalyticsQueryDto) GetExtraProperties() map[string]interface{} {
-	return a.extraProperties
-}
-
-func (a *AnalyticsQueryDto) UnmarshalJSON(data []byte) error {
-	type unmarshaler AnalyticsQueryDto
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*a = AnalyticsQueryDto(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *a)
-	if err != nil {
-		return err
-	}
-	a.extraProperties = extraProperties
-	a.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (a *AnalyticsQueryDto) String() string {
-	if len(a.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(a); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", a)
-}
-
-type AnalyticsQueryGroupByItem string
-
-const (
-	AnalyticsQueryGroupByItemType                      AnalyticsQueryGroupByItem = "type"
-	AnalyticsQueryGroupByItemAssistantId               AnalyticsQueryGroupByItem = "assistantId"
-	AnalyticsQueryGroupByItemEndedReason               AnalyticsQueryGroupByItem = "endedReason"
-	AnalyticsQueryGroupByItemAnalysisSuccessEvaluation AnalyticsQueryGroupByItem = "analysis.successEvaluation"
-	AnalyticsQueryGroupByItemStatus                    AnalyticsQueryGroupByItem = "status"
-)
-
-func NewAnalyticsQueryGroupByItemFromString(s string) (AnalyticsQueryGroupByItem, error) {
-	switch s {
-	case "type":
-		return AnalyticsQueryGroupByItemType, nil
-	case "assistantId":
-		return AnalyticsQueryGroupByItemAssistantId, nil
-	case "endedReason":
-		return AnalyticsQueryGroupByItemEndedReason, nil
-	case "analysis.successEvaluation":
-		return AnalyticsQueryGroupByItemAnalysisSuccessEvaluation, nil
-	case "status":
-		return AnalyticsQueryGroupByItemStatus, nil
-	}
-	var t AnalyticsQueryGroupByItem
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (a AnalyticsQueryGroupByItem) Ptr() *AnalyticsQueryGroupByItem {
-	return &a
-}
-
-type AnalyticsQueryResult struct {
-	// This is the unique key for the query.
-	Name string `json:"name" url:"name"`
-	// This is the time range for the query.
-	TimeRange *TimeRange `json:"timeRange,omitempty" url:"timeRange,omitempty"`
-	// This is the result of the query, a list of unique groups with result of their aggregations.
-	//
-	// Example:
-	// "result": [
-	//
-	//	{ "date": "2023-01-01", "assistantId": "123", "endedReason": "customer-ended-call", "sumDuration": 120, "avgCost": 10.5 },
-	//	{ "date": "2023-01-02", "assistantId": "123", "endedReason": "customer-did-not-give-microphone-permission", "sumDuration": 0, "avgCost": 0 },
-	//	// Additional results
-	//
-	// ]
-	Result []map[string]interface{} `json:"result,omitempty" url:"result,omitempty"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (a *AnalyticsQueryResult) GetName() string {
-	if a == nil {
-		return ""
-	}
-	return a.Name
-}
-
-func (a *AnalyticsQueryResult) GetTimeRange() *TimeRange {
-	if a == nil {
-		return nil
-	}
-	return a.TimeRange
-}
-
-func (a *AnalyticsQueryResult) GetResult() []map[string]interface{} {
-	if a == nil {
-		return nil
-	}
-	return a.Result
-}
-
-func (a *AnalyticsQueryResult) GetExtraProperties() map[string]interface{} {
-	return a.extraProperties
-}
-
-func (a *AnalyticsQueryResult) UnmarshalJSON(data []byte) error {
-	type unmarshaler AnalyticsQueryResult
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*a = AnalyticsQueryResult(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *a)
-	if err != nil {
-		return err
-	}
-	a.extraProperties = extraProperties
-	a.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (a *AnalyticsQueryResult) String() string {
 	if len(a.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
 			return value
@@ -1489,12 +1164,443 @@ func (a *AnyscaleModelToolsItem) Accept(visitor AnyscaleModelToolsItemVisitor) e
 	return fmt.Errorf("type %T does not include a non-empty union type", a)
 }
 
+type ApiRequest struct {
+	Method ApiRequestMethod `json:"method" url:"method"`
+	// Api endpoint to send requests to.
+	Url string `json:"url" url:"url"`
+	// These are the custom headers to include in the Api Request sent.
+	//
+	// Each key-value pair represents a header name and its value.
+	Headers *JsonSchema `json:"headers,omitempty" url:"headers,omitempty"`
+	// This defined the JSON body of your Api Request. For example, if `body_schema`
+	// included "my_field": "my_gather_statement.user_age", then the json body sent to the server would have that particular value assign to it.
+	// Right now, only data from gather statements are supported.
+	Body *JsonSchema `json:"body,omitempty" url:"body,omitempty"`
+	// This is the mode of the Api Request.
+	// We only support BLOCKING and BACKGROUND for now.
+	Mode ApiRequestMode `json:"mode" url:"mode"`
+	// This is a list of hooks for a task.
+	// Each hook is a list of tasks to run on a trigger (such as on start, on failure, etc).
+	// Only Say is supported for now.
+	Hooks []*Hook `json:"hooks,omitempty" url:"hooks,omitempty"`
+	// This is the schema for the outputs of the Api Request.
+	Output *JsonSchema `json:"output,omitempty" url:"output,omitempty"`
+	Name   string      `json:"name" url:"name"`
+	// This is for metadata you want to store on the task.
+	Metadata map[string]interface{} `json:"metadata,omitempty" url:"metadata,omitempty"`
+	type_    string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (a *ApiRequest) GetMethod() ApiRequestMethod {
+	if a == nil {
+		return ""
+	}
+	return a.Method
+}
+
+func (a *ApiRequest) GetUrl() string {
+	if a == nil {
+		return ""
+	}
+	return a.Url
+}
+
+func (a *ApiRequest) GetHeaders() *JsonSchema {
+	if a == nil {
+		return nil
+	}
+	return a.Headers
+}
+
+func (a *ApiRequest) GetBody() *JsonSchema {
+	if a == nil {
+		return nil
+	}
+	return a.Body
+}
+
+func (a *ApiRequest) GetMode() ApiRequestMode {
+	if a == nil {
+		return ""
+	}
+	return a.Mode
+}
+
+func (a *ApiRequest) GetHooks() []*Hook {
+	if a == nil {
+		return nil
+	}
+	return a.Hooks
+}
+
+func (a *ApiRequest) GetOutput() *JsonSchema {
+	if a == nil {
+		return nil
+	}
+	return a.Output
+}
+
+func (a *ApiRequest) GetName() string {
+	if a == nil {
+		return ""
+	}
+	return a.Name
+}
+
+func (a *ApiRequest) GetMetadata() map[string]interface{} {
+	if a == nil {
+		return nil
+	}
+	return a.Metadata
+}
+
+func (a *ApiRequest) Type() string {
+	return a.type_
+}
+
+func (a *ApiRequest) GetExtraProperties() map[string]interface{} {
+	return a.extraProperties
+}
+
+func (a *ApiRequest) UnmarshalJSON(data []byte) error {
+	type embed ApiRequest
+	var unmarshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*a),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*a = ApiRequest(unmarshaler.embed)
+	if unmarshaler.Type != "apiRequest" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", a, "apiRequest", unmarshaler.Type)
+	}
+	a.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *a, "type")
+	if err != nil {
+		return err
+	}
+	a.extraProperties = extraProperties
+	a.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (a *ApiRequest) MarshalJSON() ([]byte, error) {
+	type embed ApiRequest
+	var marshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*a),
+		Type:  "apiRequest",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (a *ApiRequest) String() string {
+	if len(a.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(a); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", a)
+}
+
+type ApiRequestMethod string
+
+const (
+	ApiRequestMethodPost ApiRequestMethod = "POST"
+	ApiRequestMethodGet  ApiRequestMethod = "GET"
+)
+
+func NewApiRequestMethodFromString(s string) (ApiRequestMethod, error) {
+	switch s {
+	case "POST":
+		return ApiRequestMethodPost, nil
+	case "GET":
+		return ApiRequestMethodGet, nil
+	}
+	var t ApiRequestMethod
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (a ApiRequestMethod) Ptr() *ApiRequestMethod {
+	return &a
+}
+
+// This is the mode of the Api Request.
+// We only support BLOCKING and BACKGROUND for now.
+type ApiRequestMode string
+
+const (
+	ApiRequestModeBlocking   ApiRequestMode = "blocking"
+	ApiRequestModeBackground ApiRequestMode = "background"
+)
+
+func NewApiRequestModeFromString(s string) (ApiRequestMode, error) {
+	switch s {
+	case "blocking":
+		return ApiRequestModeBlocking, nil
+	case "background":
+		return ApiRequestModeBackground, nil
+	}
+	var t ApiRequestMode
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (a ApiRequestMode) Ptr() *ApiRequestMode {
+	return &a
+}
+
+type Artifact struct {
+	// These are the messages that were spoken during the call.
+	Messages []*ArtifactMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
+	// These are the messages that were spoken during the call, formatted for OpenAI.
+	MessagesOpenAiFormatted []*OpenAiMessage `json:"messagesOpenAIFormatted,omitempty" url:"messagesOpenAIFormatted,omitempty"`
+	// This is the recording url for the call. To enable, set `assistant.artifactPlan.recordingEnabled`.
+	RecordingUrl *string `json:"recordingUrl,omitempty" url:"recordingUrl,omitempty"`
+	// This is the stereo recording url for the call. To enable, set `assistant.artifactPlan.recordingEnabled`.
+	StereoRecordingUrl *string `json:"stereoRecordingUrl,omitempty" url:"stereoRecordingUrl,omitempty"`
+	// This is video recording url for the call. To enable, set `assistant.artifactPlan.videoRecordingEnabled`.
+	VideoRecordingUrl *string `json:"videoRecordingUrl,omitempty" url:"videoRecordingUrl,omitempty"`
+	// This is video recording start delay in ms. To enable, set `assistant.artifactPlan.videoRecordingEnabled`. This can be used to align the playback of the recording with artifact.messages timestamps.
+	VideoRecordingStartDelaySeconds *float64 `json:"videoRecordingStartDelaySeconds,omitempty" url:"videoRecordingStartDelaySeconds,omitempty"`
+	// This is the transcript of the call. This is derived from `artifact.messages` but provided for convenience.
+	Transcript *string `json:"transcript,omitempty" url:"transcript,omitempty"`
+	// This is the packet capture url for the call. This is only available for `phone` type calls where phone number's provider is `vapi` or `byo-phone-number`.
+	PcapUrl *string `json:"pcapUrl,omitempty" url:"pcapUrl,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (a *Artifact) GetMessages() []*ArtifactMessagesItem {
+	if a == nil {
+		return nil
+	}
+	return a.Messages
+}
+
+func (a *Artifact) GetMessagesOpenAiFormatted() []*OpenAiMessage {
+	if a == nil {
+		return nil
+	}
+	return a.MessagesOpenAiFormatted
+}
+
+func (a *Artifact) GetRecordingUrl() *string {
+	if a == nil {
+		return nil
+	}
+	return a.RecordingUrl
+}
+
+func (a *Artifact) GetStereoRecordingUrl() *string {
+	if a == nil {
+		return nil
+	}
+	return a.StereoRecordingUrl
+}
+
+func (a *Artifact) GetVideoRecordingUrl() *string {
+	if a == nil {
+		return nil
+	}
+	return a.VideoRecordingUrl
+}
+
+func (a *Artifact) GetVideoRecordingStartDelaySeconds() *float64 {
+	if a == nil {
+		return nil
+	}
+	return a.VideoRecordingStartDelaySeconds
+}
+
+func (a *Artifact) GetTranscript() *string {
+	if a == nil {
+		return nil
+	}
+	return a.Transcript
+}
+
+func (a *Artifact) GetPcapUrl() *string {
+	if a == nil {
+		return nil
+	}
+	return a.PcapUrl
+}
+
+func (a *Artifact) GetExtraProperties() map[string]interface{} {
+	return a.extraProperties
+}
+
+func (a *Artifact) UnmarshalJSON(data []byte) error {
+	type unmarshaler Artifact
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*a = Artifact(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *a)
+	if err != nil {
+		return err
+	}
+	a.extraProperties = extraProperties
+	a.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (a *Artifact) String() string {
+	if len(a.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(a); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", a)
+}
+
+type ArtifactMessagesItem struct {
+	UserMessage           *UserMessage
+	SystemMessage         *SystemMessage
+	BotMessage            *BotMessage
+	ToolCallMessage       *ToolCallMessage
+	ToolCallResultMessage *ToolCallResultMessage
+
+	typ string
+}
+
+func (a *ArtifactMessagesItem) GetUserMessage() *UserMessage {
+	if a == nil {
+		return nil
+	}
+	return a.UserMessage
+}
+
+func (a *ArtifactMessagesItem) GetSystemMessage() *SystemMessage {
+	if a == nil {
+		return nil
+	}
+	return a.SystemMessage
+}
+
+func (a *ArtifactMessagesItem) GetBotMessage() *BotMessage {
+	if a == nil {
+		return nil
+	}
+	return a.BotMessage
+}
+
+func (a *ArtifactMessagesItem) GetToolCallMessage() *ToolCallMessage {
+	if a == nil {
+		return nil
+	}
+	return a.ToolCallMessage
+}
+
+func (a *ArtifactMessagesItem) GetToolCallResultMessage() *ToolCallResultMessage {
+	if a == nil {
+		return nil
+	}
+	return a.ToolCallResultMessage
+}
+
+func (a *ArtifactMessagesItem) UnmarshalJSON(data []byte) error {
+	valueUserMessage := new(UserMessage)
+	if err := json.Unmarshal(data, &valueUserMessage); err == nil {
+		a.typ = "UserMessage"
+		a.UserMessage = valueUserMessage
+		return nil
+	}
+	valueSystemMessage := new(SystemMessage)
+	if err := json.Unmarshal(data, &valueSystemMessage); err == nil {
+		a.typ = "SystemMessage"
+		a.SystemMessage = valueSystemMessage
+		return nil
+	}
+	valueBotMessage := new(BotMessage)
+	if err := json.Unmarshal(data, &valueBotMessage); err == nil {
+		a.typ = "BotMessage"
+		a.BotMessage = valueBotMessage
+		return nil
+	}
+	valueToolCallMessage := new(ToolCallMessage)
+	if err := json.Unmarshal(data, &valueToolCallMessage); err == nil {
+		a.typ = "ToolCallMessage"
+		a.ToolCallMessage = valueToolCallMessage
+		return nil
+	}
+	valueToolCallResultMessage := new(ToolCallResultMessage)
+	if err := json.Unmarshal(data, &valueToolCallResultMessage); err == nil {
+		a.typ = "ToolCallResultMessage"
+		a.ToolCallResultMessage = valueToolCallResultMessage
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, a)
+}
+
+func (a ArtifactMessagesItem) MarshalJSON() ([]byte, error) {
+	if a.typ == "UserMessage" || a.UserMessage != nil {
+		return json.Marshal(a.UserMessage)
+	}
+	if a.typ == "SystemMessage" || a.SystemMessage != nil {
+		return json.Marshal(a.SystemMessage)
+	}
+	if a.typ == "BotMessage" || a.BotMessage != nil {
+		return json.Marshal(a.BotMessage)
+	}
+	if a.typ == "ToolCallMessage" || a.ToolCallMessage != nil {
+		return json.Marshal(a.ToolCallMessage)
+	}
+	if a.typ == "ToolCallResultMessage" || a.ToolCallResultMessage != nil {
+		return json.Marshal(a.ToolCallResultMessage)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
+type ArtifactMessagesItemVisitor interface {
+	VisitUserMessage(*UserMessage) error
+	VisitSystemMessage(*SystemMessage) error
+	VisitBotMessage(*BotMessage) error
+	VisitToolCallMessage(*ToolCallMessage) error
+	VisitToolCallResultMessage(*ToolCallResultMessage) error
+}
+
+func (a *ArtifactMessagesItem) Accept(visitor ArtifactMessagesItemVisitor) error {
+	if a.typ == "UserMessage" || a.UserMessage != nil {
+		return visitor.VisitUserMessage(a.UserMessage)
+	}
+	if a.typ == "SystemMessage" || a.SystemMessage != nil {
+		return visitor.VisitSystemMessage(a.SystemMessage)
+	}
+	if a.typ == "BotMessage" || a.BotMessage != nil {
+		return visitor.VisitBotMessage(a.BotMessage)
+	}
+	if a.typ == "ToolCallMessage" || a.ToolCallMessage != nil {
+		return visitor.VisitToolCallMessage(a.ToolCallMessage)
+	}
+	if a.typ == "ToolCallResultMessage" || a.ToolCallResultMessage != nil {
+		return visitor.VisitToolCallResultMessage(a.ToolCallResultMessage)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
 type ArtifactPlan struct {
 	// This determines whether assistant's calls are recorded. Defaults to true.
 	//
 	// Usage:
 	// - If you don't want to record the calls, set this to false.
-	// - If you want to record the calls when `assistant.hipaaEnabled`, explicity set this to true and make sure to provide S3 or GCP credentials on the Provider Credentials page in the Dashboard.
+	// - If you want to record the calls when `assistant.hipaaEnabled` (deprecated) or `assistant.compliancePlan.hipaaEnabled` explicity set this to true and make sure to provide S3 or GCP credentials on the Provider Credentials page in the Dashboard.
 	//
 	// You can find the recording at `call.artifact.recordingUrl` and `call.artifact.stereoRecordingUrl` after the call is ended.
 	//
@@ -1506,6 +1612,22 @@ type ArtifactPlan struct {
 	//
 	// @default false
 	VideoRecordingEnabled *bool `json:"videoRecordingEnabled,omitempty" url:"videoRecordingEnabled,omitempty"`
+	// This determines whether the SIP packet capture is enabled. Defaults to true. Only relevant for `phone` type calls where phone number's provider is `vapi` or `byo-phone-number`.
+	//
+	// You can find the packet capture at `call.artifact.pcapUrl` after the call is ended.
+	//
+	// @default true
+	PcapEnabled *bool `json:"pcapEnabled,omitempty" url:"pcapEnabled,omitempty"`
+	// This is the path where the SIP packet capture will be uploaded. This is only used if you have provided S3 or GCP credentials on the Provider Credentials page in the Dashboard.
+	//
+	// If credential.s3PathPrefix or credential.bucketPlan.path is set, this will append to it.
+	//
+	// Usage:
+	// - If you want to upload the packet capture to a specific path, set this to the path. Example: `/my-assistant-captures`.
+	// - If you want to upload the packet capture to the root of the bucket, set this to `/`.
+	//
+	// @default '/'
+	PcapS3PathPrefix *string `json:"pcapS3PathPrefix,omitempty" url:"pcapS3PathPrefix,omitempty"`
 	// This is the plan for `call.artifact.transcript`. To disable, set `transcriptPlan.enabled` to false.
 	TranscriptPlan *TranscriptPlan `json:"transcriptPlan,omitempty" url:"transcriptPlan,omitempty"`
 	// This is the path where the recording will be uploaded. This is only used if you have provided S3 or GCP credentials on the Provider Credentials page in the Dashboard.
@@ -1535,6 +1657,20 @@ func (a *ArtifactPlan) GetVideoRecordingEnabled() *bool {
 		return nil
 	}
 	return a.VideoRecordingEnabled
+}
+
+func (a *ArtifactPlan) GetPcapEnabled() *bool {
+	if a == nil {
+		return nil
+	}
+	return a.PcapEnabled
+}
+
+func (a *ArtifactPlan) GetPcapS3PathPrefix() *string {
+	if a == nil {
+		return nil
+	}
+	return a.PcapS3PathPrefix
 }
 
 func (a *ArtifactPlan) GetTranscriptPlan() *TranscriptPlan {
@@ -2117,6 +2253,209 @@ func (a *AssistantCustomEndpointingRule) String() string {
 	return fmt.Sprintf("%#v", a)
 }
 
+type AssistantHookActionBase struct {
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (a *AssistantHookActionBase) GetExtraProperties() map[string]interface{} {
+	return a.extraProperties
+}
+
+func (a *AssistantHookActionBase) UnmarshalJSON(data []byte) error {
+	type unmarshaler AssistantHookActionBase
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*a = AssistantHookActionBase(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *a)
+	if err != nil {
+		return err
+	}
+	a.extraProperties = extraProperties
+	a.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (a *AssistantHookActionBase) String() string {
+	if len(a.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(a); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", a)
+}
+
+type AssistantHookFilter struct {
+	// This is the type of filter - currently only "oneOf" is supported
+	// This is the key to filter on (e.g. "call.endedReason")
+	Key string `json:"key" url:"key"`
+	// This is the array of possible values to match against
+	OneOf []string `json:"oneOf,omitempty" url:"oneOf,omitempty"`
+	type_ string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (a *AssistantHookFilter) GetKey() string {
+	if a == nil {
+		return ""
+	}
+	return a.Key
+}
+
+func (a *AssistantHookFilter) GetOneOf() []string {
+	if a == nil {
+		return nil
+	}
+	return a.OneOf
+}
+
+func (a *AssistantHookFilter) Type() string {
+	return a.type_
+}
+
+func (a *AssistantHookFilter) GetExtraProperties() map[string]interface{} {
+	return a.extraProperties
+}
+
+func (a *AssistantHookFilter) UnmarshalJSON(data []byte) error {
+	type embed AssistantHookFilter
+	var unmarshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*a),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*a = AssistantHookFilter(unmarshaler.embed)
+	if unmarshaler.Type != "oneOf" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", a, "oneOf", unmarshaler.Type)
+	}
+	a.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *a, "type")
+	if err != nil {
+		return err
+	}
+	a.extraProperties = extraProperties
+	a.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (a *AssistantHookFilter) MarshalJSON() ([]byte, error) {
+	type embed AssistantHookFilter
+	var marshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*a),
+		Type:  "oneOf",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (a *AssistantHookFilter) String() string {
+	if len(a.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(a); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", a)
+}
+
+type AssistantHooks struct {
+	// This is the event that triggers this hook
+	// This is the set of filters that must match for the hook to trigger
+	Filters []*AssistantHookFilter `json:"filters,omitempty" url:"filters,omitempty"`
+	// This is the set of actions to perform when the hook triggers
+	Do []*AssistantHookActionBase `json:"do,omitempty" url:"do,omitempty"`
+	on string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (a *AssistantHooks) GetFilters() []*AssistantHookFilter {
+	if a == nil {
+		return nil
+	}
+	return a.Filters
+}
+
+func (a *AssistantHooks) GetDo() []*AssistantHookActionBase {
+	if a == nil {
+		return nil
+	}
+	return a.Do
+}
+
+func (a *AssistantHooks) On() string {
+	return a.on
+}
+
+func (a *AssistantHooks) GetExtraProperties() map[string]interface{} {
+	return a.extraProperties
+}
+
+func (a *AssistantHooks) UnmarshalJSON(data []byte) error {
+	type embed AssistantHooks
+	var unmarshaler = struct {
+		embed
+		On string `json:"on"`
+	}{
+		embed: embed(*a),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*a = AssistantHooks(unmarshaler.embed)
+	if unmarshaler.On != "call.ending" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", a, "call.ending", unmarshaler.On)
+	}
+	a.on = unmarshaler.On
+	extraProperties, err := internal.ExtractExtraProperties(data, *a, "on")
+	if err != nil {
+		return err
+	}
+	a.extraProperties = extraProperties
+	a.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (a *AssistantHooks) MarshalJSON() ([]byte, error) {
+	type embed AssistantHooks
+	var marshaler = struct {
+		embed
+		On string `json:"on"`
+	}{
+		embed: embed(*a),
+		On:    "call.ending",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (a *AssistantHooks) String() string {
+	if len(a.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(a); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", a)
+}
+
 type AssistantOverrides struct {
 	// These are the options for the assistant's transcriber.
 	Transcriber *AssistantOverridesTranscriber `json:"transcriber,omitempty" url:"transcriber,omitempty"`
@@ -2137,8 +2476,6 @@ type AssistantOverrides struct {
 	//
 	// @default 'assistant-speaks-first'
 	FirstMessageMode *AssistantOverridesFirstMessageMode `json:"firstMessageMode,omitempty" url:"firstMessageMode,omitempty"`
-	// When this is enabled, no logs, recordings, or transcriptions will be stored. At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
-	HipaaEnabled *bool `json:"hipaaEnabled,omitempty" url:"hipaaEnabled,omitempty"`
 	// These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input. You can check the shape of the messages in ClientMessage schema.
 	ClientMessages []AssistantOverridesClientMessagesItem `json:"clientMessages,omitempty" url:"clientMessages,omitempty"`
 	// These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
@@ -2195,7 +2532,8 @@ type AssistantOverrides struct {
 	// If unspecified, it will hang up without saying anything.
 	EndCallMessage *string `json:"endCallMessage,omitempty" url:"endCallMessage,omitempty"`
 	// This list contains phrases that, if spoken by the assistant, will trigger the call to be hung up. Case insensitive.
-	EndCallPhrases []string `json:"endCallPhrases,omitempty" url:"endCallPhrases,omitempty"`
+	EndCallPhrases []string        `json:"endCallPhrases,omitempty" url:"endCallPhrases,omitempty"`
+	CompliancePlan *CompliancePlan `json:"compliancePlan,omitempty" url:"compliancePlan,omitempty"`
 	// This is for metadata you want to store on the assistant.
 	Metadata map[string]interface{} `json:"metadata,omitempty" url:"metadata,omitempty"`
 	// This is the plan for analysis of assistant's calls. Stored in `call.analysis`.
@@ -2242,6 +2580,8 @@ type AssistantOverrides struct {
 	// 2. phoneNumber.serverUrl
 	// 3. org.serverUrl
 	Server *Server `json:"server,omitempty" url:"server,omitempty"`
+	// This is a set of actions that will be performed on certain events.
+	Hooks []*AssistantHooks `json:"hooks,omitempty" url:"hooks,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -2280,13 +2620,6 @@ func (a *AssistantOverrides) GetFirstMessageMode() *AssistantOverridesFirstMessa
 		return nil
 	}
 	return a.FirstMessageMode
-}
-
-func (a *AssistantOverrides) GetHipaaEnabled() *bool {
-	if a == nil {
-		return nil
-	}
-	return a.HipaaEnabled
 }
 
 func (a *AssistantOverrides) GetClientMessages() []AssistantOverridesClientMessagesItem {
@@ -2394,6 +2727,13 @@ func (a *AssistantOverrides) GetEndCallPhrases() []string {
 	return a.EndCallPhrases
 }
 
+func (a *AssistantOverrides) GetCompliancePlan() *CompliancePlan {
+	if a == nil {
+		return nil
+	}
+	return a.CompliancePlan
+}
+
 func (a *AssistantOverrides) GetMetadata() map[string]interface{} {
 	if a == nil {
 		return nil
@@ -2455,6 +2795,13 @@ func (a *AssistantOverrides) GetServer() *Server {
 		return nil
 	}
 	return a.Server
+}
+
+func (a *AssistantOverrides) GetHooks() []*AssistantHooks {
+	if a == nil {
+		return nil
+	}
+	return a.Hooks
 }
 
 func (a *AssistantOverrides) GetExtraProperties() map[string]interface{} {
@@ -3658,22 +4005,23 @@ func (a *AssistantOverridesModel) Accept(visitor AssistantOverridesModelVisitor)
 type AssistantOverridesServerMessagesItem string
 
 const (
-	AssistantOverridesServerMessagesItemConversationUpdate         AssistantOverridesServerMessagesItem = "conversation-update"
-	AssistantOverridesServerMessagesItemEndOfCallReport            AssistantOverridesServerMessagesItem = "end-of-call-report"
-	AssistantOverridesServerMessagesItemFunctionCall               AssistantOverridesServerMessagesItem = "function-call"
-	AssistantOverridesServerMessagesItemHang                       AssistantOverridesServerMessagesItem = "hang"
-	AssistantOverridesServerMessagesItemLanguageChanged            AssistantOverridesServerMessagesItem = "language-changed"
-	AssistantOverridesServerMessagesItemLanguageChangeDetected     AssistantOverridesServerMessagesItem = "language-change-detected"
-	AssistantOverridesServerMessagesItemModelOutput                AssistantOverridesServerMessagesItem = "model-output"
-	AssistantOverridesServerMessagesItemPhoneCallControl           AssistantOverridesServerMessagesItem = "phone-call-control"
-	AssistantOverridesServerMessagesItemSpeechUpdate               AssistantOverridesServerMessagesItem = "speech-update"
-	AssistantOverridesServerMessagesItemStatusUpdate               AssistantOverridesServerMessagesItem = "status-update"
-	AssistantOverridesServerMessagesItemTranscript                 AssistantOverridesServerMessagesItem = "transcript"
-	AssistantOverridesServerMessagesItemToolCalls                  AssistantOverridesServerMessagesItem = "tool-calls"
-	AssistantOverridesServerMessagesItemTransferDestinationRequest AssistantOverridesServerMessagesItem = "transfer-destination-request"
-	AssistantOverridesServerMessagesItemTransferUpdate             AssistantOverridesServerMessagesItem = "transfer-update"
-	AssistantOverridesServerMessagesItemUserInterrupted            AssistantOverridesServerMessagesItem = "user-interrupted"
-	AssistantOverridesServerMessagesItemVoiceInput                 AssistantOverridesServerMessagesItem = "voice-input"
+	AssistantOverridesServerMessagesItemConversationUpdate            AssistantOverridesServerMessagesItem = "conversation-update"
+	AssistantOverridesServerMessagesItemEndOfCallReport               AssistantOverridesServerMessagesItem = "end-of-call-report"
+	AssistantOverridesServerMessagesItemFunctionCall                  AssistantOverridesServerMessagesItem = "function-call"
+	AssistantOverridesServerMessagesItemHang                          AssistantOverridesServerMessagesItem = "hang"
+	AssistantOverridesServerMessagesItemLanguageChanged               AssistantOverridesServerMessagesItem = "language-changed"
+	AssistantOverridesServerMessagesItemLanguageChangeDetected        AssistantOverridesServerMessagesItem = "language-change-detected"
+	AssistantOverridesServerMessagesItemModelOutput                   AssistantOverridesServerMessagesItem = "model-output"
+	AssistantOverridesServerMessagesItemPhoneCallControl              AssistantOverridesServerMessagesItem = "phone-call-control"
+	AssistantOverridesServerMessagesItemSpeechUpdate                  AssistantOverridesServerMessagesItem = "speech-update"
+	AssistantOverridesServerMessagesItemStatusUpdate                  AssistantOverridesServerMessagesItem = "status-update"
+	AssistantOverridesServerMessagesItemTranscript                    AssistantOverridesServerMessagesItem = "transcript"
+	AssistantOverridesServerMessagesItemTranscriptTranscriptTypeFinal AssistantOverridesServerMessagesItem = "transcript[transcriptType='final']"
+	AssistantOverridesServerMessagesItemToolCalls                     AssistantOverridesServerMessagesItem = "tool-calls"
+	AssistantOverridesServerMessagesItemTransferDestinationRequest    AssistantOverridesServerMessagesItem = "transfer-destination-request"
+	AssistantOverridesServerMessagesItemTransferUpdate                AssistantOverridesServerMessagesItem = "transfer-update"
+	AssistantOverridesServerMessagesItemUserInterrupted               AssistantOverridesServerMessagesItem = "user-interrupted"
+	AssistantOverridesServerMessagesItemVoiceInput                    AssistantOverridesServerMessagesItem = "voice-input"
 )
 
 func NewAssistantOverridesServerMessagesItemFromString(s string) (AssistantOverridesServerMessagesItem, error) {
@@ -3700,6 +4048,8 @@ func NewAssistantOverridesServerMessagesItemFromString(s string) (AssistantOverr
 		return AssistantOverridesServerMessagesItemStatusUpdate, nil
 	case "transcript":
 		return AssistantOverridesServerMessagesItemTranscript, nil
+	case "transcript[transcriptType='final']":
+		return AssistantOverridesServerMessagesItemTranscriptTranscriptTypeFinal, nil
 	case "tool-calls":
 		return AssistantOverridesServerMessagesItemToolCalls, nil
 	case "transfer-destination-request":
@@ -4675,6 +5025,7 @@ func (a *AzureOpenAiCredential) String() string {
 type AzureOpenAiCredentialModelsItem string
 
 const (
+	AzureOpenAiCredentialModelsItemGpt4O20240806Ptu  AzureOpenAiCredentialModelsItem = "gpt-4o-2024-08-06-ptu"
 	AzureOpenAiCredentialModelsItemGpt4O20240806     AzureOpenAiCredentialModelsItem = "gpt-4o-2024-08-06"
 	AzureOpenAiCredentialModelsItemGpt4OMini20240718 AzureOpenAiCredentialModelsItem = "gpt-4o-mini-2024-07-18"
 	AzureOpenAiCredentialModelsItemGpt4O20240513     AzureOpenAiCredentialModelsItem = "gpt-4o-2024-05-13"
@@ -4688,6 +5039,8 @@ const (
 
 func NewAzureOpenAiCredentialModelsItemFromString(s string) (AzureOpenAiCredentialModelsItem, error) {
 	switch s {
+	case "gpt-4o-2024-08-06-ptu":
+		return AzureOpenAiCredentialModelsItemGpt4O20240806Ptu, nil
 	case "gpt-4o-2024-08-06":
 		return AzureOpenAiCredentialModelsItemGpt4O20240806, nil
 	case "gpt-4o-mini-2024-07-18":
@@ -5494,6 +5847,75 @@ func (a AzureVoiceIdEnum) Ptr() *AzureVoiceIdEnum {
 	return &a
 }
 
+type BackoffPlan struct {
+	// This is the maximum number of retries to attempt if the request fails. Defaults to 0 (no retries).
+	//
+	// @default 0
+	MaxRetries float64 `json:"maxRetries" url:"maxRetries"`
+	// This is the type of backoff plan to use. Defaults to fixed.
+	//
+	// @default fixed
+	Type map[string]interface{} `json:"type,omitempty" url:"type,omitempty"`
+	// This is the base delay in seconds. For linear backoff, this is the delay between each retry. For exponential backoff, this is the initial delay.
+	BaseDelaySeconds float64 `json:"baseDelaySeconds" url:"baseDelaySeconds"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (b *BackoffPlan) GetMaxRetries() float64 {
+	if b == nil {
+		return 0
+	}
+	return b.MaxRetries
+}
+
+func (b *BackoffPlan) GetType() map[string]interface{} {
+	if b == nil {
+		return nil
+	}
+	return b.Type
+}
+
+func (b *BackoffPlan) GetBaseDelaySeconds() float64 {
+	if b == nil {
+		return 0
+	}
+	return b.BaseDelaySeconds
+}
+
+func (b *BackoffPlan) GetExtraProperties() map[string]interface{} {
+	return b.extraProperties
+}
+
+func (b *BackoffPlan) UnmarshalJSON(data []byte) error {
+	type unmarshaler BackoffPlan
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*b = BackoffPlan(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *b)
+	if err != nil {
+		return err
+	}
+	b.extraProperties = extraProperties
+	b.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (b *BackoffPlan) String() string {
+	if len(b.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(b.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(b); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", b)
+}
+
 type BashToolWithToolCall struct {
 	// This determines if the tool is async.
 	//
@@ -6069,6 +6491,107 @@ func (b *BlockStartMessageConditionsItem) Accept(visitor BlockStartMessageCondit
 	return fmt.Errorf("type %T does not include a non-empty union type", b)
 }
 
+type BotMessage struct {
+	// The role of the bot in the conversation.
+	Role string `json:"role" url:"role"`
+	// The message content from the bot.
+	Message string `json:"message" url:"message"`
+	// The timestamp when the message was sent.
+	Time float64 `json:"time" url:"time"`
+	// The timestamp when the message ended.
+	EndTime float64 `json:"endTime" url:"endTime"`
+	// The number of seconds from the start of the conversation.
+	SecondsFromStart float64 `json:"secondsFromStart" url:"secondsFromStart"`
+	// The source of the message.
+	Source *string `json:"source,omitempty" url:"source,omitempty"`
+	// The duration of the message in seconds.
+	Duration *float64 `json:"duration,omitempty" url:"duration,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (b *BotMessage) GetRole() string {
+	if b == nil {
+		return ""
+	}
+	return b.Role
+}
+
+func (b *BotMessage) GetMessage() string {
+	if b == nil {
+		return ""
+	}
+	return b.Message
+}
+
+func (b *BotMessage) GetTime() float64 {
+	if b == nil {
+		return 0
+	}
+	return b.Time
+}
+
+func (b *BotMessage) GetEndTime() float64 {
+	if b == nil {
+		return 0
+	}
+	return b.EndTime
+}
+
+func (b *BotMessage) GetSecondsFromStart() float64 {
+	if b == nil {
+		return 0
+	}
+	return b.SecondsFromStart
+}
+
+func (b *BotMessage) GetSource() *string {
+	if b == nil {
+		return nil
+	}
+	return b.Source
+}
+
+func (b *BotMessage) GetDuration() *float64 {
+	if b == nil {
+		return nil
+	}
+	return b.Duration
+}
+
+func (b *BotMessage) GetExtraProperties() map[string]interface{} {
+	return b.extraProperties
+}
+
+func (b *BotMessage) UnmarshalJSON(data []byte) error {
+	type unmarshaler BotMessage
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*b = BotMessage(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *b)
+	if err != nil {
+		return err
+	}
+	b.extraProperties = extraProperties
+	b.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (b *BotMessage) String() string {
+	if len(b.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(b.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(b); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", b)
+}
+
 type BothCustomEndpointingRule struct {
 	// This endpointing rule is based on both the last assistant message and the current customer message as they are speaking.
 	//
@@ -6300,181 +6823,6 @@ func (b *BucketPlan) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", b)
-}
-
-type BuyPhoneNumberDto struct {
-	// This is the fallback destination an inbound call will be transferred to if:
-	// 1. `assistantId` is not set
-	// 2. `squadId` is not set
-	// 3. and, `assistant-request` message to the `serverUrl` fails
-	//
-	// If this is not set and above conditions are met, the inbound call is hung up with an error message.
-	FallbackDestination *BuyPhoneNumberDtoFallbackDestination `json:"fallbackDestination,omitempty" url:"fallbackDestination,omitempty"`
-	// This is the area code of the phone number to purchase.
-	AreaCode string `json:"areaCode" url:"areaCode"`
-	// This is the name of the phone number. This is just for your own reference.
-	Name *string `json:"name,omitempty" url:"name,omitempty"`
-	// This is the assistant that will be used for incoming calls to this phone number.
-	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
-	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
-	// This is the squad that will be used for incoming calls to this phone number.
-	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
-	SquadId *string `json:"squadId,omitempty" url:"squadId,omitempty"`
-	// This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
-	//
-	// The order of precedence is:
-	//
-	// 1. assistant.server
-	// 2. phoneNumber.server
-	// 3. org.server
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (b *BuyPhoneNumberDto) GetFallbackDestination() *BuyPhoneNumberDtoFallbackDestination {
-	if b == nil {
-		return nil
-	}
-	return b.FallbackDestination
-}
-
-func (b *BuyPhoneNumberDto) GetAreaCode() string {
-	if b == nil {
-		return ""
-	}
-	return b.AreaCode
-}
-
-func (b *BuyPhoneNumberDto) GetName() *string {
-	if b == nil {
-		return nil
-	}
-	return b.Name
-}
-
-func (b *BuyPhoneNumberDto) GetAssistantId() *string {
-	if b == nil {
-		return nil
-	}
-	return b.AssistantId
-}
-
-func (b *BuyPhoneNumberDto) GetSquadId() *string {
-	if b == nil {
-		return nil
-	}
-	return b.SquadId
-}
-
-func (b *BuyPhoneNumberDto) GetServer() *Server {
-	if b == nil {
-		return nil
-	}
-	return b.Server
-}
-
-func (b *BuyPhoneNumberDto) GetExtraProperties() map[string]interface{} {
-	return b.extraProperties
-}
-
-func (b *BuyPhoneNumberDto) UnmarshalJSON(data []byte) error {
-	type unmarshaler BuyPhoneNumberDto
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*b = BuyPhoneNumberDto(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *b)
-	if err != nil {
-		return err
-	}
-	b.extraProperties = extraProperties
-	b.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (b *BuyPhoneNumberDto) String() string {
-	if len(b.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(b.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(b); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", b)
-}
-
-// This is the fallback destination an inbound call will be transferred to if:
-// 1. `assistantId` is not set
-// 2. `squadId` is not set
-// 3. and, `assistant-request` message to the `serverUrl` fails
-//
-// If this is not set and above conditions are met, the inbound call is hung up with an error message.
-type BuyPhoneNumberDtoFallbackDestination struct {
-	TransferDestinationNumber *TransferDestinationNumber
-	TransferDestinationSip    *TransferDestinationSip
-
-	typ string
-}
-
-func (b *BuyPhoneNumberDtoFallbackDestination) GetTransferDestinationNumber() *TransferDestinationNumber {
-	if b == nil {
-		return nil
-	}
-	return b.TransferDestinationNumber
-}
-
-func (b *BuyPhoneNumberDtoFallbackDestination) GetTransferDestinationSip() *TransferDestinationSip {
-	if b == nil {
-		return nil
-	}
-	return b.TransferDestinationSip
-}
-
-func (b *BuyPhoneNumberDtoFallbackDestination) UnmarshalJSON(data []byte) error {
-	valueTransferDestinationNumber := new(TransferDestinationNumber)
-	if err := json.Unmarshal(data, &valueTransferDestinationNumber); err == nil {
-		b.typ = "TransferDestinationNumber"
-		b.TransferDestinationNumber = valueTransferDestinationNumber
-		return nil
-	}
-	valueTransferDestinationSip := new(TransferDestinationSip)
-	if err := json.Unmarshal(data, &valueTransferDestinationSip); err == nil {
-		b.typ = "TransferDestinationSip"
-		b.TransferDestinationSip = valueTransferDestinationSip
-		return nil
-	}
-	return fmt.Errorf("%s cannot be deserialized as a %T", data, b)
-}
-
-func (b BuyPhoneNumberDtoFallbackDestination) MarshalJSON() ([]byte, error) {
-	if b.typ == "TransferDestinationNumber" || b.TransferDestinationNumber != nil {
-		return json.Marshal(b.TransferDestinationNumber)
-	}
-	if b.typ == "TransferDestinationSip" || b.TransferDestinationSip != nil {
-		return json.Marshal(b.TransferDestinationSip)
-	}
-	return nil, fmt.Errorf("type %T does not include a non-empty union type", b)
-}
-
-type BuyPhoneNumberDtoFallbackDestinationVisitor interface {
-	VisitTransferDestinationNumber(*TransferDestinationNumber) error
-	VisitTransferDestinationSip(*TransferDestinationSip) error
-}
-
-func (b *BuyPhoneNumberDtoFallbackDestination) Accept(visitor BuyPhoneNumberDtoFallbackDestinationVisitor) error {
-	if b.typ == "TransferDestinationNumber" || b.TransferDestinationNumber != nil {
-		return visitor.VisitTransferDestinationNumber(b.TransferDestinationNumber)
-	}
-	if b.typ == "TransferDestinationSip" || b.TransferDestinationSip != nil {
-		return visitor.VisitTransferDestinationSip(b.TransferDestinationSip)
-	}
-	return fmt.Errorf("type %T does not include a non-empty union type", b)
 }
 
 type ByoSipTrunkCredential struct {
@@ -7259,22 +7607,192 @@ func (c *CartesiaCredential) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
+type CartesiaExperimentalControls struct {
+	Speed   *CartesiaExperimentalControlsSpeed   `json:"speed,omitempty" url:"speed,omitempty"`
+	Emotion *CartesiaExperimentalControlsEmotion `json:"emotion,omitempty" url:"emotion,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CartesiaExperimentalControls) GetSpeed() *CartesiaExperimentalControlsSpeed {
+	if c == nil {
+		return nil
+	}
+	return c.Speed
+}
+
+func (c *CartesiaExperimentalControls) GetEmotion() *CartesiaExperimentalControlsEmotion {
+	if c == nil {
+		return nil
+	}
+	return c.Emotion
+}
+
+func (c *CartesiaExperimentalControls) GetExtraProperties() map[string]interface{} {
+	return c.extraProperties
+}
+
+func (c *CartesiaExperimentalControls) UnmarshalJSON(data []byte) error {
+	type unmarshaler CartesiaExperimentalControls
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CartesiaExperimentalControls(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CartesiaExperimentalControls) String() string {
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+type CartesiaExperimentalControlsEmotion string
+
+const (
+	CartesiaExperimentalControlsEmotionAngerLowest       CartesiaExperimentalControlsEmotion = "anger:lowest"
+	CartesiaExperimentalControlsEmotionAngerLow          CartesiaExperimentalControlsEmotion = "anger:low"
+	CartesiaExperimentalControlsEmotionAngerHigh         CartesiaExperimentalControlsEmotion = "anger:high"
+	CartesiaExperimentalControlsEmotionAngerHighest      CartesiaExperimentalControlsEmotion = "anger:highest"
+	CartesiaExperimentalControlsEmotionPositivityLowest  CartesiaExperimentalControlsEmotion = "positivity:lowest"
+	CartesiaExperimentalControlsEmotionPositivityLow     CartesiaExperimentalControlsEmotion = "positivity:low"
+	CartesiaExperimentalControlsEmotionPositivityHigh    CartesiaExperimentalControlsEmotion = "positivity:high"
+	CartesiaExperimentalControlsEmotionPositivityHighest CartesiaExperimentalControlsEmotion = "positivity:highest"
+	CartesiaExperimentalControlsEmotionSurpriseLowest    CartesiaExperimentalControlsEmotion = "surprise:lowest"
+	CartesiaExperimentalControlsEmotionSurpriseLow       CartesiaExperimentalControlsEmotion = "surprise:low"
+	CartesiaExperimentalControlsEmotionSurpriseHigh      CartesiaExperimentalControlsEmotion = "surprise:high"
+	CartesiaExperimentalControlsEmotionSurpriseHighest   CartesiaExperimentalControlsEmotion = "surprise:highest"
+	CartesiaExperimentalControlsEmotionSadnessLowest     CartesiaExperimentalControlsEmotion = "sadness:lowest"
+	CartesiaExperimentalControlsEmotionSadnessLow        CartesiaExperimentalControlsEmotion = "sadness:low"
+	CartesiaExperimentalControlsEmotionSadnessHigh       CartesiaExperimentalControlsEmotion = "sadness:high"
+	CartesiaExperimentalControlsEmotionSadnessHighest    CartesiaExperimentalControlsEmotion = "sadness:highest"
+	CartesiaExperimentalControlsEmotionCuriosityLowest   CartesiaExperimentalControlsEmotion = "curiosity:lowest"
+	CartesiaExperimentalControlsEmotionCuriosityLow      CartesiaExperimentalControlsEmotion = "curiosity:low"
+	CartesiaExperimentalControlsEmotionCuriosityHigh     CartesiaExperimentalControlsEmotion = "curiosity:high"
+	CartesiaExperimentalControlsEmotionCuriosityHighest  CartesiaExperimentalControlsEmotion = "curiosity:highest"
+)
+
+func NewCartesiaExperimentalControlsEmotionFromString(s string) (CartesiaExperimentalControlsEmotion, error) {
+	switch s {
+	case "anger:lowest":
+		return CartesiaExperimentalControlsEmotionAngerLowest, nil
+	case "anger:low":
+		return CartesiaExperimentalControlsEmotionAngerLow, nil
+	case "anger:high":
+		return CartesiaExperimentalControlsEmotionAngerHigh, nil
+	case "anger:highest":
+		return CartesiaExperimentalControlsEmotionAngerHighest, nil
+	case "positivity:lowest":
+		return CartesiaExperimentalControlsEmotionPositivityLowest, nil
+	case "positivity:low":
+		return CartesiaExperimentalControlsEmotionPositivityLow, nil
+	case "positivity:high":
+		return CartesiaExperimentalControlsEmotionPositivityHigh, nil
+	case "positivity:highest":
+		return CartesiaExperimentalControlsEmotionPositivityHighest, nil
+	case "surprise:lowest":
+		return CartesiaExperimentalControlsEmotionSurpriseLowest, nil
+	case "surprise:low":
+		return CartesiaExperimentalControlsEmotionSurpriseLow, nil
+	case "surprise:high":
+		return CartesiaExperimentalControlsEmotionSurpriseHigh, nil
+	case "surprise:highest":
+		return CartesiaExperimentalControlsEmotionSurpriseHighest, nil
+	case "sadness:lowest":
+		return CartesiaExperimentalControlsEmotionSadnessLowest, nil
+	case "sadness:low":
+		return CartesiaExperimentalControlsEmotionSadnessLow, nil
+	case "sadness:high":
+		return CartesiaExperimentalControlsEmotionSadnessHigh, nil
+	case "sadness:highest":
+		return CartesiaExperimentalControlsEmotionSadnessHighest, nil
+	case "curiosity:lowest":
+		return CartesiaExperimentalControlsEmotionCuriosityLowest, nil
+	case "curiosity:low":
+		return CartesiaExperimentalControlsEmotionCuriosityLow, nil
+	case "curiosity:high":
+		return CartesiaExperimentalControlsEmotionCuriosityHigh, nil
+	case "curiosity:highest":
+		return CartesiaExperimentalControlsEmotionCuriosityHighest, nil
+	}
+	var t CartesiaExperimentalControlsEmotion
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (c CartesiaExperimentalControlsEmotion) Ptr() *CartesiaExperimentalControlsEmotion {
+	return &c
+}
+
+type CartesiaExperimentalControlsSpeed string
+
+const (
+	CartesiaExperimentalControlsSpeedSlowest CartesiaExperimentalControlsSpeed = "slowest"
+	CartesiaExperimentalControlsSpeedSlow    CartesiaExperimentalControlsSpeed = "slow"
+	CartesiaExperimentalControlsSpeedNormal  CartesiaExperimentalControlsSpeed = "normal"
+	CartesiaExperimentalControlsSpeedFast    CartesiaExperimentalControlsSpeed = "fast"
+	CartesiaExperimentalControlsSpeedFastest CartesiaExperimentalControlsSpeed = "fastest"
+)
+
+func NewCartesiaExperimentalControlsSpeedFromString(s string) (CartesiaExperimentalControlsSpeed, error) {
+	switch s {
+	case "slowest":
+		return CartesiaExperimentalControlsSpeedSlowest, nil
+	case "slow":
+		return CartesiaExperimentalControlsSpeedSlow, nil
+	case "normal":
+		return CartesiaExperimentalControlsSpeedNormal, nil
+	case "fast":
+		return CartesiaExperimentalControlsSpeedFast, nil
+	case "fastest":
+		return CartesiaExperimentalControlsSpeedFastest, nil
+	}
+	var t CartesiaExperimentalControlsSpeed
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (c CartesiaExperimentalControlsSpeed) Ptr() *CartesiaExperimentalControlsSpeed {
+	return &c
+}
+
 type CartesiaVoice struct {
 	// This is the voice provider that will be used.
+	// The ID of the particular voice you want to use.
+	VoiceId string `json:"voiceId" url:"voiceId"`
 	// This is the model that will be used. This is optional and will default to the correct model for the voiceId.
 	Model *CartesiaVoiceModel `json:"model,omitempty" url:"model,omitempty"`
 	// This is the language that will be used. This is optional and will default to the correct language for the voiceId.
 	Language *CartesiaVoiceLanguage `json:"language,omitempty" url:"language,omitempty"`
+	// Experimental controls for Cartesia voice generation
+	ExperimentalControls *CartesiaExperimentalControls `json:"experimentalControls,omitempty" url:"experimentalControls,omitempty"`
 	// This is the plan for chunking the model output before it is sent to the voice provider.
 	ChunkPlan *ChunkPlan `json:"chunkPlan,omitempty" url:"chunkPlan,omitempty"`
-	// This is the provider-specific ID that will be used.
-	VoiceId string `json:"voiceId" url:"voiceId"`
 	// This is the plan for voice provider fallbacks in the event that the primary voice provider fails.
 	FallbackPlan *FallbackPlan `json:"fallbackPlan,omitempty" url:"fallbackPlan,omitempty"`
 	provider     string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (c *CartesiaVoice) GetVoiceId() string {
+	if c == nil {
+		return ""
+	}
+	return c.VoiceId
 }
 
 func (c *CartesiaVoice) GetModel() *CartesiaVoiceModel {
@@ -7291,18 +7809,18 @@ func (c *CartesiaVoice) GetLanguage() *CartesiaVoiceLanguage {
 	return c.Language
 }
 
+func (c *CartesiaVoice) GetExperimentalControls() *CartesiaExperimentalControls {
+	if c == nil {
+		return nil
+	}
+	return c.ExperimentalControls
+}
+
 func (c *CartesiaVoice) GetChunkPlan() *ChunkPlan {
 	if c == nil {
 		return nil
 	}
 	return c.ChunkPlan
-}
-
-func (c *CartesiaVoice) GetVoiceId() string {
-	if c == nil {
-		return ""
-	}
-	return c.VoiceId
 }
 
 func (c *CartesiaVoice) GetFallbackPlan() *FallbackPlan {
@@ -7575,6 +8093,208 @@ func (c *CerebrasCredential) MarshalJSON() ([]byte, error) {
 }
 
 func (c *CerebrasCredential) String() string {
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+type ChatCompletionMessage struct {
+	Role     map[string]interface{}         `json:"role,omitempty" url:"role,omitempty"`
+	Content  *string                        `json:"content,omitempty" url:"content,omitempty"`
+	Metadata *ChatCompletionMessageMetadata `json:"metadata,omitempty" url:"metadata,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ChatCompletionMessage) GetRole() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.Role
+}
+
+func (c *ChatCompletionMessage) GetContent() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Content
+}
+
+func (c *ChatCompletionMessage) GetMetadata() *ChatCompletionMessageMetadata {
+	if c == nil {
+		return nil
+	}
+	return c.Metadata
+}
+
+func (c *ChatCompletionMessage) GetExtraProperties() map[string]interface{} {
+	return c.extraProperties
+}
+
+func (c *ChatCompletionMessage) UnmarshalJSON(data []byte) error {
+	type unmarshaler ChatCompletionMessage
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ChatCompletionMessage(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ChatCompletionMessage) String() string {
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+type ChatCompletionMessageMetadata struct {
+	TaskName   string                 `json:"taskName" url:"taskName"`
+	TaskType   string                 `json:"taskType" url:"taskType"`
+	TaskOutput string                 `json:"taskOutput" url:"taskOutput"`
+	TaskState  map[string]interface{} `json:"taskState,omitempty" url:"taskState,omitempty"`
+	NodeTrace  []string               `json:"nodeTrace,omitempty" url:"nodeTrace,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ChatCompletionMessageMetadata) GetTaskName() string {
+	if c == nil {
+		return ""
+	}
+	return c.TaskName
+}
+
+func (c *ChatCompletionMessageMetadata) GetTaskType() string {
+	if c == nil {
+		return ""
+	}
+	return c.TaskType
+}
+
+func (c *ChatCompletionMessageMetadata) GetTaskOutput() string {
+	if c == nil {
+		return ""
+	}
+	return c.TaskOutput
+}
+
+func (c *ChatCompletionMessageMetadata) GetTaskState() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.TaskState
+}
+
+func (c *ChatCompletionMessageMetadata) GetNodeTrace() []string {
+	if c == nil {
+		return nil
+	}
+	return c.NodeTrace
+}
+
+func (c *ChatCompletionMessageMetadata) GetExtraProperties() map[string]interface{} {
+	return c.extraProperties
+}
+
+func (c *ChatCompletionMessageMetadata) UnmarshalJSON(data []byte) error {
+	type unmarshaler ChatCompletionMessageMetadata
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ChatCompletionMessageMetadata(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ChatCompletionMessageMetadata) String() string {
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+type ChatCompletionsDto struct {
+	Messages   []*ChatCompletionMessage `json:"messages,omitempty" url:"messages,omitempty"`
+	WorkflowId *string                  `json:"workflowId,omitempty" url:"workflowId,omitempty"`
+	Workflow   *CreateWorkflowDto       `json:"workflow,omitempty" url:"workflow,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ChatCompletionsDto) GetMessages() []*ChatCompletionMessage {
+	if c == nil {
+		return nil
+	}
+	return c.Messages
+}
+
+func (c *ChatCompletionsDto) GetWorkflowId() *string {
+	if c == nil {
+		return nil
+	}
+	return c.WorkflowId
+}
+
+func (c *ChatCompletionsDto) GetWorkflow() *CreateWorkflowDto {
+	if c == nil {
+		return nil
+	}
+	return c.Workflow
+}
+
+func (c *ChatCompletionsDto) GetExtraProperties() map[string]interface{} {
+	return c.extraProperties
+}
+
+func (c *ChatCompletionsDto) UnmarshalJSON(data []byte) error {
+	type unmarshaler ChatCompletionsDto
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ChatCompletionsDto(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ChatCompletionsDto) String() string {
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -8279,7 +8999,9 @@ type ClientInboundMessageTransfer struct {
 	// This is the type of the message. Send "transfer" message to transfer the call to a destination.
 	// This is the destination to transfer the call to.
 	Destination *ClientInboundMessageTransferDestination `json:"destination,omitempty" url:"destination,omitempty"`
-	type_       string
+	// This is the content to say.
+	Content *string `json:"content,omitempty" url:"content,omitempty"`
+	type_   string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -8290,6 +9012,13 @@ func (c *ClientInboundMessageTransfer) GetDestination() *ClientInboundMessageTra
 		return nil
 	}
 	return c.Destination
+}
+
+func (c *ClientInboundMessageTransfer) GetContent() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Content
 }
 
 func (c *ClientInboundMessageTransfer) Type() string {
@@ -8812,6 +9541,7 @@ func (c *ClientMessageLanguageChangeDetected) String() string {
 
 // These are all the messages that can be sent to the client-side SDKs during the call. Configure the messages you'd like to receive in `assistant.clientMessages`.
 type ClientMessageMessage struct {
+	ClientMessageWorkflowNodeStarted    *ClientMessageWorkflowNodeStarted
 	ClientMessageConversationUpdate     *ClientMessageConversationUpdate
 	ClientMessageHang                   *ClientMessageHang
 	ClientMessageMetadata               *ClientMessageMetadata
@@ -8826,6 +9556,13 @@ type ClientMessageMessage struct {
 	ClientMessageVoiceInput             *ClientMessageVoiceInput
 
 	typ string
+}
+
+func (c *ClientMessageMessage) GetClientMessageWorkflowNodeStarted() *ClientMessageWorkflowNodeStarted {
+	if c == nil {
+		return nil
+	}
+	return c.ClientMessageWorkflowNodeStarted
 }
 
 func (c *ClientMessageMessage) GetClientMessageConversationUpdate() *ClientMessageConversationUpdate {
@@ -8913,6 +9650,12 @@ func (c *ClientMessageMessage) GetClientMessageVoiceInput() *ClientMessageVoiceI
 }
 
 func (c *ClientMessageMessage) UnmarshalJSON(data []byte) error {
+	valueClientMessageWorkflowNodeStarted := new(ClientMessageWorkflowNodeStarted)
+	if err := json.Unmarshal(data, &valueClientMessageWorkflowNodeStarted); err == nil {
+		c.typ = "ClientMessageWorkflowNodeStarted"
+		c.ClientMessageWorkflowNodeStarted = valueClientMessageWorkflowNodeStarted
+		return nil
+	}
 	valueClientMessageConversationUpdate := new(ClientMessageConversationUpdate)
 	if err := json.Unmarshal(data, &valueClientMessageConversationUpdate); err == nil {
 		c.typ = "ClientMessageConversationUpdate"
@@ -8989,6 +9732,9 @@ func (c *ClientMessageMessage) UnmarshalJSON(data []byte) error {
 }
 
 func (c ClientMessageMessage) MarshalJSON() ([]byte, error) {
+	if c.typ == "ClientMessageWorkflowNodeStarted" || c.ClientMessageWorkflowNodeStarted != nil {
+		return json.Marshal(c.ClientMessageWorkflowNodeStarted)
+	}
 	if c.typ == "ClientMessageConversationUpdate" || c.ClientMessageConversationUpdate != nil {
 		return json.Marshal(c.ClientMessageConversationUpdate)
 	}
@@ -9029,6 +9775,7 @@ func (c ClientMessageMessage) MarshalJSON() ([]byte, error) {
 }
 
 type ClientMessageMessageVisitor interface {
+	VisitClientMessageWorkflowNodeStarted(*ClientMessageWorkflowNodeStarted) error
 	VisitClientMessageConversationUpdate(*ClientMessageConversationUpdate) error
 	VisitClientMessageHang(*ClientMessageHang) error
 	VisitClientMessageMetadata(*ClientMessageMetadata) error
@@ -9044,6 +9791,9 @@ type ClientMessageMessageVisitor interface {
 }
 
 func (c *ClientMessageMessage) Accept(visitor ClientMessageMessageVisitor) error {
+	if c.typ == "ClientMessageWorkflowNodeStarted" || c.ClientMessageWorkflowNodeStarted != nil {
+		return visitor.VisitClientMessageWorkflowNodeStarted(c.ClientMessageWorkflowNodeStarted)
+	}
 	if c.typ == "ClientMessageConversationUpdate" || c.ClientMessageConversationUpdate != nil {
 		return visitor.VisitClientMessageConversationUpdate(c.ClientMessageConversationUpdate)
 	}
@@ -9640,16 +10390,23 @@ func (c *ClientMessageToolCallsToolWithToolCallListItem) Accept(visitor ClientMe
 
 type ClientMessageTranscript struct {
 	// This is the type of the message. "transcript" is sent as transcriber outputs partial or final transcript.
+	Type ClientMessageTranscriptType `json:"type" url:"type"`
 	// This is the role for which the transcript is for.
 	Role ClientMessageTranscriptRole `json:"role" url:"role"`
 	// This is the type of the transcript.
 	TranscriptType ClientMessageTranscriptTranscriptType `json:"transcriptType" url:"transcriptType"`
 	// This is the transcript content.
 	Transcript string `json:"transcript" url:"transcript"`
-	type_      string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (c *ClientMessageTranscript) GetType() ClientMessageTranscriptType {
+	if c == nil {
+		return ""
+	}
+	return c.Type
 }
 
 func (c *ClientMessageTranscript) GetRole() ClientMessageTranscriptRole {
@@ -9673,49 +10430,24 @@ func (c *ClientMessageTranscript) GetTranscript() string {
 	return c.Transcript
 }
 
-func (c *ClientMessageTranscript) Type() string {
-	return c.type_
-}
-
 func (c *ClientMessageTranscript) GetExtraProperties() map[string]interface{} {
 	return c.extraProperties
 }
 
 func (c *ClientMessageTranscript) UnmarshalJSON(data []byte) error {
-	type embed ClientMessageTranscript
-	var unmarshaler = struct {
-		embed
-		Type string `json:"type"`
-	}{
-		embed: embed(*c),
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+	type unmarshaler ClientMessageTranscript
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*c = ClientMessageTranscript(unmarshaler.embed)
-	if unmarshaler.Type != "transcript" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", c, "transcript", unmarshaler.Type)
-	}
-	c.type_ = unmarshaler.Type
-	extraProperties, err := internal.ExtractExtraProperties(data, *c, "type")
+	*c = ClientMessageTranscript(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
 	if err != nil {
 		return err
 	}
 	c.extraProperties = extraProperties
 	c.rawJSON = json.RawMessage(data)
 	return nil
-}
-
-func (c *ClientMessageTranscript) MarshalJSON() ([]byte, error) {
-	type embed ClientMessageTranscript
-	var marshaler = struct {
-		embed
-		Type string `json:"type"`
-	}{
-		embed: embed(*c),
-		Type:  "transcript",
-	}
-	return json.Marshal(marshaler)
 }
 
 func (c *ClientMessageTranscript) String() string {
@@ -9773,6 +10505,29 @@ func NewClientMessageTranscriptTranscriptTypeFromString(s string) (ClientMessage
 }
 
 func (c ClientMessageTranscriptTranscriptType) Ptr() *ClientMessageTranscriptTranscriptType {
+	return &c
+}
+
+// This is the type of the message. "transcript" is sent as transcriber outputs partial or final transcript.
+type ClientMessageTranscriptType string
+
+const (
+	ClientMessageTranscriptTypeTranscript                    ClientMessageTranscriptType = "transcript"
+	ClientMessageTranscriptTypeTranscriptTranscriptTypeFinal ClientMessageTranscriptType = "transcript[transcriptType='final']"
+)
+
+func NewClientMessageTranscriptTypeFromString(s string) (ClientMessageTranscriptType, error) {
+	switch s {
+	case "transcript":
+		return ClientMessageTranscriptTypeTranscript, nil
+	case "transcript[transcriptType='final']":
+		return ClientMessageTranscriptTypeTranscriptTranscriptTypeFinal, nil
+	}
+	var t ClientMessageTranscriptType
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (c ClientMessageTranscriptType) Ptr() *ClientMessageTranscriptType {
 	return &c
 }
 
@@ -10130,6 +10885,80 @@ func (c *ClientMessageVoiceInput) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
+type ClientMessageWorkflowNodeStarted struct {
+	// This is the type of the message. "workflow.node.started" is sent when the active node changes.
+	// This is the active node.
+	Node  map[string]interface{} `json:"node,omitempty" url:"node,omitempty"`
+	type_ string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ClientMessageWorkflowNodeStarted) GetNode() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.Node
+}
+
+func (c *ClientMessageWorkflowNodeStarted) Type() string {
+	return c.type_
+}
+
+func (c *ClientMessageWorkflowNodeStarted) GetExtraProperties() map[string]interface{} {
+	return c.extraProperties
+}
+
+func (c *ClientMessageWorkflowNodeStarted) UnmarshalJSON(data []byte) error {
+	type embed ClientMessageWorkflowNodeStarted
+	var unmarshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*c),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*c = ClientMessageWorkflowNodeStarted(unmarshaler.embed)
+	if unmarshaler.Type != "workflow.node.started" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", c, "workflow.node.started", unmarshaler.Type)
+	}
+	c.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *c, "type")
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ClientMessageWorkflowNodeStarted) MarshalJSON() ([]byte, error) {
+	type embed ClientMessageWorkflowNodeStarted
+	var marshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*c),
+		Type:  "workflow.node.started",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (c *ClientMessageWorkflowNodeStarted) String() string {
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
 type CloneVoiceDto struct {
 	// This is the name of the cloned voice in the provider account.
 	Name string `json:"name" url:"name"`
@@ -10436,6 +11265,62 @@ func (c *CloudflareR2BucketPlan) UnmarshalJSON(data []byte) error {
 }
 
 func (c *CloudflareR2BucketPlan) String() string {
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+type CompliancePlan struct {
+	// When this is enabled, no logs, recordings, or transcriptions will be stored. At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
+	HipaaEnabled *bool `json:"hipaaEnabled,omitempty" url:"hipaaEnabled,omitempty"`
+	// When this is enabled, the user will be restricted to use PCI-compliant providers, and no logs or transcripts are stored. At the end of the call, you will receive an end-of-call-report message to store on your server. Defaults to false.
+	PciEnabled *bool `json:"pciEnabled,omitempty" url:"pciEnabled,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CompliancePlan) GetHipaaEnabled() *bool {
+	if c == nil {
+		return nil
+	}
+	return c.HipaaEnabled
+}
+
+func (c *CompliancePlan) GetPciEnabled() *bool {
+	if c == nil {
+		return nil
+	}
+	return c.PciEnabled
+}
+
+func (c *CompliancePlan) GetExtraProperties() map[string]interface{} {
+	return c.extraProperties
+}
+
+func (c *CompliancePlan) UnmarshalJSON(data []byte) error {
+	type unmarshaler CompliancePlan
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CompliancePlan(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CompliancePlan) String() string {
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -11095,8 +11980,6 @@ type CreateAssistantDto struct {
 	//
 	// @default 'assistant-speaks-first'
 	FirstMessageMode *CreateAssistantDtoFirstMessageMode `json:"firstMessageMode,omitempty" url:"firstMessageMode,omitempty"`
-	// When this is enabled, no logs, recordings, or transcriptions will be stored. At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
-	HipaaEnabled *bool `json:"hipaaEnabled,omitempty" url:"hipaaEnabled,omitempty"`
 	// These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input. You can check the shape of the messages in ClientMessage schema.
 	ClientMessages []CreateAssistantDtoClientMessagesItem `json:"clientMessages,omitempty" url:"clientMessages,omitempty"`
 	// These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
@@ -11144,7 +12027,8 @@ type CreateAssistantDto struct {
 	// If unspecified, it will hang up without saying anything.
 	EndCallMessage *string `json:"endCallMessage,omitempty" url:"endCallMessage,omitempty"`
 	// This list contains phrases that, if spoken by the assistant, will trigger the call to be hung up. Case insensitive.
-	EndCallPhrases []string `json:"endCallPhrases,omitempty" url:"endCallPhrases,omitempty"`
+	EndCallPhrases []string        `json:"endCallPhrases,omitempty" url:"endCallPhrases,omitempty"`
+	CompliancePlan *CompliancePlan `json:"compliancePlan,omitempty" url:"compliancePlan,omitempty"`
 	// This is for metadata you want to store on the assistant.
 	Metadata map[string]interface{} `json:"metadata,omitempty" url:"metadata,omitempty"`
 	// This is the plan for analysis of assistant's calls. Stored in `call.analysis`.
@@ -11191,6 +12075,8 @@ type CreateAssistantDto struct {
 	// 2. phoneNumber.serverUrl
 	// 3. org.serverUrl
 	Server *Server `json:"server,omitempty" url:"server,omitempty"`
+	// This is a set of actions that will be performed on certain events.
+	Hooks []*AssistantHooks `json:"hooks,omitempty" url:"hooks,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -11229,13 +12115,6 @@ func (c *CreateAssistantDto) GetFirstMessageMode() *CreateAssistantDtoFirstMessa
 		return nil
 	}
 	return c.FirstMessageMode
-}
-
-func (c *CreateAssistantDto) GetHipaaEnabled() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.HipaaEnabled
 }
 
 func (c *CreateAssistantDto) GetClientMessages() []CreateAssistantDtoClientMessagesItem {
@@ -11336,6 +12215,13 @@ func (c *CreateAssistantDto) GetEndCallPhrases() []string {
 	return c.EndCallPhrases
 }
 
+func (c *CreateAssistantDto) GetCompliancePlan() *CompliancePlan {
+	if c == nil {
+		return nil
+	}
+	return c.CompliancePlan
+}
+
 func (c *CreateAssistantDto) GetMetadata() map[string]interface{} {
 	if c == nil {
 		return nil
@@ -11397,6 +12283,13 @@ func (c *CreateAssistantDto) GetServer() *Server {
 		return nil
 	}
 	return c.Server
+}
+
+func (c *CreateAssistantDto) GetHooks() []*AssistantHooks {
+	if c == nil {
+		return nil
+	}
+	return c.Hooks
 }
 
 func (c *CreateAssistantDto) GetExtraProperties() map[string]interface{} {
@@ -12600,22 +13493,23 @@ func (c *CreateAssistantDtoModel) Accept(visitor CreateAssistantDtoModelVisitor)
 type CreateAssistantDtoServerMessagesItem string
 
 const (
-	CreateAssistantDtoServerMessagesItemConversationUpdate         CreateAssistantDtoServerMessagesItem = "conversation-update"
-	CreateAssistantDtoServerMessagesItemEndOfCallReport            CreateAssistantDtoServerMessagesItem = "end-of-call-report"
-	CreateAssistantDtoServerMessagesItemFunctionCall               CreateAssistantDtoServerMessagesItem = "function-call"
-	CreateAssistantDtoServerMessagesItemHang                       CreateAssistantDtoServerMessagesItem = "hang"
-	CreateAssistantDtoServerMessagesItemLanguageChanged            CreateAssistantDtoServerMessagesItem = "language-changed"
-	CreateAssistantDtoServerMessagesItemLanguageChangeDetected     CreateAssistantDtoServerMessagesItem = "language-change-detected"
-	CreateAssistantDtoServerMessagesItemModelOutput                CreateAssistantDtoServerMessagesItem = "model-output"
-	CreateAssistantDtoServerMessagesItemPhoneCallControl           CreateAssistantDtoServerMessagesItem = "phone-call-control"
-	CreateAssistantDtoServerMessagesItemSpeechUpdate               CreateAssistantDtoServerMessagesItem = "speech-update"
-	CreateAssistantDtoServerMessagesItemStatusUpdate               CreateAssistantDtoServerMessagesItem = "status-update"
-	CreateAssistantDtoServerMessagesItemTranscript                 CreateAssistantDtoServerMessagesItem = "transcript"
-	CreateAssistantDtoServerMessagesItemToolCalls                  CreateAssistantDtoServerMessagesItem = "tool-calls"
-	CreateAssistantDtoServerMessagesItemTransferDestinationRequest CreateAssistantDtoServerMessagesItem = "transfer-destination-request"
-	CreateAssistantDtoServerMessagesItemTransferUpdate             CreateAssistantDtoServerMessagesItem = "transfer-update"
-	CreateAssistantDtoServerMessagesItemUserInterrupted            CreateAssistantDtoServerMessagesItem = "user-interrupted"
-	CreateAssistantDtoServerMessagesItemVoiceInput                 CreateAssistantDtoServerMessagesItem = "voice-input"
+	CreateAssistantDtoServerMessagesItemConversationUpdate            CreateAssistantDtoServerMessagesItem = "conversation-update"
+	CreateAssistantDtoServerMessagesItemEndOfCallReport               CreateAssistantDtoServerMessagesItem = "end-of-call-report"
+	CreateAssistantDtoServerMessagesItemFunctionCall                  CreateAssistantDtoServerMessagesItem = "function-call"
+	CreateAssistantDtoServerMessagesItemHang                          CreateAssistantDtoServerMessagesItem = "hang"
+	CreateAssistantDtoServerMessagesItemLanguageChanged               CreateAssistantDtoServerMessagesItem = "language-changed"
+	CreateAssistantDtoServerMessagesItemLanguageChangeDetected        CreateAssistantDtoServerMessagesItem = "language-change-detected"
+	CreateAssistantDtoServerMessagesItemModelOutput                   CreateAssistantDtoServerMessagesItem = "model-output"
+	CreateAssistantDtoServerMessagesItemPhoneCallControl              CreateAssistantDtoServerMessagesItem = "phone-call-control"
+	CreateAssistantDtoServerMessagesItemSpeechUpdate                  CreateAssistantDtoServerMessagesItem = "speech-update"
+	CreateAssistantDtoServerMessagesItemStatusUpdate                  CreateAssistantDtoServerMessagesItem = "status-update"
+	CreateAssistantDtoServerMessagesItemTranscript                    CreateAssistantDtoServerMessagesItem = "transcript"
+	CreateAssistantDtoServerMessagesItemTranscriptTranscriptTypeFinal CreateAssistantDtoServerMessagesItem = "transcript[transcriptType='final']"
+	CreateAssistantDtoServerMessagesItemToolCalls                     CreateAssistantDtoServerMessagesItem = "tool-calls"
+	CreateAssistantDtoServerMessagesItemTransferDestinationRequest    CreateAssistantDtoServerMessagesItem = "transfer-destination-request"
+	CreateAssistantDtoServerMessagesItemTransferUpdate                CreateAssistantDtoServerMessagesItem = "transfer-update"
+	CreateAssistantDtoServerMessagesItemUserInterrupted               CreateAssistantDtoServerMessagesItem = "user-interrupted"
+	CreateAssistantDtoServerMessagesItemVoiceInput                    CreateAssistantDtoServerMessagesItem = "voice-input"
 )
 
 func NewCreateAssistantDtoServerMessagesItemFromString(s string) (CreateAssistantDtoServerMessagesItem, error) {
@@ -12642,6 +13536,8 @@ func NewCreateAssistantDtoServerMessagesItemFromString(s string) (CreateAssistan
 		return CreateAssistantDtoServerMessagesItemStatusUpdate, nil
 	case "transcript":
 		return CreateAssistantDtoServerMessagesItemTranscript, nil
+	case "transcript[transcriptType='final']":
+		return CreateAssistantDtoServerMessagesItemTranscriptTranscriptTypeFinal, nil
 	case "tool-calls":
 		return CreateAssistantDtoServerMessagesItemToolCalls, nil
 	case "transfer-destination-request":
@@ -13402,6 +14298,7 @@ func (c *CreateAzureOpenAiCredentialDto) String() string {
 type CreateAzureOpenAiCredentialDtoModelsItem string
 
 const (
+	CreateAzureOpenAiCredentialDtoModelsItemGpt4O20240806Ptu  CreateAzureOpenAiCredentialDtoModelsItem = "gpt-4o-2024-08-06-ptu"
 	CreateAzureOpenAiCredentialDtoModelsItemGpt4O20240806     CreateAzureOpenAiCredentialDtoModelsItem = "gpt-4o-2024-08-06"
 	CreateAzureOpenAiCredentialDtoModelsItemGpt4OMini20240718 CreateAzureOpenAiCredentialDtoModelsItem = "gpt-4o-mini-2024-07-18"
 	CreateAzureOpenAiCredentialDtoModelsItemGpt4O20240513     CreateAzureOpenAiCredentialDtoModelsItem = "gpt-4o-2024-05-13"
@@ -13415,6 +14312,8 @@ const (
 
 func NewCreateAzureOpenAiCredentialDtoModelsItemFromString(s string) (CreateAzureOpenAiCredentialDtoModelsItem, error) {
 	switch s {
+	case "gpt-4o-2024-08-06-ptu":
+		return CreateAzureOpenAiCredentialDtoModelsItemGpt4O20240806Ptu, nil
 	case "gpt-4o-2024-08-06":
 		return CreateAzureOpenAiCredentialDtoModelsItemGpt4O20240806, nil
 	case "gpt-4o-mini-2024-07-18":
@@ -19750,7 +20649,6 @@ type CreateWorkflowDto struct {
 	Nodes []*CreateWorkflowDtoNodesItem `json:"nodes,omitempty" url:"nodes,omitempty"`
 	Name  string                        `json:"name" url:"name"`
 	Edges []*Edge                       `json:"edges,omitempty" url:"edges,omitempty"`
-	type_ string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -19777,49 +20675,24 @@ func (c *CreateWorkflowDto) GetEdges() []*Edge {
 	return c.Edges
 }
 
-func (c *CreateWorkflowDto) Type() string {
-	return c.type_
-}
-
 func (c *CreateWorkflowDto) GetExtraProperties() map[string]interface{} {
 	return c.extraProperties
 }
 
 func (c *CreateWorkflowDto) UnmarshalJSON(data []byte) error {
-	type embed CreateWorkflowDto
-	var unmarshaler = struct {
-		embed
-		Type string `json:"type"`
-	}{
-		embed: embed(*c),
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+	type unmarshaler CreateWorkflowDto
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*c = CreateWorkflowDto(unmarshaler.embed)
-	if unmarshaler.Type != "workflow" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", c, "workflow", unmarshaler.Type)
-	}
-	c.type_ = unmarshaler.Type
-	extraProperties, err := internal.ExtractExtraProperties(data, *c, "type")
+	*c = CreateWorkflowDto(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
 	if err != nil {
 		return err
 	}
 	c.extraProperties = extraProperties
 	c.rawJSON = json.RawMessage(data)
 	return nil
-}
-
-func (c *CreateWorkflowDto) MarshalJSON() ([]byte, error) {
-	type embed CreateWorkflowDto
-	var marshaler = struct {
-		embed
-		Type string `json:"type"`
-	}{
-		embed: embed(*c),
-		Type:  "workflow",
-	}
-	return json.Marshal(marshaler)
 }
 
 func (c *CreateWorkflowDto) String() string {
@@ -19835,10 +20708,11 @@ func (c *CreateWorkflowDto) String() string {
 }
 
 type CreateWorkflowDtoNodesItem struct {
-	Say               *Say
-	Gather            *Gather
-	Unknown           interface{}
-	CreateWorkflowDto *CreateWorkflowDto
+	Say        *Say
+	Gather     *Gather
+	ApiRequest *ApiRequest
+	Hangup     *Hangup
+	Transfer   *Transfer
 
 	typ string
 }
@@ -19857,18 +20731,25 @@ func (c *CreateWorkflowDtoNodesItem) GetGather() *Gather {
 	return c.Gather
 }
 
-func (c *CreateWorkflowDtoNodesItem) GetUnknown() interface{} {
+func (c *CreateWorkflowDtoNodesItem) GetApiRequest() *ApiRequest {
 	if c == nil {
 		return nil
 	}
-	return c.Unknown
+	return c.ApiRequest
 }
 
-func (c *CreateWorkflowDtoNodesItem) GetCreateWorkflowDto() *CreateWorkflowDto {
+func (c *CreateWorkflowDtoNodesItem) GetHangup() *Hangup {
 	if c == nil {
 		return nil
 	}
-	return c.CreateWorkflowDto
+	return c.Hangup
+}
+
+func (c *CreateWorkflowDtoNodesItem) GetTransfer() *Transfer {
+	if c == nil {
+		return nil
+	}
+	return c.Transfer
 }
 
 func (c *CreateWorkflowDtoNodesItem) UnmarshalJSON(data []byte) error {
@@ -19884,16 +20765,22 @@ func (c *CreateWorkflowDtoNodesItem) UnmarshalJSON(data []byte) error {
 		c.Gather = valueGather
 		return nil
 	}
-	var valueUnknown interface{}
-	if err := json.Unmarshal(data, &valueUnknown); err == nil {
-		c.typ = "Unknown"
-		c.Unknown = valueUnknown
+	valueApiRequest := new(ApiRequest)
+	if err := json.Unmarshal(data, &valueApiRequest); err == nil {
+		c.typ = "ApiRequest"
+		c.ApiRequest = valueApiRequest
 		return nil
 	}
-	valueCreateWorkflowDto := new(CreateWorkflowDto)
-	if err := json.Unmarshal(data, &valueCreateWorkflowDto); err == nil {
-		c.typ = "CreateWorkflowDto"
-		c.CreateWorkflowDto = valueCreateWorkflowDto
+	valueHangup := new(Hangup)
+	if err := json.Unmarshal(data, &valueHangup); err == nil {
+		c.typ = "Hangup"
+		c.Hangup = valueHangup
+		return nil
+	}
+	valueTransfer := new(Transfer)
+	if err := json.Unmarshal(data, &valueTransfer); err == nil {
+		c.typ = "Transfer"
+		c.Transfer = valueTransfer
 		return nil
 	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
@@ -19906,11 +20793,14 @@ func (c CreateWorkflowDtoNodesItem) MarshalJSON() ([]byte, error) {
 	if c.typ == "Gather" || c.Gather != nil {
 		return json.Marshal(c.Gather)
 	}
-	if c.typ == "Unknown" || c.Unknown != nil {
-		return json.Marshal(c.Unknown)
+	if c.typ == "ApiRequest" || c.ApiRequest != nil {
+		return json.Marshal(c.ApiRequest)
 	}
-	if c.typ == "CreateWorkflowDto" || c.CreateWorkflowDto != nil {
-		return json.Marshal(c.CreateWorkflowDto)
+	if c.typ == "Hangup" || c.Hangup != nil {
+		return json.Marshal(c.Hangup)
+	}
+	if c.typ == "Transfer" || c.Transfer != nil {
+		return json.Marshal(c.Transfer)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
 }
@@ -19918,8 +20808,9 @@ func (c CreateWorkflowDtoNodesItem) MarshalJSON() ([]byte, error) {
 type CreateWorkflowDtoNodesItemVisitor interface {
 	VisitSay(*Say) error
 	VisitGather(*Gather) error
-	VisitUnknown(interface{}) error
-	VisitCreateWorkflowDto(*CreateWorkflowDto) error
+	VisitApiRequest(*ApiRequest) error
+	VisitHangup(*Hangup) error
+	VisitTransfer(*Transfer) error
 }
 
 func (c *CreateWorkflowDtoNodesItem) Accept(visitor CreateWorkflowDtoNodesItemVisitor) error {
@@ -19929,11 +20820,14 @@ func (c *CreateWorkflowDtoNodesItem) Accept(visitor CreateWorkflowDtoNodesItemVi
 	if c.typ == "Gather" || c.Gather != nil {
 		return visitor.VisitGather(c.Gather)
 	}
-	if c.typ == "Unknown" || c.Unknown != nil {
-		return visitor.VisitUnknown(c.Unknown)
+	if c.typ == "ApiRequest" || c.ApiRequest != nil {
+		return visitor.VisitApiRequest(c.ApiRequest)
 	}
-	if c.typ == "CreateWorkflowDto" || c.CreateWorkflowDto != nil {
-		return visitor.VisitCreateWorkflowDto(c.CreateWorkflowDto)
+	if c.typ == "Hangup" || c.Hangup != nil {
+		return visitor.VisitHangup(c.Hangup)
+	}
+	if c.typ == "Transfer" || c.Transfer != nil {
+		return visitor.VisitTransfer(c.Transfer)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", c)
 }
@@ -21592,6 +22486,7 @@ type DeepSeekModel struct {
 	// This is the ID of the knowledge base the model will use.
 	KnowledgeBaseId *string `json:"knowledgeBaseId,omitempty" url:"knowledgeBaseId,omitempty"`
 	// This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b
+	Model DeepSeekModelModel `json:"model" url:"model"`
 	// This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
 	Temperature *float64 `json:"temperature,omitempty" url:"temperature,omitempty"`
 	// This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
@@ -21608,7 +22503,6 @@ type DeepSeekModel struct {
 	//
 	// @default 0
 	NumFastTurns *float64 `json:"numFastTurns,omitempty" url:"numFastTurns,omitempty"`
-	model        string
 	provider     string
 
 	extraProperties map[string]interface{}
@@ -21650,6 +22544,13 @@ func (d *DeepSeekModel) GetKnowledgeBaseId() *string {
 	return d.KnowledgeBaseId
 }
 
+func (d *DeepSeekModel) GetModel() DeepSeekModelModel {
+	if d == nil {
+		return ""
+	}
+	return d.Model
+}
+
 func (d *DeepSeekModel) GetTemperature() *float64 {
 	if d == nil {
 		return nil
@@ -21678,10 +22579,6 @@ func (d *DeepSeekModel) GetNumFastTurns() *float64 {
 	return d.NumFastTurns
 }
 
-func (d *DeepSeekModel) Model() string {
-	return d.model
-}
-
 func (d *DeepSeekModel) Provider() string {
 	return d.provider
 }
@@ -21694,7 +22591,6 @@ func (d *DeepSeekModel) UnmarshalJSON(data []byte) error {
 	type embed DeepSeekModel
 	var unmarshaler = struct {
 		embed
-		Model    string `json:"model"`
 		Provider string `json:"provider"`
 	}{
 		embed: embed(*d),
@@ -21703,15 +22599,11 @@ func (d *DeepSeekModel) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	*d = DeepSeekModel(unmarshaler.embed)
-	if unmarshaler.Model != "deepseek-chat" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", d, "deepseek-chat", unmarshaler.Model)
-	}
-	d.model = unmarshaler.Model
 	if unmarshaler.Provider != "deep-seek" {
 		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", d, "deep-seek", unmarshaler.Provider)
 	}
 	d.provider = unmarshaler.Provider
-	extraProperties, err := internal.ExtractExtraProperties(data, *d, "model", "provider")
+	extraProperties, err := internal.ExtractExtraProperties(data, *d, "provider")
 	if err != nil {
 		return err
 	}
@@ -21724,11 +22616,9 @@ func (d *DeepSeekModel) MarshalJSON() ([]byte, error) {
 	type embed DeepSeekModel
 	var marshaler = struct {
 		embed
-		Model    string `json:"model"`
 		Provider string `json:"provider"`
 	}{
 		embed:    embed(*d),
-		Model:    "deepseek-chat",
 		Provider: "deep-seek",
 	}
 	return json.Marshal(marshaler)
@@ -21744,6 +22634,29 @@ func (d *DeepSeekModel) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", d)
+}
+
+// This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b
+type DeepSeekModelModel string
+
+const (
+	DeepSeekModelModelDeepseekChat     DeepSeekModelModel = "deepseek-chat"
+	DeepSeekModelModelDeepseekReasoner DeepSeekModelModel = "deepseek-reasoner"
+)
+
+func NewDeepSeekModelModelFromString(s string) (DeepSeekModelModel, error) {
+	switch s {
+	case "deepseek-chat":
+		return DeepSeekModelModelDeepseekChat, nil
+	case "deepseek-reasoner":
+		return DeepSeekModelModelDeepseekReasoner, nil
+	}
+	var t DeepSeekModelModel
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (d DeepSeekModelModel) Ptr() *DeepSeekModelModel {
+	return &d
 }
 
 type DeepSeekModelToolsItem struct {
@@ -22089,8 +23002,16 @@ type DeepgramTranscriber struct {
 	//
 	// @default false
 	CodeSwitchingEnabled *bool `json:"codeSwitchingEnabled,omitempty" url:"codeSwitchingEnabled,omitempty"`
+	// If set to true, this will add mip_opt_out=true as a query parameter of all API requests. See https://developers.deepgram.com/docs/the-deepgram-model-improvement-partnership-program#want-to-opt-out
+	//
+	// This will only be used if you are using your own Deepgram API key.
+	//
+	// @default false
+	MipOptOut *bool `json:"mipOptOut,omitempty" url:"mipOptOut,omitempty"`
 	// These keywords are passed to the transcription model to help it pick up use-case specific words. Anything that may not be a common word, like your company name, should be added here.
 	Keywords []string `json:"keywords,omitempty" url:"keywords,omitempty"`
+	// Keyterm Prompting allows you improve Keyword Recall Rate (KRR) for important keyterms or phrases up to 90%.
+	Keyterm []string `json:"keyterm,omitempty" url:"keyterm,omitempty"`
 	// This is the timeout after which Deepgram will send transcription on user silence. You can read in-depth documentation here: https://developers.deepgram.com/docs/endpointing.
 	//
 	// Here are the most important bits:
@@ -22134,11 +23055,25 @@ func (d *DeepgramTranscriber) GetCodeSwitchingEnabled() *bool {
 	return d.CodeSwitchingEnabled
 }
 
+func (d *DeepgramTranscriber) GetMipOptOut() *bool {
+	if d == nil {
+		return nil
+	}
+	return d.MipOptOut
+}
+
 func (d *DeepgramTranscriber) GetKeywords() []string {
 	if d == nil {
 		return nil
 	}
 	return d.Keywords
+}
+
+func (d *DeepgramTranscriber) GetKeyterm() []string {
+	if d == nil {
+		return nil
+	}
+	return d.Keyterm
 }
 
 func (d *DeepgramTranscriber) GetEndpointing() *float64 {
@@ -22493,6 +23428,12 @@ type DeepgramVoice struct {
 	// This is the voice provider that will be used.
 	// This is the provider-specific ID that will be used.
 	VoiceId *DeepgramVoiceId `json:"voiceId,omitempty" url:"voiceId,omitempty"`
+	// If set to true, this will add mip_opt_out=true as a query parameter of all API requests. See https://developers.deepgram.com/docs/the-deepgram-model-improvement-partnership-program#want-to-opt-out
+	//
+	// This will only be used if you are using your own Deepgram API key.
+	//
+	// @default false
+	MipOptOut *bool `json:"mipOptOut,omitempty" url:"mipOptOut,omitempty"`
 	// This is the plan for chunking the model output before it is sent to the voice provider.
 	ChunkPlan *ChunkPlan `json:"chunkPlan,omitempty" url:"chunkPlan,omitempty"`
 	// This is the plan for voice provider fallbacks in the event that the primary voice provider fails.
@@ -22508,6 +23449,13 @@ func (d *DeepgramVoice) GetVoiceId() *DeepgramVoiceId {
 		return nil
 	}
 	return d.VoiceId
+}
+
+func (d *DeepgramVoice) GetMipOptOut() *bool {
+	if d == nil {
+		return nil
+	}
+	return d.MipOptOut
 }
 
 func (d *DeepgramVoice) GetChunkPlan() *ChunkPlan {
@@ -22700,6 +23648,8 @@ type Edge struct {
 	Condition *EdgeCondition `json:"condition,omitempty" url:"condition,omitempty"`
 	From      string         `json:"from" url:"from"`
 	To        string         `json:"to" url:"to"`
+	// This is for metadata you want to store on the edge.
+	Metadata map[string]interface{} `json:"metadata,omitempty" url:"metadata,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -22724,6 +23674,13 @@ func (e *Edge) GetTo() string {
 		return ""
 	}
 	return e.To
+}
+
+func (e *Edge) GetMetadata() map[string]interface{} {
+	if e == nil {
+		return nil
+	}
+	return e.Metadata
 }
 
 func (e *Edge) GetExtraProperties() map[string]interface{} {
@@ -22759,63 +23716,84 @@ func (e *Edge) String() string {
 }
 
 type EdgeCondition struct {
-	SemanticEdgeCondition     *SemanticEdgeCondition
-	ProgrammaticEdgeCondition *ProgrammaticEdgeCondition
+	AiEdgeCondition     *AiEdgeCondition
+	LogicEdgeCondition  *LogicEdgeCondition
+	FailedEdgeCondition *FailedEdgeCondition
 
 	typ string
 }
 
-func (e *EdgeCondition) GetSemanticEdgeCondition() *SemanticEdgeCondition {
+func (e *EdgeCondition) GetAiEdgeCondition() *AiEdgeCondition {
 	if e == nil {
 		return nil
 	}
-	return e.SemanticEdgeCondition
+	return e.AiEdgeCondition
 }
 
-func (e *EdgeCondition) GetProgrammaticEdgeCondition() *ProgrammaticEdgeCondition {
+func (e *EdgeCondition) GetLogicEdgeCondition() *LogicEdgeCondition {
 	if e == nil {
 		return nil
 	}
-	return e.ProgrammaticEdgeCondition
+	return e.LogicEdgeCondition
+}
+
+func (e *EdgeCondition) GetFailedEdgeCondition() *FailedEdgeCondition {
+	if e == nil {
+		return nil
+	}
+	return e.FailedEdgeCondition
 }
 
 func (e *EdgeCondition) UnmarshalJSON(data []byte) error {
-	valueSemanticEdgeCondition := new(SemanticEdgeCondition)
-	if err := json.Unmarshal(data, &valueSemanticEdgeCondition); err == nil {
-		e.typ = "SemanticEdgeCondition"
-		e.SemanticEdgeCondition = valueSemanticEdgeCondition
+	valueAiEdgeCondition := new(AiEdgeCondition)
+	if err := json.Unmarshal(data, &valueAiEdgeCondition); err == nil {
+		e.typ = "AiEdgeCondition"
+		e.AiEdgeCondition = valueAiEdgeCondition
 		return nil
 	}
-	valueProgrammaticEdgeCondition := new(ProgrammaticEdgeCondition)
-	if err := json.Unmarshal(data, &valueProgrammaticEdgeCondition); err == nil {
-		e.typ = "ProgrammaticEdgeCondition"
-		e.ProgrammaticEdgeCondition = valueProgrammaticEdgeCondition
+	valueLogicEdgeCondition := new(LogicEdgeCondition)
+	if err := json.Unmarshal(data, &valueLogicEdgeCondition); err == nil {
+		e.typ = "LogicEdgeCondition"
+		e.LogicEdgeCondition = valueLogicEdgeCondition
+		return nil
+	}
+	valueFailedEdgeCondition := new(FailedEdgeCondition)
+	if err := json.Unmarshal(data, &valueFailedEdgeCondition); err == nil {
+		e.typ = "FailedEdgeCondition"
+		e.FailedEdgeCondition = valueFailedEdgeCondition
 		return nil
 	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, e)
 }
 
 func (e EdgeCondition) MarshalJSON() ([]byte, error) {
-	if e.typ == "SemanticEdgeCondition" || e.SemanticEdgeCondition != nil {
-		return json.Marshal(e.SemanticEdgeCondition)
+	if e.typ == "AiEdgeCondition" || e.AiEdgeCondition != nil {
+		return json.Marshal(e.AiEdgeCondition)
 	}
-	if e.typ == "ProgrammaticEdgeCondition" || e.ProgrammaticEdgeCondition != nil {
-		return json.Marshal(e.ProgrammaticEdgeCondition)
+	if e.typ == "LogicEdgeCondition" || e.LogicEdgeCondition != nil {
+		return json.Marshal(e.LogicEdgeCondition)
+	}
+	if e.typ == "FailedEdgeCondition" || e.FailedEdgeCondition != nil {
+		return json.Marshal(e.FailedEdgeCondition)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", e)
 }
 
 type EdgeConditionVisitor interface {
-	VisitSemanticEdgeCondition(*SemanticEdgeCondition) error
-	VisitProgrammaticEdgeCondition(*ProgrammaticEdgeCondition) error
+	VisitAiEdgeCondition(*AiEdgeCondition) error
+	VisitLogicEdgeCondition(*LogicEdgeCondition) error
+	VisitFailedEdgeCondition(*FailedEdgeCondition) error
 }
 
 func (e *EdgeCondition) Accept(visitor EdgeConditionVisitor) error {
-	if e.typ == "SemanticEdgeCondition" || e.SemanticEdgeCondition != nil {
-		return visitor.VisitSemanticEdgeCondition(e.SemanticEdgeCondition)
+	if e.typ == "AiEdgeCondition" || e.AiEdgeCondition != nil {
+		return visitor.VisitAiEdgeCondition(e.AiEdgeCondition)
 	}
-	if e.typ == "ProgrammaticEdgeCondition" || e.ProgrammaticEdgeCondition != nil {
-		return visitor.VisitProgrammaticEdgeCondition(e.ProgrammaticEdgeCondition)
+	if e.typ == "LogicEdgeCondition" || e.LogicEdgeCondition != nil {
+		return visitor.VisitLogicEdgeCondition(e.LogicEdgeCondition)
+	}
+	if e.typ == "FailedEdgeCondition" || e.FailedEdgeCondition != nil {
+		return visitor.VisitFailedEdgeCondition(e.FailedEdgeCondition)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", e)
 }
@@ -23361,6 +24339,70 @@ func (e *ExactReplacement) String() string {
 	return fmt.Sprintf("%#v", e)
 }
 
+type FailedEdgeCondition struct {
+	type_ string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FailedEdgeCondition) Type() string {
+	return f.type_
+}
+
+func (f *FailedEdgeCondition) GetExtraProperties() map[string]interface{} {
+	return f.extraProperties
+}
+
+func (f *FailedEdgeCondition) UnmarshalJSON(data []byte) error {
+	type embed FailedEdgeCondition
+	var unmarshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*f),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*f = FailedEdgeCondition(unmarshaler.embed)
+	if unmarshaler.Type != "failed" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", f, "failed", unmarshaler.Type)
+	}
+	f.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *f, "type")
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FailedEdgeCondition) MarshalJSON() ([]byte, error) {
+	type embed FailedEdgeCondition
+	var marshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*f),
+		Type:  "failed",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (f *FailedEdgeCondition) String() string {
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
 type FallbackAzureVoice struct {
 	// This is the voice provider that will be used.
 	// This is the provider-specific ID that will be used.
@@ -23551,18 +24593,27 @@ func (f FallbackAzureVoiceVoiceId) Ptr() *FallbackAzureVoiceVoiceId {
 
 type FallbackCartesiaVoice struct {
 	// This is the voice provider that will be used.
+	// The ID of the particular voice you want to use.
+	VoiceId string `json:"voiceId" url:"voiceId"`
 	// This is the model that will be used. This is optional and will default to the correct model for the voiceId.
 	Model *FallbackCartesiaVoiceModel `json:"model,omitempty" url:"model,omitempty"`
 	// This is the language that will be used. This is optional and will default to the correct language for the voiceId.
 	Language *FallbackCartesiaVoiceLanguage `json:"language,omitempty" url:"language,omitempty"`
-	// This is the provider-specific ID that will be used.
-	VoiceId string `json:"voiceId" url:"voiceId"`
+	// Experimental controls for Cartesia voice generation
+	ExperimentalControls *CartesiaExperimentalControls `json:"experimentalControls,omitempty" url:"experimentalControls,omitempty"`
 	// This is the plan for chunking the model output before it is sent to the voice provider.
 	ChunkPlan *ChunkPlan `json:"chunkPlan,omitempty" url:"chunkPlan,omitempty"`
 	provider  string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (f *FallbackCartesiaVoice) GetVoiceId() string {
+	if f == nil {
+		return ""
+	}
+	return f.VoiceId
 }
 
 func (f *FallbackCartesiaVoice) GetModel() *FallbackCartesiaVoiceModel {
@@ -23579,11 +24630,11 @@ func (f *FallbackCartesiaVoice) GetLanguage() *FallbackCartesiaVoiceLanguage {
 	return f.Language
 }
 
-func (f *FallbackCartesiaVoice) GetVoiceId() string {
+func (f *FallbackCartesiaVoice) GetExperimentalControls() *CartesiaExperimentalControls {
 	if f == nil {
-		return ""
+		return nil
 	}
-	return f.VoiceId
+	return f.ExperimentalControls
 }
 
 func (f *FallbackCartesiaVoice) GetChunkPlan() *ChunkPlan {
@@ -23851,6 +24902,12 @@ type FallbackDeepgramVoice struct {
 	// This is the voice provider that will be used.
 	// This is the provider-specific ID that will be used.
 	VoiceId *FallbackDeepgramVoiceId `json:"voiceId,omitempty" url:"voiceId,omitempty"`
+	// If set to true, this will add mip_opt_out=true as a query parameter of all API requests. See https://developers.deepgram.com/docs/the-deepgram-model-improvement-partnership-program#want-to-opt-out
+	//
+	// This will only be used if you are using your own Deepgram API key.
+	//
+	// @default false
+	MipOptOut *bool `json:"mipOptOut,omitempty" url:"mipOptOut,omitempty"`
 	// This is the plan for chunking the model output before it is sent to the voice provider.
 	ChunkPlan *ChunkPlan `json:"chunkPlan,omitempty" url:"chunkPlan,omitempty"`
 	provider  string
@@ -23864,6 +24921,13 @@ func (f *FallbackDeepgramVoice) GetVoiceId() *FallbackDeepgramVoiceId {
 		return nil
 	}
 	return f.VoiceId
+}
+
+func (f *FallbackDeepgramVoice) GetMipOptOut() *bool {
+	if f == nil {
+		return nil
+	}
+	return f.MipOptOut
 }
 
 func (f *FallbackDeepgramVoice) GetChunkPlan() *ChunkPlan {
@@ -25618,6 +26682,7 @@ const (
 	FallbackPlayHtVoiceModelPlayHt20      FallbackPlayHtVoiceModel = "PlayHT2.0"
 	FallbackPlayHtVoiceModelPlayHt20Turbo FallbackPlayHtVoiceModel = "PlayHT2.0-turbo"
 	FallbackPlayHtVoiceModelPlay30Mini    FallbackPlayHtVoiceModel = "Play3.0-mini"
+	FallbackPlayHtVoiceModelPlayDialog    FallbackPlayHtVoiceModel = "PlayDialog"
 )
 
 func NewFallbackPlayHtVoiceModelFromString(s string) (FallbackPlayHtVoiceModel, error) {
@@ -25628,6 +26693,8 @@ func NewFallbackPlayHtVoiceModelFromString(s string) (FallbackPlayHtVoiceModel, 
 		return FallbackPlayHtVoiceModelPlayHt20Turbo, nil
 	case "Play3.0-mini":
 		return FallbackPlayHtVoiceModelPlay30Mini, nil
+	case "PlayDialog":
+		return FallbackPlayHtVoiceModelPlayDialog, nil
 	}
 	var t FallbackPlayHtVoiceModel
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -25703,26 +26770,6 @@ func (f *FallbackRimeAiVoiceId) Accept(visitor FallbackRimeAiVoiceIdVisitor) err
 type FallbackRimeAiVoiceIdEnum string
 
 const (
-	FallbackRimeAiVoiceIdEnumMarsh      FallbackRimeAiVoiceIdEnum = "marsh"
-	FallbackRimeAiVoiceIdEnumBayou      FallbackRimeAiVoiceIdEnum = "bayou"
-	FallbackRimeAiVoiceIdEnumCreek      FallbackRimeAiVoiceIdEnum = "creek"
-	FallbackRimeAiVoiceIdEnumBrook      FallbackRimeAiVoiceIdEnum = "brook"
-	FallbackRimeAiVoiceIdEnumFlower     FallbackRimeAiVoiceIdEnum = "flower"
-	FallbackRimeAiVoiceIdEnumSpore      FallbackRimeAiVoiceIdEnum = "spore"
-	FallbackRimeAiVoiceIdEnumGlacier    FallbackRimeAiVoiceIdEnum = "glacier"
-	FallbackRimeAiVoiceIdEnumGulch      FallbackRimeAiVoiceIdEnum = "gulch"
-	FallbackRimeAiVoiceIdEnumAlpine     FallbackRimeAiVoiceIdEnum = "alpine"
-	FallbackRimeAiVoiceIdEnumCove       FallbackRimeAiVoiceIdEnum = "cove"
-	FallbackRimeAiVoiceIdEnumLagoon     FallbackRimeAiVoiceIdEnum = "lagoon"
-	FallbackRimeAiVoiceIdEnumTundra     FallbackRimeAiVoiceIdEnum = "tundra"
-	FallbackRimeAiVoiceIdEnumSteppe     FallbackRimeAiVoiceIdEnum = "steppe"
-	FallbackRimeAiVoiceIdEnumMesa       FallbackRimeAiVoiceIdEnum = "mesa"
-	FallbackRimeAiVoiceIdEnumGrove      FallbackRimeAiVoiceIdEnum = "grove"
-	FallbackRimeAiVoiceIdEnumRainforest FallbackRimeAiVoiceIdEnum = "rainforest"
-	FallbackRimeAiVoiceIdEnumMoraine    FallbackRimeAiVoiceIdEnum = "moraine"
-	FallbackRimeAiVoiceIdEnumWildflower FallbackRimeAiVoiceIdEnum = "wildflower"
-	FallbackRimeAiVoiceIdEnumPeak       FallbackRimeAiVoiceIdEnum = "peak"
-	FallbackRimeAiVoiceIdEnumBoulder    FallbackRimeAiVoiceIdEnum = "boulder"
 	FallbackRimeAiVoiceIdEnumAbbie      FallbackRimeAiVoiceIdEnum = "abbie"
 	FallbackRimeAiVoiceIdEnumAllison    FallbackRimeAiVoiceIdEnum = "allison"
 	FallbackRimeAiVoiceIdEnumAlly       FallbackRimeAiVoiceIdEnum = "ally"
@@ -25784,50 +26831,32 @@ const (
 	FallbackRimeAiVoiceIdEnumTyler      FallbackRimeAiVoiceIdEnum = "tyler"
 	FallbackRimeAiVoiceIdEnumViv        FallbackRimeAiVoiceIdEnum = "viv"
 	FallbackRimeAiVoiceIdEnumYadira     FallbackRimeAiVoiceIdEnum = "yadira"
+	FallbackRimeAiVoiceIdEnumMarsh      FallbackRimeAiVoiceIdEnum = "marsh"
+	FallbackRimeAiVoiceIdEnumBayou      FallbackRimeAiVoiceIdEnum = "bayou"
+	FallbackRimeAiVoiceIdEnumCreek      FallbackRimeAiVoiceIdEnum = "creek"
+	FallbackRimeAiVoiceIdEnumBrook      FallbackRimeAiVoiceIdEnum = "brook"
+	FallbackRimeAiVoiceIdEnumFlower     FallbackRimeAiVoiceIdEnum = "flower"
+	FallbackRimeAiVoiceIdEnumSpore      FallbackRimeAiVoiceIdEnum = "spore"
+	FallbackRimeAiVoiceIdEnumGlacier    FallbackRimeAiVoiceIdEnum = "glacier"
+	FallbackRimeAiVoiceIdEnumGulch      FallbackRimeAiVoiceIdEnum = "gulch"
+	FallbackRimeAiVoiceIdEnumAlpine     FallbackRimeAiVoiceIdEnum = "alpine"
+	FallbackRimeAiVoiceIdEnumCove       FallbackRimeAiVoiceIdEnum = "cove"
+	FallbackRimeAiVoiceIdEnumLagoon     FallbackRimeAiVoiceIdEnum = "lagoon"
+	FallbackRimeAiVoiceIdEnumTundra     FallbackRimeAiVoiceIdEnum = "tundra"
+	FallbackRimeAiVoiceIdEnumSteppe     FallbackRimeAiVoiceIdEnum = "steppe"
+	FallbackRimeAiVoiceIdEnumMesa       FallbackRimeAiVoiceIdEnum = "mesa"
+	FallbackRimeAiVoiceIdEnumGrove      FallbackRimeAiVoiceIdEnum = "grove"
+	FallbackRimeAiVoiceIdEnumRainforest FallbackRimeAiVoiceIdEnum = "rainforest"
+	FallbackRimeAiVoiceIdEnumMoraine    FallbackRimeAiVoiceIdEnum = "moraine"
+	FallbackRimeAiVoiceIdEnumWildflower FallbackRimeAiVoiceIdEnum = "wildflower"
+	FallbackRimeAiVoiceIdEnumPeak       FallbackRimeAiVoiceIdEnum = "peak"
+	FallbackRimeAiVoiceIdEnumBoulder    FallbackRimeAiVoiceIdEnum = "boulder"
+	FallbackRimeAiVoiceIdEnumGypsum     FallbackRimeAiVoiceIdEnum = "gypsum"
+	FallbackRimeAiVoiceIdEnumZest       FallbackRimeAiVoiceIdEnum = "zest"
 )
 
 func NewFallbackRimeAiVoiceIdEnumFromString(s string) (FallbackRimeAiVoiceIdEnum, error) {
 	switch s {
-	case "marsh":
-		return FallbackRimeAiVoiceIdEnumMarsh, nil
-	case "bayou":
-		return FallbackRimeAiVoiceIdEnumBayou, nil
-	case "creek":
-		return FallbackRimeAiVoiceIdEnumCreek, nil
-	case "brook":
-		return FallbackRimeAiVoiceIdEnumBrook, nil
-	case "flower":
-		return FallbackRimeAiVoiceIdEnumFlower, nil
-	case "spore":
-		return FallbackRimeAiVoiceIdEnumSpore, nil
-	case "glacier":
-		return FallbackRimeAiVoiceIdEnumGlacier, nil
-	case "gulch":
-		return FallbackRimeAiVoiceIdEnumGulch, nil
-	case "alpine":
-		return FallbackRimeAiVoiceIdEnumAlpine, nil
-	case "cove":
-		return FallbackRimeAiVoiceIdEnumCove, nil
-	case "lagoon":
-		return FallbackRimeAiVoiceIdEnumLagoon, nil
-	case "tundra":
-		return FallbackRimeAiVoiceIdEnumTundra, nil
-	case "steppe":
-		return FallbackRimeAiVoiceIdEnumSteppe, nil
-	case "mesa":
-		return FallbackRimeAiVoiceIdEnumMesa, nil
-	case "grove":
-		return FallbackRimeAiVoiceIdEnumGrove, nil
-	case "rainforest":
-		return FallbackRimeAiVoiceIdEnumRainforest, nil
-	case "moraine":
-		return FallbackRimeAiVoiceIdEnumMoraine, nil
-	case "wildflower":
-		return FallbackRimeAiVoiceIdEnumWildflower, nil
-	case "peak":
-		return FallbackRimeAiVoiceIdEnumPeak, nil
-	case "boulder":
-		return FallbackRimeAiVoiceIdEnumBoulder, nil
 	case "abbie":
 		return FallbackRimeAiVoiceIdEnumAbbie, nil
 	case "allison":
@@ -25950,6 +26979,50 @@ func NewFallbackRimeAiVoiceIdEnumFromString(s string) (FallbackRimeAiVoiceIdEnum
 		return FallbackRimeAiVoiceIdEnumViv, nil
 	case "yadira":
 		return FallbackRimeAiVoiceIdEnumYadira, nil
+	case "marsh":
+		return FallbackRimeAiVoiceIdEnumMarsh, nil
+	case "bayou":
+		return FallbackRimeAiVoiceIdEnumBayou, nil
+	case "creek":
+		return FallbackRimeAiVoiceIdEnumCreek, nil
+	case "brook":
+		return FallbackRimeAiVoiceIdEnumBrook, nil
+	case "flower":
+		return FallbackRimeAiVoiceIdEnumFlower, nil
+	case "spore":
+		return FallbackRimeAiVoiceIdEnumSpore, nil
+	case "glacier":
+		return FallbackRimeAiVoiceIdEnumGlacier, nil
+	case "gulch":
+		return FallbackRimeAiVoiceIdEnumGulch, nil
+	case "alpine":
+		return FallbackRimeAiVoiceIdEnumAlpine, nil
+	case "cove":
+		return FallbackRimeAiVoiceIdEnumCove, nil
+	case "lagoon":
+		return FallbackRimeAiVoiceIdEnumLagoon, nil
+	case "tundra":
+		return FallbackRimeAiVoiceIdEnumTundra, nil
+	case "steppe":
+		return FallbackRimeAiVoiceIdEnumSteppe, nil
+	case "mesa":
+		return FallbackRimeAiVoiceIdEnumMesa, nil
+	case "grove":
+		return FallbackRimeAiVoiceIdEnumGrove, nil
+	case "rainforest":
+		return FallbackRimeAiVoiceIdEnumRainforest, nil
+	case "moraine":
+		return FallbackRimeAiVoiceIdEnumMoraine, nil
+	case "wildflower":
+		return FallbackRimeAiVoiceIdEnumWildflower, nil
+	case "peak":
+		return FallbackRimeAiVoiceIdEnumPeak, nil
+	case "boulder":
+		return FallbackRimeAiVoiceIdEnumBoulder, nil
+	case "gypsum":
+		return FallbackRimeAiVoiceIdEnumGypsum, nil
+	case "zest":
+		return FallbackRimeAiVoiceIdEnumZest, nil
 	}
 	var t FallbackRimeAiVoiceIdEnum
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -26064,8 +27137,9 @@ func (f *FallbackRimeAiVoice) String() string {
 type FallbackRimeAiVoiceModel string
 
 const (
-	FallbackRimeAiVoiceModelV1   FallbackRimeAiVoiceModel = "v1"
-	FallbackRimeAiVoiceModelMist FallbackRimeAiVoiceModel = "mist"
+	FallbackRimeAiVoiceModelV1     FallbackRimeAiVoiceModel = "v1"
+	FallbackRimeAiVoiceModelMist   FallbackRimeAiVoiceModel = "mist"
+	FallbackRimeAiVoiceModelMistv2 FallbackRimeAiVoiceModel = "mistv2"
 )
 
 func NewFallbackRimeAiVoiceModelFromString(s string) (FallbackRimeAiVoiceModel, error) {
@@ -26074,6 +27148,8 @@ func NewFallbackRimeAiVoiceModelFromString(s string) (FallbackRimeAiVoiceModel, 
 		return FallbackRimeAiVoiceModelV1, nil
 	case "mist":
 		return FallbackRimeAiVoiceModelMist, nil
+	case "mistv2":
+		return FallbackRimeAiVoiceModelMistv2, nil
 	}
 	var t FallbackRimeAiVoiceModel
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -26560,6 +27636,11 @@ type FormatPlan struct {
 	//
 	// @default []
 	Replacements []*FormatPlanReplacementsItem `json:"replacements,omitempty" url:"replacements,omitempty"`
+	// List of formatters to apply. If not provided, all default formatters will be applied.
+	// If provided, only the specified formatters will be applied.
+	// Note: Some essential formatters like angle bracket removal will always be applied.
+	// @default undefined
+	FormattersEnabled []FormatPlanFormattersEnabledItem `json:"formattersEnabled,omitempty" url:"formattersEnabled,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -26584,6 +27665,13 @@ func (f *FormatPlan) GetReplacements() []*FormatPlanReplacementsItem {
 		return nil
 	}
 	return f.Replacements
+}
+
+func (f *FormatPlan) GetFormattersEnabled() []FormatPlanFormattersEnabledItem {
+	if f == nil {
+		return nil
+	}
+	return f.FormattersEnabled
 }
 
 func (f *FormatPlan) GetExtraProperties() map[string]interface{} {
@@ -26616,6 +27704,70 @@ func (f *FormatPlan) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", f)
+}
+
+type FormatPlanFormattersEnabledItem string
+
+const (
+	FormatPlanFormattersEnabledItemMarkdown     FormatPlanFormattersEnabledItem = "markdown"
+	FormatPlanFormattersEnabledItemAsterisk     FormatPlanFormattersEnabledItem = "asterisk"
+	FormatPlanFormattersEnabledItemQuote        FormatPlanFormattersEnabledItem = "quote"
+	FormatPlanFormattersEnabledItemDash         FormatPlanFormattersEnabledItem = "dash"
+	FormatPlanFormattersEnabledItemNewline      FormatPlanFormattersEnabledItem = "newline"
+	FormatPlanFormattersEnabledItemColon        FormatPlanFormattersEnabledItem = "colon"
+	FormatPlanFormattersEnabledItemAcronym      FormatPlanFormattersEnabledItem = "acronym"
+	FormatPlanFormattersEnabledItemDollarAmount FormatPlanFormattersEnabledItem = "dollarAmount"
+	FormatPlanFormattersEnabledItemEmail        FormatPlanFormattersEnabledItem = "email"
+	FormatPlanFormattersEnabledItemDate         FormatPlanFormattersEnabledItem = "date"
+	FormatPlanFormattersEnabledItemTime         FormatPlanFormattersEnabledItem = "time"
+	FormatPlanFormattersEnabledItemDistance     FormatPlanFormattersEnabledItem = "distance"
+	FormatPlanFormattersEnabledItemUnit         FormatPlanFormattersEnabledItem = "unit"
+	FormatPlanFormattersEnabledItemPercentage   FormatPlanFormattersEnabledItem = "percentage"
+	FormatPlanFormattersEnabledItemPhoneNumber  FormatPlanFormattersEnabledItem = "phoneNumber"
+	FormatPlanFormattersEnabledItemNumber       FormatPlanFormattersEnabledItem = "number"
+)
+
+func NewFormatPlanFormattersEnabledItemFromString(s string) (FormatPlanFormattersEnabledItem, error) {
+	switch s {
+	case "markdown":
+		return FormatPlanFormattersEnabledItemMarkdown, nil
+	case "asterisk":
+		return FormatPlanFormattersEnabledItemAsterisk, nil
+	case "quote":
+		return FormatPlanFormattersEnabledItemQuote, nil
+	case "dash":
+		return FormatPlanFormattersEnabledItemDash, nil
+	case "newline":
+		return FormatPlanFormattersEnabledItemNewline, nil
+	case "colon":
+		return FormatPlanFormattersEnabledItemColon, nil
+	case "acronym":
+		return FormatPlanFormattersEnabledItemAcronym, nil
+	case "dollarAmount":
+		return FormatPlanFormattersEnabledItemDollarAmount, nil
+	case "email":
+		return FormatPlanFormattersEnabledItemEmail, nil
+	case "date":
+		return FormatPlanFormattersEnabledItemDate, nil
+	case "time":
+		return FormatPlanFormattersEnabledItemTime, nil
+	case "distance":
+		return FormatPlanFormattersEnabledItemDistance, nil
+	case "unit":
+		return FormatPlanFormattersEnabledItemUnit, nil
+	case "percentage":
+		return FormatPlanFormattersEnabledItemPercentage, nil
+	case "phoneNumber":
+		return FormatPlanFormattersEnabledItemPhoneNumber, nil
+	case "number":
+		return FormatPlanFormattersEnabledItemNumber, nil
+	}
+	var t FormatPlanFormattersEnabledItem
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (f FormatPlanFormattersEnabledItem) Ptr() *FormatPlanFormattersEnabledItem {
+	return &f
 }
 
 type FormatPlanReplacementsItem struct {
@@ -26992,27 +28144,59 @@ func (f *FunctionToolWithToolCallMessagesItem) Accept(visitor FunctionToolWithTo
 }
 
 type Gather struct {
-	Schema      *JsonSchema `json:"schema,omitempty" url:"schema,omitempty"`
-	Instruction string      `json:"instruction" url:"instruction"`
-	Name        string      `json:"name" url:"name"`
-	type_       string
+	Output *JsonSchema `json:"output,omitempty" url:"output,omitempty"`
+	// This is whether or not the workflow should read back the gathered data to the user, and ask about its correctness.
+	ConfirmContent *bool `json:"confirmContent,omitempty" url:"confirmContent,omitempty"`
+	// This is a list of hooks for a task.
+	// Each hook is a list of tasks to run on a trigger (such as on start, on failure, etc).
+	// Only Say is supported for now.
+	Hooks []*Hook `json:"hooks,omitempty" url:"hooks,omitempty"`
+	// This is the number of times we should try to gather the information from the user before we failover to the fail path. An example of this would be a user refusing to give their phone number for privacy reasons, and then going down a different path on account of this
+	MaxRetries *float64 `json:"maxRetries,omitempty" url:"maxRetries,omitempty"`
+	// This is a liquid templating string. On the first call to Gather, the template will be filled out with variables from the context, and will be spoken verbatim to the user. An example would be "Base on your zipcode, it looks like you could be in one of these counties: {{ counties | join: ", " }}. Which one do you live in?"
+	LiteralTemplate *string `json:"literalTemplate,omitempty" url:"literalTemplate,omitempty"`
+	Name            string  `json:"name" url:"name"`
+	// This is for metadata you want to store on the task.
+	Metadata map[string]interface{} `json:"metadata,omitempty" url:"metadata,omitempty"`
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
 }
 
-func (g *Gather) GetSchema() *JsonSchema {
+func (g *Gather) GetOutput() *JsonSchema {
 	if g == nil {
 		return nil
 	}
-	return g.Schema
+	return g.Output
 }
 
-func (g *Gather) GetInstruction() string {
+func (g *Gather) GetConfirmContent() *bool {
 	if g == nil {
-		return ""
+		return nil
 	}
-	return g.Instruction
+	return g.ConfirmContent
+}
+
+func (g *Gather) GetHooks() []*Hook {
+	if g == nil {
+		return nil
+	}
+	return g.Hooks
+}
+
+func (g *Gather) GetMaxRetries() *float64 {
+	if g == nil {
+		return nil
+	}
+	return g.MaxRetries
+}
+
+func (g *Gather) GetLiteralTemplate() *string {
+	if g == nil {
+		return nil
+	}
+	return g.LiteralTemplate
 }
 
 func (g *Gather) GetName() string {
@@ -27020,6 +28204,13 @@ func (g *Gather) GetName() string {
 		return ""
 	}
 	return g.Name
+}
+
+func (g *Gather) GetMetadata() map[string]interface{} {
+	if g == nil {
+		return nil
+	}
+	return g.Metadata
 }
 
 func (g *Gather) Type() string {
@@ -28978,17 +30169,29 @@ func (g *GoogleModel) String() string {
 type GoogleModelModel string
 
 const (
-	GoogleModelModelGemini20FlashExp         GoogleModelModel = "gemini-2.0-flash-exp"
-	GoogleModelModelGemini20FlashRealtimeExp GoogleModelModel = "gemini-2.0-flash-realtime-exp"
-	GoogleModelModelGemini15Flash            GoogleModelModel = "gemini-1.5-flash"
-	GoogleModelModelGemini15Flash002         GoogleModelModel = "gemini-1.5-flash-002"
-	GoogleModelModelGemini15Pro              GoogleModelModel = "gemini-1.5-pro"
-	GoogleModelModelGemini15Pro002           GoogleModelModel = "gemini-1.5-pro-002"
-	GoogleModelModelGemini10Pro              GoogleModelModel = "gemini-1.0-pro"
+	GoogleModelModelGemini20FlashThinkingExp     GoogleModelModel = "gemini-2.0-flash-thinking-exp"
+	GoogleModelModelGemini20ProExp0205           GoogleModelModel = "gemini-2.0-pro-exp-02-05"
+	GoogleModelModelGemini20Flash                GoogleModelModel = "gemini-2.0-flash"
+	GoogleModelModelGemini20FlashLitePreview0205 GoogleModelModel = "gemini-2.0-flash-lite-preview-02-05"
+	GoogleModelModelGemini20FlashExp             GoogleModelModel = "gemini-2.0-flash-exp"
+	GoogleModelModelGemini20FlashRealtimeExp     GoogleModelModel = "gemini-2.0-flash-realtime-exp"
+	GoogleModelModelGemini15Flash                GoogleModelModel = "gemini-1.5-flash"
+	GoogleModelModelGemini15Flash002             GoogleModelModel = "gemini-1.5-flash-002"
+	GoogleModelModelGemini15Pro                  GoogleModelModel = "gemini-1.5-pro"
+	GoogleModelModelGemini15Pro002               GoogleModelModel = "gemini-1.5-pro-002"
+	GoogleModelModelGemini10Pro                  GoogleModelModel = "gemini-1.0-pro"
 )
 
 func NewGoogleModelModelFromString(s string) (GoogleModelModel, error) {
 	switch s {
+	case "gemini-2.0-flash-thinking-exp":
+		return GoogleModelModelGemini20FlashThinkingExp, nil
+	case "gemini-2.0-pro-exp-02-05":
+		return GoogleModelModelGemini20ProExp0205, nil
+	case "gemini-2.0-flash":
+		return GoogleModelModelGemini20Flash, nil
+	case "gemini-2.0-flash-lite-preview-02-05":
+		return GoogleModelModelGemini20FlashLitePreview0205, nil
 	case "gemini-2.0-flash-exp":
 		return GoogleModelModelGemini20FlashExp, nil
 	case "gemini-2.0-flash-realtime-exp":
@@ -29563,18 +30766,21 @@ func (g *GroqModel) String() string {
 type GroqModelModel string
 
 const (
-	GroqModelModelLlama3370BVersatile  GroqModelModel = "llama-3.3-70b-versatile"
-	GroqModelModelLlama31405BReasoning GroqModelModel = "llama-3.1-405b-reasoning"
-	GroqModelModelLlama3170BVersatile  GroqModelModel = "llama-3.1-70b-versatile"
-	GroqModelModelLlama318BInstant     GroqModelModel = "llama-3.1-8b-instant"
-	GroqModelModelMixtral8X7B32768     GroqModelModel = "mixtral-8x7b-32768"
-	GroqModelModelLlama38B8192         GroqModelModel = "llama3-8b-8192"
-	GroqModelModelLlama370B8192        GroqModelModel = "llama3-70b-8192"
-	GroqModelModelGemma29BIt           GroqModelModel = "gemma2-9b-it"
+	GroqModelModelDeepseekR1DistillLlama70B GroqModelModel = "deepseek-r1-distill-llama-70b"
+	GroqModelModelLlama3370BVersatile       GroqModelModel = "llama-3.3-70b-versatile"
+	GroqModelModelLlama31405BReasoning      GroqModelModel = "llama-3.1-405b-reasoning"
+	GroqModelModelLlama3170BVersatile       GroqModelModel = "llama-3.1-70b-versatile"
+	GroqModelModelLlama318BInstant          GroqModelModel = "llama-3.1-8b-instant"
+	GroqModelModelMixtral8X7B32768          GroqModelModel = "mixtral-8x7b-32768"
+	GroqModelModelLlama38B8192              GroqModelModel = "llama3-8b-8192"
+	GroqModelModelLlama370B8192             GroqModelModel = "llama3-70b-8192"
+	GroqModelModelGemma29BIt                GroqModelModel = "gemma2-9b-it"
 )
 
 func NewGroqModelModelFromString(s string) (GroqModelModel, error) {
 	switch s {
+	case "deepseek-r1-distill-llama-70b":
+		return GroqModelModelDeepseekR1DistillLlama70B, nil
 	case "llama-3.3-70b-versatile":
 		return GroqModelModelLlama3370BVersatile, nil
 	case "llama-3.1-405b-reasoning":
@@ -30014,6 +31220,166 @@ func (h *HandoffStepBlock) Accept(visitor HandoffStepBlockVisitor) error {
 		return visitor.VisitCreateWorkflowBlockDto(h.CreateWorkflowBlockDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", h)
+}
+
+type Hangup struct {
+	Name string `json:"name" url:"name"`
+	// This is for metadata you want to store on the task.
+	Metadata map[string]interface{} `json:"metadata,omitempty" url:"metadata,omitempty"`
+	type_    string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (h *Hangup) GetName() string {
+	if h == nil {
+		return ""
+	}
+	return h.Name
+}
+
+func (h *Hangup) GetMetadata() map[string]interface{} {
+	if h == nil {
+		return nil
+	}
+	return h.Metadata
+}
+
+func (h *Hangup) Type() string {
+	return h.type_
+}
+
+func (h *Hangup) GetExtraProperties() map[string]interface{} {
+	return h.extraProperties
+}
+
+func (h *Hangup) UnmarshalJSON(data []byte) error {
+	type embed Hangup
+	var unmarshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*h),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*h = Hangup(unmarshaler.embed)
+	if unmarshaler.Type != "hangup" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", h, "hangup", unmarshaler.Type)
+	}
+	h.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *h, "type")
+	if err != nil {
+		return err
+	}
+	h.extraProperties = extraProperties
+	h.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (h *Hangup) MarshalJSON() ([]byte, error) {
+	type embed Hangup
+	var marshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*h),
+		Type:  "hangup",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (h *Hangup) String() string {
+	if len(h.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(h.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(h); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", h)
+}
+
+type Hook struct {
+	On HookOn     `json:"on" url:"on"`
+	Do []*SayHook `json:"do,omitempty" url:"do,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (h *Hook) GetOn() HookOn {
+	if h == nil {
+		return ""
+	}
+	return h.On
+}
+
+func (h *Hook) GetDo() []*SayHook {
+	if h == nil {
+		return nil
+	}
+	return h.Do
+}
+
+func (h *Hook) GetExtraProperties() map[string]interface{} {
+	return h.extraProperties
+}
+
+func (h *Hook) UnmarshalJSON(data []byte) error {
+	type unmarshaler Hook
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*h = Hook(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *h)
+	if err != nil {
+		return err
+	}
+	h.extraProperties = extraProperties
+	h.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (h *Hook) String() string {
+	if len(h.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(h.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(h); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", h)
+}
+
+type HookOn string
+
+const (
+	HookOnTaskStart              HookOn = "task.start"
+	HookOnTaskOutputConfirmation HookOn = "task.output.confirmation"
+	HookOnTaskDelayed            HookOn = "task.delayed"
+)
+
+func NewHookOnFromString(s string) (HookOn, error) {
+	switch s {
+	case "task.start":
+		return HookOnTaskStart, nil
+	case "task.output.confirmation":
+		return HookOnTaskOutputConfirmation, nil
+	case "task.delayed":
+		return HookOnTaskDelayed, nil
+	}
+	var t HookOn
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (h HookOn) Ptr() *HookOn {
+	return &h
 }
 
 type ImportVonagePhoneNumberDto struct {
@@ -30667,8 +32033,9 @@ func (i *InflectionAiModelToolsItem) Accept(visitor InflectionAiModelToolsItemVi
 }
 
 type InviteUserDto struct {
-	Emails []string          `json:"emails,omitempty" url:"emails,omitempty"`
-	Role   InviteUserDtoRole `json:"role" url:"role"`
+	Emails     []string          `json:"emails,omitempty" url:"emails,omitempty"`
+	Role       InviteUserDtoRole `json:"role" url:"role"`
+	RedirectTo *string           `json:"redirectTo,omitempty" url:"redirectTo,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -30686,6 +32053,13 @@ func (i *InviteUserDto) GetRole() InviteUserDtoRole {
 		return ""
 	}
 	return i.Role
+}
+
+func (i *InviteUserDto) GetRedirectTo() *string {
+	if i == nil {
+		return nil
+	}
+	return i.RedirectTo
 }
 
 func (i *InviteUserDto) GetExtraProperties() map[string]interface{} {
@@ -30770,6 +32144,12 @@ type JsonSchema struct {
 	//
 	// This only makes sense if the type is "object".
 	Required []string `json:"required,omitempty" url:"required,omitempty"`
+	// This is a regex that will be used to validate data in question.
+	Regex *string `json:"regex,omitempty" url:"regex,omitempty"`
+	// This the value that will be used in filling the property.
+	Value *string `json:"value,omitempty" url:"value,omitempty"`
+	// This the target variable that will be filled with the value of this property.
+	Target *string `json:"target,omitempty" url:"target,omitempty"`
 	// This array specifies the allowed values that can be used to restrict the output of the model.
 	Enum []string `json:"enum,omitempty" url:"enum,omitempty"`
 
@@ -30810,6 +32190,27 @@ func (j *JsonSchema) GetRequired() []string {
 		return nil
 	}
 	return j.Required
+}
+
+func (j *JsonSchema) GetRegex() *string {
+	if j == nil {
+		return nil
+	}
+	return j.Regex
+}
+
+func (j *JsonSchema) GetValue() *string {
+	if j == nil {
+		return nil
+	}
+	return j.Value
+}
+
+func (j *JsonSchema) GetTarget() *string {
+	if j == nil {
+		return nil
+	}
+	return j.Target
 }
 
 func (j *JsonSchema) GetEnum() []string {
@@ -31415,6 +32816,78 @@ func (l *LmntVoice) String() string {
 	return fmt.Sprintf("%#v", l)
 }
 
+type LogicEdgeCondition struct {
+	Liquid string `json:"liquid" url:"liquid"`
+	type_  string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (l *LogicEdgeCondition) GetLiquid() string {
+	if l == nil {
+		return ""
+	}
+	return l.Liquid
+}
+
+func (l *LogicEdgeCondition) Type() string {
+	return l.type_
+}
+
+func (l *LogicEdgeCondition) GetExtraProperties() map[string]interface{} {
+	return l.extraProperties
+}
+
+func (l *LogicEdgeCondition) UnmarshalJSON(data []byte) error {
+	type embed LogicEdgeCondition
+	var unmarshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*l),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*l = LogicEdgeCondition(unmarshaler.embed)
+	if unmarshaler.Type != "logic" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", l, "logic", unmarshaler.Type)
+	}
+	l.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *l, "type")
+	if err != nil {
+		return err
+	}
+	l.extraProperties = extraProperties
+	l.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (l *LogicEdgeCondition) MarshalJSON() ([]byte, error) {
+	type embed LogicEdgeCondition
+	var marshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*l),
+		Type:  "logic",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (l *LogicEdgeCondition) String() string {
+	if len(l.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(l.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(l); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", l)
+}
+
 type MakeCredential struct {
 	// Team ID
 	TeamId string `json:"teamId" url:"teamId"`
@@ -31981,6 +33454,10 @@ type MessagePlan struct {
 	//
 	// @default 10
 	IdleTimeoutSeconds *float64 `json:"idleTimeoutSeconds,omitempty" url:"idleTimeoutSeconds,omitempty"`
+	// This is the message that the assistant will say if the call ends due to silence.
+	//
+	// If unspecified, it will hang up without saying anything.
+	SilenceTimeoutMessage *string `json:"silenceTimeoutMessage,omitempty" url:"silenceTimeoutMessage,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -32005,6 +33482,13 @@ func (m *MessagePlan) GetIdleTimeoutSeconds() *float64 {
 		return nil
 	}
 	return m.IdleTimeoutSeconds
+}
+
+func (m *MessagePlan) GetSilenceTimeoutMessage() *string {
+	if m == nil {
+		return nil
+	}
+	return m.SilenceTimeoutMessage
 }
 
 func (m *MessagePlan) GetExtraProperties() map[string]interface{} {
@@ -33139,8 +34623,7 @@ type OpenAiModel struct {
 	// This is the OpenAI model that will be used.
 	Model OpenAiModelModel `json:"model" url:"model"`
 	// These are the fallback models that will be used if the primary model fails. This shouldn't be specified unless you have a specific reason to do so. Vapi will automatically find the fastest fallbacks that make sense.
-	FallbackModels         []OpenAiModelFallbackModelsItem `json:"fallbackModels,omitempty" url:"fallbackModels,omitempty"`
-	SemanticCachingEnabled *bool                           `json:"semanticCachingEnabled,omitempty" url:"semanticCachingEnabled,omitempty"`
+	FallbackModels []OpenAiModelFallbackModelsItem `json:"fallbackModels,omitempty" url:"fallbackModels,omitempty"`
 	// This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
 	Temperature *float64 `json:"temperature,omitempty" url:"temperature,omitempty"`
 	// This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
@@ -33210,13 +34693,6 @@ func (o *OpenAiModel) GetFallbackModels() []OpenAiModelFallbackModelsItem {
 		return nil
 	}
 	return o.FallbackModels
-}
-
-func (o *OpenAiModel) GetSemanticCachingEnabled() *bool {
-	if o == nil {
-		return nil
-	}
-	return o.SemanticCachingEnabled
 }
 
 func (o *OpenAiModel) GetTemperature() *float64 {
@@ -33307,6 +34783,8 @@ func (o *OpenAiModel) String() string {
 type OpenAiModelFallbackModelsItem string
 
 const (
+	OpenAiModelFallbackModelsItemChatgpt4OLatest                  OpenAiModelFallbackModelsItem = "chatgpt-4o-latest"
+	OpenAiModelFallbackModelsItemO3Mini                           OpenAiModelFallbackModelsItem = "o3-mini"
 	OpenAiModelFallbackModelsItemO1Preview                        OpenAiModelFallbackModelsItem = "o1-preview"
 	OpenAiModelFallbackModelsItemO1Preview20240912                OpenAiModelFallbackModelsItem = "o1-preview-2024-09-12"
 	OpenAiModelFallbackModelsItemO1Mini                           OpenAiModelFallbackModelsItem = "o1-mini"
@@ -33336,6 +34814,10 @@ const (
 
 func NewOpenAiModelFallbackModelsItemFromString(s string) (OpenAiModelFallbackModelsItem, error) {
 	switch s {
+	case "chatgpt-4o-latest":
+		return OpenAiModelFallbackModelsItemChatgpt4OLatest, nil
+	case "o3-mini":
+		return OpenAiModelFallbackModelsItemO3Mini, nil
 	case "o1-preview":
 		return OpenAiModelFallbackModelsItemO1Preview, nil
 	case "o1-preview-2024-09-12":
@@ -33399,6 +34881,8 @@ func (o OpenAiModelFallbackModelsItem) Ptr() *OpenAiModelFallbackModelsItem {
 type OpenAiModelModel string
 
 const (
+	OpenAiModelModelChatgpt4OLatest                  OpenAiModelModel = "chatgpt-4o-latest"
+	OpenAiModelModelO3Mini                           OpenAiModelModel = "o3-mini"
 	OpenAiModelModelO1Preview                        OpenAiModelModel = "o1-preview"
 	OpenAiModelModelO1Preview20240912                OpenAiModelModel = "o1-preview-2024-09-12"
 	OpenAiModelModelO1Mini                           OpenAiModelModel = "o1-mini"
@@ -33428,6 +34912,10 @@ const (
 
 func NewOpenAiModelModelFromString(s string) (OpenAiModelModel, error) {
 	switch s {
+	case "chatgpt-4o-latest":
+		return OpenAiModelModelChatgpt4OLatest, nil
+	case "o3-mini":
+		return OpenAiModelModelO3Mini, nil
 	case "o1-preview":
 		return OpenAiModelModelO1Preview, nil
 	case "o1-preview-2024-09-12":
@@ -34524,292 +36012,66 @@ func (o *OrgPlan) String() string {
 	return fmt.Sprintf("%#v", o)
 }
 
-type OrgWithOrgUser struct {
-	// When this is enabled, no logs, recordings, or transcriptions will be stored. At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
-	// When HIPAA is enabled, only OpenAI/Custom LLM or Azure Providers will be available for LLM and Voice respectively.
-	// This is due to the compliance requirements of HIPAA. Other providers may not meet these requirements.
-	HipaaEnabled *bool         `json:"hipaaEnabled,omitempty" url:"hipaaEnabled,omitempty"`
-	Subscription *Subscription `json:"subscription,omitempty" url:"subscription,omitempty"`
-	// This is the ID of the subscription the org belongs to.
-	SubscriptionId *string `json:"subscriptionId,omitempty" url:"subscriptionId,omitempty"`
-	// This is the unique identifier for the org.
-	Id string `json:"id" url:"id"`
-	// This is the ISO 8601 date-time string of when the org was created.
-	CreatedAt time.Time `json:"createdAt" url:"createdAt"`
-	// This is the ISO 8601 date-time string of when the org was last updated.
-	UpdatedAt time.Time `json:"updatedAt" url:"updatedAt"`
-	// This is the Stripe customer for the org.
-	StripeCustomerId *string `json:"stripeCustomerId,omitempty" url:"stripeCustomerId,omitempty"`
-	// This is the subscription for the org.
-	StripeSubscriptionId *string `json:"stripeSubscriptionId,omitempty" url:"stripeSubscriptionId,omitempty"`
-	// This is the subscription's subscription item.
-	StripeSubscriptionItemId *string `json:"stripeSubscriptionItemId,omitempty" url:"stripeSubscriptionItemId,omitempty"`
-	// This is the subscription's current period start.
-	StripeSubscriptionCurrentPeriodStart *time.Time `json:"stripeSubscriptionCurrentPeriodStart,omitempty" url:"stripeSubscriptionCurrentPeriodStart,omitempty"`
-	// This is the subscription's status.
-	StripeSubscriptionStatus *string `json:"stripeSubscriptionStatus,omitempty" url:"stripeSubscriptionStatus,omitempty"`
-	// This is the plan for the org.
-	Plan *OrgPlan `json:"plan,omitempty" url:"plan,omitempty"`
-	// This is the name of the org. This is just for your own reference.
-	Name *string `json:"name,omitempty" url:"name,omitempty"`
-	// This is the channel of the org. There is the cluster the API traffic for the org will be directed.
-	Channel *OrgWithOrgUserChannel `json:"channel,omitempty" url:"channel,omitempty"`
-	// This is the monthly billing limit for the org. To go beyond $1000/mo, please contact us at support@vapi.ai.
-	BillingLimit *float64 `json:"billingLimit,omitempty" url:"billingLimit,omitempty"`
-	// This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
-	//
-	// The order of precedence is:
-	//
-	// 1. assistant.server
-	// 2. phoneNumber.server
-	// 3. org.server
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	// This is the concurrency limit for the org. This is the maximum number of calls that can be active at any given time. To go beyond 10, please contact us at support@vapi.ai.
-	ConcurrencyLimit *float64            `json:"concurrencyLimit,omitempty" url:"concurrencyLimit,omitempty"`
-	InvitedByUserId  *string             `json:"invitedByUserId,omitempty" url:"invitedByUserId,omitempty"`
-	Role             *OrgWithOrgUserRole `json:"role,omitempty" url:"role,omitempty"`
+type PaginationMeta struct {
+	ItemsPerPage float64 `json:"itemsPerPage" url:"itemsPerPage"`
+	TotalItems   float64 `json:"totalItems" url:"totalItems"`
+	CurrentPage  float64 `json:"currentPage" url:"currentPage"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
 }
 
-func (o *OrgWithOrgUser) GetHipaaEnabled() *bool {
-	if o == nil {
-		return nil
+func (p *PaginationMeta) GetItemsPerPage() float64 {
+	if p == nil {
+		return 0
 	}
-	return o.HipaaEnabled
+	return p.ItemsPerPage
 }
 
-func (o *OrgWithOrgUser) GetSubscription() *Subscription {
-	if o == nil {
-		return nil
+func (p *PaginationMeta) GetTotalItems() float64 {
+	if p == nil {
+		return 0
 	}
-	return o.Subscription
+	return p.TotalItems
 }
 
-func (o *OrgWithOrgUser) GetSubscriptionId() *string {
-	if o == nil {
-		return nil
+func (p *PaginationMeta) GetCurrentPage() float64 {
+	if p == nil {
+		return 0
 	}
-	return o.SubscriptionId
+	return p.CurrentPage
 }
 
-func (o *OrgWithOrgUser) GetId() string {
-	if o == nil {
-		return ""
-	}
-	return o.Id
+func (p *PaginationMeta) GetExtraProperties() map[string]interface{} {
+	return p.extraProperties
 }
 
-func (o *OrgWithOrgUser) GetCreatedAt() time.Time {
-	if o == nil {
-		return time.Time{}
-	}
-	return o.CreatedAt
-}
-
-func (o *OrgWithOrgUser) GetUpdatedAt() time.Time {
-	if o == nil {
-		return time.Time{}
-	}
-	return o.UpdatedAt
-}
-
-func (o *OrgWithOrgUser) GetStripeCustomerId() *string {
-	if o == nil {
-		return nil
-	}
-	return o.StripeCustomerId
-}
-
-func (o *OrgWithOrgUser) GetStripeSubscriptionId() *string {
-	if o == nil {
-		return nil
-	}
-	return o.StripeSubscriptionId
-}
-
-func (o *OrgWithOrgUser) GetStripeSubscriptionItemId() *string {
-	if o == nil {
-		return nil
-	}
-	return o.StripeSubscriptionItemId
-}
-
-func (o *OrgWithOrgUser) GetStripeSubscriptionCurrentPeriodStart() *time.Time {
-	if o == nil {
-		return nil
-	}
-	return o.StripeSubscriptionCurrentPeriodStart
-}
-
-func (o *OrgWithOrgUser) GetStripeSubscriptionStatus() *string {
-	if o == nil {
-		return nil
-	}
-	return o.StripeSubscriptionStatus
-}
-
-func (o *OrgWithOrgUser) GetPlan() *OrgPlan {
-	if o == nil {
-		return nil
-	}
-	return o.Plan
-}
-
-func (o *OrgWithOrgUser) GetName() *string {
-	if o == nil {
-		return nil
-	}
-	return o.Name
-}
-
-func (o *OrgWithOrgUser) GetChannel() *OrgWithOrgUserChannel {
-	if o == nil {
-		return nil
-	}
-	return o.Channel
-}
-
-func (o *OrgWithOrgUser) GetBillingLimit() *float64 {
-	if o == nil {
-		return nil
-	}
-	return o.BillingLimit
-}
-
-func (o *OrgWithOrgUser) GetServer() *Server {
-	if o == nil {
-		return nil
-	}
-	return o.Server
-}
-
-func (o *OrgWithOrgUser) GetConcurrencyLimit() *float64 {
-	if o == nil {
-		return nil
-	}
-	return o.ConcurrencyLimit
-}
-
-func (o *OrgWithOrgUser) GetInvitedByUserId() *string {
-	if o == nil {
-		return nil
-	}
-	return o.InvitedByUserId
-}
-
-func (o *OrgWithOrgUser) GetRole() *OrgWithOrgUserRole {
-	if o == nil {
-		return nil
-	}
-	return o.Role
-}
-
-func (o *OrgWithOrgUser) GetExtraProperties() map[string]interface{} {
-	return o.extraProperties
-}
-
-func (o *OrgWithOrgUser) UnmarshalJSON(data []byte) error {
-	type embed OrgWithOrgUser
-	var unmarshaler = struct {
-		embed
-		CreatedAt                            *internal.DateTime `json:"createdAt"`
-		UpdatedAt                            *internal.DateTime `json:"updatedAt"`
-		StripeSubscriptionCurrentPeriodStart *internal.DateTime `json:"stripeSubscriptionCurrentPeriodStart,omitempty"`
-	}{
-		embed: embed(*o),
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+func (p *PaginationMeta) UnmarshalJSON(data []byte) error {
+	type unmarshaler PaginationMeta
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*o = OrgWithOrgUser(unmarshaler.embed)
-	o.CreatedAt = unmarshaler.CreatedAt.Time()
-	o.UpdatedAt = unmarshaler.UpdatedAt.Time()
-	o.StripeSubscriptionCurrentPeriodStart = unmarshaler.StripeSubscriptionCurrentPeriodStart.TimePtr()
-	extraProperties, err := internal.ExtractExtraProperties(data, *o)
+	*p = PaginationMeta(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
 	if err != nil {
 		return err
 	}
-	o.extraProperties = extraProperties
-	o.rawJSON = json.RawMessage(data)
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (o *OrgWithOrgUser) MarshalJSON() ([]byte, error) {
-	type embed OrgWithOrgUser
-	var marshaler = struct {
-		embed
-		CreatedAt                            *internal.DateTime `json:"createdAt"`
-		UpdatedAt                            *internal.DateTime `json:"updatedAt"`
-		StripeSubscriptionCurrentPeriodStart *internal.DateTime `json:"stripeSubscriptionCurrentPeriodStart,omitempty"`
-	}{
-		embed:                                embed(*o),
-		CreatedAt:                            internal.NewDateTime(o.CreatedAt),
-		UpdatedAt:                            internal.NewDateTime(o.UpdatedAt),
-		StripeSubscriptionCurrentPeriodStart: internal.NewOptionalDateTime(o.StripeSubscriptionCurrentPeriodStart),
-	}
-	return json.Marshal(marshaler)
-}
-
-func (o *OrgWithOrgUser) String() string {
-	if len(o.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(o.rawJSON); err == nil {
+func (p *PaginationMeta) String() string {
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
 			return value
 		}
 	}
-	if value, err := internal.StringifyJSON(o); err == nil {
+	if value, err := internal.StringifyJSON(p); err == nil {
 		return value
 	}
-	return fmt.Sprintf("%#v", o)
-}
-
-// This is the channel of the org. There is the cluster the API traffic for the org will be directed.
-type OrgWithOrgUserChannel string
-
-const (
-	OrgWithOrgUserChannelDefault OrgWithOrgUserChannel = "default"
-	OrgWithOrgUserChannelWeekly  OrgWithOrgUserChannel = "weekly"
-)
-
-func NewOrgWithOrgUserChannelFromString(s string) (OrgWithOrgUserChannel, error) {
-	switch s {
-	case "default":
-		return OrgWithOrgUserChannelDefault, nil
-	case "weekly":
-		return OrgWithOrgUserChannelWeekly, nil
-	}
-	var t OrgWithOrgUserChannel
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (o OrgWithOrgUserChannel) Ptr() *OrgWithOrgUserChannel {
-	return &o
-}
-
-type OrgWithOrgUserRole string
-
-const (
-	OrgWithOrgUserRoleAdmin  OrgWithOrgUserRole = "admin"
-	OrgWithOrgUserRoleEditor OrgWithOrgUserRole = "editor"
-	OrgWithOrgUserRoleViewer OrgWithOrgUserRole = "viewer"
-)
-
-func NewOrgWithOrgUserRoleFromString(s string) (OrgWithOrgUserRole, error) {
-	switch s {
-	case "admin":
-		return OrgWithOrgUserRoleAdmin, nil
-	case "editor":
-		return OrgWithOrgUserRoleEditor, nil
-	case "viewer":
-		return OrgWithOrgUserRoleViewer, nil
-	}
-	var t OrgWithOrgUserRole
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (o OrgWithOrgUserRole) Ptr() *OrgWithOrgUserRole {
-	return &o
+	return fmt.Sprintf("%#v", p)
 }
 
 type PerplexityAiCredential struct {
@@ -36026,6 +37288,7 @@ const (
 	PlayHtVoiceModelPlayHt20      PlayHtVoiceModel = "PlayHT2.0"
 	PlayHtVoiceModelPlayHt20Turbo PlayHtVoiceModel = "PlayHT2.0-turbo"
 	PlayHtVoiceModelPlay30Mini    PlayHtVoiceModel = "Play3.0-mini"
+	PlayHtVoiceModelPlayDialog    PlayHtVoiceModel = "PlayDialog"
 )
 
 func NewPlayHtVoiceModelFromString(s string) (PlayHtVoiceModel, error) {
@@ -36036,6 +37299,8 @@ func NewPlayHtVoiceModelFromString(s string) (PlayHtVoiceModel, error) {
 		return PlayHtVoiceModelPlayHt20Turbo, nil
 	case "Play3.0-mini":
 		return PlayHtVoiceModelPlay30Mini, nil
+	case "PlayDialog":
+		return PlayHtVoiceModelPlayDialog, nil
 	}
 	var t PlayHtVoiceModel
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -36043,78 +37308,6 @@ func NewPlayHtVoiceModelFromString(s string) (PlayHtVoiceModel, error) {
 
 func (p PlayHtVoiceModel) Ptr() *PlayHtVoiceModel {
 	return &p
-}
-
-type ProgrammaticEdgeCondition struct {
-	BooleanExpression *string `json:"booleanExpression,omitempty" url:"booleanExpression,omitempty"`
-	type_             string
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (p *ProgrammaticEdgeCondition) GetBooleanExpression() *string {
-	if p == nil {
-		return nil
-	}
-	return p.BooleanExpression
-}
-
-func (p *ProgrammaticEdgeCondition) Type() string {
-	return p.type_
-}
-
-func (p *ProgrammaticEdgeCondition) GetExtraProperties() map[string]interface{} {
-	return p.extraProperties
-}
-
-func (p *ProgrammaticEdgeCondition) UnmarshalJSON(data []byte) error {
-	type embed ProgrammaticEdgeCondition
-	var unmarshaler = struct {
-		embed
-		Type string `json:"type"`
-	}{
-		embed: embed(*p),
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
-		return err
-	}
-	*p = ProgrammaticEdgeCondition(unmarshaler.embed)
-	if unmarshaler.Type != "programmatic" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", p, "programmatic", unmarshaler.Type)
-	}
-	p.type_ = unmarshaler.Type
-	extraProperties, err := internal.ExtractExtraProperties(data, *p, "type")
-	if err != nil {
-		return err
-	}
-	p.extraProperties = extraProperties
-	p.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (p *ProgrammaticEdgeCondition) MarshalJSON() ([]byte, error) {
-	type embed ProgrammaticEdgeCondition
-	var marshaler = struct {
-		embed
-		Type string `json:"type"`
-	}{
-		embed: embed(*p),
-		Type:  "programmatic",
-	}
-	return json.Marshal(marshaler)
-}
-
-func (p *ProgrammaticEdgeCondition) String() string {
-	if len(p.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(p); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", p)
 }
 
 type PunctuationBoundary string
@@ -36456,26 +37649,6 @@ func (r *RimeAiVoiceId) Accept(visitor RimeAiVoiceIdVisitor) error {
 type RimeAiVoiceIdEnum string
 
 const (
-	RimeAiVoiceIdEnumMarsh      RimeAiVoiceIdEnum = "marsh"
-	RimeAiVoiceIdEnumBayou      RimeAiVoiceIdEnum = "bayou"
-	RimeAiVoiceIdEnumCreek      RimeAiVoiceIdEnum = "creek"
-	RimeAiVoiceIdEnumBrook      RimeAiVoiceIdEnum = "brook"
-	RimeAiVoiceIdEnumFlower     RimeAiVoiceIdEnum = "flower"
-	RimeAiVoiceIdEnumSpore      RimeAiVoiceIdEnum = "spore"
-	RimeAiVoiceIdEnumGlacier    RimeAiVoiceIdEnum = "glacier"
-	RimeAiVoiceIdEnumGulch      RimeAiVoiceIdEnum = "gulch"
-	RimeAiVoiceIdEnumAlpine     RimeAiVoiceIdEnum = "alpine"
-	RimeAiVoiceIdEnumCove       RimeAiVoiceIdEnum = "cove"
-	RimeAiVoiceIdEnumLagoon     RimeAiVoiceIdEnum = "lagoon"
-	RimeAiVoiceIdEnumTundra     RimeAiVoiceIdEnum = "tundra"
-	RimeAiVoiceIdEnumSteppe     RimeAiVoiceIdEnum = "steppe"
-	RimeAiVoiceIdEnumMesa       RimeAiVoiceIdEnum = "mesa"
-	RimeAiVoiceIdEnumGrove      RimeAiVoiceIdEnum = "grove"
-	RimeAiVoiceIdEnumRainforest RimeAiVoiceIdEnum = "rainforest"
-	RimeAiVoiceIdEnumMoraine    RimeAiVoiceIdEnum = "moraine"
-	RimeAiVoiceIdEnumWildflower RimeAiVoiceIdEnum = "wildflower"
-	RimeAiVoiceIdEnumPeak       RimeAiVoiceIdEnum = "peak"
-	RimeAiVoiceIdEnumBoulder    RimeAiVoiceIdEnum = "boulder"
 	RimeAiVoiceIdEnumAbbie      RimeAiVoiceIdEnum = "abbie"
 	RimeAiVoiceIdEnumAllison    RimeAiVoiceIdEnum = "allison"
 	RimeAiVoiceIdEnumAlly       RimeAiVoiceIdEnum = "ally"
@@ -36537,50 +37710,32 @@ const (
 	RimeAiVoiceIdEnumTyler      RimeAiVoiceIdEnum = "tyler"
 	RimeAiVoiceIdEnumViv        RimeAiVoiceIdEnum = "viv"
 	RimeAiVoiceIdEnumYadira     RimeAiVoiceIdEnum = "yadira"
+	RimeAiVoiceIdEnumMarsh      RimeAiVoiceIdEnum = "marsh"
+	RimeAiVoiceIdEnumBayou      RimeAiVoiceIdEnum = "bayou"
+	RimeAiVoiceIdEnumCreek      RimeAiVoiceIdEnum = "creek"
+	RimeAiVoiceIdEnumBrook      RimeAiVoiceIdEnum = "brook"
+	RimeAiVoiceIdEnumFlower     RimeAiVoiceIdEnum = "flower"
+	RimeAiVoiceIdEnumSpore      RimeAiVoiceIdEnum = "spore"
+	RimeAiVoiceIdEnumGlacier    RimeAiVoiceIdEnum = "glacier"
+	RimeAiVoiceIdEnumGulch      RimeAiVoiceIdEnum = "gulch"
+	RimeAiVoiceIdEnumAlpine     RimeAiVoiceIdEnum = "alpine"
+	RimeAiVoiceIdEnumCove       RimeAiVoiceIdEnum = "cove"
+	RimeAiVoiceIdEnumLagoon     RimeAiVoiceIdEnum = "lagoon"
+	RimeAiVoiceIdEnumTundra     RimeAiVoiceIdEnum = "tundra"
+	RimeAiVoiceIdEnumSteppe     RimeAiVoiceIdEnum = "steppe"
+	RimeAiVoiceIdEnumMesa       RimeAiVoiceIdEnum = "mesa"
+	RimeAiVoiceIdEnumGrove      RimeAiVoiceIdEnum = "grove"
+	RimeAiVoiceIdEnumRainforest RimeAiVoiceIdEnum = "rainforest"
+	RimeAiVoiceIdEnumMoraine    RimeAiVoiceIdEnum = "moraine"
+	RimeAiVoiceIdEnumWildflower RimeAiVoiceIdEnum = "wildflower"
+	RimeAiVoiceIdEnumPeak       RimeAiVoiceIdEnum = "peak"
+	RimeAiVoiceIdEnumBoulder    RimeAiVoiceIdEnum = "boulder"
+	RimeAiVoiceIdEnumGypsum     RimeAiVoiceIdEnum = "gypsum"
+	RimeAiVoiceIdEnumZest       RimeAiVoiceIdEnum = "zest"
 )
 
 func NewRimeAiVoiceIdEnumFromString(s string) (RimeAiVoiceIdEnum, error) {
 	switch s {
-	case "marsh":
-		return RimeAiVoiceIdEnumMarsh, nil
-	case "bayou":
-		return RimeAiVoiceIdEnumBayou, nil
-	case "creek":
-		return RimeAiVoiceIdEnumCreek, nil
-	case "brook":
-		return RimeAiVoiceIdEnumBrook, nil
-	case "flower":
-		return RimeAiVoiceIdEnumFlower, nil
-	case "spore":
-		return RimeAiVoiceIdEnumSpore, nil
-	case "glacier":
-		return RimeAiVoiceIdEnumGlacier, nil
-	case "gulch":
-		return RimeAiVoiceIdEnumGulch, nil
-	case "alpine":
-		return RimeAiVoiceIdEnumAlpine, nil
-	case "cove":
-		return RimeAiVoiceIdEnumCove, nil
-	case "lagoon":
-		return RimeAiVoiceIdEnumLagoon, nil
-	case "tundra":
-		return RimeAiVoiceIdEnumTundra, nil
-	case "steppe":
-		return RimeAiVoiceIdEnumSteppe, nil
-	case "mesa":
-		return RimeAiVoiceIdEnumMesa, nil
-	case "grove":
-		return RimeAiVoiceIdEnumGrove, nil
-	case "rainforest":
-		return RimeAiVoiceIdEnumRainforest, nil
-	case "moraine":
-		return RimeAiVoiceIdEnumMoraine, nil
-	case "wildflower":
-		return RimeAiVoiceIdEnumWildflower, nil
-	case "peak":
-		return RimeAiVoiceIdEnumPeak, nil
-	case "boulder":
-		return RimeAiVoiceIdEnumBoulder, nil
 	case "abbie":
 		return RimeAiVoiceIdEnumAbbie, nil
 	case "allison":
@@ -36703,6 +37858,50 @@ func NewRimeAiVoiceIdEnumFromString(s string) (RimeAiVoiceIdEnum, error) {
 		return RimeAiVoiceIdEnumViv, nil
 	case "yadira":
 		return RimeAiVoiceIdEnumYadira, nil
+	case "marsh":
+		return RimeAiVoiceIdEnumMarsh, nil
+	case "bayou":
+		return RimeAiVoiceIdEnumBayou, nil
+	case "creek":
+		return RimeAiVoiceIdEnumCreek, nil
+	case "brook":
+		return RimeAiVoiceIdEnumBrook, nil
+	case "flower":
+		return RimeAiVoiceIdEnumFlower, nil
+	case "spore":
+		return RimeAiVoiceIdEnumSpore, nil
+	case "glacier":
+		return RimeAiVoiceIdEnumGlacier, nil
+	case "gulch":
+		return RimeAiVoiceIdEnumGulch, nil
+	case "alpine":
+		return RimeAiVoiceIdEnumAlpine, nil
+	case "cove":
+		return RimeAiVoiceIdEnumCove, nil
+	case "lagoon":
+		return RimeAiVoiceIdEnumLagoon, nil
+	case "tundra":
+		return RimeAiVoiceIdEnumTundra, nil
+	case "steppe":
+		return RimeAiVoiceIdEnumSteppe, nil
+	case "mesa":
+		return RimeAiVoiceIdEnumMesa, nil
+	case "grove":
+		return RimeAiVoiceIdEnumGrove, nil
+	case "rainforest":
+		return RimeAiVoiceIdEnumRainforest, nil
+	case "moraine":
+		return RimeAiVoiceIdEnumMoraine, nil
+	case "wildflower":
+		return RimeAiVoiceIdEnumWildflower, nil
+	case "peak":
+		return RimeAiVoiceIdEnumPeak, nil
+	case "boulder":
+		return RimeAiVoiceIdEnumBoulder, nil
+	case "gypsum":
+		return RimeAiVoiceIdEnumGypsum, nil
+	case "zest":
+		return RimeAiVoiceIdEnumZest, nil
 	}
 	var t RimeAiVoiceIdEnum
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -36952,8 +38151,9 @@ func (r *RimeAiVoice) String() string {
 type RimeAiVoiceModel string
 
 const (
-	RimeAiVoiceModelV1   RimeAiVoiceModel = "v1"
-	RimeAiVoiceModelMist RimeAiVoiceModel = "mist"
+	RimeAiVoiceModelV1     RimeAiVoiceModel = "v1"
+	RimeAiVoiceModelMist   RimeAiVoiceModel = "mist"
+	RimeAiVoiceModelMistv2 RimeAiVoiceModel = "mistv2"
 )
 
 func NewRimeAiVoiceModelFromString(s string) (RimeAiVoiceModel, error) {
@@ -36962,6 +38162,8 @@ func NewRimeAiVoiceModelFromString(s string) (RimeAiVoiceModel, error) {
 		return RimeAiVoiceModelV1, nil
 	case "mist":
 		return RimeAiVoiceModelMist, nil
+	case "mistv2":
+		return RimeAiVoiceModelMistv2, nil
 	}
 	var t RimeAiVoiceModel
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -37438,19 +38640,29 @@ func (s *S3Credential) String() string {
 }
 
 type Say struct {
-	Instruction string `json:"instruction" url:"instruction"`
-	Name        string `json:"name" url:"name"`
-	type_       string
+	Exact  *string `json:"exact,omitempty" url:"exact,omitempty"`
+	Prompt *string `json:"prompt,omitempty" url:"prompt,omitempty"`
+	Name   string  `json:"name" url:"name"`
+	// This is for metadata you want to store on the task.
+	Metadata map[string]interface{} `json:"metadata,omitempty" url:"metadata,omitempty"`
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
 }
 
-func (s *Say) GetInstruction() string {
+func (s *Say) GetExact() *string {
 	if s == nil {
-		return ""
+		return nil
 	}
-	return s.Instruction
+	return s.Exact
+}
+
+func (s *Say) GetPrompt() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Prompt
 }
 
 func (s *Say) GetName() string {
@@ -37458,6 +38670,13 @@ func (s *Say) GetName() string {
 		return ""
 	}
 	return s.Name
+}
+
+func (s *Say) GetMetadata() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.Metadata
 }
 
 func (s *Say) Type() string {
@@ -37517,6 +38736,95 @@ func (s *Say) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
+type SayHook struct {
+	// This is for metadata you want to store on the task.
+	Metadata map[string]interface{} `json:"metadata,omitempty" url:"metadata,omitempty"`
+	Exact    *string                `json:"exact,omitempty" url:"exact,omitempty"`
+	Prompt   *string                `json:"prompt,omitempty" url:"prompt,omitempty"`
+	type_    string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SayHook) GetMetadata() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.Metadata
+}
+
+func (s *SayHook) GetExact() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Exact
+}
+
+func (s *SayHook) GetPrompt() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Prompt
+}
+
+func (s *SayHook) Type() string {
+	return s.type_
+}
+
+func (s *SayHook) GetExtraProperties() map[string]interface{} {
+	return s.extraProperties
+}
+
+func (s *SayHook) UnmarshalJSON(data []byte) error {
+	type embed SayHook
+	var unmarshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*s),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*s = SayHook(unmarshaler.embed)
+	if unmarshaler.Type != "say" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", s, "say", unmarshaler.Type)
+	}
+	s.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *s, "type")
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SayHook) MarshalJSON() ([]byte, error) {
+	type embed SayHook
+	var marshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*s),
+		Type:  "say",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (s *SayHook) String() string {
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
 type SbcConfiguration struct {
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -37554,78 +38862,6 @@ func (s *SbcConfiguration) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
-type SemanticEdgeCondition struct {
-	Matches []string `json:"matches,omitempty" url:"matches,omitempty"`
-	type_   string
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (s *SemanticEdgeCondition) GetMatches() []string {
-	if s == nil {
-		return nil
-	}
-	return s.Matches
-}
-
-func (s *SemanticEdgeCondition) Type() string {
-	return s.type_
-}
-
-func (s *SemanticEdgeCondition) GetExtraProperties() map[string]interface{} {
-	return s.extraProperties
-}
-
-func (s *SemanticEdgeCondition) UnmarshalJSON(data []byte) error {
-	type embed SemanticEdgeCondition
-	var unmarshaler = struct {
-		embed
-		Type string `json:"type"`
-	}{
-		embed: embed(*s),
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
-		return err
-	}
-	*s = SemanticEdgeCondition(unmarshaler.embed)
-	if unmarshaler.Type != "semantic" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", s, "semantic", unmarshaler.Type)
-	}
-	s.type_ = unmarshaler.Type
-	extraProperties, err := internal.ExtractExtraProperties(data, *s, "type")
-	if err != nil {
-		return err
-	}
-	s.extraProperties = extraProperties
-	s.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (s *SemanticEdgeCondition) MarshalJSON() ([]byte, error) {
-	type embed SemanticEdgeCondition
-	var marshaler = struct {
-		embed
-		Type string `json:"type"`
-	}{
-		embed: embed(*s),
-		Type:  "semantic",
-	}
-	return json.Marshal(marshaler)
-}
-
-func (s *SemanticEdgeCondition) String() string {
-	if len(s.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(s); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", s)
-}
-
 type Server struct {
 	// This is the timeout in seconds for the request to your server. Defaults to 20 seconds.
 	//
@@ -37641,6 +38877,8 @@ type Server struct {
 	//
 	// Each key-value pair represents a header name and its value.
 	Headers map[string]interface{} `json:"headers,omitempty" url:"headers,omitempty"`
+	// This is the backoff plan to use if the request fails.
+	BackoffPlan *BackoffPlan `json:"backoffPlan,omitempty" url:"backoffPlan,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -37672,6 +38910,13 @@ func (s *Server) GetHeaders() map[string]interface{} {
 		return nil
 	}
 	return s.Headers
+}
+
+func (s *Server) GetBackoffPlan() *BackoffPlan {
+	if s == nil {
+		return nil
+	}
+	return s.BackoffPlan
 }
 
 func (s *Server) GetExtraProperties() map[string]interface{} {
@@ -38754,7 +39999,7 @@ func (s *ServerMessageEndOfCallReportCostsItem) Accept(visitor ServerMessageEndO
 type ServerMessageEndOfCallReportEndedReason string
 
 const (
-	ServerMessageEndOfCallReportEndedReasonAssistantNotInvalid                                                                        ServerMessageEndOfCallReportEndedReason = "assistant-not-invalid"
+	ServerMessageEndOfCallReportEndedReasonAssistantNotValid                                                                          ServerMessageEndOfCallReportEndedReason = "assistant-not-valid"
 	ServerMessageEndOfCallReportEndedReasonAssistantNotProvided                                                                       ServerMessageEndOfCallReportEndedReason = "assistant-not-provided"
 	ServerMessageEndOfCallReportEndedReasonCallStartErrorNeitherAssistantNorServerSet                                                 ServerMessageEndOfCallReportEndedReason = "call-start-error-neither-assistant-nor-server-set"
 	ServerMessageEndOfCallReportEndedReasonAssistantRequestFailed                                                                     ServerMessageEndOfCallReportEndedReason = "assistant-request-failed"
@@ -38765,6 +40010,7 @@ const (
 	ServerMessageEndOfCallReportEndedReasonAssistantRequestReturnedForwardingPhoneNumber                                              ServerMessageEndOfCallReportEndedReason = "assistant-request-returned-forwarding-phone-number"
 	ServerMessageEndOfCallReportEndedReasonAssistantEndedCall                                                                         ServerMessageEndOfCallReportEndedReason = "assistant-ended-call"
 	ServerMessageEndOfCallReportEndedReasonAssistantSaidEndCallPhrase                                                                 ServerMessageEndOfCallReportEndedReason = "assistant-said-end-call-phrase"
+	ServerMessageEndOfCallReportEndedReasonAssistantEndedCallWithHangupTask                                                           ServerMessageEndOfCallReportEndedReason = "assistant-ended-call-with-hangup-task"
 	ServerMessageEndOfCallReportEndedReasonAssistantForwardedCall                                                                     ServerMessageEndOfCallReportEndedReason = "assistant-forwarded-call"
 	ServerMessageEndOfCallReportEndedReasonAssistantJoinTimedOut                                                                      ServerMessageEndOfCallReportEndedReason = "assistant-join-timed-out"
 	ServerMessageEndOfCallReportEndedReasonCustomerBusy                                                                               ServerMessageEndOfCallReportEndedReason = "customer-busy"
@@ -38788,8 +40034,10 @@ const (
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorRimeAiVoiceFailed                                                             ServerMessageEndOfCallReportEndedReason = "pipeline-error-rime-ai-voice-failed"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorNeetsVoiceFailed                                                              ServerMessageEndOfCallReportEndedReason = "pipeline-error-neets-voice-failed"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorSmallestAiVoiceFailed                                                         ServerMessageEndOfCallReportEndedReason = "pipeline-error-smallest-ai-voice-failed"
+	ServerMessageEndOfCallReportEndedReasonPipelineErrorNeuphonicVoiceFailed                                                          ServerMessageEndOfCallReportEndedReason = "pipeline-error-neuphonic-voice-failed"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorDeepgramTranscriberFailed                                                     ServerMessageEndOfCallReportEndedReason = "pipeline-error-deepgram-transcriber-failed"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorGladiaTranscriberFailed                                                       ServerMessageEndOfCallReportEndedReason = "pipeline-error-gladia-transcriber-failed"
+	ServerMessageEndOfCallReportEndedReasonPipelineErrorSpeechmaticsTranscriberFailed                                                 ServerMessageEndOfCallReportEndedReason = "pipeline-error-speechmatics-transcriber-failed"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorAssemblyAiTranscriberFailed                                                   ServerMessageEndOfCallReportEndedReason = "pipeline-error-assembly-ai-transcriber-failed"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorTalkscriberTranscriberFailed                                                  ServerMessageEndOfCallReportEndedReason = "pipeline-error-talkscriber-transcriber-failed"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorAzureSpeechTranscriberFailed                                                  ServerMessageEndOfCallReportEndedReason = "pipeline-error-azure-speech-transcriber-failed"
@@ -38817,6 +40065,7 @@ const (
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorGroqLlmFailed                                                                 ServerMessageEndOfCallReportEndedReason = "pipeline-error-groq-llm-failed"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorGoogleLlmFailed                                                               ServerMessageEndOfCallReportEndedReason = "pipeline-error-google-llm-failed"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorXaiLlmFailed                                                                  ServerMessageEndOfCallReportEndedReason = "pipeline-error-xai-llm-failed"
+	ServerMessageEndOfCallReportEndedReasonPipelineErrorMistralLlmFailed                                                              ServerMessageEndOfCallReportEndedReason = "pipeline-error-mistral-llm-failed"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorInflectionAiLlmFailed                                                         ServerMessageEndOfCallReportEndedReason = "pipeline-error-inflection-ai-llm-failed"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorCerebrasLlmFailed                                                             ServerMessageEndOfCallReportEndedReason = "pipeline-error-cerebras-llm-failed"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorDeepSeekLlmFailed                                                             ServerMessageEndOfCallReportEndedReason = "pipeline-error-deep-seek-llm-failed"
@@ -38835,6 +40084,11 @@ const (
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorXai403ModelAccessDenied                                                       ServerMessageEndOfCallReportEndedReason = "pipeline-error-xai-403-model-access-denied"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorXai429ExceededQuota                                                           ServerMessageEndOfCallReportEndedReason = "pipeline-error-xai-429-exceeded-quota"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorXai500ServerError                                                             ServerMessageEndOfCallReportEndedReason = "pipeline-error-xai-500-server-error"
+	ServerMessageEndOfCallReportEndedReasonPipelineErrorMistral400BadRequestValidationFailed                                          ServerMessageEndOfCallReportEndedReason = "pipeline-error-mistral-400-bad-request-validation-failed"
+	ServerMessageEndOfCallReportEndedReasonPipelineErrorMistral401Unauthorized                                                        ServerMessageEndOfCallReportEndedReason = "pipeline-error-mistral-401-unauthorized"
+	ServerMessageEndOfCallReportEndedReasonPipelineErrorMistral403ModelAccessDenied                                                   ServerMessageEndOfCallReportEndedReason = "pipeline-error-mistral-403-model-access-denied"
+	ServerMessageEndOfCallReportEndedReasonPipelineErrorMistral429ExceededQuota                                                       ServerMessageEndOfCallReportEndedReason = "pipeline-error-mistral-429-exceeded-quota"
+	ServerMessageEndOfCallReportEndedReasonPipelineErrorMistral500ServerError                                                         ServerMessageEndOfCallReportEndedReason = "pipeline-error-mistral-500-server-error"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorInflectionAi400BadRequestValidationFailed                                     ServerMessageEndOfCallReportEndedReason = "pipeline-error-inflection-ai-400-bad-request-validation-failed"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorInflectionAi401Unauthorized                                                   ServerMessageEndOfCallReportEndedReason = "pipeline-error-inflection-ai-401-unauthorized"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorInflectionAi403ModelAccessDenied                                              ServerMessageEndOfCallReportEndedReason = "pipeline-error-inflection-ai-403-model-access-denied"
@@ -38966,8 +40220,8 @@ const (
 
 func NewServerMessageEndOfCallReportEndedReasonFromString(s string) (ServerMessageEndOfCallReportEndedReason, error) {
 	switch s {
-	case "assistant-not-invalid":
-		return ServerMessageEndOfCallReportEndedReasonAssistantNotInvalid, nil
+	case "assistant-not-valid":
+		return ServerMessageEndOfCallReportEndedReasonAssistantNotValid, nil
 	case "assistant-not-provided":
 		return ServerMessageEndOfCallReportEndedReasonAssistantNotProvided, nil
 	case "call-start-error-neither-assistant-nor-server-set":
@@ -38988,6 +40242,8 @@ func NewServerMessageEndOfCallReportEndedReasonFromString(s string) (ServerMessa
 		return ServerMessageEndOfCallReportEndedReasonAssistantEndedCall, nil
 	case "assistant-said-end-call-phrase":
 		return ServerMessageEndOfCallReportEndedReasonAssistantSaidEndCallPhrase, nil
+	case "assistant-ended-call-with-hangup-task":
+		return ServerMessageEndOfCallReportEndedReasonAssistantEndedCallWithHangupTask, nil
 	case "assistant-forwarded-call":
 		return ServerMessageEndOfCallReportEndedReasonAssistantForwardedCall, nil
 	case "assistant-join-timed-out":
@@ -39034,10 +40290,14 @@ func NewServerMessageEndOfCallReportEndedReasonFromString(s string) (ServerMessa
 		return ServerMessageEndOfCallReportEndedReasonPipelineErrorNeetsVoiceFailed, nil
 	case "pipeline-error-smallest-ai-voice-failed":
 		return ServerMessageEndOfCallReportEndedReasonPipelineErrorSmallestAiVoiceFailed, nil
+	case "pipeline-error-neuphonic-voice-failed":
+		return ServerMessageEndOfCallReportEndedReasonPipelineErrorNeuphonicVoiceFailed, nil
 	case "pipeline-error-deepgram-transcriber-failed":
 		return ServerMessageEndOfCallReportEndedReasonPipelineErrorDeepgramTranscriberFailed, nil
 	case "pipeline-error-gladia-transcriber-failed":
 		return ServerMessageEndOfCallReportEndedReasonPipelineErrorGladiaTranscriberFailed, nil
+	case "pipeline-error-speechmatics-transcriber-failed":
+		return ServerMessageEndOfCallReportEndedReasonPipelineErrorSpeechmaticsTranscriberFailed, nil
 	case "pipeline-error-assembly-ai-transcriber-failed":
 		return ServerMessageEndOfCallReportEndedReasonPipelineErrorAssemblyAiTranscriberFailed, nil
 	case "pipeline-error-talkscriber-transcriber-failed":
@@ -39092,6 +40352,8 @@ func NewServerMessageEndOfCallReportEndedReasonFromString(s string) (ServerMessa
 		return ServerMessageEndOfCallReportEndedReasonPipelineErrorGoogleLlmFailed, nil
 	case "pipeline-error-xai-llm-failed":
 		return ServerMessageEndOfCallReportEndedReasonPipelineErrorXaiLlmFailed, nil
+	case "pipeline-error-mistral-llm-failed":
+		return ServerMessageEndOfCallReportEndedReasonPipelineErrorMistralLlmFailed, nil
 	case "pipeline-error-inflection-ai-llm-failed":
 		return ServerMessageEndOfCallReportEndedReasonPipelineErrorInflectionAiLlmFailed, nil
 	case "pipeline-error-cerebras-llm-failed":
@@ -39128,6 +40390,16 @@ func NewServerMessageEndOfCallReportEndedReasonFromString(s string) (ServerMessa
 		return ServerMessageEndOfCallReportEndedReasonPipelineErrorXai429ExceededQuota, nil
 	case "pipeline-error-xai-500-server-error":
 		return ServerMessageEndOfCallReportEndedReasonPipelineErrorXai500ServerError, nil
+	case "pipeline-error-mistral-400-bad-request-validation-failed":
+		return ServerMessageEndOfCallReportEndedReasonPipelineErrorMistral400BadRequestValidationFailed, nil
+	case "pipeline-error-mistral-401-unauthorized":
+		return ServerMessageEndOfCallReportEndedReasonPipelineErrorMistral401Unauthorized, nil
+	case "pipeline-error-mistral-403-model-access-denied":
+		return ServerMessageEndOfCallReportEndedReasonPipelineErrorMistral403ModelAccessDenied, nil
+	case "pipeline-error-mistral-429-exceeded-quota":
+		return ServerMessageEndOfCallReportEndedReasonPipelineErrorMistral429ExceededQuota, nil
+	case "pipeline-error-mistral-500-server-error":
+		return ServerMessageEndOfCallReportEndedReasonPipelineErrorMistral500ServerError, nil
 	case "pipeline-error-inflection-ai-400-bad-request-validation-failed":
 		return ServerMessageEndOfCallReportEndedReasonPipelineErrorInflectionAi400BadRequestValidationFailed, nil
 	case "pipeline-error-inflection-ai-401-unauthorized":
@@ -42694,7 +43966,7 @@ func (s *ServerMessageStatusUpdateDestination) Accept(visitor ServerMessageStatu
 type ServerMessageStatusUpdateEndedReason string
 
 const (
-	ServerMessageStatusUpdateEndedReasonAssistantNotInvalid                                                                        ServerMessageStatusUpdateEndedReason = "assistant-not-invalid"
+	ServerMessageStatusUpdateEndedReasonAssistantNotValid                                                                          ServerMessageStatusUpdateEndedReason = "assistant-not-valid"
 	ServerMessageStatusUpdateEndedReasonAssistantNotProvided                                                                       ServerMessageStatusUpdateEndedReason = "assistant-not-provided"
 	ServerMessageStatusUpdateEndedReasonCallStartErrorNeitherAssistantNorServerSet                                                 ServerMessageStatusUpdateEndedReason = "call-start-error-neither-assistant-nor-server-set"
 	ServerMessageStatusUpdateEndedReasonAssistantRequestFailed                                                                     ServerMessageStatusUpdateEndedReason = "assistant-request-failed"
@@ -42705,6 +43977,7 @@ const (
 	ServerMessageStatusUpdateEndedReasonAssistantRequestReturnedForwardingPhoneNumber                                              ServerMessageStatusUpdateEndedReason = "assistant-request-returned-forwarding-phone-number"
 	ServerMessageStatusUpdateEndedReasonAssistantEndedCall                                                                         ServerMessageStatusUpdateEndedReason = "assistant-ended-call"
 	ServerMessageStatusUpdateEndedReasonAssistantSaidEndCallPhrase                                                                 ServerMessageStatusUpdateEndedReason = "assistant-said-end-call-phrase"
+	ServerMessageStatusUpdateEndedReasonAssistantEndedCallWithHangupTask                                                           ServerMessageStatusUpdateEndedReason = "assistant-ended-call-with-hangup-task"
 	ServerMessageStatusUpdateEndedReasonAssistantForwardedCall                                                                     ServerMessageStatusUpdateEndedReason = "assistant-forwarded-call"
 	ServerMessageStatusUpdateEndedReasonAssistantJoinTimedOut                                                                      ServerMessageStatusUpdateEndedReason = "assistant-join-timed-out"
 	ServerMessageStatusUpdateEndedReasonCustomerBusy                                                                               ServerMessageStatusUpdateEndedReason = "customer-busy"
@@ -42728,8 +44001,10 @@ const (
 	ServerMessageStatusUpdateEndedReasonPipelineErrorRimeAiVoiceFailed                                                             ServerMessageStatusUpdateEndedReason = "pipeline-error-rime-ai-voice-failed"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorNeetsVoiceFailed                                                              ServerMessageStatusUpdateEndedReason = "pipeline-error-neets-voice-failed"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorSmallestAiVoiceFailed                                                         ServerMessageStatusUpdateEndedReason = "pipeline-error-smallest-ai-voice-failed"
+	ServerMessageStatusUpdateEndedReasonPipelineErrorNeuphonicVoiceFailed                                                          ServerMessageStatusUpdateEndedReason = "pipeline-error-neuphonic-voice-failed"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorDeepgramTranscriberFailed                                                     ServerMessageStatusUpdateEndedReason = "pipeline-error-deepgram-transcriber-failed"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorGladiaTranscriberFailed                                                       ServerMessageStatusUpdateEndedReason = "pipeline-error-gladia-transcriber-failed"
+	ServerMessageStatusUpdateEndedReasonPipelineErrorSpeechmaticsTranscriberFailed                                                 ServerMessageStatusUpdateEndedReason = "pipeline-error-speechmatics-transcriber-failed"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorAssemblyAiTranscriberFailed                                                   ServerMessageStatusUpdateEndedReason = "pipeline-error-assembly-ai-transcriber-failed"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorTalkscriberTranscriberFailed                                                  ServerMessageStatusUpdateEndedReason = "pipeline-error-talkscriber-transcriber-failed"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorAzureSpeechTranscriberFailed                                                  ServerMessageStatusUpdateEndedReason = "pipeline-error-azure-speech-transcriber-failed"
@@ -42757,6 +44032,7 @@ const (
 	ServerMessageStatusUpdateEndedReasonPipelineErrorGroqLlmFailed                                                                 ServerMessageStatusUpdateEndedReason = "pipeline-error-groq-llm-failed"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorGoogleLlmFailed                                                               ServerMessageStatusUpdateEndedReason = "pipeline-error-google-llm-failed"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorXaiLlmFailed                                                                  ServerMessageStatusUpdateEndedReason = "pipeline-error-xai-llm-failed"
+	ServerMessageStatusUpdateEndedReasonPipelineErrorMistralLlmFailed                                                              ServerMessageStatusUpdateEndedReason = "pipeline-error-mistral-llm-failed"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorInflectionAiLlmFailed                                                         ServerMessageStatusUpdateEndedReason = "pipeline-error-inflection-ai-llm-failed"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorCerebrasLlmFailed                                                             ServerMessageStatusUpdateEndedReason = "pipeline-error-cerebras-llm-failed"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorDeepSeekLlmFailed                                                             ServerMessageStatusUpdateEndedReason = "pipeline-error-deep-seek-llm-failed"
@@ -42775,6 +44051,11 @@ const (
 	ServerMessageStatusUpdateEndedReasonPipelineErrorXai403ModelAccessDenied                                                       ServerMessageStatusUpdateEndedReason = "pipeline-error-xai-403-model-access-denied"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorXai429ExceededQuota                                                           ServerMessageStatusUpdateEndedReason = "pipeline-error-xai-429-exceeded-quota"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorXai500ServerError                                                             ServerMessageStatusUpdateEndedReason = "pipeline-error-xai-500-server-error"
+	ServerMessageStatusUpdateEndedReasonPipelineErrorMistral400BadRequestValidationFailed                                          ServerMessageStatusUpdateEndedReason = "pipeline-error-mistral-400-bad-request-validation-failed"
+	ServerMessageStatusUpdateEndedReasonPipelineErrorMistral401Unauthorized                                                        ServerMessageStatusUpdateEndedReason = "pipeline-error-mistral-401-unauthorized"
+	ServerMessageStatusUpdateEndedReasonPipelineErrorMistral403ModelAccessDenied                                                   ServerMessageStatusUpdateEndedReason = "pipeline-error-mistral-403-model-access-denied"
+	ServerMessageStatusUpdateEndedReasonPipelineErrorMistral429ExceededQuota                                                       ServerMessageStatusUpdateEndedReason = "pipeline-error-mistral-429-exceeded-quota"
+	ServerMessageStatusUpdateEndedReasonPipelineErrorMistral500ServerError                                                         ServerMessageStatusUpdateEndedReason = "pipeline-error-mistral-500-server-error"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorInflectionAi400BadRequestValidationFailed                                     ServerMessageStatusUpdateEndedReason = "pipeline-error-inflection-ai-400-bad-request-validation-failed"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorInflectionAi401Unauthorized                                                   ServerMessageStatusUpdateEndedReason = "pipeline-error-inflection-ai-401-unauthorized"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorInflectionAi403ModelAccessDenied                                              ServerMessageStatusUpdateEndedReason = "pipeline-error-inflection-ai-403-model-access-denied"
@@ -42906,8 +44187,8 @@ const (
 
 func NewServerMessageStatusUpdateEndedReasonFromString(s string) (ServerMessageStatusUpdateEndedReason, error) {
 	switch s {
-	case "assistant-not-invalid":
-		return ServerMessageStatusUpdateEndedReasonAssistantNotInvalid, nil
+	case "assistant-not-valid":
+		return ServerMessageStatusUpdateEndedReasonAssistantNotValid, nil
 	case "assistant-not-provided":
 		return ServerMessageStatusUpdateEndedReasonAssistantNotProvided, nil
 	case "call-start-error-neither-assistant-nor-server-set":
@@ -42928,6 +44209,8 @@ func NewServerMessageStatusUpdateEndedReasonFromString(s string) (ServerMessageS
 		return ServerMessageStatusUpdateEndedReasonAssistantEndedCall, nil
 	case "assistant-said-end-call-phrase":
 		return ServerMessageStatusUpdateEndedReasonAssistantSaidEndCallPhrase, nil
+	case "assistant-ended-call-with-hangup-task":
+		return ServerMessageStatusUpdateEndedReasonAssistantEndedCallWithHangupTask, nil
 	case "assistant-forwarded-call":
 		return ServerMessageStatusUpdateEndedReasonAssistantForwardedCall, nil
 	case "assistant-join-timed-out":
@@ -42974,10 +44257,14 @@ func NewServerMessageStatusUpdateEndedReasonFromString(s string) (ServerMessageS
 		return ServerMessageStatusUpdateEndedReasonPipelineErrorNeetsVoiceFailed, nil
 	case "pipeline-error-smallest-ai-voice-failed":
 		return ServerMessageStatusUpdateEndedReasonPipelineErrorSmallestAiVoiceFailed, nil
+	case "pipeline-error-neuphonic-voice-failed":
+		return ServerMessageStatusUpdateEndedReasonPipelineErrorNeuphonicVoiceFailed, nil
 	case "pipeline-error-deepgram-transcriber-failed":
 		return ServerMessageStatusUpdateEndedReasonPipelineErrorDeepgramTranscriberFailed, nil
 	case "pipeline-error-gladia-transcriber-failed":
 		return ServerMessageStatusUpdateEndedReasonPipelineErrorGladiaTranscriberFailed, nil
+	case "pipeline-error-speechmatics-transcriber-failed":
+		return ServerMessageStatusUpdateEndedReasonPipelineErrorSpeechmaticsTranscriberFailed, nil
 	case "pipeline-error-assembly-ai-transcriber-failed":
 		return ServerMessageStatusUpdateEndedReasonPipelineErrorAssemblyAiTranscriberFailed, nil
 	case "pipeline-error-talkscriber-transcriber-failed":
@@ -43032,6 +44319,8 @@ func NewServerMessageStatusUpdateEndedReasonFromString(s string) (ServerMessageS
 		return ServerMessageStatusUpdateEndedReasonPipelineErrorGoogleLlmFailed, nil
 	case "pipeline-error-xai-llm-failed":
 		return ServerMessageStatusUpdateEndedReasonPipelineErrorXaiLlmFailed, nil
+	case "pipeline-error-mistral-llm-failed":
+		return ServerMessageStatusUpdateEndedReasonPipelineErrorMistralLlmFailed, nil
 	case "pipeline-error-inflection-ai-llm-failed":
 		return ServerMessageStatusUpdateEndedReasonPipelineErrorInflectionAiLlmFailed, nil
 	case "pipeline-error-cerebras-llm-failed":
@@ -43068,6 +44357,16 @@ func NewServerMessageStatusUpdateEndedReasonFromString(s string) (ServerMessageS
 		return ServerMessageStatusUpdateEndedReasonPipelineErrorXai429ExceededQuota, nil
 	case "pipeline-error-xai-500-server-error":
 		return ServerMessageStatusUpdateEndedReasonPipelineErrorXai500ServerError, nil
+	case "pipeline-error-mistral-400-bad-request-validation-failed":
+		return ServerMessageStatusUpdateEndedReasonPipelineErrorMistral400BadRequestValidationFailed, nil
+	case "pipeline-error-mistral-401-unauthorized":
+		return ServerMessageStatusUpdateEndedReasonPipelineErrorMistral401Unauthorized, nil
+	case "pipeline-error-mistral-403-model-access-denied":
+		return ServerMessageStatusUpdateEndedReasonPipelineErrorMistral403ModelAccessDenied, nil
+	case "pipeline-error-mistral-429-exceeded-quota":
+		return ServerMessageStatusUpdateEndedReasonPipelineErrorMistral429ExceededQuota, nil
+	case "pipeline-error-mistral-500-server-error":
+		return ServerMessageStatusUpdateEndedReasonPipelineErrorMistral500ServerError, nil
 	case "pipeline-error-inflection-ai-400-bad-request-validation-failed":
 		return ServerMessageStatusUpdateEndedReasonPipelineErrorInflectionAi400BadRequestValidationFailed, nil
 	case "pipeline-error-inflection-ai-401-unauthorized":
@@ -43994,6 +45293,7 @@ type ServerMessageTranscript struct {
 	// - `call.phoneNumberId`.
 	PhoneNumber *ServerMessageTranscriptPhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "transcript" is sent as transcriber outputs partial or final transcript.
+	Type ServerMessageTranscriptType `json:"type" url:"type"`
 	// This is the ISO-8601 formatted timestamp of when the message was sent.
 	Timestamp *string `json:"timestamp,omitempty" url:"timestamp,omitempty"`
 	// This is a live version of the `call.artifact`.
@@ -44028,7 +45328,6 @@ type ServerMessageTranscript struct {
 	TranscriptType ServerMessageTranscriptTranscriptType `json:"transcriptType" url:"transcriptType"`
 	// This is the transcript content.
 	Transcript string `json:"transcript" url:"transcript"`
-	type_      string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -44039,6 +45338,13 @@ func (s *ServerMessageTranscript) GetPhoneNumber() *ServerMessageTranscriptPhone
 		return nil
 	}
 	return s.PhoneNumber
+}
+
+func (s *ServerMessageTranscript) GetType() ServerMessageTranscriptType {
+	if s == nil {
+		return ""
+	}
+	return s.Type
 }
 
 func (s *ServerMessageTranscript) GetTimestamp() *string {
@@ -44097,49 +45403,24 @@ func (s *ServerMessageTranscript) GetTranscript() string {
 	return s.Transcript
 }
 
-func (s *ServerMessageTranscript) Type() string {
-	return s.type_
-}
-
 func (s *ServerMessageTranscript) GetExtraProperties() map[string]interface{} {
 	return s.extraProperties
 }
 
 func (s *ServerMessageTranscript) UnmarshalJSON(data []byte) error {
-	type embed ServerMessageTranscript
-	var unmarshaler = struct {
-		embed
-		Type string `json:"type"`
-	}{
-		embed: embed(*s),
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+	type unmarshaler ServerMessageTranscript
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*s = ServerMessageTranscript(unmarshaler.embed)
-	if unmarshaler.Type != "transcript" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", s, "transcript", unmarshaler.Type)
-	}
-	s.type_ = unmarshaler.Type
-	extraProperties, err := internal.ExtractExtraProperties(data, *s, "type")
+	*s = ServerMessageTranscript(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
 	if err != nil {
 		return err
 	}
 	s.extraProperties = extraProperties
 	s.rawJSON = json.RawMessage(data)
 	return nil
-}
-
-func (s *ServerMessageTranscript) MarshalJSON() ([]byte, error) {
-	type embed ServerMessageTranscript
-	var marshaler = struct {
-		embed
-		Type string `json:"type"`
-	}{
-		embed: embed(*s),
-		Type:  "transcript",
-	}
-	return json.Marshal(marshaler)
 }
 
 func (s *ServerMessageTranscript) String() string {
@@ -44306,6 +45587,29 @@ func NewServerMessageTranscriptTranscriptTypeFromString(s string) (ServerMessage
 }
 
 func (s ServerMessageTranscriptTranscriptType) Ptr() *ServerMessageTranscriptTranscriptType {
+	return &s
+}
+
+// This is the type of the message. "transcript" is sent as transcriber outputs partial or final transcript.
+type ServerMessageTranscriptType string
+
+const (
+	ServerMessageTranscriptTypeTranscript                    ServerMessageTranscriptType = "transcript"
+	ServerMessageTranscriptTypeTranscriptTranscriptTypeFinal ServerMessageTranscriptType = "transcript[transcriptType='final']"
+)
+
+func NewServerMessageTranscriptTypeFromString(s string) (ServerMessageTranscriptType, error) {
+	switch s {
+	case "transcript":
+		return ServerMessageTranscriptTypeTranscript, nil
+	case "transcript[transcriptType='final']":
+		return ServerMessageTranscriptTypeTranscriptTranscriptTypeFinal, nil
+	}
+	var t ServerMessageTranscriptType
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s ServerMessageTranscriptType) Ptr() *ServerMessageTranscriptType {
 	return &s
 }
 
@@ -46856,6 +48160,12 @@ type StopSpeakingPlan struct {
 	//
 	// @default 1
 	BackoffSeconds *float64 `json:"backoffSeconds,omitempty" url:"backoffSeconds,omitempty"`
+	// These are the phrases that will never interrupt the assistant, even if numWords threshold is met.
+	// These are typically acknowledgement or backchanneling phrases.
+	AcknowledgementPhrases []string `json:"acknowledgementPhrases,omitempty" url:"acknowledgementPhrases,omitempty"`
+	// These are the phrases that will always interrupt the assistant immediately, regardless of numWords.
+	// These are typically phrases indicating disagreement or desire to stop.
+	InterruptionPhrases []string `json:"interruptionPhrases,omitempty" url:"interruptionPhrases,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -46880,6 +48190,20 @@ func (s *StopSpeakingPlan) GetBackoffSeconds() *float64 {
 		return nil
 	}
 	return s.BackoffSeconds
+}
+
+func (s *StopSpeakingPlan) GetAcknowledgementPhrases() []string {
+	if s == nil {
+		return nil
+	}
+	return s.AcknowledgementPhrases
+}
+
+func (s *StopSpeakingPlan) GetInterruptionPhrases() []string {
+	if s == nil {
+		return nil
+	}
+	return s.InterruptionPhrases
 }
 
 func (s *StopSpeakingPlan) GetExtraProperties() map[string]interface{} {
@@ -47039,6 +48363,10 @@ type Subscription struct {
 	ConcurrencyCounter float64 `json:"concurrencyCounter" url:"concurrencyCounter"`
 	// This is the default concurrency limit for the subscription.
 	ConcurrencyLimitIncluded float64 `json:"concurrencyLimitIncluded" url:"concurrencyLimitIncluded"`
+	// This is the number of free phone numbers the subscription has
+	PhoneNumbersCounter *float64 `json:"phoneNumbersCounter,omitempty" url:"phoneNumbersCounter,omitempty"`
+	// This is the maximum number of free phone numbers the subscription can have
+	PhoneNumbersIncluded *float64 `json:"phoneNumbersIncluded,omitempty" url:"phoneNumbersIncluded,omitempty"`
 	// This is the purchased add-on concurrency limit for the subscription.
 	ConcurrencyLimitPurchased float64 `json:"concurrencyLimitPurchased" url:"concurrencyLimitPurchased"`
 	// This is the ID of the monthly job that charges for subscription add ons and phone numbers.
@@ -47068,10 +48396,12 @@ type Subscription struct {
 	ReferredByEmail *string `json:"referredByEmail,omitempty" url:"referredByEmail,omitempty"`
 	// This is the auto reload plan configured for the subscription.
 	AutoReloadPlan *AutoReloadPlan `json:"autoReloadPlan,omitempty" url:"autoReloadPlan,omitempty"`
-	// The number of minutes included in the subscription. Enterprise only.
+	// The number of minutes included in the subscription.
 	MinutesIncluded *float64 `json:"minutesIncluded,omitempty" url:"minutesIncluded,omitempty"`
-	// The number of minutes used in the subscription. Enterprise only.
+	// The number of minutes used in the subscription.
 	MinutesUsed *float64 `json:"minutesUsed,omitempty" url:"minutesUsed,omitempty"`
+	// This is the timestamp at which the number of monthly free minutes is scheduled to reset at.
+	MinutesUsedNextResetAt *time.Time `json:"minutesUsedNextResetAt,omitempty" url:"minutesUsedNextResetAt,omitempty"`
 	// The per minute charge on minutes that exceed the included minutes. Enterprise only.
 	MinutesOverageCost *float64 `json:"minutesOverageCost,omitempty" url:"minutesOverageCost,omitempty"`
 	// The list of providers included in the subscription. Enterprise only.
@@ -47145,6 +48475,20 @@ func (s *Subscription) GetConcurrencyLimitIncluded() float64 {
 		return 0
 	}
 	return s.ConcurrencyLimitIncluded
+}
+
+func (s *Subscription) GetPhoneNumbersCounter() *float64 {
+	if s == nil {
+		return nil
+	}
+	return s.PhoneNumbersCounter
+}
+
+func (s *Subscription) GetPhoneNumbersIncluded() *float64 {
+	if s == nil {
+		return nil
+	}
+	return s.PhoneNumbersIncluded
 }
 
 func (s *Subscription) GetConcurrencyLimitPurchased() float64 {
@@ -47252,6 +48596,13 @@ func (s *Subscription) GetMinutesUsed() *float64 {
 	return s.MinutesUsed
 }
 
+func (s *Subscription) GetMinutesUsedNextResetAt() *time.Time {
+	if s == nil {
+		return nil
+	}
+	return s.MinutesUsedNextResetAt
+}
+
 func (s *Subscription) GetMinutesOverageCost() *float64 {
 	if s == nil {
 		return nil
@@ -47311,6 +48662,7 @@ func (s *Subscription) UnmarshalJSON(data []byte) error {
 		embed
 		CreatedAt                       *internal.DateTime `json:"createdAt"`
 		UpdatedAt                       *internal.DateTime `json:"updatedAt"`
+		MinutesUsedNextResetAt          *internal.DateTime `json:"minutesUsedNextResetAt,omitempty"`
 		OutboundCallsCounterNextResetAt *internal.DateTime `json:"outboundCallsCounterNextResetAt,omitempty"`
 	}{
 		embed: embed(*s),
@@ -47321,6 +48673,7 @@ func (s *Subscription) UnmarshalJSON(data []byte) error {
 	*s = Subscription(unmarshaler.embed)
 	s.CreatedAt = unmarshaler.CreatedAt.Time()
 	s.UpdatedAt = unmarshaler.UpdatedAt.Time()
+	s.MinutesUsedNextResetAt = unmarshaler.MinutesUsedNextResetAt.TimePtr()
 	s.OutboundCallsCounterNextResetAt = unmarshaler.OutboundCallsCounterNextResetAt.TimePtr()
 	extraProperties, err := internal.ExtractExtraProperties(data, *s)
 	if err != nil {
@@ -47337,11 +48690,13 @@ func (s *Subscription) MarshalJSON() ([]byte, error) {
 		embed
 		CreatedAt                       *internal.DateTime `json:"createdAt"`
 		UpdatedAt                       *internal.DateTime `json:"updatedAt"`
+		MinutesUsedNextResetAt          *internal.DateTime `json:"minutesUsedNextResetAt,omitempty"`
 		OutboundCallsCounterNextResetAt *internal.DateTime `json:"outboundCallsCounterNextResetAt,omitempty"`
 	}{
 		embed:                           embed(*s),
 		CreatedAt:                       internal.NewDateTime(s.CreatedAt),
 		UpdatedAt:                       internal.NewDateTime(s.UpdatedAt),
+		MinutesUsedNextResetAt:          internal.NewOptionalDateTime(s.MinutesUsedNextResetAt),
 		OutboundCallsCounterNextResetAt: internal.NewOptionalDateTime(s.OutboundCallsCounterNextResetAt),
 	}
 	return json.Marshal(marshaler)
@@ -47732,6 +49087,7 @@ const (
 	SyncVoiceLibraryDtoProvidersItemDeepgram    SyncVoiceLibraryDtoProvidersItem = "deepgram"
 	SyncVoiceLibraryDtoProvidersItemLmnt        SyncVoiceLibraryDtoProvidersItem = "lmnt"
 	SyncVoiceLibraryDtoProvidersItemNeets       SyncVoiceLibraryDtoProvidersItem = "neets"
+	SyncVoiceLibraryDtoProvidersItemNeuphonic   SyncVoiceLibraryDtoProvidersItem = "neuphonic"
 	SyncVoiceLibraryDtoProvidersItemOpenai      SyncVoiceLibraryDtoProvidersItem = "openai"
 	SyncVoiceLibraryDtoProvidersItemPlayht      SyncVoiceLibraryDtoProvidersItem = "playht"
 	SyncVoiceLibraryDtoProvidersItemRimeAi      SyncVoiceLibraryDtoProvidersItem = "rime-ai"
@@ -47755,6 +49111,8 @@ func NewSyncVoiceLibraryDtoProvidersItemFromString(s string) (SyncVoiceLibraryDt
 		return SyncVoiceLibraryDtoProvidersItemLmnt, nil
 	case "neets":
 		return SyncVoiceLibraryDtoProvidersItemNeets, nil
+	case "neuphonic":
+		return SyncVoiceLibraryDtoProvidersItemNeuphonic, nil
 	case "openai":
 		return SyncVoiceLibraryDtoProvidersItemOpenai, nil
 	case "playht":
@@ -47772,6 +49130,80 @@ func NewSyncVoiceLibraryDtoProvidersItemFromString(s string) (SyncVoiceLibraryDt
 
 func (s SyncVoiceLibraryDtoProvidersItem) Ptr() *SyncVoiceLibraryDtoProvidersItem {
 	return &s
+}
+
+type SystemMessage struct {
+	// The role of the system in the conversation.
+	Role string `json:"role" url:"role"`
+	// The message content from the system.
+	Message string `json:"message" url:"message"`
+	// The timestamp when the message was sent.
+	Time float64 `json:"time" url:"time"`
+	// The number of seconds from the start of the conversation.
+	SecondsFromStart float64 `json:"secondsFromStart" url:"secondsFromStart"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SystemMessage) GetRole() string {
+	if s == nil {
+		return ""
+	}
+	return s.Role
+}
+
+func (s *SystemMessage) GetMessage() string {
+	if s == nil {
+		return ""
+	}
+	return s.Message
+}
+
+func (s *SystemMessage) GetTime() float64 {
+	if s == nil {
+		return 0
+	}
+	return s.Time
+}
+
+func (s *SystemMessage) GetSecondsFromStart() float64 {
+	if s == nil {
+		return 0
+	}
+	return s.SecondsFromStart
+}
+
+func (s *SystemMessage) GetExtraProperties() map[string]interface{} {
+	return s.extraProperties
+}
+
+func (s *SystemMessage) UnmarshalJSON(data []byte) error {
+	type unmarshaler SystemMessage
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SystemMessage(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SystemMessage) String() string {
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
 }
 
 type TalkscriberTranscriber struct {
@@ -49092,6 +50524,233 @@ func (t TemplateVisibility) Ptr() *TemplateVisibility {
 	return &t
 }
 
+type TestSuiteTestScorerAi struct {
+	// This is the type of the scorer, which must be AI.
+	// This is the rubric used by the AI scorer.
+	Rubric string `json:"rubric" url:"rubric"`
+	type_  string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TestSuiteTestScorerAi) GetRubric() string {
+	if t == nil {
+		return ""
+	}
+	return t.Rubric
+}
+
+func (t *TestSuiteTestScorerAi) Type() string {
+	return t.type_
+}
+
+func (t *TestSuiteTestScorerAi) GetExtraProperties() map[string]interface{} {
+	return t.extraProperties
+}
+
+func (t *TestSuiteTestScorerAi) UnmarshalJSON(data []byte) error {
+	type embed TestSuiteTestScorerAi
+	var unmarshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*t),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*t = TestSuiteTestScorerAi(unmarshaler.embed)
+	if unmarshaler.Type != "ai" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", t, "ai", unmarshaler.Type)
+	}
+	t.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *t, "type")
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TestSuiteTestScorerAi) MarshalJSON() ([]byte, error) {
+	type embed TestSuiteTestScorerAi
+	var marshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*t),
+		Type:  "ai",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (t *TestSuiteTestScorerAi) String() string {
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+type TestSuiteTestVoice struct {
+	// These are the scorers used to evaluate the test.
+	Scorers []*TestSuiteTestScorerAi `json:"scorers,omitempty" url:"scorers,omitempty"`
+	// This is the unique identifier for the test.
+	Id string `json:"id" url:"id"`
+	// This is the unique identifier for the test suite this test belongs to.
+	TestSuiteId string `json:"testSuiteId" url:"testSuiteId"`
+	// This is the unique identifier for the organization this test belongs to.
+	OrgId string `json:"orgId" url:"orgId"`
+	// This is the ISO 8601 date-time string of when the test was created.
+	CreatedAt time.Time `json:"createdAt" url:"createdAt"`
+	// This is the ISO 8601 date-time string of when the test was last updated.
+	UpdatedAt time.Time `json:"updatedAt" url:"updatedAt"`
+	// This is the name of the test.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// This is the script to be used for the voice test.
+	Script string `json:"script" url:"script"`
+	// This is the number of attempts allowed for the test.
+	NumAttempts *float64 `json:"numAttempts,omitempty" url:"numAttempts,omitempty"`
+	type_       string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TestSuiteTestVoice) GetScorers() []*TestSuiteTestScorerAi {
+	if t == nil {
+		return nil
+	}
+	return t.Scorers
+}
+
+func (t *TestSuiteTestVoice) GetId() string {
+	if t == nil {
+		return ""
+	}
+	return t.Id
+}
+
+func (t *TestSuiteTestVoice) GetTestSuiteId() string {
+	if t == nil {
+		return ""
+	}
+	return t.TestSuiteId
+}
+
+func (t *TestSuiteTestVoice) GetOrgId() string {
+	if t == nil {
+		return ""
+	}
+	return t.OrgId
+}
+
+func (t *TestSuiteTestVoice) GetCreatedAt() time.Time {
+	if t == nil {
+		return time.Time{}
+	}
+	return t.CreatedAt
+}
+
+func (t *TestSuiteTestVoice) GetUpdatedAt() time.Time {
+	if t == nil {
+		return time.Time{}
+	}
+	return t.UpdatedAt
+}
+
+func (t *TestSuiteTestVoice) GetName() *string {
+	if t == nil {
+		return nil
+	}
+	return t.Name
+}
+
+func (t *TestSuiteTestVoice) GetScript() string {
+	if t == nil {
+		return ""
+	}
+	return t.Script
+}
+
+func (t *TestSuiteTestVoice) GetNumAttempts() *float64 {
+	if t == nil {
+		return nil
+	}
+	return t.NumAttempts
+}
+
+func (t *TestSuiteTestVoice) Type() string {
+	return t.type_
+}
+
+func (t *TestSuiteTestVoice) GetExtraProperties() map[string]interface{} {
+	return t.extraProperties
+}
+
+func (t *TestSuiteTestVoice) UnmarshalJSON(data []byte) error {
+	type embed TestSuiteTestVoice
+	var unmarshaler = struct {
+		embed
+		CreatedAt *internal.DateTime `json:"createdAt"`
+		UpdatedAt *internal.DateTime `json:"updatedAt"`
+		Type      string             `json:"type"`
+	}{
+		embed: embed(*t),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*t = TestSuiteTestVoice(unmarshaler.embed)
+	t.CreatedAt = unmarshaler.CreatedAt.Time()
+	t.UpdatedAt = unmarshaler.UpdatedAt.Time()
+	if unmarshaler.Type != "voice" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", t, "voice", unmarshaler.Type)
+	}
+	t.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *t, "type")
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TestSuiteTestVoice) MarshalJSON() ([]byte, error) {
+	type embed TestSuiteTestVoice
+	var marshaler = struct {
+		embed
+		CreatedAt *internal.DateTime `json:"createdAt"`
+		UpdatedAt *internal.DateTime `json:"updatedAt"`
+		Type      string             `json:"type"`
+	}{
+		embed:     embed(*t),
+		CreatedAt: internal.NewDateTime(t.CreatedAt),
+		UpdatedAt: internal.NewDateTime(t.UpdatedAt),
+		Type:      "voice",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (t *TestSuiteTestVoice) String() string {
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
 type TextContent struct {
 	Text     string              `json:"text" url:"text"`
 	Language TextContentLanguage `json:"language" url:"language"`
@@ -49998,159 +51657,6 @@ func (t *TextEditorToolWithToolCallMessagesItem) Accept(visitor TextEditorToolWi
 	return fmt.Errorf("type %T does not include a non-empty union type", t)
 }
 
-type TimeRange struct {
-	// This is the time step for aggregations.
-	//
-	// If not provided, defaults to returning for the entire time range.
-	Step *TimeRangeStep `json:"step,omitempty" url:"step,omitempty"`
-	// This is the start date for the time range.
-	//
-	// If not provided, defaults to the 7 days ago.
-	Start *time.Time `json:"start,omitempty" url:"start,omitempty"`
-	// This is the end date for the time range.
-	//
-	// If not provided, defaults to now.
-	End *time.Time `json:"end,omitempty" url:"end,omitempty"`
-	// This is the timezone you want to set for the query.
-	//
-	// If not provided, defaults to UTC.
-	Timezone *string `json:"timezone,omitempty" url:"timezone,omitempty"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (t *TimeRange) GetStep() *TimeRangeStep {
-	if t == nil {
-		return nil
-	}
-	return t.Step
-}
-
-func (t *TimeRange) GetStart() *time.Time {
-	if t == nil {
-		return nil
-	}
-	return t.Start
-}
-
-func (t *TimeRange) GetEnd() *time.Time {
-	if t == nil {
-		return nil
-	}
-	return t.End
-}
-
-func (t *TimeRange) GetTimezone() *string {
-	if t == nil {
-		return nil
-	}
-	return t.Timezone
-}
-
-func (t *TimeRange) GetExtraProperties() map[string]interface{} {
-	return t.extraProperties
-}
-
-func (t *TimeRange) UnmarshalJSON(data []byte) error {
-	type embed TimeRange
-	var unmarshaler = struct {
-		embed
-		Start *internal.DateTime `json:"start,omitempty"`
-		End   *internal.DateTime `json:"end,omitempty"`
-	}{
-		embed: embed(*t),
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
-		return err
-	}
-	*t = TimeRange(unmarshaler.embed)
-	t.Start = unmarshaler.Start.TimePtr()
-	t.End = unmarshaler.End.TimePtr()
-	extraProperties, err := internal.ExtractExtraProperties(data, *t)
-	if err != nil {
-		return err
-	}
-	t.extraProperties = extraProperties
-	t.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (t *TimeRange) MarshalJSON() ([]byte, error) {
-	type embed TimeRange
-	var marshaler = struct {
-		embed
-		Start *internal.DateTime `json:"start,omitempty"`
-		End   *internal.DateTime `json:"end,omitempty"`
-	}{
-		embed: embed(*t),
-		Start: internal.NewOptionalDateTime(t.Start),
-		End:   internal.NewOptionalDateTime(t.End),
-	}
-	return json.Marshal(marshaler)
-}
-
-func (t *TimeRange) String() string {
-	if len(t.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(t); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", t)
-}
-
-// This is the time step for aggregations.
-//
-// If not provided, defaults to returning for the entire time range.
-type TimeRangeStep string
-
-const (
-	TimeRangeStepMinute     TimeRangeStep = "minute"
-	TimeRangeStepHour       TimeRangeStep = "hour"
-	TimeRangeStepDay        TimeRangeStep = "day"
-	TimeRangeStepWeek       TimeRangeStep = "week"
-	TimeRangeStepMonth      TimeRangeStep = "month"
-	TimeRangeStepQuarter    TimeRangeStep = "quarter"
-	TimeRangeStepYear       TimeRangeStep = "year"
-	TimeRangeStepDecade     TimeRangeStep = "decade"
-	TimeRangeStepCentury    TimeRangeStep = "century"
-	TimeRangeStepMillennium TimeRangeStep = "millennium"
-)
-
-func NewTimeRangeStepFromString(s string) (TimeRangeStep, error) {
-	switch s {
-	case "minute":
-		return TimeRangeStepMinute, nil
-	case "hour":
-		return TimeRangeStepHour, nil
-	case "day":
-		return TimeRangeStepDay, nil
-	case "week":
-		return TimeRangeStepWeek, nil
-	case "month":
-		return TimeRangeStepMonth, nil
-	case "quarter":
-		return TimeRangeStepQuarter, nil
-	case "year":
-		return TimeRangeStepYear, nil
-	case "decade":
-		return TimeRangeStepDecade, nil
-	case "century":
-		return TimeRangeStepCentury, nil
-	case "millennium":
-		return TimeRangeStepMillennium, nil
-	}
-	var t TimeRangeStep
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (t TimeRangeStep) Ptr() *TimeRangeStep {
-	return &t
-}
-
 type TogetherAiCredential struct {
 	// This is not returned in the API.
 	ApiKey string `json:"apiKey" url:"apiKey"`
@@ -50986,6 +52492,89 @@ func (t *ToolCallFunction) String() string {
 	return fmt.Sprintf("%#v", t)
 }
 
+type ToolCallMessage struct {
+	// The role of the tool call in the conversation.
+	Role string `json:"role" url:"role"`
+	// The list of tool calls made during the conversation.
+	ToolCalls []map[string]interface{} `json:"toolCalls,omitempty" url:"toolCalls,omitempty"`
+	// The message content for the tool call.
+	Message string `json:"message" url:"message"`
+	// The timestamp when the message was sent.
+	Time float64 `json:"time" url:"time"`
+	// The number of seconds from the start of the conversation.
+	SecondsFromStart float64 `json:"secondsFromStart" url:"secondsFromStart"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *ToolCallMessage) GetRole() string {
+	if t == nil {
+		return ""
+	}
+	return t.Role
+}
+
+func (t *ToolCallMessage) GetToolCalls() []map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.ToolCalls
+}
+
+func (t *ToolCallMessage) GetMessage() string {
+	if t == nil {
+		return ""
+	}
+	return t.Message
+}
+
+func (t *ToolCallMessage) GetTime() float64 {
+	if t == nil {
+		return 0
+	}
+	return t.Time
+}
+
+func (t *ToolCallMessage) GetSecondsFromStart() float64 {
+	if t == nil {
+		return 0
+	}
+	return t.SecondsFromStart
+}
+
+func (t *ToolCallMessage) GetExtraProperties() map[string]interface{} {
+	return t.extraProperties
+}
+
+func (t *ToolCallMessage) UnmarshalJSON(data []byte) error {
+	type unmarshaler ToolCallMessage
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = ToolCallMessage(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *ToolCallMessage) String() string {
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
 type ToolCallResult struct {
 	// This is the message that will be spoken to the user.
 	//
@@ -51072,6 +52661,98 @@ func (t *ToolCallResult) UnmarshalJSON(data []byte) error {
 }
 
 func (t *ToolCallResult) String() string {
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+type ToolCallResultMessage struct {
+	// The role of the tool call result in the conversation.
+	Role string `json:"role" url:"role"`
+	// The ID of the tool call.
+	ToolCallId string `json:"toolCallId" url:"toolCallId"`
+	// The name of the tool that returned the result.
+	Name string `json:"name" url:"name"`
+	// The result of the tool call in JSON format.
+	Result string `json:"result" url:"result"`
+	// The timestamp when the message was sent.
+	Time float64 `json:"time" url:"time"`
+	// The number of seconds from the start of the conversation.
+	SecondsFromStart float64 `json:"secondsFromStart" url:"secondsFromStart"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *ToolCallResultMessage) GetRole() string {
+	if t == nil {
+		return ""
+	}
+	return t.Role
+}
+
+func (t *ToolCallResultMessage) GetToolCallId() string {
+	if t == nil {
+		return ""
+	}
+	return t.ToolCallId
+}
+
+func (t *ToolCallResultMessage) GetName() string {
+	if t == nil {
+		return ""
+	}
+	return t.Name
+}
+
+func (t *ToolCallResultMessage) GetResult() string {
+	if t == nil {
+		return ""
+	}
+	return t.Result
+}
+
+func (t *ToolCallResultMessage) GetTime() float64 {
+	if t == nil {
+		return 0
+	}
+	return t.Time
+}
+
+func (t *ToolCallResultMessage) GetSecondsFromStart() float64 {
+	if t == nil {
+		return 0
+	}
+	return t.SecondsFromStart
+}
+
+func (t *ToolCallResultMessage) GetExtraProperties() map[string]interface{} {
+	return t.extraProperties
+}
+
+func (t *ToolCallResultMessage) UnmarshalJSON(data []byte) error {
+	type unmarshaler ToolCallResultMessage
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = ToolCallResultMessage(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *ToolCallResultMessage) String() string {
 	if len(t.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
 			return value
@@ -51572,6 +53253,10 @@ type ToolMessageStart struct {
 	// This message is never triggered for async tools.
 	//
 	// If this message is not provided, one of the default filler messages "Hold on a sec", "One moment", "Just a sec", "Give me a moment" or "This'll just take a sec" will be used.
+	// This is an optional boolean that if true, the tool call will only trigger after the message is spoken. Default is false.
+	//
+	// @default false
+	Blocking *bool `json:"blocking,omitempty" url:"blocking,omitempty"`
 	// This is the content that the assistant says when this message is triggered.
 	Content *string `json:"content,omitempty" url:"content,omitempty"`
 	// This is an optional array of conditions that the tool call arguments must meet in order for this message to be triggered.
@@ -51587,6 +53272,13 @@ func (t *ToolMessageStart) GetContents() []*TextContent {
 		return nil
 	}
 	return t.Contents
+}
+
+func (t *ToolMessageStart) GetBlocking() *bool {
+	if t == nil {
+		return nil
+	}
+	return t.Blocking
 }
 
 func (t *ToolMessageStart) GetContent() *string {
@@ -51958,6 +53650,232 @@ func (t *TranscriptionEndpointingPlan) String() string {
 	return fmt.Sprintf("%#v", t)
 }
 
+type Transfer struct {
+	Destination map[string]interface{} `json:"destination,omitempty" url:"destination,omitempty"`
+	Name        string                 `json:"name" url:"name"`
+	// This is for metadata you want to store on the task.
+	Metadata map[string]interface{} `json:"metadata,omitempty" url:"metadata,omitempty"`
+	type_    string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *Transfer) GetDestination() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.Destination
+}
+
+func (t *Transfer) GetName() string {
+	if t == nil {
+		return ""
+	}
+	return t.Name
+}
+
+func (t *Transfer) GetMetadata() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.Metadata
+}
+
+func (t *Transfer) Type() string {
+	return t.type_
+}
+
+func (t *Transfer) GetExtraProperties() map[string]interface{} {
+	return t.extraProperties
+}
+
+func (t *Transfer) UnmarshalJSON(data []byte) error {
+	type embed Transfer
+	var unmarshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*t),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*t = Transfer(unmarshaler.embed)
+	if unmarshaler.Type != "transfer" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", t, "transfer", unmarshaler.Type)
+	}
+	t.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *t, "type")
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *Transfer) MarshalJSON() ([]byte, error) {
+	type embed Transfer
+	var marshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*t),
+		Type:  "transfer",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (t *Transfer) String() string {
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+type TransferAssistantHookAction struct {
+	// This is the type of action - must be "transfer"
+	// This is the destination details for the transfer - can be a phone number or SIP URI
+	Destination *TransferAssistantHookActionDestination `json:"destination,omitempty" url:"destination,omitempty"`
+	type_       string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TransferAssistantHookAction) GetDestination() *TransferAssistantHookActionDestination {
+	if t == nil {
+		return nil
+	}
+	return t.Destination
+}
+
+func (t *TransferAssistantHookAction) Type() string {
+	return t.type_
+}
+
+func (t *TransferAssistantHookAction) GetExtraProperties() map[string]interface{} {
+	return t.extraProperties
+}
+
+func (t *TransferAssistantHookAction) UnmarshalJSON(data []byte) error {
+	type embed TransferAssistantHookAction
+	var unmarshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*t),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*t = TransferAssistantHookAction(unmarshaler.embed)
+	if unmarshaler.Type != "transfer" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", t, "transfer", unmarshaler.Type)
+	}
+	t.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *t, "type")
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TransferAssistantHookAction) MarshalJSON() ([]byte, error) {
+	type embed TransferAssistantHookAction
+	var marshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*t),
+		Type:  "transfer",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (t *TransferAssistantHookAction) String() string {
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+// This is the destination details for the transfer - can be a phone number or SIP URI
+type TransferAssistantHookActionDestination struct {
+	TransferDestinationNumber *TransferDestinationNumber
+	TransferDestinationSip    *TransferDestinationSip
+
+	typ string
+}
+
+func (t *TransferAssistantHookActionDestination) GetTransferDestinationNumber() *TransferDestinationNumber {
+	if t == nil {
+		return nil
+	}
+	return t.TransferDestinationNumber
+}
+
+func (t *TransferAssistantHookActionDestination) GetTransferDestinationSip() *TransferDestinationSip {
+	if t == nil {
+		return nil
+	}
+	return t.TransferDestinationSip
+}
+
+func (t *TransferAssistantHookActionDestination) UnmarshalJSON(data []byte) error {
+	valueTransferDestinationNumber := new(TransferDestinationNumber)
+	if err := json.Unmarshal(data, &valueTransferDestinationNumber); err == nil {
+		t.typ = "TransferDestinationNumber"
+		t.TransferDestinationNumber = valueTransferDestinationNumber
+		return nil
+	}
+	valueTransferDestinationSip := new(TransferDestinationSip)
+	if err := json.Unmarshal(data, &valueTransferDestinationSip); err == nil {
+		t.typ = "TransferDestinationSip"
+		t.TransferDestinationSip = valueTransferDestinationSip
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, t)
+}
+
+func (t TransferAssistantHookActionDestination) MarshalJSON() ([]byte, error) {
+	if t.typ == "TransferDestinationNumber" || t.TransferDestinationNumber != nil {
+		return json.Marshal(t.TransferDestinationNumber)
+	}
+	if t.typ == "TransferDestinationSip" || t.TransferDestinationSip != nil {
+		return json.Marshal(t.TransferDestinationSip)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", t)
+}
+
+type TransferAssistantHookActionDestinationVisitor interface {
+	VisitTransferDestinationNumber(*TransferDestinationNumber) error
+	VisitTransferDestinationSip(*TransferDestinationSip) error
+}
+
+func (t *TransferAssistantHookActionDestination) Accept(visitor TransferAssistantHookActionDestinationVisitor) error {
+	if t.typ == "TransferDestinationNumber" || t.TransferDestinationNumber != nil {
+		return visitor.VisitTransferDestinationNumber(t.TransferDestinationNumber)
+	}
+	if t.typ == "TransferDestinationSip" || t.TransferDestinationSip != nil {
+		return visitor.VisitTransferDestinationSip(t.TransferDestinationSip)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", t)
+}
+
 type TransferDestinationAssistant struct {
 	// This is spoken to the customer before connecting them to the destination.
 	//
@@ -52030,6 +53948,29 @@ type TransferDestinationAssistant struct {
 	//	  user: Yes, please
 	//	  assistant: how can i help?
 	//	  user: i need help with my account
+	//
+	// - `swap-system-message-in-history-and-remove-transfer-tool-messages`: This replaces the original system message with the new assistant's system message on transfer and removes transfer tool messages from conversation history sent to the LLM.
+	//
+	//	Example:
+	//
+	//	Pre-transfer:
+	//	  system: assistant1 system message
+	//	  assistant: assistant1 first message
+	//	  user: hey, good morning
+	//	  assistant: how can i help?
+	//	  user: i need help with my account
+	//	  transfer-tool
+	//	  transfer-tool-result
+	//	  assistant: (destination.message)
+	//
+	//	Post-transfer:
+	//	  system: assistant2 system message
+	//	  assistant: assistant1 first message
+	//	  user: hey, good morning
+	//	  assistant: how can i help?
+	//	  user: i need help with my account
+	//	  assistant: (destination.message)
+	//	  assistant: assistant2 first message (or model generated if firstMessageMode is set to `assistant-speaks-first-with-model-generated-message`)
 	//
 	// @default 'rolling-history'
 	TransferMode *TransferMode `json:"transferMode,omitempty" url:"transferMode,omitempty"`
@@ -52802,6 +54743,7 @@ type TransferPlan struct {
 	// - `warm-transfer-say-summary`: The assistant dials the destination, provides a summary of the call to the destination party, connects the customer, and leaves the call.
 	// - `warm-transfer-wait-for-operator-to-speak-first-and-then-say-message`: The assistant dials the destination, waits for the operator to speak, delivers the `message` to the destination party, and then connects the customer.
 	// - `warm-transfer-wait-for-operator-to-speak-first-and-then-say-summary`: The assistant dials the destination, waits for the operator to speak, provides a summary of the call to the destination party, and then connects the customer.
+	// - `warm-transfer-twiml`: The assistant dials the destination, executes the twiml instructions on the destination call leg, connects the customer, and leaves the call.
 	//
 	// @default 'blind-transfer'
 	Mode TransferPlanMode `json:"mode" url:"mode"`
@@ -52814,6 +54756,20 @@ type TransferPlan struct {
 	// - 'refer': Uses SIP REFER to transfer the call (default)
 	// - 'bye': Ends current call with SIP BYE
 	SipVerb map[string]interface{} `json:"sipVerb,omitempty" url:"sipVerb,omitempty"`
+	// This is the TwiML instructions to execute on the destination call leg before connecting the customer.
+	//
+	// Usage:
+	// - Used only when `mode` is `warm-transfer-twiml`.
+	// - Supports only `Play`, `Say`, `Gather`, `Hangup` and `Pause` verbs.
+	// - Maximum length is 4096 characters.
+	//
+	// Example:
+	// ```
+	// <Say voice="alice" language="en-US">Hello, transferring a customer to you.</Say>
+	// <Pause length="2"/>
+	// <Say>They called about billing questions.</Say>
+	// ```
+	Twiml *string `json:"twiml,omitempty" url:"twiml,omitempty"`
 	// This is the plan for generating a summary of the call to present to the destination party.
 	//
 	// Usage:
@@ -52843,6 +54799,13 @@ func (t *TransferPlan) GetSipVerb() map[string]interface{} {
 		return nil
 	}
 	return t.SipVerb
+}
+
+func (t *TransferPlan) GetTwiml() *string {
+	if t == nil {
+		return nil
+	}
+	return t.Twiml
 }
 
 func (t *TransferPlan) GetSummaryPlan() *SummaryPlan {
@@ -52959,6 +54922,7 @@ func (t *TransferPlanMessage) Accept(visitor TransferPlanMessageVisitor) error {
 // - `warm-transfer-say-summary`: The assistant dials the destination, provides a summary of the call to the destination party, connects the customer, and leaves the call.
 // - `warm-transfer-wait-for-operator-to-speak-first-and-then-say-message`: The assistant dials the destination, waits for the operator to speak, delivers the `message` to the destination party, and then connects the customer.
 // - `warm-transfer-wait-for-operator-to-speak-first-and-then-say-summary`: The assistant dials the destination, waits for the operator to speak, provides a summary of the call to the destination party, and then connects the customer.
+// - `warm-transfer-twiml`: The assistant dials the destination, executes the twiml instructions on the destination call leg, connects the customer, and leaves the call.
 //
 // @default 'blind-transfer'
 type TransferPlanMode string
@@ -52968,6 +54932,7 @@ const (
 	TransferPlanModeBlindTransferAddSummaryToSipHeader                       TransferPlanMode = "blind-transfer-add-summary-to-sip-header"
 	TransferPlanModeWarmTransferSayMessage                                   TransferPlanMode = "warm-transfer-say-message"
 	TransferPlanModeWarmTransferSaySummary                                   TransferPlanMode = "warm-transfer-say-summary"
+	TransferPlanModeWarmTransferTwiml                                        TransferPlanMode = "warm-transfer-twiml"
 	TransferPlanModeWarmTransferWaitForOperatorToSpeakFirstAndThenSayMessage TransferPlanMode = "warm-transfer-wait-for-operator-to-speak-first-and-then-say-message"
 	TransferPlanModeWarmTransferWaitForOperatorToSpeakFirstAndThenSaySummary TransferPlanMode = "warm-transfer-wait-for-operator-to-speak-first-and-then-say-summary"
 )
@@ -52982,6 +54947,8 @@ func NewTransferPlanModeFromString(s string) (TransferPlanMode, error) {
 		return TransferPlanModeWarmTransferSayMessage, nil
 	case "warm-transfer-say-summary":
 		return TransferPlanModeWarmTransferSaySummary, nil
+	case "warm-transfer-twiml":
+		return TransferPlanModeWarmTransferTwiml, nil
 	case "warm-transfer-wait-for-operator-to-speak-first-and-then-say-message":
 		return TransferPlanModeWarmTransferWaitForOperatorToSpeakFirstAndThenSayMessage, nil
 	case "warm-transfer-wait-for-operator-to-speak-first-and-then-say-summary":
@@ -53898,6 +55865,7 @@ func (u *UpdateAzureOpenAiCredentialDto) String() string {
 type UpdateAzureOpenAiCredentialDtoModelsItem string
 
 const (
+	UpdateAzureOpenAiCredentialDtoModelsItemGpt4O20240806Ptu  UpdateAzureOpenAiCredentialDtoModelsItem = "gpt-4o-2024-08-06-ptu"
 	UpdateAzureOpenAiCredentialDtoModelsItemGpt4O20240806     UpdateAzureOpenAiCredentialDtoModelsItem = "gpt-4o-2024-08-06"
 	UpdateAzureOpenAiCredentialDtoModelsItemGpt4OMini20240718 UpdateAzureOpenAiCredentialDtoModelsItem = "gpt-4o-mini-2024-07-18"
 	UpdateAzureOpenAiCredentialDtoModelsItemGpt4O20240513     UpdateAzureOpenAiCredentialDtoModelsItem = "gpt-4o-2024-05-13"
@@ -53911,6 +55879,8 @@ const (
 
 func NewUpdateAzureOpenAiCredentialDtoModelsItemFromString(s string) (UpdateAzureOpenAiCredentialDtoModelsItem, error) {
 	switch s {
+	case "gpt-4o-2024-08-06-ptu":
+		return UpdateAzureOpenAiCredentialDtoModelsItemGpt4O20240806Ptu, nil
 	case "gpt-4o-2024-08-06":
 		return UpdateAzureOpenAiCredentialDtoModelsItemGpt4O20240806, nil
 	case "gpt-4o-mini-2024-07-18":
@@ -56600,172 +58570,6 @@ func (u *UpdateVonageCredentialDto) String() string {
 	return fmt.Sprintf("%#v", u)
 }
 
-type UpdateWorkflowDto struct {
-	Nodes []*UpdateWorkflowDtoNodesItem `json:"nodes,omitempty" url:"nodes,omitempty"`
-	Name  *string                       `json:"name,omitempty" url:"name,omitempty"`
-	Edges []*Edge                       `json:"edges,omitempty" url:"edges,omitempty"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (u *UpdateWorkflowDto) GetNodes() []*UpdateWorkflowDtoNodesItem {
-	if u == nil {
-		return nil
-	}
-	return u.Nodes
-}
-
-func (u *UpdateWorkflowDto) GetName() *string {
-	if u == nil {
-		return nil
-	}
-	return u.Name
-}
-
-func (u *UpdateWorkflowDto) GetEdges() []*Edge {
-	if u == nil {
-		return nil
-	}
-	return u.Edges
-}
-
-func (u *UpdateWorkflowDto) GetExtraProperties() map[string]interface{} {
-	return u.extraProperties
-}
-
-func (u *UpdateWorkflowDto) UnmarshalJSON(data []byte) error {
-	type unmarshaler UpdateWorkflowDto
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*u = UpdateWorkflowDto(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *u)
-	if err != nil {
-		return err
-	}
-	u.extraProperties = extraProperties
-	u.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (u *UpdateWorkflowDto) String() string {
-	if len(u.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(u); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", u)
-}
-
-type UpdateWorkflowDtoNodesItem struct {
-	Say               *Say
-	Gather            *Gather
-	Unknown           interface{}
-	CreateWorkflowDto *CreateWorkflowDto
-
-	typ string
-}
-
-func (u *UpdateWorkflowDtoNodesItem) GetSay() *Say {
-	if u == nil {
-		return nil
-	}
-	return u.Say
-}
-
-func (u *UpdateWorkflowDtoNodesItem) GetGather() *Gather {
-	if u == nil {
-		return nil
-	}
-	return u.Gather
-}
-
-func (u *UpdateWorkflowDtoNodesItem) GetUnknown() interface{} {
-	if u == nil {
-		return nil
-	}
-	return u.Unknown
-}
-
-func (u *UpdateWorkflowDtoNodesItem) GetCreateWorkflowDto() *CreateWorkflowDto {
-	if u == nil {
-		return nil
-	}
-	return u.CreateWorkflowDto
-}
-
-func (u *UpdateWorkflowDtoNodesItem) UnmarshalJSON(data []byte) error {
-	valueSay := new(Say)
-	if err := json.Unmarshal(data, &valueSay); err == nil {
-		u.typ = "Say"
-		u.Say = valueSay
-		return nil
-	}
-	valueGather := new(Gather)
-	if err := json.Unmarshal(data, &valueGather); err == nil {
-		u.typ = "Gather"
-		u.Gather = valueGather
-		return nil
-	}
-	var valueUnknown interface{}
-	if err := json.Unmarshal(data, &valueUnknown); err == nil {
-		u.typ = "Unknown"
-		u.Unknown = valueUnknown
-		return nil
-	}
-	valueCreateWorkflowDto := new(CreateWorkflowDto)
-	if err := json.Unmarshal(data, &valueCreateWorkflowDto); err == nil {
-		u.typ = "CreateWorkflowDto"
-		u.CreateWorkflowDto = valueCreateWorkflowDto
-		return nil
-	}
-	return fmt.Errorf("%s cannot be deserialized as a %T", data, u)
-}
-
-func (u UpdateWorkflowDtoNodesItem) MarshalJSON() ([]byte, error) {
-	if u.typ == "Say" || u.Say != nil {
-		return json.Marshal(u.Say)
-	}
-	if u.typ == "Gather" || u.Gather != nil {
-		return json.Marshal(u.Gather)
-	}
-	if u.typ == "Unknown" || u.Unknown != nil {
-		return json.Marshal(u.Unknown)
-	}
-	if u.typ == "CreateWorkflowDto" || u.CreateWorkflowDto != nil {
-		return json.Marshal(u.CreateWorkflowDto)
-	}
-	return nil, fmt.Errorf("type %T does not include a non-empty union type", u)
-}
-
-type UpdateWorkflowDtoNodesItemVisitor interface {
-	VisitSay(*Say) error
-	VisitGather(*Gather) error
-	VisitUnknown(interface{}) error
-	VisitCreateWorkflowDto(*CreateWorkflowDto) error
-}
-
-func (u *UpdateWorkflowDtoNodesItem) Accept(visitor UpdateWorkflowDtoNodesItemVisitor) error {
-	if u.typ == "Say" || u.Say != nil {
-		return visitor.VisitSay(u.Say)
-	}
-	if u.typ == "Gather" || u.Gather != nil {
-		return visitor.VisitGather(u.Gather)
-	}
-	if u.typ == "Unknown" || u.Unknown != nil {
-		return visitor.VisitUnknown(u.Unknown)
-	}
-	if u.typ == "CreateWorkflowDto" || u.CreateWorkflowDto != nil {
-		return visitor.VisitCreateWorkflowDto(u.CreateWorkflowDto)
-	}
-	return fmt.Errorf("type %T does not include a non-empty union type", u)
-}
-
 type UpdateXAiCredentialDto struct {
 	// This is not returned in the API.
 	ApiKey *string `json:"apiKey,omitempty" url:"apiKey,omitempty"`
@@ -56916,6 +58720,98 @@ func (u *User) MarshalJSON() ([]byte, error) {
 }
 
 func (u *User) String() string {
+	if len(u.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(u); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", u)
+}
+
+type UserMessage struct {
+	// The role of the user in the conversation.
+	Role string `json:"role" url:"role"`
+	// The message content from the user.
+	Message string `json:"message" url:"message"`
+	// The timestamp when the message was sent.
+	Time float64 `json:"time" url:"time"`
+	// The timestamp when the message ended.
+	EndTime float64 `json:"endTime" url:"endTime"`
+	// The number of seconds from the start of the conversation.
+	SecondsFromStart float64 `json:"secondsFromStart" url:"secondsFromStart"`
+	// The duration of the message in seconds.
+	Duration *float64 `json:"duration,omitempty" url:"duration,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (u *UserMessage) GetRole() string {
+	if u == nil {
+		return ""
+	}
+	return u.Role
+}
+
+func (u *UserMessage) GetMessage() string {
+	if u == nil {
+		return ""
+	}
+	return u.Message
+}
+
+func (u *UserMessage) GetTime() float64 {
+	if u == nil {
+		return 0
+	}
+	return u.Time
+}
+
+func (u *UserMessage) GetEndTime() float64 {
+	if u == nil {
+		return 0
+	}
+	return u.EndTime
+}
+
+func (u *UserMessage) GetSecondsFromStart() float64 {
+	if u == nil {
+		return 0
+	}
+	return u.SecondsFromStart
+}
+
+func (u *UserMessage) GetDuration() *float64 {
+	if u == nil {
+		return nil
+	}
+	return u.Duration
+}
+
+func (u *UserMessage) GetExtraProperties() map[string]interface{} {
+	return u.extraProperties
+}
+
+func (u *UserMessage) UnmarshalJSON(data []byte) error {
+	type unmarshaler UserMessage
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*u = UserMessage(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *u)
+	if err != nil {
+		return err
+	}
+	u.extraProperties = extraProperties
+	u.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (u *UserMessage) String() string {
 	if len(u.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
 			return value
@@ -57993,7 +59889,6 @@ type Workflow struct {
 	UpdatedAt time.Time            `json:"updatedAt" url:"updatedAt"`
 	Name      string               `json:"name" url:"name"`
 	Edges     []*Edge              `json:"edges,omitempty" url:"edges,omitempty"`
-	type_     string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -58048,10 +59943,6 @@ func (w *Workflow) GetEdges() []*Edge {
 	return w.Edges
 }
 
-func (w *Workflow) Type() string {
-	return w.type_
-}
-
 func (w *Workflow) GetExtraProperties() map[string]interface{} {
 	return w.extraProperties
 }
@@ -58062,7 +59953,6 @@ func (w *Workflow) UnmarshalJSON(data []byte) error {
 		embed
 		CreatedAt *internal.DateTime `json:"createdAt"`
 		UpdatedAt *internal.DateTime `json:"updatedAt"`
-		Type      string             `json:"type"`
 	}{
 		embed: embed(*w),
 	}
@@ -58072,11 +59962,7 @@ func (w *Workflow) UnmarshalJSON(data []byte) error {
 	*w = Workflow(unmarshaler.embed)
 	w.CreatedAt = unmarshaler.CreatedAt.Time()
 	w.UpdatedAt = unmarshaler.UpdatedAt.Time()
-	if unmarshaler.Type != "workflow" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", w, "workflow", unmarshaler.Type)
-	}
-	w.type_ = unmarshaler.Type
-	extraProperties, err := internal.ExtractExtraProperties(data, *w, "type")
+	extraProperties, err := internal.ExtractExtraProperties(data, *w)
 	if err != nil {
 		return err
 	}
@@ -58091,12 +59977,10 @@ func (w *Workflow) MarshalJSON() ([]byte, error) {
 		embed
 		CreatedAt *internal.DateTime `json:"createdAt"`
 		UpdatedAt *internal.DateTime `json:"updatedAt"`
-		Type      string             `json:"type"`
 	}{
 		embed:     embed(*w),
 		CreatedAt: internal.NewDateTime(w.CreatedAt),
 		UpdatedAt: internal.NewDateTime(w.UpdatedAt),
-		Type:      "workflow",
 	}
 	return json.Marshal(marshaler)
 }
@@ -58114,10 +59998,11 @@ func (w *Workflow) String() string {
 }
 
 type WorkflowNodesItem struct {
-	Say               *Say
-	Gather            *Gather
-	Unknown           interface{}
-	CreateWorkflowDto *CreateWorkflowDto
+	Say        *Say
+	Gather     *Gather
+	ApiRequest *ApiRequest
+	Hangup     *Hangup
+	Transfer   *Transfer
 
 	typ string
 }
@@ -58136,18 +60021,25 @@ func (w *WorkflowNodesItem) GetGather() *Gather {
 	return w.Gather
 }
 
-func (w *WorkflowNodesItem) GetUnknown() interface{} {
+func (w *WorkflowNodesItem) GetApiRequest() *ApiRequest {
 	if w == nil {
 		return nil
 	}
-	return w.Unknown
+	return w.ApiRequest
 }
 
-func (w *WorkflowNodesItem) GetCreateWorkflowDto() *CreateWorkflowDto {
+func (w *WorkflowNodesItem) GetHangup() *Hangup {
 	if w == nil {
 		return nil
 	}
-	return w.CreateWorkflowDto
+	return w.Hangup
+}
+
+func (w *WorkflowNodesItem) GetTransfer() *Transfer {
+	if w == nil {
+		return nil
+	}
+	return w.Transfer
 }
 
 func (w *WorkflowNodesItem) UnmarshalJSON(data []byte) error {
@@ -58163,16 +60055,22 @@ func (w *WorkflowNodesItem) UnmarshalJSON(data []byte) error {
 		w.Gather = valueGather
 		return nil
 	}
-	var valueUnknown interface{}
-	if err := json.Unmarshal(data, &valueUnknown); err == nil {
-		w.typ = "Unknown"
-		w.Unknown = valueUnknown
+	valueApiRequest := new(ApiRequest)
+	if err := json.Unmarshal(data, &valueApiRequest); err == nil {
+		w.typ = "ApiRequest"
+		w.ApiRequest = valueApiRequest
 		return nil
 	}
-	valueCreateWorkflowDto := new(CreateWorkflowDto)
-	if err := json.Unmarshal(data, &valueCreateWorkflowDto); err == nil {
-		w.typ = "CreateWorkflowDto"
-		w.CreateWorkflowDto = valueCreateWorkflowDto
+	valueHangup := new(Hangup)
+	if err := json.Unmarshal(data, &valueHangup); err == nil {
+		w.typ = "Hangup"
+		w.Hangup = valueHangup
+		return nil
+	}
+	valueTransfer := new(Transfer)
+	if err := json.Unmarshal(data, &valueTransfer); err == nil {
+		w.typ = "Transfer"
+		w.Transfer = valueTransfer
 		return nil
 	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, w)
@@ -58185,11 +60083,14 @@ func (w WorkflowNodesItem) MarshalJSON() ([]byte, error) {
 	if w.typ == "Gather" || w.Gather != nil {
 		return json.Marshal(w.Gather)
 	}
-	if w.typ == "Unknown" || w.Unknown != nil {
-		return json.Marshal(w.Unknown)
+	if w.typ == "ApiRequest" || w.ApiRequest != nil {
+		return json.Marshal(w.ApiRequest)
 	}
-	if w.typ == "CreateWorkflowDto" || w.CreateWorkflowDto != nil {
-		return json.Marshal(w.CreateWorkflowDto)
+	if w.typ == "Hangup" || w.Hangup != nil {
+		return json.Marshal(w.Hangup)
+	}
+	if w.typ == "Transfer" || w.Transfer != nil {
+		return json.Marshal(w.Transfer)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", w)
 }
@@ -58197,8 +60098,9 @@ func (w WorkflowNodesItem) MarshalJSON() ([]byte, error) {
 type WorkflowNodesItemVisitor interface {
 	VisitSay(*Say) error
 	VisitGather(*Gather) error
-	VisitUnknown(interface{}) error
-	VisitCreateWorkflowDto(*CreateWorkflowDto) error
+	VisitApiRequest(*ApiRequest) error
+	VisitHangup(*Hangup) error
+	VisitTransfer(*Transfer) error
 }
 
 func (w *WorkflowNodesItem) Accept(visitor WorkflowNodesItemVisitor) error {
@@ -58208,11 +60110,14 @@ func (w *WorkflowNodesItem) Accept(visitor WorkflowNodesItemVisitor) error {
 	if w.typ == "Gather" || w.Gather != nil {
 		return visitor.VisitGather(w.Gather)
 	}
-	if w.typ == "Unknown" || w.Unknown != nil {
-		return visitor.VisitUnknown(w.Unknown)
+	if w.typ == "ApiRequest" || w.ApiRequest != nil {
+		return visitor.VisitApiRequest(w.ApiRequest)
 	}
-	if w.typ == "CreateWorkflowDto" || w.CreateWorkflowDto != nil {
-		return visitor.VisitCreateWorkflowDto(w.CreateWorkflowDto)
+	if w.typ == "Hangup" || w.Hangup != nil {
+		return visitor.VisitHangup(w.Hangup)
+	}
+	if w.typ == "Transfer" || w.Transfer != nil {
+		return visitor.VisitTransfer(w.Transfer)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", w)
 }
@@ -58360,6 +60265,7 @@ type XaiModel struct {
 	// This is the ID of the knowledge base the model will use.
 	KnowledgeBaseId *string `json:"knowledgeBaseId,omitempty" url:"knowledgeBaseId,omitempty"`
 	// This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b
+	Model XaiModelModel `json:"model" url:"model"`
 	// This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
 	Temperature *float64 `json:"temperature,omitempty" url:"temperature,omitempty"`
 	// This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
@@ -58376,7 +60282,6 @@ type XaiModel struct {
 	//
 	// @default 0
 	NumFastTurns *float64 `json:"numFastTurns,omitempty" url:"numFastTurns,omitempty"`
-	model        string
 	provider     string
 
 	extraProperties map[string]interface{}
@@ -58418,6 +60323,13 @@ func (x *XaiModel) GetKnowledgeBaseId() *string {
 	return x.KnowledgeBaseId
 }
 
+func (x *XaiModel) GetModel() XaiModelModel {
+	if x == nil {
+		return ""
+	}
+	return x.Model
+}
+
 func (x *XaiModel) GetTemperature() *float64 {
 	if x == nil {
 		return nil
@@ -58446,10 +60358,6 @@ func (x *XaiModel) GetNumFastTurns() *float64 {
 	return x.NumFastTurns
 }
 
-func (x *XaiModel) Model() string {
-	return x.model
-}
-
 func (x *XaiModel) Provider() string {
 	return x.provider
 }
@@ -58462,7 +60370,6 @@ func (x *XaiModel) UnmarshalJSON(data []byte) error {
 	type embed XaiModel
 	var unmarshaler = struct {
 		embed
-		Model    string `json:"model"`
 		Provider string `json:"provider"`
 	}{
 		embed: embed(*x),
@@ -58471,15 +60378,11 @@ func (x *XaiModel) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	*x = XaiModel(unmarshaler.embed)
-	if unmarshaler.Model != "grok-beta" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", x, "grok-beta", unmarshaler.Model)
-	}
-	x.model = unmarshaler.Model
 	if unmarshaler.Provider != "xai" {
 		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", x, "xai", unmarshaler.Provider)
 	}
 	x.provider = unmarshaler.Provider
-	extraProperties, err := internal.ExtractExtraProperties(data, *x, "model", "provider")
+	extraProperties, err := internal.ExtractExtraProperties(data, *x, "provider")
 	if err != nil {
 		return err
 	}
@@ -58492,11 +60395,9 @@ func (x *XaiModel) MarshalJSON() ([]byte, error) {
 	type embed XaiModel
 	var marshaler = struct {
 		embed
-		Model    string `json:"model"`
 		Provider string `json:"provider"`
 	}{
 		embed:    embed(*x),
-		Model:    "grok-beta",
 		Provider: "xai",
 	}
 	return json.Marshal(marshaler)
@@ -58512,6 +60413,32 @@ func (x *XaiModel) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", x)
+}
+
+// This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b
+type XaiModelModel string
+
+const (
+	XaiModelModelGrokBeta XaiModelModel = "grok-beta"
+	XaiModelModelGrok2    XaiModelModel = "grok-2"
+	XaiModelModelGrok3    XaiModelModel = "grok-3"
+)
+
+func NewXaiModelModelFromString(s string) (XaiModelModel, error) {
+	switch s {
+	case "grok-beta":
+		return XaiModelModelGrokBeta, nil
+	case "grok-2":
+		return XaiModelModelGrok2, nil
+	case "grok-3":
+		return XaiModelModelGrok3, nil
+	}
+	var t XaiModelModel
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (x XaiModelModel) Ptr() *XaiModelModel {
+	return &x
 }
 
 type XaiModelToolsItem struct {

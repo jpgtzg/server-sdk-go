@@ -15,6 +15,9 @@ import (
 	option "github.com/VapiAI/server-sdk-go/option"
 	phonenumbers "github.com/VapiAI/server-sdk-go/phonenumbers"
 	squads "github.com/VapiAI/server-sdk-go/squads"
+	testsuiteruns "github.com/VapiAI/server-sdk-go/testsuiteruns"
+	testsuites "github.com/VapiAI/server-sdk-go/testsuites"
+	testsuitetests "github.com/VapiAI/server-sdk-go/testsuitetests"
 	tools "github.com/VapiAI/server-sdk-go/tools"
 	http "net/http"
 )
@@ -34,6 +37,9 @@ type Client struct {
 	Files          *files.Client
 	Analytics      *analytics.Client
 	Logs           *logs.Client
+	TestSuites     *testsuites.Client
+	TestSuiteTests *testsuitetests.Client
+	TestSuiteRuns  *testsuiteruns.Client
 }
 
 func NewClient(opts ...option.RequestOption) *Client {
@@ -57,5 +63,8 @@ func NewClient(opts ...option.RequestOption) *Client {
 		Files:          files.NewClient(opts...),
 		Analytics:      analytics.NewClient(opts...),
 		Logs:           logs.NewClient(opts...),
+		TestSuites:     testsuites.NewClient(opts...),
+		TestSuiteTests: testsuitetests.NewClient(opts...),
+		TestSuiteRuns:  testsuiteruns.NewClient(opts...),
 	}
 }

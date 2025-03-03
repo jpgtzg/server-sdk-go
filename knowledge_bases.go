@@ -727,6 +727,8 @@ func (t *TrieveKnowledgeBaseImport) String() string {
 }
 
 type TrieveKnowledgeBaseSearchPlan struct {
+	// Specifies the number of top chunks to return. This corresponds to the `page_size` parameter in Trieve.
+	TopK *float64 `json:"topK,omitempty" url:"topK,omitempty"`
 	// If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. This will preserve queries that are entirely stop words.
 	RemoveStopWords *bool `json:"removeStopWords,omitempty" url:"removeStopWords,omitempty"`
 	// This is the score threshold to filter out chunks with a score below the threshold for cosine distance metric. For Manhattan Distance, Euclidean Distance, and Dot Product, it will filter out scores above the threshold distance. This threshold applies before weight and bias modifications. If not specified, this defaults to no threshold. A threshold of 0 will default to no threshold.
@@ -736,6 +738,13 @@ type TrieveKnowledgeBaseSearchPlan struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (t *TrieveKnowledgeBaseSearchPlan) GetTopK() *float64 {
+	if t == nil {
+		return nil
+	}
+	return t.TopK
 }
 
 func (t *TrieveKnowledgeBaseSearchPlan) GetRemoveStopWords() *bool {

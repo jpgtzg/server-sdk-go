@@ -389,333 +389,6 @@ func (a *AnalysisCostBreakdown) String() string {
 	return fmt.Sprintf("%#v", a)
 }
 
-type Artifact struct {
-	// These are the messages that were spoken during the call.
-	Messages []*ArtifactMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
-	// These are the messages that were spoken during the call, formatted for OpenAI.
-	MessagesOpenAiFormatted []*OpenAiMessage `json:"messagesOpenAIFormatted,omitempty" url:"messagesOpenAIFormatted,omitempty"`
-	// This is the recording url for the call. To enable, set `assistant.artifactPlan.recordingEnabled`.
-	RecordingUrl *string `json:"recordingUrl,omitempty" url:"recordingUrl,omitempty"`
-	// This is the stereo recording url for the call. To enable, set `assistant.artifactPlan.recordingEnabled`.
-	StereoRecordingUrl *string `json:"stereoRecordingUrl,omitempty" url:"stereoRecordingUrl,omitempty"`
-	// This is video recording url for the call. To enable, set `assistant.artifactPlan.videoRecordingEnabled`.
-	VideoRecordingUrl *string `json:"videoRecordingUrl,omitempty" url:"videoRecordingUrl,omitempty"`
-	// This is video recording start delay in ms. To enable, set `assistant.artifactPlan.videoRecordingEnabled`. This can be used to align the playback of the recording with artifact.messages timestamps.
-	VideoRecordingStartDelaySeconds *float64 `json:"videoRecordingStartDelaySeconds,omitempty" url:"videoRecordingStartDelaySeconds,omitempty"`
-	// This is the transcript of the call. This is derived from `artifact.messages` but provided for convenience.
-	Transcript *string `json:"transcript,omitempty" url:"transcript,omitempty"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (a *Artifact) GetMessages() []*ArtifactMessagesItem {
-	if a == nil {
-		return nil
-	}
-	return a.Messages
-}
-
-func (a *Artifact) GetMessagesOpenAiFormatted() []*OpenAiMessage {
-	if a == nil {
-		return nil
-	}
-	return a.MessagesOpenAiFormatted
-}
-
-func (a *Artifact) GetRecordingUrl() *string {
-	if a == nil {
-		return nil
-	}
-	return a.RecordingUrl
-}
-
-func (a *Artifact) GetStereoRecordingUrl() *string {
-	if a == nil {
-		return nil
-	}
-	return a.StereoRecordingUrl
-}
-
-func (a *Artifact) GetVideoRecordingUrl() *string {
-	if a == nil {
-		return nil
-	}
-	return a.VideoRecordingUrl
-}
-
-func (a *Artifact) GetVideoRecordingStartDelaySeconds() *float64 {
-	if a == nil {
-		return nil
-	}
-	return a.VideoRecordingStartDelaySeconds
-}
-
-func (a *Artifact) GetTranscript() *string {
-	if a == nil {
-		return nil
-	}
-	return a.Transcript
-}
-
-func (a *Artifact) GetExtraProperties() map[string]interface{} {
-	return a.extraProperties
-}
-
-func (a *Artifact) UnmarshalJSON(data []byte) error {
-	type unmarshaler Artifact
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*a = Artifact(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *a)
-	if err != nil {
-		return err
-	}
-	a.extraProperties = extraProperties
-	a.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (a *Artifact) String() string {
-	if len(a.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(a); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", a)
-}
-
-type ArtifactMessagesItem struct {
-	UserMessage           *UserMessage
-	SystemMessage         *SystemMessage
-	BotMessage            *BotMessage
-	ToolCallMessage       *ToolCallMessage
-	ToolCallResultMessage *ToolCallResultMessage
-
-	typ string
-}
-
-func (a *ArtifactMessagesItem) GetUserMessage() *UserMessage {
-	if a == nil {
-		return nil
-	}
-	return a.UserMessage
-}
-
-func (a *ArtifactMessagesItem) GetSystemMessage() *SystemMessage {
-	if a == nil {
-		return nil
-	}
-	return a.SystemMessage
-}
-
-func (a *ArtifactMessagesItem) GetBotMessage() *BotMessage {
-	if a == nil {
-		return nil
-	}
-	return a.BotMessage
-}
-
-func (a *ArtifactMessagesItem) GetToolCallMessage() *ToolCallMessage {
-	if a == nil {
-		return nil
-	}
-	return a.ToolCallMessage
-}
-
-func (a *ArtifactMessagesItem) GetToolCallResultMessage() *ToolCallResultMessage {
-	if a == nil {
-		return nil
-	}
-	return a.ToolCallResultMessage
-}
-
-func (a *ArtifactMessagesItem) UnmarshalJSON(data []byte) error {
-	valueUserMessage := new(UserMessage)
-	if err := json.Unmarshal(data, &valueUserMessage); err == nil {
-		a.typ = "UserMessage"
-		a.UserMessage = valueUserMessage
-		return nil
-	}
-	valueSystemMessage := new(SystemMessage)
-	if err := json.Unmarshal(data, &valueSystemMessage); err == nil {
-		a.typ = "SystemMessage"
-		a.SystemMessage = valueSystemMessage
-		return nil
-	}
-	valueBotMessage := new(BotMessage)
-	if err := json.Unmarshal(data, &valueBotMessage); err == nil {
-		a.typ = "BotMessage"
-		a.BotMessage = valueBotMessage
-		return nil
-	}
-	valueToolCallMessage := new(ToolCallMessage)
-	if err := json.Unmarshal(data, &valueToolCallMessage); err == nil {
-		a.typ = "ToolCallMessage"
-		a.ToolCallMessage = valueToolCallMessage
-		return nil
-	}
-	valueToolCallResultMessage := new(ToolCallResultMessage)
-	if err := json.Unmarshal(data, &valueToolCallResultMessage); err == nil {
-		a.typ = "ToolCallResultMessage"
-		a.ToolCallResultMessage = valueToolCallResultMessage
-		return nil
-	}
-	return fmt.Errorf("%s cannot be deserialized as a %T", data, a)
-}
-
-func (a ArtifactMessagesItem) MarshalJSON() ([]byte, error) {
-	if a.typ == "UserMessage" || a.UserMessage != nil {
-		return json.Marshal(a.UserMessage)
-	}
-	if a.typ == "SystemMessage" || a.SystemMessage != nil {
-		return json.Marshal(a.SystemMessage)
-	}
-	if a.typ == "BotMessage" || a.BotMessage != nil {
-		return json.Marshal(a.BotMessage)
-	}
-	if a.typ == "ToolCallMessage" || a.ToolCallMessage != nil {
-		return json.Marshal(a.ToolCallMessage)
-	}
-	if a.typ == "ToolCallResultMessage" || a.ToolCallResultMessage != nil {
-		return json.Marshal(a.ToolCallResultMessage)
-	}
-	return nil, fmt.Errorf("type %T does not include a non-empty union type", a)
-}
-
-type ArtifactMessagesItemVisitor interface {
-	VisitUserMessage(*UserMessage) error
-	VisitSystemMessage(*SystemMessage) error
-	VisitBotMessage(*BotMessage) error
-	VisitToolCallMessage(*ToolCallMessage) error
-	VisitToolCallResultMessage(*ToolCallResultMessage) error
-}
-
-func (a *ArtifactMessagesItem) Accept(visitor ArtifactMessagesItemVisitor) error {
-	if a.typ == "UserMessage" || a.UserMessage != nil {
-		return visitor.VisitUserMessage(a.UserMessage)
-	}
-	if a.typ == "SystemMessage" || a.SystemMessage != nil {
-		return visitor.VisitSystemMessage(a.SystemMessage)
-	}
-	if a.typ == "BotMessage" || a.BotMessage != nil {
-		return visitor.VisitBotMessage(a.BotMessage)
-	}
-	if a.typ == "ToolCallMessage" || a.ToolCallMessage != nil {
-		return visitor.VisitToolCallMessage(a.ToolCallMessage)
-	}
-	if a.typ == "ToolCallResultMessage" || a.ToolCallResultMessage != nil {
-		return visitor.VisitToolCallResultMessage(a.ToolCallResultMessage)
-	}
-	return fmt.Errorf("type %T does not include a non-empty union type", a)
-}
-
-type BotMessage struct {
-	// The role of the bot in the conversation.
-	Role string `json:"role" url:"role"`
-	// The message content from the bot.
-	Message string `json:"message" url:"message"`
-	// The timestamp when the message was sent.
-	Time float64 `json:"time" url:"time"`
-	// The timestamp when the message ended.
-	EndTime float64 `json:"endTime" url:"endTime"`
-	// The number of seconds from the start of the conversation.
-	SecondsFromStart float64 `json:"secondsFromStart" url:"secondsFromStart"`
-	// The source of the message.
-	Source *string `json:"source,omitempty" url:"source,omitempty"`
-	// The duration of the message in seconds.
-	Duration *float64 `json:"duration,omitempty" url:"duration,omitempty"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (b *BotMessage) GetRole() string {
-	if b == nil {
-		return ""
-	}
-	return b.Role
-}
-
-func (b *BotMessage) GetMessage() string {
-	if b == nil {
-		return ""
-	}
-	return b.Message
-}
-
-func (b *BotMessage) GetTime() float64 {
-	if b == nil {
-		return 0
-	}
-	return b.Time
-}
-
-func (b *BotMessage) GetEndTime() float64 {
-	if b == nil {
-		return 0
-	}
-	return b.EndTime
-}
-
-func (b *BotMessage) GetSecondsFromStart() float64 {
-	if b == nil {
-		return 0
-	}
-	return b.SecondsFromStart
-}
-
-func (b *BotMessage) GetSource() *string {
-	if b == nil {
-		return nil
-	}
-	return b.Source
-}
-
-func (b *BotMessage) GetDuration() *float64 {
-	if b == nil {
-		return nil
-	}
-	return b.Duration
-}
-
-func (b *BotMessage) GetExtraProperties() map[string]interface{} {
-	return b.extraProperties
-}
-
-func (b *BotMessage) UnmarshalJSON(data []byte) error {
-	type unmarshaler BotMessage
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*b = BotMessage(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *b)
-	if err != nil {
-		return err
-	}
-	b.extraProperties = extraProperties
-	b.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (b *BotMessage) String() string {
-	if len(b.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(b.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(b); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", b)
-}
-
 type Call struct {
 	// This is the type of call.
 	Type *CallType `json:"type,omitempty" url:"type,omitempty"`
@@ -1298,7 +971,7 @@ func (c *CallDestination) Accept(visitor CallDestinationVisitor) error {
 type CallEndedReason string
 
 const (
-	CallEndedReasonAssistantNotInvalid                                                                        CallEndedReason = "assistant-not-invalid"
+	CallEndedReasonAssistantNotValid                                                                          CallEndedReason = "assistant-not-valid"
 	CallEndedReasonAssistantNotProvided                                                                       CallEndedReason = "assistant-not-provided"
 	CallEndedReasonCallStartErrorNeitherAssistantNorServerSet                                                 CallEndedReason = "call-start-error-neither-assistant-nor-server-set"
 	CallEndedReasonAssistantRequestFailed                                                                     CallEndedReason = "assistant-request-failed"
@@ -1309,6 +982,7 @@ const (
 	CallEndedReasonAssistantRequestReturnedForwardingPhoneNumber                                              CallEndedReason = "assistant-request-returned-forwarding-phone-number"
 	CallEndedReasonAssistantEndedCall                                                                         CallEndedReason = "assistant-ended-call"
 	CallEndedReasonAssistantSaidEndCallPhrase                                                                 CallEndedReason = "assistant-said-end-call-phrase"
+	CallEndedReasonAssistantEndedCallWithHangupTask                                                           CallEndedReason = "assistant-ended-call-with-hangup-task"
 	CallEndedReasonAssistantForwardedCall                                                                     CallEndedReason = "assistant-forwarded-call"
 	CallEndedReasonAssistantJoinTimedOut                                                                      CallEndedReason = "assistant-join-timed-out"
 	CallEndedReasonCustomerBusy                                                                               CallEndedReason = "customer-busy"
@@ -1332,8 +1006,10 @@ const (
 	CallEndedReasonPipelineErrorRimeAiVoiceFailed                                                             CallEndedReason = "pipeline-error-rime-ai-voice-failed"
 	CallEndedReasonPipelineErrorNeetsVoiceFailed                                                              CallEndedReason = "pipeline-error-neets-voice-failed"
 	CallEndedReasonPipelineErrorSmallestAiVoiceFailed                                                         CallEndedReason = "pipeline-error-smallest-ai-voice-failed"
+	CallEndedReasonPipelineErrorNeuphonicVoiceFailed                                                          CallEndedReason = "pipeline-error-neuphonic-voice-failed"
 	CallEndedReasonPipelineErrorDeepgramTranscriberFailed                                                     CallEndedReason = "pipeline-error-deepgram-transcriber-failed"
 	CallEndedReasonPipelineErrorGladiaTranscriberFailed                                                       CallEndedReason = "pipeline-error-gladia-transcriber-failed"
+	CallEndedReasonPipelineErrorSpeechmaticsTranscriberFailed                                                 CallEndedReason = "pipeline-error-speechmatics-transcriber-failed"
 	CallEndedReasonPipelineErrorAssemblyAiTranscriberFailed                                                   CallEndedReason = "pipeline-error-assembly-ai-transcriber-failed"
 	CallEndedReasonPipelineErrorTalkscriberTranscriberFailed                                                  CallEndedReason = "pipeline-error-talkscriber-transcriber-failed"
 	CallEndedReasonPipelineErrorAzureSpeechTranscriberFailed                                                  CallEndedReason = "pipeline-error-azure-speech-transcriber-failed"
@@ -1361,6 +1037,7 @@ const (
 	CallEndedReasonPipelineErrorGroqLlmFailed                                                                 CallEndedReason = "pipeline-error-groq-llm-failed"
 	CallEndedReasonPipelineErrorGoogleLlmFailed                                                               CallEndedReason = "pipeline-error-google-llm-failed"
 	CallEndedReasonPipelineErrorXaiLlmFailed                                                                  CallEndedReason = "pipeline-error-xai-llm-failed"
+	CallEndedReasonPipelineErrorMistralLlmFailed                                                              CallEndedReason = "pipeline-error-mistral-llm-failed"
 	CallEndedReasonPipelineErrorInflectionAiLlmFailed                                                         CallEndedReason = "pipeline-error-inflection-ai-llm-failed"
 	CallEndedReasonPipelineErrorCerebrasLlmFailed                                                             CallEndedReason = "pipeline-error-cerebras-llm-failed"
 	CallEndedReasonPipelineErrorDeepSeekLlmFailed                                                             CallEndedReason = "pipeline-error-deep-seek-llm-failed"
@@ -1379,6 +1056,11 @@ const (
 	CallEndedReasonPipelineErrorXai403ModelAccessDenied                                                       CallEndedReason = "pipeline-error-xai-403-model-access-denied"
 	CallEndedReasonPipelineErrorXai429ExceededQuota                                                           CallEndedReason = "pipeline-error-xai-429-exceeded-quota"
 	CallEndedReasonPipelineErrorXai500ServerError                                                             CallEndedReason = "pipeline-error-xai-500-server-error"
+	CallEndedReasonPipelineErrorMistral400BadRequestValidationFailed                                          CallEndedReason = "pipeline-error-mistral-400-bad-request-validation-failed"
+	CallEndedReasonPipelineErrorMistral401Unauthorized                                                        CallEndedReason = "pipeline-error-mistral-401-unauthorized"
+	CallEndedReasonPipelineErrorMistral403ModelAccessDenied                                                   CallEndedReason = "pipeline-error-mistral-403-model-access-denied"
+	CallEndedReasonPipelineErrorMistral429ExceededQuota                                                       CallEndedReason = "pipeline-error-mistral-429-exceeded-quota"
+	CallEndedReasonPipelineErrorMistral500ServerError                                                         CallEndedReason = "pipeline-error-mistral-500-server-error"
 	CallEndedReasonPipelineErrorInflectionAi400BadRequestValidationFailed                                     CallEndedReason = "pipeline-error-inflection-ai-400-bad-request-validation-failed"
 	CallEndedReasonPipelineErrorInflectionAi401Unauthorized                                                   CallEndedReason = "pipeline-error-inflection-ai-401-unauthorized"
 	CallEndedReasonPipelineErrorInflectionAi403ModelAccessDenied                                              CallEndedReason = "pipeline-error-inflection-ai-403-model-access-denied"
@@ -1510,8 +1192,8 @@ const (
 
 func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 	switch s {
-	case "assistant-not-invalid":
-		return CallEndedReasonAssistantNotInvalid, nil
+	case "assistant-not-valid":
+		return CallEndedReasonAssistantNotValid, nil
 	case "assistant-not-provided":
 		return CallEndedReasonAssistantNotProvided, nil
 	case "call-start-error-neither-assistant-nor-server-set":
@@ -1532,6 +1214,8 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonAssistantEndedCall, nil
 	case "assistant-said-end-call-phrase":
 		return CallEndedReasonAssistantSaidEndCallPhrase, nil
+	case "assistant-ended-call-with-hangup-task":
+		return CallEndedReasonAssistantEndedCallWithHangupTask, nil
 	case "assistant-forwarded-call":
 		return CallEndedReasonAssistantForwardedCall, nil
 	case "assistant-join-timed-out":
@@ -1578,10 +1262,14 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonPipelineErrorNeetsVoiceFailed, nil
 	case "pipeline-error-smallest-ai-voice-failed":
 		return CallEndedReasonPipelineErrorSmallestAiVoiceFailed, nil
+	case "pipeline-error-neuphonic-voice-failed":
+		return CallEndedReasonPipelineErrorNeuphonicVoiceFailed, nil
 	case "pipeline-error-deepgram-transcriber-failed":
 		return CallEndedReasonPipelineErrorDeepgramTranscriberFailed, nil
 	case "pipeline-error-gladia-transcriber-failed":
 		return CallEndedReasonPipelineErrorGladiaTranscriberFailed, nil
+	case "pipeline-error-speechmatics-transcriber-failed":
+		return CallEndedReasonPipelineErrorSpeechmaticsTranscriberFailed, nil
 	case "pipeline-error-assembly-ai-transcriber-failed":
 		return CallEndedReasonPipelineErrorAssemblyAiTranscriberFailed, nil
 	case "pipeline-error-talkscriber-transcriber-failed":
@@ -1636,6 +1324,8 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonPipelineErrorGoogleLlmFailed, nil
 	case "pipeline-error-xai-llm-failed":
 		return CallEndedReasonPipelineErrorXaiLlmFailed, nil
+	case "pipeline-error-mistral-llm-failed":
+		return CallEndedReasonPipelineErrorMistralLlmFailed, nil
 	case "pipeline-error-inflection-ai-llm-failed":
 		return CallEndedReasonPipelineErrorInflectionAiLlmFailed, nil
 	case "pipeline-error-cerebras-llm-failed":
@@ -1672,6 +1362,16 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonPipelineErrorXai429ExceededQuota, nil
 	case "pipeline-error-xai-500-server-error":
 		return CallEndedReasonPipelineErrorXai500ServerError, nil
+	case "pipeline-error-mistral-400-bad-request-validation-failed":
+		return CallEndedReasonPipelineErrorMistral400BadRequestValidationFailed, nil
+	case "pipeline-error-mistral-401-unauthorized":
+		return CallEndedReasonPipelineErrorMistral401Unauthorized, nil
+	case "pipeline-error-mistral-403-model-access-denied":
+		return CallEndedReasonPipelineErrorMistral403ModelAccessDenied, nil
+	case "pipeline-error-mistral-429-exceeded-quota":
+		return CallEndedReasonPipelineErrorMistral429ExceededQuota, nil
+	case "pipeline-error-mistral-500-server-error":
+		return CallEndedReasonPipelineErrorMistral500ServerError, nil
 	case "pipeline-error-inflection-ai-400-bad-request-validation-failed":
 		return CallEndedReasonPipelineErrorInflectionAi400BadRequestValidationFailed, nil
 	case "pipeline-error-inflection-ai-401-unauthorized":
@@ -2750,255 +2450,6 @@ func (m *Monitor) String() string {
 	return fmt.Sprintf("%#v", m)
 }
 
-type SystemMessage struct {
-	// The role of the system in the conversation.
-	Role string `json:"role" url:"role"`
-	// The message content from the system.
-	Message string `json:"message" url:"message"`
-	// The timestamp when the message was sent.
-	Time float64 `json:"time" url:"time"`
-	// The number of seconds from the start of the conversation.
-	SecondsFromStart float64 `json:"secondsFromStart" url:"secondsFromStart"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (s *SystemMessage) GetRole() string {
-	if s == nil {
-		return ""
-	}
-	return s.Role
-}
-
-func (s *SystemMessage) GetMessage() string {
-	if s == nil {
-		return ""
-	}
-	return s.Message
-}
-
-func (s *SystemMessage) GetTime() float64 {
-	if s == nil {
-		return 0
-	}
-	return s.Time
-}
-
-func (s *SystemMessage) GetSecondsFromStart() float64 {
-	if s == nil {
-		return 0
-	}
-	return s.SecondsFromStart
-}
-
-func (s *SystemMessage) GetExtraProperties() map[string]interface{} {
-	return s.extraProperties
-}
-
-func (s *SystemMessage) UnmarshalJSON(data []byte) error {
-	type unmarshaler SystemMessage
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*s = SystemMessage(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *s)
-	if err != nil {
-		return err
-	}
-	s.extraProperties = extraProperties
-	s.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (s *SystemMessage) String() string {
-	if len(s.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(s); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", s)
-}
-
-type ToolCallMessage struct {
-	// The role of the tool call in the conversation.
-	Role string `json:"role" url:"role"`
-	// The list of tool calls made during the conversation.
-	ToolCalls []map[string]interface{} `json:"toolCalls,omitempty" url:"toolCalls,omitempty"`
-	// The message content for the tool call.
-	Message string `json:"message" url:"message"`
-	// The timestamp when the message was sent.
-	Time float64 `json:"time" url:"time"`
-	// The number of seconds from the start of the conversation.
-	SecondsFromStart float64 `json:"secondsFromStart" url:"secondsFromStart"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (t *ToolCallMessage) GetRole() string {
-	if t == nil {
-		return ""
-	}
-	return t.Role
-}
-
-func (t *ToolCallMessage) GetToolCalls() []map[string]interface{} {
-	if t == nil {
-		return nil
-	}
-	return t.ToolCalls
-}
-
-func (t *ToolCallMessage) GetMessage() string {
-	if t == nil {
-		return ""
-	}
-	return t.Message
-}
-
-func (t *ToolCallMessage) GetTime() float64 {
-	if t == nil {
-		return 0
-	}
-	return t.Time
-}
-
-func (t *ToolCallMessage) GetSecondsFromStart() float64 {
-	if t == nil {
-		return 0
-	}
-	return t.SecondsFromStart
-}
-
-func (t *ToolCallMessage) GetExtraProperties() map[string]interface{} {
-	return t.extraProperties
-}
-
-func (t *ToolCallMessage) UnmarshalJSON(data []byte) error {
-	type unmarshaler ToolCallMessage
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*t = ToolCallMessage(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *t)
-	if err != nil {
-		return err
-	}
-	t.extraProperties = extraProperties
-	t.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (t *ToolCallMessage) String() string {
-	if len(t.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(t); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", t)
-}
-
-type ToolCallResultMessage struct {
-	// The role of the tool call result in the conversation.
-	Role string `json:"role" url:"role"`
-	// The ID of the tool call.
-	ToolCallId string `json:"toolCallId" url:"toolCallId"`
-	// The name of the tool that returned the result.
-	Name string `json:"name" url:"name"`
-	// The result of the tool call in JSON format.
-	Result string `json:"result" url:"result"`
-	// The timestamp when the message was sent.
-	Time float64 `json:"time" url:"time"`
-	// The number of seconds from the start of the conversation.
-	SecondsFromStart float64 `json:"secondsFromStart" url:"secondsFromStart"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (t *ToolCallResultMessage) GetRole() string {
-	if t == nil {
-		return ""
-	}
-	return t.Role
-}
-
-func (t *ToolCallResultMessage) GetToolCallId() string {
-	if t == nil {
-		return ""
-	}
-	return t.ToolCallId
-}
-
-func (t *ToolCallResultMessage) GetName() string {
-	if t == nil {
-		return ""
-	}
-	return t.Name
-}
-
-func (t *ToolCallResultMessage) GetResult() string {
-	if t == nil {
-		return ""
-	}
-	return t.Result
-}
-
-func (t *ToolCallResultMessage) GetTime() float64 {
-	if t == nil {
-		return 0
-	}
-	return t.Time
-}
-
-func (t *ToolCallResultMessage) GetSecondsFromStart() float64 {
-	if t == nil {
-		return 0
-	}
-	return t.SecondsFromStart
-}
-
-func (t *ToolCallResultMessage) GetExtraProperties() map[string]interface{} {
-	return t.extraProperties
-}
-
-func (t *ToolCallResultMessage) UnmarshalJSON(data []byte) error {
-	type unmarshaler ToolCallResultMessage
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*t = ToolCallResultMessage(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *t)
-	if err != nil {
-		return err
-	}
-	t.extraProperties = extraProperties
-	t.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (t *ToolCallResultMessage) String() string {
-	if len(t.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(t); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", t)
-}
-
 type TranscriberCost struct {
 	// This is the type of cost, always 'transcriber' for this class.
 	// This is the transcriber that was used during the call.
@@ -3300,98 +2751,6 @@ func NewTransportProviderFromString(s string) (TransportProvider, error) {
 
 func (t TransportProvider) Ptr() *TransportProvider {
 	return &t
-}
-
-type UserMessage struct {
-	// The role of the user in the conversation.
-	Role string `json:"role" url:"role"`
-	// The message content from the user.
-	Message string `json:"message" url:"message"`
-	// The timestamp when the message was sent.
-	Time float64 `json:"time" url:"time"`
-	// The timestamp when the message ended.
-	EndTime float64 `json:"endTime" url:"endTime"`
-	// The number of seconds from the start of the conversation.
-	SecondsFromStart float64 `json:"secondsFromStart" url:"secondsFromStart"`
-	// The duration of the message in seconds.
-	Duration *float64 `json:"duration,omitempty" url:"duration,omitempty"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (u *UserMessage) GetRole() string {
-	if u == nil {
-		return ""
-	}
-	return u.Role
-}
-
-func (u *UserMessage) GetMessage() string {
-	if u == nil {
-		return ""
-	}
-	return u.Message
-}
-
-func (u *UserMessage) GetTime() float64 {
-	if u == nil {
-		return 0
-	}
-	return u.Time
-}
-
-func (u *UserMessage) GetEndTime() float64 {
-	if u == nil {
-		return 0
-	}
-	return u.EndTime
-}
-
-func (u *UserMessage) GetSecondsFromStart() float64 {
-	if u == nil {
-		return 0
-	}
-	return u.SecondsFromStart
-}
-
-func (u *UserMessage) GetDuration() *float64 {
-	if u == nil {
-		return nil
-	}
-	return u.Duration
-}
-
-func (u *UserMessage) GetExtraProperties() map[string]interface{} {
-	return u.extraProperties
-}
-
-func (u *UserMessage) UnmarshalJSON(data []byte) error {
-	type unmarshaler UserMessage
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*u = UserMessage(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *u)
-	if err != nil {
-		return err
-	}
-	u.extraProperties = extraProperties
-	u.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (u *UserMessage) String() string {
-	if len(u.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(u); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", u)
 }
 
 type VapiCost struct {

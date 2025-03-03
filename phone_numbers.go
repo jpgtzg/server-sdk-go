@@ -56,6 +56,8 @@ type ByoPhoneNumber struct {
 	CreatedAt time.Time `json:"createdAt" url:"createdAt"`
 	// This is the ISO 8601 date-time string of when the phone number was last updated.
 	UpdatedAt time.Time `json:"updatedAt" url:"updatedAt"`
+	// This is the status of the phone number.
+	Status *ByoPhoneNumberStatus `json:"status,omitempty" url:"status,omitempty"`
 	// This is the name of the phone number. This is just for your own reference.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
@@ -126,6 +128,13 @@ func (b *ByoPhoneNumber) GetUpdatedAt() time.Time {
 		return time.Time{}
 	}
 	return b.UpdatedAt
+}
+
+func (b *ByoPhoneNumber) GetStatus() *ByoPhoneNumberStatus {
+	if b == nil {
+		return nil
+	}
+	return b.Status
 }
 
 func (b *ByoPhoneNumber) GetName() *string {
@@ -301,6 +310,32 @@ func (b *ByoPhoneNumberFallbackDestination) Accept(visitor ByoPhoneNumberFallbac
 		return visitor.VisitTransferDestinationSip(b.TransferDestinationSip)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", b)
+}
+
+// This is the status of the phone number.
+type ByoPhoneNumberStatus string
+
+const (
+	ByoPhoneNumberStatusActive     ByoPhoneNumberStatus = "active"
+	ByoPhoneNumberStatusActivating ByoPhoneNumberStatus = "activating"
+	ByoPhoneNumberStatusBlocked    ByoPhoneNumberStatus = "blocked"
+)
+
+func NewByoPhoneNumberStatusFromString(s string) (ByoPhoneNumberStatus, error) {
+	switch s {
+	case "active":
+		return ByoPhoneNumberStatusActive, nil
+	case "activating":
+		return ByoPhoneNumberStatusActivating, nil
+	case "blocked":
+		return ByoPhoneNumberStatusBlocked, nil
+	}
+	var t ByoPhoneNumberStatus
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (b ByoPhoneNumberStatus) Ptr() *ByoPhoneNumberStatus {
+	return &b
 }
 
 type CreateByoPhoneNumberDto struct {
@@ -759,10 +794,12 @@ type CreateVapiPhoneNumberDto struct {
 	//
 	// If this is not set and above conditions are met, the inbound call is hung up with an error message.
 	FallbackDestination *CreateVapiPhoneNumberDtoFallbackDestination `json:"fallbackDestination,omitempty" url:"fallbackDestination,omitempty"`
+	// This is the area code of the phone number to purchase.
+	NumberDesiredAreaCode *string `json:"numberDesiredAreaCode,omitempty" url:"numberDesiredAreaCode,omitempty"`
 	// This is the SIP URI of the phone number. You can SIP INVITE this. The assistant attached to this number will answer.
 	//
 	// This is case-insensitive.
-	SipUri string `json:"sipUri" url:"sipUri"`
+	SipUri *string `json:"sipUri,omitempty" url:"sipUri,omitempty"`
 	// This enables authentication for incoming SIP INVITE requests to the `sipUri`.
 	//
 	// If not set, any username/password to the 401 challenge of the SIP INVITE will be accepted.
@@ -798,9 +835,16 @@ func (c *CreateVapiPhoneNumberDto) GetFallbackDestination() *CreateVapiPhoneNumb
 	return c.FallbackDestination
 }
 
-func (c *CreateVapiPhoneNumberDto) GetSipUri() string {
+func (c *CreateVapiPhoneNumberDto) GetNumberDesiredAreaCode() *string {
 	if c == nil {
-		return ""
+		return nil
+	}
+	return c.NumberDesiredAreaCode
+}
+
+func (c *CreateVapiPhoneNumberDto) GetSipUri() *string {
+	if c == nil {
+		return nil
 	}
 	return c.SipUri
 }
@@ -1256,6 +1300,8 @@ type TwilioPhoneNumber struct {
 	CreatedAt time.Time `json:"createdAt" url:"createdAt"`
 	// This is the ISO 8601 date-time string of when the phone number was last updated.
 	UpdatedAt time.Time `json:"updatedAt" url:"updatedAt"`
+	// This is the status of the phone number.
+	Status *TwilioPhoneNumberStatus `json:"status,omitempty" url:"status,omitempty"`
 	// This is the name of the phone number. This is just for your own reference.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
@@ -1319,6 +1365,13 @@ func (t *TwilioPhoneNumber) GetUpdatedAt() time.Time {
 		return time.Time{}
 	}
 	return t.UpdatedAt
+}
+
+func (t *TwilioPhoneNumber) GetStatus() *TwilioPhoneNumberStatus {
+	if t == nil {
+		return nil
+	}
+	return t.Status
 }
 
 func (t *TwilioPhoneNumber) GetName() *string {
@@ -1501,6 +1554,32 @@ func (t *TwilioPhoneNumberFallbackDestination) Accept(visitor TwilioPhoneNumberF
 		return visitor.VisitTransferDestinationSip(t.TransferDestinationSip)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", t)
+}
+
+// This is the status of the phone number.
+type TwilioPhoneNumberStatus string
+
+const (
+	TwilioPhoneNumberStatusActive     TwilioPhoneNumberStatus = "active"
+	TwilioPhoneNumberStatusActivating TwilioPhoneNumberStatus = "activating"
+	TwilioPhoneNumberStatusBlocked    TwilioPhoneNumberStatus = "blocked"
+)
+
+func NewTwilioPhoneNumberStatusFromString(s string) (TwilioPhoneNumberStatus, error) {
+	switch s {
+	case "active":
+		return TwilioPhoneNumberStatusActive, nil
+	case "activating":
+		return TwilioPhoneNumberStatusActivating, nil
+	case "blocked":
+		return TwilioPhoneNumberStatusBlocked, nil
+	}
+	var t TwilioPhoneNumberStatus
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (t TwilioPhoneNumberStatus) Ptr() *TwilioPhoneNumberStatus {
+	return &t
 }
 
 type UpdateByoPhoneNumberDto struct {
@@ -2287,6 +2366,10 @@ type VapiPhoneNumber struct {
 	CreatedAt time.Time `json:"createdAt" url:"createdAt"`
 	// This is the ISO 8601 date-time string of when the phone number was last updated.
 	UpdatedAt time.Time `json:"updatedAt" url:"updatedAt"`
+	// This is the status of the phone number.
+	Status *VapiPhoneNumberStatus `json:"status,omitempty" url:"status,omitempty"`
+	// These are the digits of the phone number you purchased from Vapi.
+	Number *string `json:"number,omitempty" url:"number,omitempty"`
 	// This is the name of the phone number. This is just for your own reference.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
@@ -2305,10 +2388,12 @@ type VapiPhoneNumber struct {
 	// 2. phoneNumber.server
 	// 3. org.server
 	Server *Server `json:"server,omitempty" url:"server,omitempty"`
+	// This is the area code of the phone number to purchase.
+	NumberDesiredAreaCode *string `json:"numberDesiredAreaCode,omitempty" url:"numberDesiredAreaCode,omitempty"`
 	// This is the SIP URI of the phone number. You can SIP INVITE this. The assistant attached to this number will answer.
 	//
 	// This is case-insensitive.
-	SipUri string `json:"sipUri" url:"sipUri"`
+	SipUri *string `json:"sipUri,omitempty" url:"sipUri,omitempty"`
 	// This enables authentication for incoming SIP INVITE requests to the `sipUri`.
 	//
 	// If not set, any username/password to the 401 challenge of the SIP INVITE will be accepted.
@@ -2354,6 +2439,20 @@ func (v *VapiPhoneNumber) GetUpdatedAt() time.Time {
 	return v.UpdatedAt
 }
 
+func (v *VapiPhoneNumber) GetStatus() *VapiPhoneNumberStatus {
+	if v == nil {
+		return nil
+	}
+	return v.Status
+}
+
+func (v *VapiPhoneNumber) GetNumber() *string {
+	if v == nil {
+		return nil
+	}
+	return v.Number
+}
+
 func (v *VapiPhoneNumber) GetName() *string {
 	if v == nil {
 		return nil
@@ -2382,9 +2481,16 @@ func (v *VapiPhoneNumber) GetServer() *Server {
 	return v.Server
 }
 
-func (v *VapiPhoneNumber) GetSipUri() string {
+func (v *VapiPhoneNumber) GetNumberDesiredAreaCode() *string {
 	if v == nil {
-		return ""
+		return nil
+	}
+	return v.NumberDesiredAreaCode
+}
+
+func (v *VapiPhoneNumber) GetSipUri() *string {
+	if v == nil {
+		return nil
 	}
 	return v.SipUri
 }
@@ -2529,6 +2635,32 @@ func (v *VapiPhoneNumberFallbackDestination) Accept(visitor VapiPhoneNumberFallb
 	return fmt.Errorf("type %T does not include a non-empty union type", v)
 }
 
+// This is the status of the phone number.
+type VapiPhoneNumberStatus string
+
+const (
+	VapiPhoneNumberStatusActive     VapiPhoneNumberStatus = "active"
+	VapiPhoneNumberStatusActivating VapiPhoneNumberStatus = "activating"
+	VapiPhoneNumberStatusBlocked    VapiPhoneNumberStatus = "blocked"
+)
+
+func NewVapiPhoneNumberStatusFromString(s string) (VapiPhoneNumberStatus, error) {
+	switch s {
+	case "active":
+		return VapiPhoneNumberStatusActive, nil
+	case "activating":
+		return VapiPhoneNumberStatusActivating, nil
+	case "blocked":
+		return VapiPhoneNumberStatusBlocked, nil
+	}
+	var t VapiPhoneNumberStatus
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (v VapiPhoneNumberStatus) Ptr() *VapiPhoneNumberStatus {
+	return &v
+}
+
 type VonagePhoneNumber struct {
 	// This is the fallback destination an inbound call will be transferred to if:
 	// 1. `assistantId` is not set
@@ -2545,6 +2677,8 @@ type VonagePhoneNumber struct {
 	CreatedAt time.Time `json:"createdAt" url:"createdAt"`
 	// This is the ISO 8601 date-time string of when the phone number was last updated.
 	UpdatedAt time.Time `json:"updatedAt" url:"updatedAt"`
+	// This is the status of the phone number.
+	Status *VonagePhoneNumberStatus `json:"status,omitempty" url:"status,omitempty"`
 	// This is the name of the phone number. This is just for your own reference.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
@@ -2606,6 +2740,13 @@ func (v *VonagePhoneNumber) GetUpdatedAt() time.Time {
 		return time.Time{}
 	}
 	return v.UpdatedAt
+}
+
+func (v *VonagePhoneNumber) GetStatus() *VonagePhoneNumberStatus {
+	if v == nil {
+		return nil
+	}
+	return v.Status
 }
 
 func (v *VonagePhoneNumber) GetName() *string {
@@ -2781,6 +2922,32 @@ func (v *VonagePhoneNumberFallbackDestination) Accept(visitor VonagePhoneNumberF
 		return visitor.VisitTransferDestinationSip(v.TransferDestinationSip)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", v)
+}
+
+// This is the status of the phone number.
+type VonagePhoneNumberStatus string
+
+const (
+	VonagePhoneNumberStatusActive     VonagePhoneNumberStatus = "active"
+	VonagePhoneNumberStatusActivating VonagePhoneNumberStatus = "activating"
+	VonagePhoneNumberStatusBlocked    VonagePhoneNumberStatus = "blocked"
+)
+
+func NewVonagePhoneNumberStatusFromString(s string) (VonagePhoneNumberStatus, error) {
+	switch s {
+	case "active":
+		return VonagePhoneNumberStatusActive, nil
+	case "activating":
+		return VonagePhoneNumberStatusActivating, nil
+	case "blocked":
+		return VonagePhoneNumberStatusBlocked, nil
+	}
+	var t VonagePhoneNumberStatus
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (v VonagePhoneNumberStatus) Ptr() *VonagePhoneNumberStatus {
+	return &v
 }
 
 type PhoneNumbersCreateRequest struct {

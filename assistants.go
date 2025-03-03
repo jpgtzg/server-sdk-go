@@ -50,8 +50,6 @@ type Assistant struct {
 	//
 	// @default 'assistant-speaks-first'
 	FirstMessageMode *AssistantFirstMessageMode `json:"firstMessageMode,omitempty" url:"firstMessageMode,omitempty"`
-	// When this is enabled, no logs, recordings, or transcriptions will be stored. At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
-	HipaaEnabled *bool `json:"hipaaEnabled,omitempty" url:"hipaaEnabled,omitempty"`
 	// These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input. You can check the shape of the messages in ClientMessage schema.
 	ClientMessages []AssistantClientMessagesItem `json:"clientMessages,omitempty" url:"clientMessages,omitempty"`
 	// These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
@@ -99,7 +97,8 @@ type Assistant struct {
 	// If unspecified, it will hang up without saying anything.
 	EndCallMessage *string `json:"endCallMessage,omitempty" url:"endCallMessage,omitempty"`
 	// This list contains phrases that, if spoken by the assistant, will trigger the call to be hung up. Case insensitive.
-	EndCallPhrases []string `json:"endCallPhrases,omitempty" url:"endCallPhrases,omitempty"`
+	EndCallPhrases []string        `json:"endCallPhrases,omitempty" url:"endCallPhrases,omitempty"`
+	CompliancePlan *CompliancePlan `json:"compliancePlan,omitempty" url:"compliancePlan,omitempty"`
 	// This is for metadata you want to store on the assistant.
 	Metadata map[string]interface{} `json:"metadata,omitempty" url:"metadata,omitempty"`
 	// This is the plan for analysis of assistant's calls. Stored in `call.analysis`.
@@ -146,6 +145,8 @@ type Assistant struct {
 	// 2. phoneNumber.serverUrl
 	// 3. org.serverUrl
 	Server *Server `json:"server,omitempty" url:"server,omitempty"`
+	// This is a set of actions that will be performed on certain events.
+	Hooks []*AssistantHooks `json:"hooks,omitempty" url:"hooks,omitempty"`
 	// This is the unique identifier for the assistant.
 	Id string `json:"id" url:"id"`
 	// This is the unique identifier for the org that this assistant belongs to.
@@ -192,13 +193,6 @@ func (a *Assistant) GetFirstMessageMode() *AssistantFirstMessageMode {
 		return nil
 	}
 	return a.FirstMessageMode
-}
-
-func (a *Assistant) GetHipaaEnabled() *bool {
-	if a == nil {
-		return nil
-	}
-	return a.HipaaEnabled
 }
 
 func (a *Assistant) GetClientMessages() []AssistantClientMessagesItem {
@@ -299,6 +293,13 @@ func (a *Assistant) GetEndCallPhrases() []string {
 	return a.EndCallPhrases
 }
 
+func (a *Assistant) GetCompliancePlan() *CompliancePlan {
+	if a == nil {
+		return nil
+	}
+	return a.CompliancePlan
+}
+
 func (a *Assistant) GetMetadata() map[string]interface{} {
 	if a == nil {
 		return nil
@@ -360,6 +361,13 @@ func (a *Assistant) GetServer() *Server {
 		return nil
 	}
 	return a.Server
+}
+
+func (a *Assistant) GetHooks() []*AssistantHooks {
+	if a == nil {
+		return nil
+	}
+	return a.Hooks
 }
 
 func (a *Assistant) GetId() string {
@@ -1613,22 +1621,23 @@ func (a *AssistantModel) Accept(visitor AssistantModelVisitor) error {
 type AssistantServerMessagesItem string
 
 const (
-	AssistantServerMessagesItemConversationUpdate         AssistantServerMessagesItem = "conversation-update"
-	AssistantServerMessagesItemEndOfCallReport            AssistantServerMessagesItem = "end-of-call-report"
-	AssistantServerMessagesItemFunctionCall               AssistantServerMessagesItem = "function-call"
-	AssistantServerMessagesItemHang                       AssistantServerMessagesItem = "hang"
-	AssistantServerMessagesItemLanguageChanged            AssistantServerMessagesItem = "language-changed"
-	AssistantServerMessagesItemLanguageChangeDetected     AssistantServerMessagesItem = "language-change-detected"
-	AssistantServerMessagesItemModelOutput                AssistantServerMessagesItem = "model-output"
-	AssistantServerMessagesItemPhoneCallControl           AssistantServerMessagesItem = "phone-call-control"
-	AssistantServerMessagesItemSpeechUpdate               AssistantServerMessagesItem = "speech-update"
-	AssistantServerMessagesItemStatusUpdate               AssistantServerMessagesItem = "status-update"
-	AssistantServerMessagesItemTranscript                 AssistantServerMessagesItem = "transcript"
-	AssistantServerMessagesItemToolCalls                  AssistantServerMessagesItem = "tool-calls"
-	AssistantServerMessagesItemTransferDestinationRequest AssistantServerMessagesItem = "transfer-destination-request"
-	AssistantServerMessagesItemTransferUpdate             AssistantServerMessagesItem = "transfer-update"
-	AssistantServerMessagesItemUserInterrupted            AssistantServerMessagesItem = "user-interrupted"
-	AssistantServerMessagesItemVoiceInput                 AssistantServerMessagesItem = "voice-input"
+	AssistantServerMessagesItemConversationUpdate            AssistantServerMessagesItem = "conversation-update"
+	AssistantServerMessagesItemEndOfCallReport               AssistantServerMessagesItem = "end-of-call-report"
+	AssistantServerMessagesItemFunctionCall                  AssistantServerMessagesItem = "function-call"
+	AssistantServerMessagesItemHang                          AssistantServerMessagesItem = "hang"
+	AssistantServerMessagesItemLanguageChanged               AssistantServerMessagesItem = "language-changed"
+	AssistantServerMessagesItemLanguageChangeDetected        AssistantServerMessagesItem = "language-change-detected"
+	AssistantServerMessagesItemModelOutput                   AssistantServerMessagesItem = "model-output"
+	AssistantServerMessagesItemPhoneCallControl              AssistantServerMessagesItem = "phone-call-control"
+	AssistantServerMessagesItemSpeechUpdate                  AssistantServerMessagesItem = "speech-update"
+	AssistantServerMessagesItemStatusUpdate                  AssistantServerMessagesItem = "status-update"
+	AssistantServerMessagesItemTranscript                    AssistantServerMessagesItem = "transcript"
+	AssistantServerMessagesItemTranscriptTranscriptTypeFinal AssistantServerMessagesItem = "transcript[transcriptType='final']"
+	AssistantServerMessagesItemToolCalls                     AssistantServerMessagesItem = "tool-calls"
+	AssistantServerMessagesItemTransferDestinationRequest    AssistantServerMessagesItem = "transfer-destination-request"
+	AssistantServerMessagesItemTransferUpdate                AssistantServerMessagesItem = "transfer-update"
+	AssistantServerMessagesItemUserInterrupted               AssistantServerMessagesItem = "user-interrupted"
+	AssistantServerMessagesItemVoiceInput                    AssistantServerMessagesItem = "voice-input"
 )
 
 func NewAssistantServerMessagesItemFromString(s string) (AssistantServerMessagesItem, error) {
@@ -1655,6 +1664,8 @@ func NewAssistantServerMessagesItemFromString(s string) (AssistantServerMessages
 		return AssistantServerMessagesItemStatusUpdate, nil
 	case "transcript":
 		return AssistantServerMessagesItemTranscript, nil
+	case "transcript[transcriptType='final']":
+		return AssistantServerMessagesItemTranscriptTranscriptTypeFinal, nil
 	case "tool-calls":
 		return AssistantServerMessagesItemToolCalls, nil
 	case "transfer-destination-request":
@@ -3263,22 +3274,23 @@ func (u *UpdateAssistantDtoModel) Accept(visitor UpdateAssistantDtoModelVisitor)
 type UpdateAssistantDtoServerMessagesItem string
 
 const (
-	UpdateAssistantDtoServerMessagesItemConversationUpdate         UpdateAssistantDtoServerMessagesItem = "conversation-update"
-	UpdateAssistantDtoServerMessagesItemEndOfCallReport            UpdateAssistantDtoServerMessagesItem = "end-of-call-report"
-	UpdateAssistantDtoServerMessagesItemFunctionCall               UpdateAssistantDtoServerMessagesItem = "function-call"
-	UpdateAssistantDtoServerMessagesItemHang                       UpdateAssistantDtoServerMessagesItem = "hang"
-	UpdateAssistantDtoServerMessagesItemLanguageChanged            UpdateAssistantDtoServerMessagesItem = "language-changed"
-	UpdateAssistantDtoServerMessagesItemLanguageChangeDetected     UpdateAssistantDtoServerMessagesItem = "language-change-detected"
-	UpdateAssistantDtoServerMessagesItemModelOutput                UpdateAssistantDtoServerMessagesItem = "model-output"
-	UpdateAssistantDtoServerMessagesItemPhoneCallControl           UpdateAssistantDtoServerMessagesItem = "phone-call-control"
-	UpdateAssistantDtoServerMessagesItemSpeechUpdate               UpdateAssistantDtoServerMessagesItem = "speech-update"
-	UpdateAssistantDtoServerMessagesItemStatusUpdate               UpdateAssistantDtoServerMessagesItem = "status-update"
-	UpdateAssistantDtoServerMessagesItemTranscript                 UpdateAssistantDtoServerMessagesItem = "transcript"
-	UpdateAssistantDtoServerMessagesItemToolCalls                  UpdateAssistantDtoServerMessagesItem = "tool-calls"
-	UpdateAssistantDtoServerMessagesItemTransferDestinationRequest UpdateAssistantDtoServerMessagesItem = "transfer-destination-request"
-	UpdateAssistantDtoServerMessagesItemTransferUpdate             UpdateAssistantDtoServerMessagesItem = "transfer-update"
-	UpdateAssistantDtoServerMessagesItemUserInterrupted            UpdateAssistantDtoServerMessagesItem = "user-interrupted"
-	UpdateAssistantDtoServerMessagesItemVoiceInput                 UpdateAssistantDtoServerMessagesItem = "voice-input"
+	UpdateAssistantDtoServerMessagesItemConversationUpdate            UpdateAssistantDtoServerMessagesItem = "conversation-update"
+	UpdateAssistantDtoServerMessagesItemEndOfCallReport               UpdateAssistantDtoServerMessagesItem = "end-of-call-report"
+	UpdateAssistantDtoServerMessagesItemFunctionCall                  UpdateAssistantDtoServerMessagesItem = "function-call"
+	UpdateAssistantDtoServerMessagesItemHang                          UpdateAssistantDtoServerMessagesItem = "hang"
+	UpdateAssistantDtoServerMessagesItemLanguageChanged               UpdateAssistantDtoServerMessagesItem = "language-changed"
+	UpdateAssistantDtoServerMessagesItemLanguageChangeDetected        UpdateAssistantDtoServerMessagesItem = "language-change-detected"
+	UpdateAssistantDtoServerMessagesItemModelOutput                   UpdateAssistantDtoServerMessagesItem = "model-output"
+	UpdateAssistantDtoServerMessagesItemPhoneCallControl              UpdateAssistantDtoServerMessagesItem = "phone-call-control"
+	UpdateAssistantDtoServerMessagesItemSpeechUpdate                  UpdateAssistantDtoServerMessagesItem = "speech-update"
+	UpdateAssistantDtoServerMessagesItemStatusUpdate                  UpdateAssistantDtoServerMessagesItem = "status-update"
+	UpdateAssistantDtoServerMessagesItemTranscript                    UpdateAssistantDtoServerMessagesItem = "transcript"
+	UpdateAssistantDtoServerMessagesItemTranscriptTranscriptTypeFinal UpdateAssistantDtoServerMessagesItem = "transcript[transcriptType='final']"
+	UpdateAssistantDtoServerMessagesItemToolCalls                     UpdateAssistantDtoServerMessagesItem = "tool-calls"
+	UpdateAssistantDtoServerMessagesItemTransferDestinationRequest    UpdateAssistantDtoServerMessagesItem = "transfer-destination-request"
+	UpdateAssistantDtoServerMessagesItemTransferUpdate                UpdateAssistantDtoServerMessagesItem = "transfer-update"
+	UpdateAssistantDtoServerMessagesItemUserInterrupted               UpdateAssistantDtoServerMessagesItem = "user-interrupted"
+	UpdateAssistantDtoServerMessagesItemVoiceInput                    UpdateAssistantDtoServerMessagesItem = "voice-input"
 )
 
 func NewUpdateAssistantDtoServerMessagesItemFromString(s string) (UpdateAssistantDtoServerMessagesItem, error) {
@@ -3305,6 +3317,8 @@ func NewUpdateAssistantDtoServerMessagesItemFromString(s string) (UpdateAssistan
 		return UpdateAssistantDtoServerMessagesItemStatusUpdate, nil
 	case "transcript":
 		return UpdateAssistantDtoServerMessagesItemTranscript, nil
+	case "transcript[transcriptType='final']":
+		return UpdateAssistantDtoServerMessagesItemTranscriptTranscriptTypeFinal, nil
 	case "tool-calls":
 		return UpdateAssistantDtoServerMessagesItemToolCalls, nil
 	case "transfer-destination-request":
@@ -3764,8 +3778,6 @@ type UpdateAssistantDto struct {
 	//
 	// @default 'assistant-speaks-first'
 	FirstMessageMode *UpdateAssistantDtoFirstMessageMode `json:"firstMessageMode,omitempty" url:"-"`
-	// When this is enabled, no logs, recordings, or transcriptions will be stored. At the end of the call, you will still receive an end-of-call-report message to store on your server. Defaults to false.
-	HipaaEnabled *bool `json:"hipaaEnabled,omitempty" url:"-"`
 	// These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input. You can check the shape of the messages in ClientMessage schema.
 	ClientMessages []UpdateAssistantDtoClientMessagesItem `json:"clientMessages,omitempty" url:"-"`
 	// These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
@@ -3813,7 +3825,8 @@ type UpdateAssistantDto struct {
 	// If unspecified, it will hang up without saying anything.
 	EndCallMessage *string `json:"endCallMessage,omitempty" url:"-"`
 	// This list contains phrases that, if spoken by the assistant, will trigger the call to be hung up. Case insensitive.
-	EndCallPhrases []string `json:"endCallPhrases,omitempty" url:"-"`
+	EndCallPhrases []string        `json:"endCallPhrases,omitempty" url:"-"`
+	CompliancePlan *CompliancePlan `json:"compliancePlan,omitempty" url:"-"`
 	// This is for metadata you want to store on the assistant.
 	Metadata map[string]interface{} `json:"metadata,omitempty" url:"-"`
 	// This is the plan for analysis of assistant's calls. Stored in `call.analysis`.
@@ -3860,4 +3873,6 @@ type UpdateAssistantDto struct {
 	// 2. phoneNumber.serverUrl
 	// 3. org.serverUrl
 	Server *Server `json:"server,omitempty" url:"-"`
+	// This is a set of actions that will be performed on certain events.
+	Hooks []*AssistantHooks `json:"hooks,omitempty" url:"-"`
 }

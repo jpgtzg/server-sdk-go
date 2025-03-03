@@ -40,7 +40,7 @@ type LogsGetRequest struct {
 	CallId *string `json:"-" url:"callId,omitempty"`
 	// This is the page number to return. Defaults to 1.
 	Page *float64 `json:"-" url:"page,omitempty"`
-	// This is the sort order for pagination. Defaults to 'ASC'.
+	// This is the sort order for pagination. Defaults to 'DESC'.
 	SortOrder *LogsGetRequestSortOrder `json:"-" url:"sortOrder,omitempty"`
 	// This is the maximum number of items to return. Defaults to 100.
 	Limit *float64 `json:"-" url:"limit,omitempty"`
@@ -540,68 +540,6 @@ func (l *LogsPaginatedResponse) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", l)
-}
-
-type PaginationMeta struct {
-	ItemsPerPage float64 `json:"itemsPerPage" url:"itemsPerPage"`
-	TotalItems   float64 `json:"totalItems" url:"totalItems"`
-	CurrentPage  float64 `json:"currentPage" url:"currentPage"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (p *PaginationMeta) GetItemsPerPage() float64 {
-	if p == nil {
-		return 0
-	}
-	return p.ItemsPerPage
-}
-
-func (p *PaginationMeta) GetTotalItems() float64 {
-	if p == nil {
-		return 0
-	}
-	return p.TotalItems
-}
-
-func (p *PaginationMeta) GetCurrentPage() float64 {
-	if p == nil {
-		return 0
-	}
-	return p.CurrentPage
-}
-
-func (p *PaginationMeta) GetExtraProperties() map[string]interface{} {
-	return p.extraProperties
-}
-
-func (p *PaginationMeta) UnmarshalJSON(data []byte) error {
-	type unmarshaler PaginationMeta
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*p = PaginationMeta(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *p)
-	if err != nil {
-		return err
-	}
-	p.extraProperties = extraProperties
-	p.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (p *PaginationMeta) String() string {
-	if len(p.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(p); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", p)
 }
 
 type LoggingControllerLogsDeleteQueryRequestType string

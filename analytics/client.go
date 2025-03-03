@@ -4,6 +4,7 @@ package analytics
 
 import (
 	context "context"
+	serversdkgo "github.com/VapiAI/server-sdk-go"
 	core "github.com/VapiAI/server-sdk-go/core"
 	internal "github.com/VapiAI/server-sdk-go/internal"
 	option "github.com/VapiAI/server-sdk-go/option"
@@ -32,8 +33,9 @@ func NewClient(opts ...option.RequestOption) *Client {
 
 func (c *Client) Get(
 	ctx context.Context,
+	request *serversdkgo.AnalyticsQueryDto,
 	opts ...option.RequestOption,
-) error {
+) ([]*serversdkgo.AnalyticsQueryResult, error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -45,7 +47,9 @@ func (c *Client) Get(
 		c.header.Clone(),
 		options.ToHeader(),
 	)
+	headers.Set("Content-Type", "application/json")
 
+	var response []*serversdkgo.AnalyticsQueryResult
 	if err := c.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -56,9 +60,11 @@ func (c *Client) Get(
 			BodyProperties:  options.BodyProperties,
 			QueryParameters: options.QueryParameters,
 			Client:          options.HTTPClient,
+			Request:         request,
+			Response:        &response,
 		},
 	); err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return response, nil
 }
