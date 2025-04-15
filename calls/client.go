@@ -78,7 +78,7 @@ func (c *Client) Create(
 	ctx context.Context,
 	request *serversdkgo.CreateCallDto,
 	opts ...option.RequestOption,
-) (*serversdkgo.Call, error) {
+) (*serversdkgo.CallsCreateResponse, error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -92,7 +92,7 @@ func (c *Client) Create(
 	)
 	headers.Set("Content-Type", "application/json")
 
-	var response *serversdkgo.Call
+	var response *serversdkgo.CallsCreateResponse
 	if err := c.caller.Call(
 		ctx,
 		&internal.CallParams{

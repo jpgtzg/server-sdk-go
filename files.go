@@ -13,16 +13,18 @@ type File struct {
 	Object *string     `json:"object,omitempty" url:"object,omitempty"`
 	Status *FileStatus `json:"status,omitempty" url:"status,omitempty"`
 	// This is the name of the file. This is just for your own reference.
-	Name         *string                `json:"name,omitempty" url:"name,omitempty"`
-	OriginalName *string                `json:"originalName,omitempty" url:"originalName,omitempty"`
-	Bytes        *float64               `json:"bytes,omitempty" url:"bytes,omitempty"`
-	Purpose      *string                `json:"purpose,omitempty" url:"purpose,omitempty"`
-	Mimetype     *string                `json:"mimetype,omitempty" url:"mimetype,omitempty"`
-	Key          *string                `json:"key,omitempty" url:"key,omitempty"`
-	Path         *string                `json:"path,omitempty" url:"path,omitempty"`
-	Bucket       *string                `json:"bucket,omitempty" url:"bucket,omitempty"`
-	Url          *string                `json:"url,omitempty" url:"url,omitempty"`
-	Metadata     map[string]interface{} `json:"metadata,omitempty" url:"metadata,omitempty"`
+	Name            *string                `json:"name,omitempty" url:"name,omitempty"`
+	OriginalName    *string                `json:"originalName,omitempty" url:"originalName,omitempty"`
+	Bytes           *float64               `json:"bytes,omitempty" url:"bytes,omitempty"`
+	Purpose         *string                `json:"purpose,omitempty" url:"purpose,omitempty"`
+	Mimetype        *string                `json:"mimetype,omitempty" url:"mimetype,omitempty"`
+	Key             *string                `json:"key,omitempty" url:"key,omitempty"`
+	Path            *string                `json:"path,omitempty" url:"path,omitempty"`
+	Bucket          *string                `json:"bucket,omitempty" url:"bucket,omitempty"`
+	Url             *string                `json:"url,omitempty" url:"url,omitempty"`
+	ParsedTextUrl   *string                `json:"parsedTextUrl,omitempty" url:"parsedTextUrl,omitempty"`
+	ParsedTextBytes *float64               `json:"parsedTextBytes,omitempty" url:"parsedTextBytes,omitempty"`
+	Metadata        map[string]interface{} `json:"metadata,omitempty" url:"metadata,omitempty"`
 	// This is the unique identifier for the file.
 	Id string `json:"id" url:"id"`
 	// This is the unique identifier for the org that this file belongs to.
@@ -104,6 +106,20 @@ func (f *File) GetUrl() *string {
 		return nil
 	}
 	return f.Url
+}
+
+func (f *File) GetParsedTextUrl() *string {
+	if f == nil {
+		return nil
+	}
+	return f.ParsedTextUrl
+}
+
+func (f *File) GetParsedTextBytes() *float64 {
+	if f == nil {
+		return nil
+	}
+	return f.ParsedTextBytes
 }
 
 func (f *File) GetMetadata() map[string]interface{} {
@@ -198,16 +214,19 @@ func (f *File) String() string {
 type FileStatus string
 
 const (
-	FileStatusIndexed    FileStatus = "indexed"
-	FileStatusNotIndexed FileStatus = "not_indexed"
+	FileStatusProcessing FileStatus = "processing"
+	FileStatusDone       FileStatus = "done"
+	FileStatusFailed     FileStatus = "failed"
 )
 
 func NewFileStatusFromString(s string) (FileStatus, error) {
 	switch s {
-	case "indexed":
-		return FileStatusIndexed, nil
-	case "not_indexed":
-		return FileStatusNotIndexed, nil
+	case "processing":
+		return FileStatusProcessing, nil
+	case "done":
+		return FileStatusDone, nil
+	case "failed":
+		return FileStatusFailed, nil
 	}
 	var t FileStatus
 	return "", fmt.Errorf("%s is not a valid %T", s, t)

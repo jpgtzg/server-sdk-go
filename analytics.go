@@ -94,6 +94,7 @@ const (
 	AnalyticsOperationColumnCostBreakdownLlmCompletionTokens AnalyticsOperationColumn = "costBreakdown.llmCompletionTokens"
 	AnalyticsOperationColumnDuration                         AnalyticsOperationColumn = "duration"
 	AnalyticsOperationColumnConcurrency                      AnalyticsOperationColumn = "concurrency"
+	AnalyticsOperationColumnMinutesUsed                      AnalyticsOperationColumn = "minutesUsed"
 )
 
 func NewAnalyticsOperationColumnFromString(s string) (AnalyticsOperationColumn, error) {
@@ -120,6 +121,8 @@ func NewAnalyticsOperationColumnFromString(s string) (AnalyticsOperationColumn, 
 		return AnalyticsOperationColumnDuration, nil
 	case "concurrency":
 		return AnalyticsOperationColumnConcurrency, nil
+	case "minutesUsed":
+		return AnalyticsOperationColumnMinutesUsed, nil
 	}
 	var t AnalyticsOperationColumn
 	return "", fmt.Errorf("%s is not a valid %T", s, t)

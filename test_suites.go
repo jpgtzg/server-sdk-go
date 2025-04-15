@@ -14,6 +14,12 @@ type CreateTestSuiteDto struct {
 	Name *string `json:"name,omitempty" url:"-"`
 	// This is the phone number ID associated with this test suite.
 	PhoneNumberId *string `json:"phoneNumberId,omitempty" url:"-"`
+	// Override the default tester plan by providing custom assistant configuration for the test agent.
+	//
+	// We recommend only using this if you are confident, as we have already set sensible defaults on the tester plan.
+	TesterPlan *TesterPlan `json:"testerPlan,omitempty" url:"-"`
+	// These are the configuration for the assistant / phone number that is being tested.
+	TargetPlan *TargetPlan `json:"targetPlan,omitempty" url:"-"`
 }
 
 type TestSuiteControllerFindAllPaginatedRequest struct {
@@ -46,6 +52,77 @@ type UpdateTestSuiteDto struct {
 	Name *string `json:"name,omitempty" url:"-"`
 	// This is the phone number ID associated with this test suite.
 	PhoneNumberId *string `json:"phoneNumberId,omitempty" url:"-"`
+	// Override the default tester plan by providing custom assistant configuration for the test agent.
+	//
+	// We recommend only using this if you are confident, as we have already set sensible defaults on the tester plan.
+	TesterPlan *TesterPlan `json:"testerPlan,omitempty" url:"-"`
+	// These are the configuration for the assistant / phone number that is being tested.
+	TargetPlan *TargetPlan `json:"targetPlan,omitempty" url:"-"`
+}
+
+type TargetPlan struct {
+	// This is the phoneNumberId that is being tested.
+	PhoneNumberId *string `json:"phoneNumberId,omitempty" url:"phoneNumberId,omitempty"`
+	// This is the phone number that is being tested. Only use this if you have not imported the phone number to Vapi.
+	PhoneNumber *TestSuitePhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
+	// This is the assistantId that is being tested.
+	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TargetPlan) GetPhoneNumberId() *string {
+	if t == nil {
+		return nil
+	}
+	return t.PhoneNumberId
+}
+
+func (t *TargetPlan) GetPhoneNumber() *TestSuitePhoneNumber {
+	if t == nil {
+		return nil
+	}
+	return t.PhoneNumber
+}
+
+func (t *TargetPlan) GetAssistantId() *string {
+	if t == nil {
+		return nil
+	}
+	return t.AssistantId
+}
+
+func (t *TargetPlan) GetExtraProperties() map[string]interface{} {
+	return t.extraProperties
+}
+
+func (t *TargetPlan) UnmarshalJSON(data []byte) error {
+	type unmarshaler TargetPlan
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = TargetPlan(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TargetPlan) String() string {
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
 }
 
 type TestSuite struct {
@@ -61,6 +138,12 @@ type TestSuite struct {
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the phone number ID associated with this test suite.
 	PhoneNumberId *string `json:"phoneNumberId,omitempty" url:"phoneNumberId,omitempty"`
+	// Override the default tester plan by providing custom assistant configuration for the test agent.
+	//
+	// We recommend only using this if you are confident, as we have already set sensible defaults on the tester plan.
+	TesterPlan *TesterPlan `json:"testerPlan,omitempty" url:"testerPlan,omitempty"`
+	// These are the configuration for the assistant / phone number that is being tested.
+	TargetPlan *TargetPlan `json:"targetPlan,omitempty" url:"targetPlan,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -106,6 +189,20 @@ func (t *TestSuite) GetPhoneNumberId() *string {
 		return nil
 	}
 	return t.PhoneNumberId
+}
+
+func (t *TestSuite) GetTesterPlan() *TesterPlan {
+	if t == nil {
+		return nil
+	}
+	return t.TesterPlan
+}
+
+func (t *TestSuite) GetTargetPlan() *TargetPlan {
+	if t == nil {
+		return nil
+	}
+	return t.TargetPlan
 }
 
 func (t *TestSuite) GetExtraProperties() map[string]interface{} {
@@ -162,6 +259,80 @@ func (t *TestSuite) String() string {
 	return fmt.Sprintf("%#v", t)
 }
 
+type TestSuitePhoneNumber struct {
+	// This is the provider of the phone number.
+	// This is the phone number that is being tested.
+	Number   string `json:"number" url:"number"`
+	provider string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TestSuitePhoneNumber) GetNumber() string {
+	if t == nil {
+		return ""
+	}
+	return t.Number
+}
+
+func (t *TestSuitePhoneNumber) Provider() string {
+	return t.provider
+}
+
+func (t *TestSuitePhoneNumber) GetExtraProperties() map[string]interface{} {
+	return t.extraProperties
+}
+
+func (t *TestSuitePhoneNumber) UnmarshalJSON(data []byte) error {
+	type embed TestSuitePhoneNumber
+	var unmarshaler = struct {
+		embed
+		Provider string `json:"provider"`
+	}{
+		embed: embed(*t),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*t = TestSuitePhoneNumber(unmarshaler.embed)
+	if unmarshaler.Provider != "test-suite" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", t, "test-suite", unmarshaler.Provider)
+	}
+	t.provider = unmarshaler.Provider
+	extraProperties, err := internal.ExtractExtraProperties(data, *t, "provider")
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TestSuitePhoneNumber) MarshalJSON() ([]byte, error) {
+	type embed TestSuitePhoneNumber
+	var marshaler = struct {
+		embed
+		Provider string `json:"provider"`
+	}{
+		embed:    embed(*t),
+		Provider: "test-suite",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (t *TestSuitePhoneNumber) String() string {
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
 type TestSuitesPaginatedResponse struct {
 	Results  []*TestSuite    `json:"results,omitempty" url:"results,omitempty"`
 	Metadata *PaginationMeta `json:"metadata,omitempty" url:"metadata,omitempty"`
@@ -205,6 +376,78 @@ func (t *TestSuitesPaginatedResponse) UnmarshalJSON(data []byte) error {
 }
 
 func (t *TestSuitesPaginatedResponse) String() string {
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+type TesterPlan struct {
+	// Pass a transient assistant to use for the test assistant.
+	//
+	// Make sure to write a detailed system prompt for a test assistant, and use the {{test.script}} variable to access the test script.
+	Assistant *CreateAssistantDto `json:"assistant,omitempty" url:"assistant,omitempty"`
+	// Pass an assistant id that can be access
+	//
+	// Make sure to write a detailed system prompt for the test assistant, and use the {{test.script}} variable to access the test script.
+	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
+	// Add any assistant overrides to the test assistant.
+	//
+	// One use case is if you want to pass custom variables into the test using variableValues, that you can then access in the script
+	// and rubric using {{varName}}.
+	AssistantOverrides *AssistantOverrides `json:"assistantOverrides,omitempty" url:"assistantOverrides,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TesterPlan) GetAssistant() *CreateAssistantDto {
+	if t == nil {
+		return nil
+	}
+	return t.Assistant
+}
+
+func (t *TesterPlan) GetAssistantId() *string {
+	if t == nil {
+		return nil
+	}
+	return t.AssistantId
+}
+
+func (t *TesterPlan) GetAssistantOverrides() *AssistantOverrides {
+	if t == nil {
+		return nil
+	}
+	return t.AssistantOverrides
+}
+
+func (t *TesterPlan) GetExtraProperties() map[string]interface{} {
+	return t.extraProperties
+}
+
+func (t *TesterPlan) UnmarshalJSON(data []byte) error {
+	type unmarshaler TesterPlan
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = TesterPlan(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TesterPlan) String() string {
 	if len(t.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
 			return value

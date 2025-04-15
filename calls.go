@@ -10,8 +10,16 @@ import (
 )
 
 type CreateCallDto struct {
+	// This is used to issue batch calls to multiple customers.
+	//
+	// Only relevant for `outboundPhoneCall`. To call a single customer, use `customer` instead.
+	Customers []*CreateCustomerDto `json:"customers,omitempty" url:"-"`
 	// This is the name of the call. This is just for your own reference.
 	Name *string `json:"name,omitempty" url:"-"`
+	// This is the schedule plan of the call.
+	SchedulePlan *SchedulePlan `json:"schedulePlan,omitempty" url:"-"`
+	// This is the transport of the call.
+	Transport map[string]interface{} `json:"transport,omitempty" url:"-"`
 	// This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead.
 	AssistantId *string `json:"assistantId,omitempty" url:"-"`
 	// This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead.
@@ -74,6 +82,8 @@ type Analysis struct {
 	Summary *string `json:"summary,omitempty" url:"summary,omitempty"`
 	// This is the structured data extracted from the call. Customize by setting `assistant.analysisPlan.structuredDataPrompt` and/or `assistant.analysisPlan.structuredDataSchema`.
 	StructuredData map[string]interface{} `json:"structuredData,omitempty" url:"structuredData,omitempty"`
+	// This is the structured data catalog of the call. Customize by setting `assistant.analysisPlan.structuredDataMultiPlan`.
+	StructuredDataMulti []map[string]interface{} `json:"structuredDataMulti,omitempty" url:"structuredDataMulti,omitempty"`
 	// This is the evaluation of the call. Customize by setting `assistant.analysisPlan.successEvaluationPrompt` and/or `assistant.analysisPlan.successEvaluationRubric`.
 	SuccessEvaluation *string `json:"successEvaluation,omitempty" url:"successEvaluation,omitempty"`
 
@@ -93,6 +103,13 @@ func (a *Analysis) GetStructuredData() map[string]interface{} {
 		return nil
 	}
 	return a.StructuredData
+}
+
+func (a *Analysis) GetStructuredDataMulti() []map[string]interface{} {
+	if a == nil {
+		return nil
+	}
+	return a.StructuredDataMulti
 }
 
 func (a *Analysis) GetSuccessEvaluation() *string {
@@ -433,9 +450,7 @@ type Call struct {
 	Monitor *Monitor `json:"monitor,omitempty" url:"monitor,omitempty"`
 	// These are the artifacts created from the call. Configure in `assistant.artifactPlan`.
 	Artifact *Artifact `json:"artifact,omitempty" url:"artifact,omitempty"`
-	// This is the transport used for the call.
-	Transport *Transport `json:"transport,omitempty" url:"transport,omitempty"`
-	// The ID of the call as provided by the phone number service. callSid in Twilio. conversationUuid in Vonage.
+	// The ID of the call as provided by the phone number service. callSid in Twilio. conversationUuid in Vonage. callControlId in Telnyx.
 	//
 	// Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
 	PhoneCallProviderId *string `json:"phoneCallProviderId,omitempty" url:"phoneCallProviderId,omitempty"`
@@ -467,6 +482,10 @@ type Call struct {
 	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
 	// This is the name of the call. This is just for your own reference.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// This is the schedule plan of the call.
+	SchedulePlan *SchedulePlan `json:"schedulePlan,omitempty" url:"schedulePlan,omitempty"`
+	// This is the transport of the call.
+	Transport map[string]interface{} `json:"transport,omitempty" url:"transport,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -612,13 +631,6 @@ func (c *Call) GetArtifact() *Artifact {
 	return c.Artifact
 }
 
-func (c *Call) GetTransport() *Transport {
-	if c == nil {
-		return nil
-	}
-	return c.Transport
-}
-
 func (c *Call) GetPhoneCallProviderId() *string {
 	if c == nil {
 		return nil
@@ -696,6 +708,20 @@ func (c *Call) GetName() *string {
 	return c.Name
 }
 
+func (c *Call) GetSchedulePlan() *SchedulePlan {
+	if c == nil {
+		return nil
+	}
+	return c.SchedulePlan
+}
+
+func (c *Call) GetTransport() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.Transport
+}
+
 func (c *Call) GetExtraProperties() map[string]interface{} {
 	return c.extraProperties
 }
@@ -758,13 +784,124 @@ func (c *Call) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
+type CallBatchError struct {
+	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
+	Error    string             `json:"error" url:"error"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CallBatchError) GetCustomer() *CreateCustomerDto {
+	if c == nil {
+		return nil
+	}
+	return c.Customer
+}
+
+func (c *CallBatchError) GetError() string {
+	if c == nil {
+		return ""
+	}
+	return c.Error
+}
+
+func (c *CallBatchError) GetExtraProperties() map[string]interface{} {
+	return c.extraProperties
+}
+
+func (c *CallBatchError) UnmarshalJSON(data []byte) error {
+	type unmarshaler CallBatchError
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CallBatchError(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CallBatchError) String() string {
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+type CallBatchResponse struct {
+	// This is the list of calls that were created.
+	Results []*Call `json:"results,omitempty" url:"results,omitempty"`
+	// This is the list of calls that failed to be created.
+	Errors []*CallBatchError `json:"errors,omitempty" url:"errors,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CallBatchResponse) GetResults() []*Call {
+	if c == nil {
+		return nil
+	}
+	return c.Results
+}
+
+func (c *CallBatchResponse) GetErrors() []*CallBatchError {
+	if c == nil {
+		return nil
+	}
+	return c.Errors
+}
+
+func (c *CallBatchResponse) GetExtraProperties() map[string]interface{} {
+	return c.extraProperties
+}
+
+func (c *CallBatchResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler CallBatchResponse
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CallBatchResponse(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CallBatchResponse) String() string {
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
 type CallCostsItem struct {
-	TransportCost   *TransportCost
-	TranscriberCost *TranscriberCost
-	ModelCost       *ModelCost
-	VoiceCost       *VoiceCost
-	VapiCost        *VapiCost
-	AnalysisCost    *AnalysisCost
+	TransportCost          *TransportCost
+	TranscriberCost        *TranscriberCost
+	ModelCost              *ModelCost
+	VoiceCost              *VoiceCost
+	VapiCost               *VapiCost
+	VoicemailDetectionCost *VoicemailDetectionCost
+	AnalysisCost           *AnalysisCost
 
 	typ string
 }
@@ -802,6 +939,13 @@ func (c *CallCostsItem) GetVapiCost() *VapiCost {
 		return nil
 	}
 	return c.VapiCost
+}
+
+func (c *CallCostsItem) GetVoicemailDetectionCost() *VoicemailDetectionCost {
+	if c == nil {
+		return nil
+	}
+	return c.VoicemailDetectionCost
 }
 
 func (c *CallCostsItem) GetAnalysisCost() *AnalysisCost {
@@ -842,6 +986,12 @@ func (c *CallCostsItem) UnmarshalJSON(data []byte) error {
 		c.VapiCost = valueVapiCost
 		return nil
 	}
+	valueVoicemailDetectionCost := new(VoicemailDetectionCost)
+	if err := json.Unmarshal(data, &valueVoicemailDetectionCost); err == nil {
+		c.typ = "VoicemailDetectionCost"
+		c.VoicemailDetectionCost = valueVoicemailDetectionCost
+		return nil
+	}
 	valueAnalysisCost := new(AnalysisCost)
 	if err := json.Unmarshal(data, &valueAnalysisCost); err == nil {
 		c.typ = "AnalysisCost"
@@ -867,6 +1017,9 @@ func (c CallCostsItem) MarshalJSON() ([]byte, error) {
 	if c.typ == "VapiCost" || c.VapiCost != nil {
 		return json.Marshal(c.VapiCost)
 	}
+	if c.typ == "VoicemailDetectionCost" || c.VoicemailDetectionCost != nil {
+		return json.Marshal(c.VoicemailDetectionCost)
+	}
 	if c.typ == "AnalysisCost" || c.AnalysisCost != nil {
 		return json.Marshal(c.AnalysisCost)
 	}
@@ -879,6 +1032,7 @@ type CallCostsItemVisitor interface {
 	VisitModelCost(*ModelCost) error
 	VisitVoiceCost(*VoiceCost) error
 	VisitVapiCost(*VapiCost) error
+	VisitVoicemailDetectionCost(*VoicemailDetectionCost) error
 	VisitAnalysisCost(*AnalysisCost) error
 }
 
@@ -897,6 +1051,9 @@ func (c *CallCostsItem) Accept(visitor CallCostsItemVisitor) error {
 	}
 	if c.typ == "VapiCost" || c.VapiCost != nil {
 		return visitor.VisitVapiCost(c.VapiCost)
+	}
+	if c.typ == "VoicemailDetectionCost" || c.VoicemailDetectionCost != nil {
+		return visitor.VisitVoicemailDetectionCost(c.VoicemailDetectionCost)
 	}
 	if c.typ == "AnalysisCost" || c.AnalysisCost != nil {
 		return visitor.VisitAnalysisCost(c.AnalysisCost)
@@ -971,231 +1128,492 @@ func (c *CallDestination) Accept(visitor CallDestinationVisitor) error {
 type CallEndedReason string
 
 const (
-	CallEndedReasonAssistantNotValid                                                                          CallEndedReason = "assistant-not-valid"
-	CallEndedReasonAssistantNotProvided                                                                       CallEndedReason = "assistant-not-provided"
-	CallEndedReasonCallStartErrorNeitherAssistantNorServerSet                                                 CallEndedReason = "call-start-error-neither-assistant-nor-server-set"
-	CallEndedReasonAssistantRequestFailed                                                                     CallEndedReason = "assistant-request-failed"
-	CallEndedReasonAssistantRequestReturnedError                                                              CallEndedReason = "assistant-request-returned-error"
-	CallEndedReasonAssistantRequestReturnedUnspeakableError                                                   CallEndedReason = "assistant-request-returned-unspeakable-error"
-	CallEndedReasonAssistantRequestReturnedInvalidAssistant                                                   CallEndedReason = "assistant-request-returned-invalid-assistant"
-	CallEndedReasonAssistantRequestReturnedNoAssistant                                                        CallEndedReason = "assistant-request-returned-no-assistant"
-	CallEndedReasonAssistantRequestReturnedForwardingPhoneNumber                                              CallEndedReason = "assistant-request-returned-forwarding-phone-number"
-	CallEndedReasonAssistantEndedCall                                                                         CallEndedReason = "assistant-ended-call"
-	CallEndedReasonAssistantSaidEndCallPhrase                                                                 CallEndedReason = "assistant-said-end-call-phrase"
-	CallEndedReasonAssistantEndedCallWithHangupTask                                                           CallEndedReason = "assistant-ended-call-with-hangup-task"
-	CallEndedReasonAssistantForwardedCall                                                                     CallEndedReason = "assistant-forwarded-call"
-	CallEndedReasonAssistantJoinTimedOut                                                                      CallEndedReason = "assistant-join-timed-out"
-	CallEndedReasonCustomerBusy                                                                               CallEndedReason = "customer-busy"
-	CallEndedReasonCustomerEndedCall                                                                          CallEndedReason = "customer-ended-call"
-	CallEndedReasonCustomerDidNotAnswer                                                                       CallEndedReason = "customer-did-not-answer"
-	CallEndedReasonCustomerDidNotGiveMicrophonePermission                                                     CallEndedReason = "customer-did-not-give-microphone-permission"
-	CallEndedReasonAssistantSaidMessageWithEndCallEnabled                                                     CallEndedReason = "assistant-said-message-with-end-call-enabled"
-	CallEndedReasonExceededMaxDuration                                                                        CallEndedReason = "exceeded-max-duration"
-	CallEndedReasonManuallyCanceled                                                                           CallEndedReason = "manually-canceled"
-	CallEndedReasonPhoneCallProviderClosedWebsocket                                                           CallEndedReason = "phone-call-provider-closed-websocket"
-	CallEndedReasonDbError                                                                                    CallEndedReason = "db-error"
-	CallEndedReasonAssistantNotFound                                                                          CallEndedReason = "assistant-not-found"
-	CallEndedReasonLicenseCheckFailed                                                                         CallEndedReason = "license-check-failed"
-	CallEndedReasonPipelineErrorOpenaiVoiceFailed                                                             CallEndedReason = "pipeline-error-openai-voice-failed"
-	CallEndedReasonPipelineErrorCartesiaVoiceFailed                                                           CallEndedReason = "pipeline-error-cartesia-voice-failed"
-	CallEndedReasonPipelineErrorDeepgramVoiceFailed                                                           CallEndedReason = "pipeline-error-deepgram-voice-failed"
-	CallEndedReasonPipelineErrorElevenLabsVoiceFailed                                                         CallEndedReason = "pipeline-error-eleven-labs-voice-failed"
-	CallEndedReasonPipelineErrorPlayhtVoiceFailed                                                             CallEndedReason = "pipeline-error-playht-voice-failed"
-	CallEndedReasonPipelineErrorLmntVoiceFailed                                                               CallEndedReason = "pipeline-error-lmnt-voice-failed"
-	CallEndedReasonPipelineErrorAzureVoiceFailed                                                              CallEndedReason = "pipeline-error-azure-voice-failed"
-	CallEndedReasonPipelineErrorRimeAiVoiceFailed                                                             CallEndedReason = "pipeline-error-rime-ai-voice-failed"
-	CallEndedReasonPipelineErrorNeetsVoiceFailed                                                              CallEndedReason = "pipeline-error-neets-voice-failed"
-	CallEndedReasonPipelineErrorSmallestAiVoiceFailed                                                         CallEndedReason = "pipeline-error-smallest-ai-voice-failed"
-	CallEndedReasonPipelineErrorNeuphonicVoiceFailed                                                          CallEndedReason = "pipeline-error-neuphonic-voice-failed"
-	CallEndedReasonPipelineErrorDeepgramTranscriberFailed                                                     CallEndedReason = "pipeline-error-deepgram-transcriber-failed"
-	CallEndedReasonPipelineErrorGladiaTranscriberFailed                                                       CallEndedReason = "pipeline-error-gladia-transcriber-failed"
-	CallEndedReasonPipelineErrorSpeechmaticsTranscriberFailed                                                 CallEndedReason = "pipeline-error-speechmatics-transcriber-failed"
-	CallEndedReasonPipelineErrorAssemblyAiTranscriberFailed                                                   CallEndedReason = "pipeline-error-assembly-ai-transcriber-failed"
-	CallEndedReasonPipelineErrorTalkscriberTranscriberFailed                                                  CallEndedReason = "pipeline-error-talkscriber-transcriber-failed"
-	CallEndedReasonPipelineErrorAzureSpeechTranscriberFailed                                                  CallEndedReason = "pipeline-error-azure-speech-transcriber-failed"
-	CallEndedReasonPipelineErrorVapiLlmFailed                                                                 CallEndedReason = "pipeline-error-vapi-llm-failed"
-	CallEndedReasonPipelineErrorVapi400BadRequestValidationFailed                                             CallEndedReason = "pipeline-error-vapi-400-bad-request-validation-failed"
-	CallEndedReasonPipelineErrorVapi401Unauthorized                                                           CallEndedReason = "pipeline-error-vapi-401-unauthorized"
-	CallEndedReasonPipelineErrorVapi403ModelAccessDenied                                                      CallEndedReason = "pipeline-error-vapi-403-model-access-denied"
-	CallEndedReasonPipelineErrorVapi429ExceededQuota                                                          CallEndedReason = "pipeline-error-vapi-429-exceeded-quota"
-	CallEndedReasonPipelineErrorVapi500ServerError                                                            CallEndedReason = "pipeline-error-vapi-500-server-error"
-	CallEndedReasonPipelineNoAvailableModel                                                                   CallEndedReason = "pipeline-no-available-model"
-	CallEndedReasonWorkerShutdown                                                                             CallEndedReason = "worker-shutdown"
-	CallEndedReasonUnknownError                                                                               CallEndedReason = "unknown-error"
-	CallEndedReasonVonageDisconnected                                                                         CallEndedReason = "vonage-disconnected"
-	CallEndedReasonVonageFailedToConnectCall                                                                  CallEndedReason = "vonage-failed-to-connect-call"
-	CallEndedReasonPhoneCallProviderBypassEnabledButNoCallReceived                                            CallEndedReason = "phone-call-provider-bypass-enabled-but-no-call-received"
-	CallEndedReasonVapifaultPhoneCallWorkerSetupSocketError                                                   CallEndedReason = "vapifault-phone-call-worker-setup-socket-error"
-	CallEndedReasonVapifaultPhoneCallWorkerWorkerSetupSocketTimeout                                           CallEndedReason = "vapifault-phone-call-worker-worker-setup-socket-timeout"
-	CallEndedReasonVapifaultPhoneCallWorkerCouldNotFindCall                                                   CallEndedReason = "vapifault-phone-call-worker-could-not-find-call"
-	CallEndedReasonVapifaultTransportNeverConnected                                                           CallEndedReason = "vapifault-transport-never-connected"
-	CallEndedReasonVapifaultWebCallWorkerSetupFailed                                                          CallEndedReason = "vapifault-web-call-worker-setup-failed"
-	CallEndedReasonVapifaultTransportConnectedButCallNotActive                                                CallEndedReason = "vapifault-transport-connected-but-call-not-active"
-	CallEndedReasonVapifaultCallStartedButConnectionToTransportMissing                                        CallEndedReason = "vapifault-call-started-but-connection-to-transport-missing"
-	CallEndedReasonPipelineErrorOpenaiLlmFailed                                                               CallEndedReason = "pipeline-error-openai-llm-failed"
-	CallEndedReasonPipelineErrorAzureOpenaiLlmFailed                                                          CallEndedReason = "pipeline-error-azure-openai-llm-failed"
-	CallEndedReasonPipelineErrorGroqLlmFailed                                                                 CallEndedReason = "pipeline-error-groq-llm-failed"
-	CallEndedReasonPipelineErrorGoogleLlmFailed                                                               CallEndedReason = "pipeline-error-google-llm-failed"
-	CallEndedReasonPipelineErrorXaiLlmFailed                                                                  CallEndedReason = "pipeline-error-xai-llm-failed"
-	CallEndedReasonPipelineErrorMistralLlmFailed                                                              CallEndedReason = "pipeline-error-mistral-llm-failed"
-	CallEndedReasonPipelineErrorInflectionAiLlmFailed                                                         CallEndedReason = "pipeline-error-inflection-ai-llm-failed"
-	CallEndedReasonPipelineErrorCerebrasLlmFailed                                                             CallEndedReason = "pipeline-error-cerebras-llm-failed"
-	CallEndedReasonPipelineErrorDeepSeekLlmFailed                                                             CallEndedReason = "pipeline-error-deep-seek-llm-failed"
-	CallEndedReasonPipelineErrorOpenai400BadRequestValidationFailed                                           CallEndedReason = "pipeline-error-openai-400-bad-request-validation-failed"
-	CallEndedReasonPipelineErrorOpenai401Unauthorized                                                         CallEndedReason = "pipeline-error-openai-401-unauthorized"
-	CallEndedReasonPipelineErrorOpenai403ModelAccessDenied                                                    CallEndedReason = "pipeline-error-openai-403-model-access-denied"
-	CallEndedReasonPipelineErrorOpenai429ExceededQuota                                                        CallEndedReason = "pipeline-error-openai-429-exceeded-quota"
-	CallEndedReasonPipelineErrorOpenai500ServerError                                                          CallEndedReason = "pipeline-error-openai-500-server-error"
-	CallEndedReasonPipelineErrorGoogle400BadRequestValidationFailed                                           CallEndedReason = "pipeline-error-google-400-bad-request-validation-failed"
-	CallEndedReasonPipelineErrorGoogle401Unauthorized                                                         CallEndedReason = "pipeline-error-google-401-unauthorized"
-	CallEndedReasonPipelineErrorGoogle403ModelAccessDenied                                                    CallEndedReason = "pipeline-error-google-403-model-access-denied"
-	CallEndedReasonPipelineErrorGoogle429ExceededQuota                                                        CallEndedReason = "pipeline-error-google-429-exceeded-quota"
-	CallEndedReasonPipelineErrorGoogle500ServerError                                                          CallEndedReason = "pipeline-error-google-500-server-error"
-	CallEndedReasonPipelineErrorXai400BadRequestValidationFailed                                              CallEndedReason = "pipeline-error-xai-400-bad-request-validation-failed"
-	CallEndedReasonPipelineErrorXai401Unauthorized                                                            CallEndedReason = "pipeline-error-xai-401-unauthorized"
-	CallEndedReasonPipelineErrorXai403ModelAccessDenied                                                       CallEndedReason = "pipeline-error-xai-403-model-access-denied"
-	CallEndedReasonPipelineErrorXai429ExceededQuota                                                           CallEndedReason = "pipeline-error-xai-429-exceeded-quota"
-	CallEndedReasonPipelineErrorXai500ServerError                                                             CallEndedReason = "pipeline-error-xai-500-server-error"
-	CallEndedReasonPipelineErrorMistral400BadRequestValidationFailed                                          CallEndedReason = "pipeline-error-mistral-400-bad-request-validation-failed"
-	CallEndedReasonPipelineErrorMistral401Unauthorized                                                        CallEndedReason = "pipeline-error-mistral-401-unauthorized"
-	CallEndedReasonPipelineErrorMistral403ModelAccessDenied                                                   CallEndedReason = "pipeline-error-mistral-403-model-access-denied"
-	CallEndedReasonPipelineErrorMistral429ExceededQuota                                                       CallEndedReason = "pipeline-error-mistral-429-exceeded-quota"
-	CallEndedReasonPipelineErrorMistral500ServerError                                                         CallEndedReason = "pipeline-error-mistral-500-server-error"
-	CallEndedReasonPipelineErrorInflectionAi400BadRequestValidationFailed                                     CallEndedReason = "pipeline-error-inflection-ai-400-bad-request-validation-failed"
-	CallEndedReasonPipelineErrorInflectionAi401Unauthorized                                                   CallEndedReason = "pipeline-error-inflection-ai-401-unauthorized"
-	CallEndedReasonPipelineErrorInflectionAi403ModelAccessDenied                                              CallEndedReason = "pipeline-error-inflection-ai-403-model-access-denied"
-	CallEndedReasonPipelineErrorInflectionAi429ExceededQuota                                                  CallEndedReason = "pipeline-error-inflection-ai-429-exceeded-quota"
-	CallEndedReasonPipelineErrorInflectionAi500ServerError                                                    CallEndedReason = "pipeline-error-inflection-ai-500-server-error"
-	CallEndedReasonPipelineErrorDeepSeek400BadRequestValidationFailed                                         CallEndedReason = "pipeline-error-deep-seek-400-bad-request-validation-failed"
-	CallEndedReasonPipelineErrorDeepSeek401Unauthorized                                                       CallEndedReason = "pipeline-error-deep-seek-401-unauthorized"
-	CallEndedReasonPipelineErrorDeepSeek403ModelAccessDenied                                                  CallEndedReason = "pipeline-error-deep-seek-403-model-access-denied"
-	CallEndedReasonPipelineErrorDeepSeek429ExceededQuota                                                      CallEndedReason = "pipeline-error-deep-seek-429-exceeded-quota"
-	CallEndedReasonPipelineErrorDeepSeek500ServerError                                                        CallEndedReason = "pipeline-error-deep-seek-500-server-error"
-	CallEndedReasonPipelineErrorAzureOpenai400BadRequestValidationFailed                                      CallEndedReason = "pipeline-error-azure-openai-400-bad-request-validation-failed"
-	CallEndedReasonPipelineErrorAzureOpenai401Unauthorized                                                    CallEndedReason = "pipeline-error-azure-openai-401-unauthorized"
-	CallEndedReasonPipelineErrorAzureOpenai403ModelAccessDenied                                               CallEndedReason = "pipeline-error-azure-openai-403-model-access-denied"
-	CallEndedReasonPipelineErrorAzureOpenai429ExceededQuota                                                   CallEndedReason = "pipeline-error-azure-openai-429-exceeded-quota"
-	CallEndedReasonPipelineErrorAzureOpenai500ServerError                                                     CallEndedReason = "pipeline-error-azure-openai-500-server-error"
-	CallEndedReasonPipelineErrorGroq400BadRequestValidationFailed                                             CallEndedReason = "pipeline-error-groq-400-bad-request-validation-failed"
-	CallEndedReasonPipelineErrorGroq401Unauthorized                                                           CallEndedReason = "pipeline-error-groq-401-unauthorized"
-	CallEndedReasonPipelineErrorGroq403ModelAccessDenied                                                      CallEndedReason = "pipeline-error-groq-403-model-access-denied"
-	CallEndedReasonPipelineErrorGroq429ExceededQuota                                                          CallEndedReason = "pipeline-error-groq-429-exceeded-quota"
-	CallEndedReasonPipelineErrorGroq500ServerError                                                            CallEndedReason = "pipeline-error-groq-500-server-error"
-	CallEndedReasonPipelineErrorCerebras400BadRequestValidationFailed                                         CallEndedReason = "pipeline-error-cerebras-400-bad-request-validation-failed"
-	CallEndedReasonPipelineErrorCerebras401Unauthorized                                                       CallEndedReason = "pipeline-error-cerebras-401-unauthorized"
-	CallEndedReasonPipelineErrorCerebras403ModelAccessDenied                                                  CallEndedReason = "pipeline-error-cerebras-403-model-access-denied"
-	CallEndedReasonPipelineErrorCerebras429ExceededQuota                                                      CallEndedReason = "pipeline-error-cerebras-429-exceeded-quota"
-	CallEndedReasonPipelineErrorCerebras500ServerError                                                        CallEndedReason = "pipeline-error-cerebras-500-server-error"
-	CallEndedReasonPipelineErrorAnthropic400BadRequestValidationFailed                                        CallEndedReason = "pipeline-error-anthropic-400-bad-request-validation-failed"
-	CallEndedReasonPipelineErrorAnthropic401Unauthorized                                                      CallEndedReason = "pipeline-error-anthropic-401-unauthorized"
-	CallEndedReasonPipelineErrorAnthropic403ModelAccessDenied                                                 CallEndedReason = "pipeline-error-anthropic-403-model-access-denied"
-	CallEndedReasonPipelineErrorAnthropic429ExceededQuota                                                     CallEndedReason = "pipeline-error-anthropic-429-exceeded-quota"
-	CallEndedReasonPipelineErrorAnthropic500ServerError                                                       CallEndedReason = "pipeline-error-anthropic-500-server-error"
-	CallEndedReasonPipelineErrorAnthropicLlmFailed                                                            CallEndedReason = "pipeline-error-anthropic-llm-failed"
-	CallEndedReasonPipelineErrorTogetherAi400BadRequestValidationFailed                                       CallEndedReason = "pipeline-error-together-ai-400-bad-request-validation-failed"
-	CallEndedReasonPipelineErrorTogetherAi401Unauthorized                                                     CallEndedReason = "pipeline-error-together-ai-401-unauthorized"
-	CallEndedReasonPipelineErrorTogetherAi403ModelAccessDenied                                                CallEndedReason = "pipeline-error-together-ai-403-model-access-denied"
-	CallEndedReasonPipelineErrorTogetherAi429ExceededQuota                                                    CallEndedReason = "pipeline-error-together-ai-429-exceeded-quota"
-	CallEndedReasonPipelineErrorTogetherAi500ServerError                                                      CallEndedReason = "pipeline-error-together-ai-500-server-error"
-	CallEndedReasonPipelineErrorTogetherAiLlmFailed                                                           CallEndedReason = "pipeline-error-together-ai-llm-failed"
-	CallEndedReasonPipelineErrorAnyscale400BadRequestValidationFailed                                         CallEndedReason = "pipeline-error-anyscale-400-bad-request-validation-failed"
-	CallEndedReasonPipelineErrorAnyscale401Unauthorized                                                       CallEndedReason = "pipeline-error-anyscale-401-unauthorized"
-	CallEndedReasonPipelineErrorAnyscale403ModelAccessDenied                                                  CallEndedReason = "pipeline-error-anyscale-403-model-access-denied"
-	CallEndedReasonPipelineErrorAnyscale429ExceededQuota                                                      CallEndedReason = "pipeline-error-anyscale-429-exceeded-quota"
-	CallEndedReasonPipelineErrorAnyscale500ServerError                                                        CallEndedReason = "pipeline-error-anyscale-500-server-error"
-	CallEndedReasonPipelineErrorAnyscaleLlmFailed                                                             CallEndedReason = "pipeline-error-anyscale-llm-failed"
-	CallEndedReasonPipelineErrorOpenrouter400BadRequestValidationFailed                                       CallEndedReason = "pipeline-error-openrouter-400-bad-request-validation-failed"
-	CallEndedReasonPipelineErrorOpenrouter401Unauthorized                                                     CallEndedReason = "pipeline-error-openrouter-401-unauthorized"
-	CallEndedReasonPipelineErrorOpenrouter403ModelAccessDenied                                                CallEndedReason = "pipeline-error-openrouter-403-model-access-denied"
-	CallEndedReasonPipelineErrorOpenrouter429ExceededQuota                                                    CallEndedReason = "pipeline-error-openrouter-429-exceeded-quota"
-	CallEndedReasonPipelineErrorOpenrouter500ServerError                                                      CallEndedReason = "pipeline-error-openrouter-500-server-error"
-	CallEndedReasonPipelineErrorOpenrouterLlmFailed                                                           CallEndedReason = "pipeline-error-openrouter-llm-failed"
-	CallEndedReasonPipelineErrorPerplexityAi400BadRequestValidationFailed                                     CallEndedReason = "pipeline-error-perplexity-ai-400-bad-request-validation-failed"
-	CallEndedReasonPipelineErrorPerplexityAi401Unauthorized                                                   CallEndedReason = "pipeline-error-perplexity-ai-401-unauthorized"
-	CallEndedReasonPipelineErrorPerplexityAi403ModelAccessDenied                                              CallEndedReason = "pipeline-error-perplexity-ai-403-model-access-denied"
-	CallEndedReasonPipelineErrorPerplexityAi429ExceededQuota                                                  CallEndedReason = "pipeline-error-perplexity-ai-429-exceeded-quota"
-	CallEndedReasonPipelineErrorPerplexityAi500ServerError                                                    CallEndedReason = "pipeline-error-perplexity-ai-500-server-error"
-	CallEndedReasonPipelineErrorPerplexityAiLlmFailed                                                         CallEndedReason = "pipeline-error-perplexity-ai-llm-failed"
-	CallEndedReasonPipelineErrorDeepinfra400BadRequestValidationFailed                                        CallEndedReason = "pipeline-error-deepinfra-400-bad-request-validation-failed"
-	CallEndedReasonPipelineErrorDeepinfra401Unauthorized                                                      CallEndedReason = "pipeline-error-deepinfra-401-unauthorized"
-	CallEndedReasonPipelineErrorDeepinfra403ModelAccessDenied                                                 CallEndedReason = "pipeline-error-deepinfra-403-model-access-denied"
-	CallEndedReasonPipelineErrorDeepinfra429ExceededQuota                                                     CallEndedReason = "pipeline-error-deepinfra-429-exceeded-quota"
-	CallEndedReasonPipelineErrorDeepinfra500ServerError                                                       CallEndedReason = "pipeline-error-deepinfra-500-server-error"
-	CallEndedReasonPipelineErrorDeepinfraLlmFailed                                                            CallEndedReason = "pipeline-error-deepinfra-llm-failed"
-	CallEndedReasonPipelineErrorRunpod400BadRequestValidationFailed                                           CallEndedReason = "pipeline-error-runpod-400-bad-request-validation-failed"
-	CallEndedReasonPipelineErrorRunpod401Unauthorized                                                         CallEndedReason = "pipeline-error-runpod-401-unauthorized"
-	CallEndedReasonPipelineErrorRunpod403ModelAccessDenied                                                    CallEndedReason = "pipeline-error-runpod-403-model-access-denied"
-	CallEndedReasonPipelineErrorRunpod429ExceededQuota                                                        CallEndedReason = "pipeline-error-runpod-429-exceeded-quota"
-	CallEndedReasonPipelineErrorRunpod500ServerError                                                          CallEndedReason = "pipeline-error-runpod-500-server-error"
-	CallEndedReasonPipelineErrorRunpodLlmFailed                                                               CallEndedReason = "pipeline-error-runpod-llm-failed"
-	CallEndedReasonPipelineErrorCustomLlm400BadRequestValidationFailed                                        CallEndedReason = "pipeline-error-custom-llm-400-bad-request-validation-failed"
-	CallEndedReasonPipelineErrorCustomLlm401Unauthorized                                                      CallEndedReason = "pipeline-error-custom-llm-401-unauthorized"
-	CallEndedReasonPipelineErrorCustomLlm403ModelAccessDenied                                                 CallEndedReason = "pipeline-error-custom-llm-403-model-access-denied"
-	CallEndedReasonPipelineErrorCustomLlm429ExceededQuota                                                     CallEndedReason = "pipeline-error-custom-llm-429-exceeded-quota"
-	CallEndedReasonPipelineErrorCustomLlm500ServerError                                                       CallEndedReason = "pipeline-error-custom-llm-500-server-error"
-	CallEndedReasonPipelineErrorCustomLlmLlmFailed                                                            CallEndedReason = "pipeline-error-custom-llm-llm-failed"
-	CallEndedReasonPipelineErrorCustomVoiceFailed                                                             CallEndedReason = "pipeline-error-custom-voice-failed"
-	CallEndedReasonPipelineErrorCartesiaSocketHangUp                                                          CallEndedReason = "pipeline-error-cartesia-socket-hang-up"
-	CallEndedReasonPipelineErrorCartesiaRequestedPayment                                                      CallEndedReason = "pipeline-error-cartesia-requested-payment"
-	CallEndedReasonPipelineErrorCartesia500ServerError                                                        CallEndedReason = "pipeline-error-cartesia-500-server-error"
-	CallEndedReasonPipelineErrorCartesia503ServerError                                                        CallEndedReason = "pipeline-error-cartesia-503-server-error"
-	CallEndedReasonPipelineErrorCartesia522ServerError                                                        CallEndedReason = "pipeline-error-cartesia-522-server-error"
-	CallEndedReasonPipelineErrorElevenLabsVoiceNotFound                                                       CallEndedReason = "pipeline-error-eleven-labs-voice-not-found"
-	CallEndedReasonPipelineErrorElevenLabsQuotaExceeded                                                       CallEndedReason = "pipeline-error-eleven-labs-quota-exceeded"
-	CallEndedReasonPipelineErrorElevenLabsUnauthorizedAccess                                                  CallEndedReason = "pipeline-error-eleven-labs-unauthorized-access"
-	CallEndedReasonPipelineErrorElevenLabsUnauthorizedToAccessModel                                           CallEndedReason = "pipeline-error-eleven-labs-unauthorized-to-access-model"
-	CallEndedReasonPipelineErrorElevenLabsProfessionalVoicesOnlyForCreatorPlus                                CallEndedReason = "pipeline-error-eleven-labs-professional-voices-only-for-creator-plus"
-	CallEndedReasonPipelineErrorElevenLabsBlockedFreePlanAndRequestedUpgrade                                  CallEndedReason = "pipeline-error-eleven-labs-blocked-free-plan-and-requested-upgrade"
-	CallEndedReasonPipelineErrorElevenLabsBlockedConcurrentRequestsAndRequestedUpgrade                        CallEndedReason = "pipeline-error-eleven-labs-blocked-concurrent-requests-and-requested-upgrade"
-	CallEndedReasonPipelineErrorElevenLabsBlockedUsingInstantVoiceCloneAndRequestedUpgrade                    CallEndedReason = "pipeline-error-eleven-labs-blocked-using-instant-voice-clone-and-requested-upgrade"
-	CallEndedReasonPipelineErrorElevenLabsSystemBusyAndRequestedUpgrade                                       CallEndedReason = "pipeline-error-eleven-labs-system-busy-and-requested-upgrade"
-	CallEndedReasonPipelineErrorElevenLabsVoiceNotFineTuned                                                   CallEndedReason = "pipeline-error-eleven-labs-voice-not-fine-tuned"
-	CallEndedReasonPipelineErrorElevenLabsInvalidApiKey                                                       CallEndedReason = "pipeline-error-eleven-labs-invalid-api-key"
-	CallEndedReasonPipelineErrorElevenLabsInvalidVoiceSamples                                                 CallEndedReason = "pipeline-error-eleven-labs-invalid-voice-samples"
-	CallEndedReasonPipelineErrorElevenLabsVoiceDisabledByOwner                                                CallEndedReason = "pipeline-error-eleven-labs-voice-disabled-by-owner"
-	CallEndedReasonPipelineErrorElevenLabsBlockedAccountInProbation                                           CallEndedReason = "pipeline-error-eleven-labs-blocked-account-in-probation"
-	CallEndedReasonPipelineErrorElevenLabsBlockedContentAgainstTheirPolicy                                    CallEndedReason = "pipeline-error-eleven-labs-blocked-content-against-their-policy"
-	CallEndedReasonPipelineErrorElevenLabsMissingSamplesForVoiceClone                                         CallEndedReason = "pipeline-error-eleven-labs-missing-samples-for-voice-clone"
-	CallEndedReasonPipelineErrorElevenLabsVoiceNotFineTunedAndCannotBeUsed                                    CallEndedReason = "pipeline-error-eleven-labs-voice-not-fine-tuned-and-cannot-be-used"
-	CallEndedReasonPipelineErrorElevenLabsVoiceNotAllowedForFreeUsers                                         CallEndedReason = "pipeline-error-eleven-labs-voice-not-allowed-for-free-users"
-	CallEndedReasonPipelineErrorElevenLabs500ServerError                                                      CallEndedReason = "pipeline-error-eleven-labs-500-server-error"
-	CallEndedReasonPipelineErrorElevenLabsMaxCharacterLimitExceeded                                           CallEndedReason = "pipeline-error-eleven-labs-max-character-limit-exceeded"
-	CallEndedReasonPipelineErrorElevenLabsBlockedVoicePotentiallyAgainstTermsOfServiceAndAwaitingVerification CallEndedReason = "pipeline-error-eleven-labs-blocked-voice-potentially-against-terms-of-service-and-awaiting-verification"
-	CallEndedReasonPipelineErrorPlayhtRequestTimedOut                                                         CallEndedReason = "pipeline-error-playht-request-timed-out"
-	CallEndedReasonPipelineErrorPlayhtInvalidVoice                                                            CallEndedReason = "pipeline-error-playht-invalid-voice"
-	CallEndedReasonPipelineErrorPlayhtUnexpectedError                                                         CallEndedReason = "pipeline-error-playht-unexpected-error"
-	CallEndedReasonPipelineErrorPlayhtOutOfCredits                                                            CallEndedReason = "pipeline-error-playht-out-of-credits"
-	CallEndedReasonPipelineErrorPlayhtInvalidEmotion                                                          CallEndedReason = "pipeline-error-playht-invalid-emotion"
-	CallEndedReasonPipelineErrorPlayhtVoiceMustBeAValidVoiceManifestUri                                       CallEndedReason = "pipeline-error-playht-voice-must-be-a-valid-voice-manifest-uri"
-	CallEndedReasonPipelineErrorPlayht401Unauthorized                                                         CallEndedReason = "pipeline-error-playht-401-unauthorized"
-	CallEndedReasonPipelineErrorPlayht403ForbiddenOutOfCharacters                                             CallEndedReason = "pipeline-error-playht-403-forbidden-out-of-characters"
-	CallEndedReasonPipelineErrorPlayht403ForbiddenApiAccessNotAvailable                                       CallEndedReason = "pipeline-error-playht-403-forbidden-api-access-not-available"
-	CallEndedReasonPipelineErrorPlayht429ExceededQuota                                                        CallEndedReason = "pipeline-error-playht-429-exceeded-quota"
-	CallEndedReasonPipelineErrorPlayht502GatewayError                                                         CallEndedReason = "pipeline-error-playht-502-gateway-error"
-	CallEndedReasonPipelineErrorPlayht504GatewayError                                                         CallEndedReason = "pipeline-error-playht-504-gateway-error"
-	CallEndedReasonPipelineErrorTavusVideoFailed                                                              CallEndedReason = "pipeline-error-tavus-video-failed"
-	CallEndedReasonPipelineErrorCustomTranscriberFailed                                                       CallEndedReason = "pipeline-error-custom-transcriber-failed"
-	CallEndedReasonPipelineErrorDeepgramReturning403ModelAccessDenied                                         CallEndedReason = "pipeline-error-deepgram-returning-403-model-access-denied"
-	CallEndedReasonPipelineErrorDeepgramReturning401InvalidCredentials                                        CallEndedReason = "pipeline-error-deepgram-returning-401-invalid-credentials"
-	CallEndedReasonPipelineErrorDeepgramReturning404NotFound                                                  CallEndedReason = "pipeline-error-deepgram-returning-404-not-found"
-	CallEndedReasonPipelineErrorDeepgramReturning400NoSuchModelLanguageTierCombination                        CallEndedReason = "pipeline-error-deepgram-returning-400-no-such-model-language-tier-combination"
-	CallEndedReasonPipelineErrorDeepgramReturning500InvalidJson                                               CallEndedReason = "pipeline-error-deepgram-returning-500-invalid-json"
-	CallEndedReasonPipelineErrorDeepgramReturning502NetworkError                                              CallEndedReason = "pipeline-error-deepgram-returning-502-network-error"
-	CallEndedReasonPipelineErrorDeepgramReturning502BadGatewayEhostunreach                                    CallEndedReason = "pipeline-error-deepgram-returning-502-bad-gateway-ehostunreach"
-	CallEndedReasonSilenceTimedOut                                                                            CallEndedReason = "silence-timed-out"
-	CallEndedReasonSipGatewayFailedToConnectCall                                                              CallEndedReason = "sip-gateway-failed-to-connect-call"
-	CallEndedReasonTwilioFailedToConnectCall                                                                  CallEndedReason = "twilio-failed-to-connect-call"
-	CallEndedReasonTwilioReportedCustomerMisdialed                                                            CallEndedReason = "twilio-reported-customer-misdialed"
-	CallEndedReasonVonageRejected                                                                             CallEndedReason = "vonage-rejected"
-	CallEndedReasonVoicemail                                                                                  CallEndedReason = "voicemail"
+	CallEndedReasonCallStartErrorNeitherAssistantNorServerSet                                                                CallEndedReason = "call-start-error-neither-assistant-nor-server-set"
+	CallEndedReasonAssistantRequestFailed                                                                                    CallEndedReason = "assistant-request-failed"
+	CallEndedReasonAssistantRequestReturnedError                                                                             CallEndedReason = "assistant-request-returned-error"
+	CallEndedReasonAssistantRequestReturnedUnspeakableError                                                                  CallEndedReason = "assistant-request-returned-unspeakable-error"
+	CallEndedReasonAssistantRequestReturnedInvalidAssistant                                                                  CallEndedReason = "assistant-request-returned-invalid-assistant"
+	CallEndedReasonAssistantRequestReturnedNoAssistant                                                                       CallEndedReason = "assistant-request-returned-no-assistant"
+	CallEndedReasonAssistantRequestReturnedForwardingPhoneNumber                                                             CallEndedReason = "assistant-request-returned-forwarding-phone-number"
+	CallEndedReasonCallStartErrorGetOrg                                                                                      CallEndedReason = "call.start.error-get-org"
+	CallEndedReasonCallStartErrorGetSubscription                                                                             CallEndedReason = "call.start.error-get-subscription"
+	CallEndedReasonCallStartErrorGetAssistant                                                                                CallEndedReason = "call.start.error-get-assistant"
+	CallEndedReasonCallStartErrorGetPhoneNumber                                                                              CallEndedReason = "call.start.error-get-phone-number"
+	CallEndedReasonCallStartErrorGetCustomer                                                                                 CallEndedReason = "call.start.error-get-customer"
+	CallEndedReasonCallStartErrorGetResourcesValidation                                                                      CallEndedReason = "call.start.error-get-resources-validation"
+	CallEndedReasonCallStartErrorVapiNumberInternational                                                                     CallEndedReason = "call.start.error-vapi-number-international"
+	CallEndedReasonCallStartErrorVapiNumberOutboundDailyLimit                                                                CallEndedReason = "call.start.error-vapi-number-outbound-daily-limit"
+	CallEndedReasonCallStartErrorGetTransport                                                                                CallEndedReason = "call.start.error-get-transport"
+	CallEndedReasonAssistantNotValid                                                                                         CallEndedReason = "assistant-not-valid"
+	CallEndedReasonDatabaseError                                                                                             CallEndedReason = "database-error"
+	CallEndedReasonAssistantNotFound                                                                                         CallEndedReason = "assistant-not-found"
+	CallEndedReasonPipelineErrorOpenaiVoiceFailed                                                                            CallEndedReason = "pipeline-error-openai-voice-failed"
+	CallEndedReasonPipelineErrorCartesiaVoiceFailed                                                                          CallEndedReason = "pipeline-error-cartesia-voice-failed"
+	CallEndedReasonPipelineErrorDeepgramVoiceFailed                                                                          CallEndedReason = "pipeline-error-deepgram-voice-failed"
+	CallEndedReasonPipelineErrorElevenLabsVoiceFailed                                                                        CallEndedReason = "pipeline-error-eleven-labs-voice-failed"
+	CallEndedReasonPipelineErrorPlayhtVoiceFailed                                                                            CallEndedReason = "pipeline-error-playht-voice-failed"
+	CallEndedReasonPipelineErrorLmntVoiceFailed                                                                              CallEndedReason = "pipeline-error-lmnt-voice-failed"
+	CallEndedReasonPipelineErrorAzureVoiceFailed                                                                             CallEndedReason = "pipeline-error-azure-voice-failed"
+	CallEndedReasonPipelineErrorRimeAiVoiceFailed                                                                            CallEndedReason = "pipeline-error-rime-ai-voice-failed"
+	CallEndedReasonPipelineErrorSmallestAiVoiceFailed                                                                        CallEndedReason = "pipeline-error-smallest-ai-voice-failed"
+	CallEndedReasonPipelineErrorNeuphonicVoiceFailed                                                                         CallEndedReason = "pipeline-error-neuphonic-voice-failed"
+	CallEndedReasonPipelineErrorHumeVoiceFailed                                                                              CallEndedReason = "pipeline-error-hume-voice-failed"
+	CallEndedReasonPipelineErrorSesameVoiceFailed                                                                            CallEndedReason = "pipeline-error-sesame-voice-failed"
+	CallEndedReasonPipelineErrorTavusVideoFailed                                                                             CallEndedReason = "pipeline-error-tavus-video-failed"
+	CallEndedReasonCallInProgressErrorVapifaultOpenaiVoiceFailed                                                             CallEndedReason = "call.in-progress.error-vapifault-openai-voice-failed"
+	CallEndedReasonCallInProgressErrorVapifaultCartesiaVoiceFailed                                                           CallEndedReason = "call.in-progress.error-vapifault-cartesia-voice-failed"
+	CallEndedReasonCallInProgressErrorVapifaultDeepgramVoiceFailed                                                           CallEndedReason = "call.in-progress.error-vapifault-deepgram-voice-failed"
+	CallEndedReasonCallInProgressErrorVapifaultElevenLabsVoiceFailed                                                         CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-voice-failed"
+	CallEndedReasonCallInProgressErrorVapifaultPlayhtVoiceFailed                                                             CallEndedReason = "call.in-progress.error-vapifault-playht-voice-failed"
+	CallEndedReasonCallInProgressErrorVapifaultLmntVoiceFailed                                                               CallEndedReason = "call.in-progress.error-vapifault-lmnt-voice-failed"
+	CallEndedReasonCallInProgressErrorVapifaultAzureVoiceFailed                                                              CallEndedReason = "call.in-progress.error-vapifault-azure-voice-failed"
+	CallEndedReasonCallInProgressErrorVapifaultRimeAiVoiceFailed                                                             CallEndedReason = "call.in-progress.error-vapifault-rime-ai-voice-failed"
+	CallEndedReasonCallInProgressErrorVapifaultSmallestAiVoiceFailed                                                         CallEndedReason = "call.in-progress.error-vapifault-smallest-ai-voice-failed"
+	CallEndedReasonCallInProgressErrorVapifaultNeuphonicVoiceFailed                                                          CallEndedReason = "call.in-progress.error-vapifault-neuphonic-voice-failed"
+	CallEndedReasonCallInProgressErrorVapifaultHumeVoiceFailed                                                               CallEndedReason = "call.in-progress.error-vapifault-hume-voice-failed"
+	CallEndedReasonCallInProgressErrorVapifaultSesameVoiceFailed                                                             CallEndedReason = "call.in-progress.error-vapifault-sesame-voice-failed"
+	CallEndedReasonCallInProgressErrorVapifaultTavusVideoFailed                                                              CallEndedReason = "call.in-progress.error-vapifault-tavus-video-failed"
+	CallEndedReasonPipelineErrorVapiLlmFailed                                                                                CallEndedReason = "pipeline-error-vapi-llm-failed"
+	CallEndedReasonPipelineErrorVapi400BadRequestValidationFailed                                                            CallEndedReason = "pipeline-error-vapi-400-bad-request-validation-failed"
+	CallEndedReasonPipelineErrorVapi401Unauthorized                                                                          CallEndedReason = "pipeline-error-vapi-401-unauthorized"
+	CallEndedReasonPipelineErrorVapi403ModelAccessDenied                                                                     CallEndedReason = "pipeline-error-vapi-403-model-access-denied"
+	CallEndedReasonPipelineErrorVapi429ExceededQuota                                                                         CallEndedReason = "pipeline-error-vapi-429-exceeded-quota"
+	CallEndedReasonPipelineErrorVapi500ServerError                                                                           CallEndedReason = "pipeline-error-vapi-500-server-error"
+	CallEndedReasonPipelineErrorVapi503ServerOverloadedError                                                                 CallEndedReason = "pipeline-error-vapi-503-server-overloaded-error"
+	CallEndedReasonCallInProgressErrorVapifaultVapiLlmFailed                                                                 CallEndedReason = "call.in-progress.error-vapifault-vapi-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultVapi400BadRequestValidationFailed                                             CallEndedReason = "call.in-progress.error-vapifault-vapi-400-bad-request-validation-failed"
+	CallEndedReasonCallInProgressErrorVapifaultVapi401Unauthorized                                                           CallEndedReason = "call.in-progress.error-vapifault-vapi-401-unauthorized"
+	CallEndedReasonCallInProgressErrorVapifaultVapi403ModelAccessDenied                                                      CallEndedReason = "call.in-progress.error-vapifault-vapi-403-model-access-denied"
+	CallEndedReasonCallInProgressErrorVapifaultVapi429ExceededQuota                                                          CallEndedReason = "call.in-progress.error-vapifault-vapi-429-exceeded-quota"
+	CallEndedReasonCallInProgressErrorProviderfaultVapi500ServerError                                                        CallEndedReason = "call.in-progress.error-providerfault-vapi-500-server-error"
+	CallEndedReasonCallInProgressErrorProviderfaultVapi503ServerOverloadedError                                              CallEndedReason = "call.in-progress.error-providerfault-vapi-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorDeepgramTranscriberFailed                                                                    CallEndedReason = "pipeline-error-deepgram-transcriber-failed"
+	CallEndedReasonCallInProgressErrorVapifaultDeepgramTranscriberFailed                                                     CallEndedReason = "call.in-progress.error-vapifault-deepgram-transcriber-failed"
+	CallEndedReasonPipelineErrorGladiaTranscriberFailed                                                                      CallEndedReason = "pipeline-error-gladia-transcriber-failed"
+	CallEndedReasonCallInProgressErrorVapifaultGladiaTranscriberFailed                                                       CallEndedReason = "call.in-progress.error-vapifault-gladia-transcriber-failed"
+	CallEndedReasonPipelineErrorSpeechmaticsTranscriberFailed                                                                CallEndedReason = "pipeline-error-speechmatics-transcriber-failed"
+	CallEndedReasonCallInProgressErrorVapifaultSpeechmaticsTranscriberFailed                                                 CallEndedReason = "call.in-progress.error-vapifault-speechmatics-transcriber-failed"
+	CallEndedReasonPipelineErrorAssemblyAiTranscriberFailed                                                                  CallEndedReason = "pipeline-error-assembly-ai-transcriber-failed"
+	CallEndedReasonPipelineErrorAssemblyAiReturning400InsufficentFunds                                                       CallEndedReason = "pipeline-error-assembly-ai-returning-400-insufficent-funds"
+	CallEndedReasonPipelineErrorAssemblyAiReturning400PaidOnlyFeature                                                        CallEndedReason = "pipeline-error-assembly-ai-returning-400-paid-only-feature"
+	CallEndedReasonPipelineErrorAssemblyAiReturning401InvalidCredentials                                                     CallEndedReason = "pipeline-error-assembly-ai-returning-401-invalid-credentials"
+	CallEndedReasonPipelineErrorAssemblyAiReturning500InvalidSchema                                                          CallEndedReason = "pipeline-error-assembly-ai-returning-500-invalid-schema"
+	CallEndedReasonPipelineErrorAssemblyAiReturning500WordBoostParsingFailed                                                 CallEndedReason = "pipeline-error-assembly-ai-returning-500-word-boost-parsing-failed"
+	CallEndedReasonCallInProgressErrorVapifaultAssemblyAiTranscriberFailed                                                   CallEndedReason = "call.in-progress.error-vapifault-assembly-ai-transcriber-failed"
+	CallEndedReasonCallInProgressErrorVapifaultAssemblyAiReturning400InsufficentFunds                                        CallEndedReason = "call.in-progress.error-vapifault-assembly-ai-returning-400-insufficent-funds"
+	CallEndedReasonCallInProgressErrorVapifaultAssemblyAiReturning400PaidOnlyFeature                                         CallEndedReason = "call.in-progress.error-vapifault-assembly-ai-returning-400-paid-only-feature"
+	CallEndedReasonCallInProgressErrorVapifaultAssemblyAiReturning401InvalidCredentials                                      CallEndedReason = "call.in-progress.error-vapifault-assembly-ai-returning-401-invalid-credentials"
+	CallEndedReasonCallInProgressErrorVapifaultAssemblyAiReturning500InvalidSchema                                           CallEndedReason = "call.in-progress.error-vapifault-assembly-ai-returning-500-invalid-schema"
+	CallEndedReasonCallInProgressErrorVapifaultAssemblyAiReturning500WordBoostParsingFailed                                  CallEndedReason = "call.in-progress.error-vapifault-assembly-ai-returning-500-word-boost-parsing-failed"
+	CallEndedReasonPipelineErrorTalkscriberTranscriberFailed                                                                 CallEndedReason = "pipeline-error-talkscriber-transcriber-failed"
+	CallEndedReasonCallInProgressErrorVapifaultTalkscriberTranscriberFailed                                                  CallEndedReason = "call.in-progress.error-vapifault-talkscriber-transcriber-failed"
+	CallEndedReasonPipelineErrorAzureSpeechTranscriberFailed                                                                 CallEndedReason = "pipeline-error-azure-speech-transcriber-failed"
+	CallEndedReasonCallInProgressErrorVapifaultAzureSpeechTranscriberFailed                                                  CallEndedReason = "call.in-progress.error-vapifault-azure-speech-transcriber-failed"
+	CallEndedReasonCallInProgressErrorPipelineNoAvailableLlmModel                                                            CallEndedReason = "call.in-progress.error-pipeline-no-available-llm-model"
+	CallEndedReasonWorkerShutdown                                                                                            CallEndedReason = "worker-shutdown"
+	CallEndedReasonUnknownError                                                                                              CallEndedReason = "unknown-error"
+	CallEndedReasonVonageDisconnected                                                                                        CallEndedReason = "vonage-disconnected"
+	CallEndedReasonVonageFailedToConnectCall                                                                                 CallEndedReason = "vonage-failed-to-connect-call"
+	CallEndedReasonVonageCompleted                                                                                           CallEndedReason = "vonage-completed"
+	CallEndedReasonPhoneCallProviderBypassEnabledButNoCallReceived                                                           CallEndedReason = "phone-call-provider-bypass-enabled-but-no-call-received"
+	CallEndedReasonCallInProgressErrorVapifaultTransportNeverConnected                                                       CallEndedReason = "call.in-progress.error-vapifault-transport-never-connected"
+	CallEndedReasonCallInProgressErrorVapifaultTransportConnectedButCallNotActive                                            CallEndedReason = "call.in-progress.error-vapifault-transport-connected-but-call-not-active"
+	CallEndedReasonCallInProgressErrorVapifaultCallStartedButConnectionToTransportMissing                                    CallEndedReason = "call.in-progress.error-vapifault-call-started-but-connection-to-transport-missing"
+	CallEndedReasonCallInProgressErrorVapifaultOpenaiLlmFailed                                                               CallEndedReason = "call.in-progress.error-vapifault-openai-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultAzureOpenaiLlmFailed                                                          CallEndedReason = "call.in-progress.error-vapifault-azure-openai-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultGroqLlmFailed                                                                 CallEndedReason = "call.in-progress.error-vapifault-groq-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultGoogleLlmFailed                                                               CallEndedReason = "call.in-progress.error-vapifault-google-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultXaiLlmFailed                                                                  CallEndedReason = "call.in-progress.error-vapifault-xai-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultMistralLlmFailed                                                              CallEndedReason = "call.in-progress.error-vapifault-mistral-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultInflectionAiLlmFailed                                                         CallEndedReason = "call.in-progress.error-vapifault-inflection-ai-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultCerebrasLlmFailed                                                             CallEndedReason = "call.in-progress.error-vapifault-cerebras-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultDeepSeekLlmFailed                                                             CallEndedReason = "call.in-progress.error-vapifault-deep-seek-llm-failed"
+	CallEndedReasonPipelineErrorOpenai400BadRequestValidationFailed                                                          CallEndedReason = "pipeline-error-openai-400-bad-request-validation-failed"
+	CallEndedReasonPipelineErrorOpenai401Unauthorized                                                                        CallEndedReason = "pipeline-error-openai-401-unauthorized"
+	CallEndedReasonPipelineErrorOpenai401IncorrectApiKey                                                                     CallEndedReason = "pipeline-error-openai-401-incorrect-api-key"
+	CallEndedReasonPipelineErrorOpenai401AccountNotInOrganization                                                            CallEndedReason = "pipeline-error-openai-401-account-not-in-organization"
+	CallEndedReasonPipelineErrorOpenai403ModelAccessDenied                                                                   CallEndedReason = "pipeline-error-openai-403-model-access-denied"
+	CallEndedReasonPipelineErrorOpenai429ExceededQuota                                                                       CallEndedReason = "pipeline-error-openai-429-exceeded-quota"
+	CallEndedReasonPipelineErrorOpenai429RateLimitReached                                                                    CallEndedReason = "pipeline-error-openai-429-rate-limit-reached"
+	CallEndedReasonPipelineErrorOpenai500ServerError                                                                         CallEndedReason = "pipeline-error-openai-500-server-error"
+	CallEndedReasonPipelineErrorOpenai503ServerOverloadedError                                                               CallEndedReason = "pipeline-error-openai-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorOpenaiLlmFailed                                                                              CallEndedReason = "pipeline-error-openai-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultOpenai400BadRequestValidationFailed                                           CallEndedReason = "call.in-progress.error-vapifault-openai-400-bad-request-validation-failed"
+	CallEndedReasonCallInProgressErrorVapifaultOpenai401Unauthorized                                                         CallEndedReason = "call.in-progress.error-vapifault-openai-401-unauthorized"
+	CallEndedReasonCallInProgressErrorVapifaultOpenai401IncorrectApiKey                                                      CallEndedReason = "call.in-progress.error-vapifault-openai-401-incorrect-api-key"
+	CallEndedReasonCallInProgressErrorVapifaultOpenai401AccountNotInOrganization                                             CallEndedReason = "call.in-progress.error-vapifault-openai-401-account-not-in-organization"
+	CallEndedReasonCallInProgressErrorVapifaultOpenai403ModelAccessDenied                                                    CallEndedReason = "call.in-progress.error-vapifault-openai-403-model-access-denied"
+	CallEndedReasonCallInProgressErrorVapifaultOpenai429ExceededQuota                                                        CallEndedReason = "call.in-progress.error-vapifault-openai-429-exceeded-quota"
+	CallEndedReasonCallInProgressErrorVapifaultOpenai429RateLimitReached                                                     CallEndedReason = "call.in-progress.error-vapifault-openai-429-rate-limit-reached"
+	CallEndedReasonCallInProgressErrorProviderfaultOpenai500ServerError                                                      CallEndedReason = "call.in-progress.error-providerfault-openai-500-server-error"
+	CallEndedReasonCallInProgressErrorProviderfaultOpenai503ServerOverloadedError                                            CallEndedReason = "call.in-progress.error-providerfault-openai-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorAzureOpenai400BadRequestValidationFailed                                                     CallEndedReason = "pipeline-error-azure-openai-400-bad-request-validation-failed"
+	CallEndedReasonPipelineErrorAzureOpenai401Unauthorized                                                                   CallEndedReason = "pipeline-error-azure-openai-401-unauthorized"
+	CallEndedReasonPipelineErrorAzureOpenai403ModelAccessDenied                                                              CallEndedReason = "pipeline-error-azure-openai-403-model-access-denied"
+	CallEndedReasonPipelineErrorAzureOpenai429ExceededQuota                                                                  CallEndedReason = "pipeline-error-azure-openai-429-exceeded-quota"
+	CallEndedReasonPipelineErrorAzureOpenai500ServerError                                                                    CallEndedReason = "pipeline-error-azure-openai-500-server-error"
+	CallEndedReasonPipelineErrorAzureOpenai503ServerOverloadedError                                                          CallEndedReason = "pipeline-error-azure-openai-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorAzureOpenaiLlmFailed                                                                         CallEndedReason = "pipeline-error-azure-openai-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultAzureOpenai400BadRequestValidationFailed                                      CallEndedReason = "call.in-progress.error-vapifault-azure-openai-400-bad-request-validation-failed"
+	CallEndedReasonCallInProgressErrorVapifaultAzureOpenai401Unauthorized                                                    CallEndedReason = "call.in-progress.error-vapifault-azure-openai-401-unauthorized"
+	CallEndedReasonCallInProgressErrorVapifaultAzureOpenai403ModelAccessDenied                                               CallEndedReason = "call.in-progress.error-vapifault-azure-openai-403-model-access-denied"
+	CallEndedReasonCallInProgressErrorVapifaultAzureOpenai429ExceededQuota                                                   CallEndedReason = "call.in-progress.error-vapifault-azure-openai-429-exceeded-quota"
+	CallEndedReasonCallInProgressErrorProviderfaultAzureOpenai500ServerError                                                 CallEndedReason = "call.in-progress.error-providerfault-azure-openai-500-server-error"
+	CallEndedReasonCallInProgressErrorProviderfaultAzureOpenai503ServerOverloadedError                                       CallEndedReason = "call.in-progress.error-providerfault-azure-openai-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorGoogle400BadRequestValidationFailed                                                          CallEndedReason = "pipeline-error-google-400-bad-request-validation-failed"
+	CallEndedReasonPipelineErrorGoogle401Unauthorized                                                                        CallEndedReason = "pipeline-error-google-401-unauthorized"
+	CallEndedReasonPipelineErrorGoogle403ModelAccessDenied                                                                   CallEndedReason = "pipeline-error-google-403-model-access-denied"
+	CallEndedReasonPipelineErrorGoogle429ExceededQuota                                                                       CallEndedReason = "pipeline-error-google-429-exceeded-quota"
+	CallEndedReasonPipelineErrorGoogle500ServerError                                                                         CallEndedReason = "pipeline-error-google-500-server-error"
+	CallEndedReasonPipelineErrorGoogle503ServerOverloadedError                                                               CallEndedReason = "pipeline-error-google-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorGoogleLlmFailed                                                                              CallEndedReason = "pipeline-error-google-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultGoogle400BadRequestValidationFailed                                           CallEndedReason = "call.in-progress.error-vapifault-google-400-bad-request-validation-failed"
+	CallEndedReasonCallInProgressErrorVapifaultGoogle401Unauthorized                                                         CallEndedReason = "call.in-progress.error-vapifault-google-401-unauthorized"
+	CallEndedReasonCallInProgressErrorVapifaultGoogle403ModelAccessDenied                                                    CallEndedReason = "call.in-progress.error-vapifault-google-403-model-access-denied"
+	CallEndedReasonCallInProgressErrorVapifaultGoogle429ExceededQuota                                                        CallEndedReason = "call.in-progress.error-vapifault-google-429-exceeded-quota"
+	CallEndedReasonCallInProgressErrorProviderfaultGoogle500ServerError                                                      CallEndedReason = "call.in-progress.error-providerfault-google-500-server-error"
+	CallEndedReasonCallInProgressErrorProviderfaultGoogle503ServerOverloadedError                                            CallEndedReason = "call.in-progress.error-providerfault-google-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorXai400BadRequestValidationFailed                                                             CallEndedReason = "pipeline-error-xai-400-bad-request-validation-failed"
+	CallEndedReasonPipelineErrorXai401Unauthorized                                                                           CallEndedReason = "pipeline-error-xai-401-unauthorized"
+	CallEndedReasonPipelineErrorXai403ModelAccessDenied                                                                      CallEndedReason = "pipeline-error-xai-403-model-access-denied"
+	CallEndedReasonPipelineErrorXai429ExceededQuota                                                                          CallEndedReason = "pipeline-error-xai-429-exceeded-quota"
+	CallEndedReasonPipelineErrorXai500ServerError                                                                            CallEndedReason = "pipeline-error-xai-500-server-error"
+	CallEndedReasonPipelineErrorXai503ServerOverloadedError                                                                  CallEndedReason = "pipeline-error-xai-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorXaiLlmFailed                                                                                 CallEndedReason = "pipeline-error-xai-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultXai400BadRequestValidationFailed                                              CallEndedReason = "call.in-progress.error-vapifault-xai-400-bad-request-validation-failed"
+	CallEndedReasonCallInProgressErrorVapifaultXai401Unauthorized                                                            CallEndedReason = "call.in-progress.error-vapifault-xai-401-unauthorized"
+	CallEndedReasonCallInProgressErrorVapifaultXai403ModelAccessDenied                                                       CallEndedReason = "call.in-progress.error-vapifault-xai-403-model-access-denied"
+	CallEndedReasonCallInProgressErrorVapifaultXai429ExceededQuota                                                           CallEndedReason = "call.in-progress.error-vapifault-xai-429-exceeded-quota"
+	CallEndedReasonCallInProgressErrorProviderfaultXai500ServerError                                                         CallEndedReason = "call.in-progress.error-providerfault-xai-500-server-error"
+	CallEndedReasonCallInProgressErrorProviderfaultXai503ServerOverloadedError                                               CallEndedReason = "call.in-progress.error-providerfault-xai-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorMistral400BadRequestValidationFailed                                                         CallEndedReason = "pipeline-error-mistral-400-bad-request-validation-failed"
+	CallEndedReasonPipelineErrorMistral401Unauthorized                                                                       CallEndedReason = "pipeline-error-mistral-401-unauthorized"
+	CallEndedReasonPipelineErrorMistral403ModelAccessDenied                                                                  CallEndedReason = "pipeline-error-mistral-403-model-access-denied"
+	CallEndedReasonPipelineErrorMistral429ExceededQuota                                                                      CallEndedReason = "pipeline-error-mistral-429-exceeded-quota"
+	CallEndedReasonPipelineErrorMistral500ServerError                                                                        CallEndedReason = "pipeline-error-mistral-500-server-error"
+	CallEndedReasonPipelineErrorMistral503ServerOverloadedError                                                              CallEndedReason = "pipeline-error-mistral-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorMistralLlmFailed                                                                             CallEndedReason = "pipeline-error-mistral-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultMistral400BadRequestValidationFailed                                          CallEndedReason = "call.in-progress.error-vapifault-mistral-400-bad-request-validation-failed"
+	CallEndedReasonCallInProgressErrorVapifaultMistral401Unauthorized                                                        CallEndedReason = "call.in-progress.error-vapifault-mistral-401-unauthorized"
+	CallEndedReasonCallInProgressErrorVapifaultMistral403ModelAccessDenied                                                   CallEndedReason = "call.in-progress.error-vapifault-mistral-403-model-access-denied"
+	CallEndedReasonCallInProgressErrorVapifaultMistral429ExceededQuota                                                       CallEndedReason = "call.in-progress.error-vapifault-mistral-429-exceeded-quota"
+	CallEndedReasonCallInProgressErrorProviderfaultMistral500ServerError                                                     CallEndedReason = "call.in-progress.error-providerfault-mistral-500-server-error"
+	CallEndedReasonCallInProgressErrorProviderfaultMistral503ServerOverloadedError                                           CallEndedReason = "call.in-progress.error-providerfault-mistral-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorInflectionAi400BadRequestValidationFailed                                                    CallEndedReason = "pipeline-error-inflection-ai-400-bad-request-validation-failed"
+	CallEndedReasonPipelineErrorInflectionAi401Unauthorized                                                                  CallEndedReason = "pipeline-error-inflection-ai-401-unauthorized"
+	CallEndedReasonPipelineErrorInflectionAi403ModelAccessDenied                                                             CallEndedReason = "pipeline-error-inflection-ai-403-model-access-denied"
+	CallEndedReasonPipelineErrorInflectionAi429ExceededQuota                                                                 CallEndedReason = "pipeline-error-inflection-ai-429-exceeded-quota"
+	CallEndedReasonPipelineErrorInflectionAi500ServerError                                                                   CallEndedReason = "pipeline-error-inflection-ai-500-server-error"
+	CallEndedReasonPipelineErrorInflectionAi503ServerOverloadedError                                                         CallEndedReason = "pipeline-error-inflection-ai-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorInflectionAiLlmFailed                                                                        CallEndedReason = "pipeline-error-inflection-ai-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultInflectionAi400BadRequestValidationFailed                                     CallEndedReason = "call.in-progress.error-vapifault-inflection-ai-400-bad-request-validation-failed"
+	CallEndedReasonCallInProgressErrorVapifaultInflectionAi401Unauthorized                                                   CallEndedReason = "call.in-progress.error-vapifault-inflection-ai-401-unauthorized"
+	CallEndedReasonCallInProgressErrorVapifaultInflectionAi403ModelAccessDenied                                              CallEndedReason = "call.in-progress.error-vapifault-inflection-ai-403-model-access-denied"
+	CallEndedReasonCallInProgressErrorVapifaultInflectionAi429ExceededQuota                                                  CallEndedReason = "call.in-progress.error-vapifault-inflection-ai-429-exceeded-quota"
+	CallEndedReasonCallInProgressErrorProviderfaultInflectionAi500ServerError                                                CallEndedReason = "call.in-progress.error-providerfault-inflection-ai-500-server-error"
+	CallEndedReasonCallInProgressErrorProviderfaultInflectionAi503ServerOverloadedError                                      CallEndedReason = "call.in-progress.error-providerfault-inflection-ai-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorDeepSeek400BadRequestValidationFailed                                                        CallEndedReason = "pipeline-error-deep-seek-400-bad-request-validation-failed"
+	CallEndedReasonPipelineErrorDeepSeek401Unauthorized                                                                      CallEndedReason = "pipeline-error-deep-seek-401-unauthorized"
+	CallEndedReasonPipelineErrorDeepSeek403ModelAccessDenied                                                                 CallEndedReason = "pipeline-error-deep-seek-403-model-access-denied"
+	CallEndedReasonPipelineErrorDeepSeek429ExceededQuota                                                                     CallEndedReason = "pipeline-error-deep-seek-429-exceeded-quota"
+	CallEndedReasonPipelineErrorDeepSeek500ServerError                                                                       CallEndedReason = "pipeline-error-deep-seek-500-server-error"
+	CallEndedReasonPipelineErrorDeepSeek503ServerOverloadedError                                                             CallEndedReason = "pipeline-error-deep-seek-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorDeepSeekLlmFailed                                                                            CallEndedReason = "pipeline-error-deep-seek-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultDeepSeek400BadRequestValidationFailed                                         CallEndedReason = "call.in-progress.error-vapifault-deep-seek-400-bad-request-validation-failed"
+	CallEndedReasonCallInProgressErrorVapifaultDeepSeek401Unauthorized                                                       CallEndedReason = "call.in-progress.error-vapifault-deep-seek-401-unauthorized"
+	CallEndedReasonCallInProgressErrorVapifaultDeepSeek403ModelAccessDenied                                                  CallEndedReason = "call.in-progress.error-vapifault-deep-seek-403-model-access-denied"
+	CallEndedReasonCallInProgressErrorVapifaultDeepSeek429ExceededQuota                                                      CallEndedReason = "call.in-progress.error-vapifault-deep-seek-429-exceeded-quota"
+	CallEndedReasonCallInProgressErrorProviderfaultDeepSeek500ServerError                                                    CallEndedReason = "call.in-progress.error-providerfault-deep-seek-500-server-error"
+	CallEndedReasonCallInProgressErrorProviderfaultDeepSeek503ServerOverloadedError                                          CallEndedReason = "call.in-progress.error-providerfault-deep-seek-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorGroq400BadRequestValidationFailed                                                            CallEndedReason = "pipeline-error-groq-400-bad-request-validation-failed"
+	CallEndedReasonPipelineErrorGroq401Unauthorized                                                                          CallEndedReason = "pipeline-error-groq-401-unauthorized"
+	CallEndedReasonPipelineErrorGroq403ModelAccessDenied                                                                     CallEndedReason = "pipeline-error-groq-403-model-access-denied"
+	CallEndedReasonPipelineErrorGroq429ExceededQuota                                                                         CallEndedReason = "pipeline-error-groq-429-exceeded-quota"
+	CallEndedReasonPipelineErrorGroq500ServerError                                                                           CallEndedReason = "pipeline-error-groq-500-server-error"
+	CallEndedReasonPipelineErrorGroq503ServerOverloadedError                                                                 CallEndedReason = "pipeline-error-groq-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorGroqLlmFailed                                                                                CallEndedReason = "pipeline-error-groq-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultGroq400BadRequestValidationFailed                                             CallEndedReason = "call.in-progress.error-vapifault-groq-400-bad-request-validation-failed"
+	CallEndedReasonCallInProgressErrorVapifaultGroq401Unauthorized                                                           CallEndedReason = "call.in-progress.error-vapifault-groq-401-unauthorized"
+	CallEndedReasonCallInProgressErrorVapifaultGroq403ModelAccessDenied                                                      CallEndedReason = "call.in-progress.error-vapifault-groq-403-model-access-denied"
+	CallEndedReasonCallInProgressErrorVapifaultGroq429ExceededQuota                                                          CallEndedReason = "call.in-progress.error-vapifault-groq-429-exceeded-quota"
+	CallEndedReasonCallInProgressErrorProviderfaultGroq500ServerError                                                        CallEndedReason = "call.in-progress.error-providerfault-groq-500-server-error"
+	CallEndedReasonCallInProgressErrorProviderfaultGroq503ServerOverloadedError                                              CallEndedReason = "call.in-progress.error-providerfault-groq-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorCerebras400BadRequestValidationFailed                                                        CallEndedReason = "pipeline-error-cerebras-400-bad-request-validation-failed"
+	CallEndedReasonPipelineErrorCerebras401Unauthorized                                                                      CallEndedReason = "pipeline-error-cerebras-401-unauthorized"
+	CallEndedReasonPipelineErrorCerebras403ModelAccessDenied                                                                 CallEndedReason = "pipeline-error-cerebras-403-model-access-denied"
+	CallEndedReasonPipelineErrorCerebras429ExceededQuota                                                                     CallEndedReason = "pipeline-error-cerebras-429-exceeded-quota"
+	CallEndedReasonPipelineErrorCerebras500ServerError                                                                       CallEndedReason = "pipeline-error-cerebras-500-server-error"
+	CallEndedReasonPipelineErrorCerebras503ServerOverloadedError                                                             CallEndedReason = "pipeline-error-cerebras-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorCerebrasLlmFailed                                                                            CallEndedReason = "pipeline-error-cerebras-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultCerebras400BadRequestValidationFailed                                         CallEndedReason = "call.in-progress.error-vapifault-cerebras-400-bad-request-validation-failed"
+	CallEndedReasonCallInProgressErrorVapifaultCerebras401Unauthorized                                                       CallEndedReason = "call.in-progress.error-vapifault-cerebras-401-unauthorized"
+	CallEndedReasonCallInProgressErrorVapifaultCerebras403ModelAccessDenied                                                  CallEndedReason = "call.in-progress.error-vapifault-cerebras-403-model-access-denied"
+	CallEndedReasonCallInProgressErrorVapifaultCerebras429ExceededQuota                                                      CallEndedReason = "call.in-progress.error-vapifault-cerebras-429-exceeded-quota"
+	CallEndedReasonCallInProgressErrorProviderfaultCerebras500ServerError                                                    CallEndedReason = "call.in-progress.error-providerfault-cerebras-500-server-error"
+	CallEndedReasonCallInProgressErrorProviderfaultCerebras503ServerOverloadedError                                          CallEndedReason = "call.in-progress.error-providerfault-cerebras-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorAnthropic400BadRequestValidationFailed                                                       CallEndedReason = "pipeline-error-anthropic-400-bad-request-validation-failed"
+	CallEndedReasonPipelineErrorAnthropic401Unauthorized                                                                     CallEndedReason = "pipeline-error-anthropic-401-unauthorized"
+	CallEndedReasonPipelineErrorAnthropic403ModelAccessDenied                                                                CallEndedReason = "pipeline-error-anthropic-403-model-access-denied"
+	CallEndedReasonPipelineErrorAnthropic429ExceededQuota                                                                    CallEndedReason = "pipeline-error-anthropic-429-exceeded-quota"
+	CallEndedReasonPipelineErrorAnthropic500ServerError                                                                      CallEndedReason = "pipeline-error-anthropic-500-server-error"
+	CallEndedReasonPipelineErrorAnthropic503ServerOverloadedError                                                            CallEndedReason = "pipeline-error-anthropic-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorAnthropicLlmFailed                                                                           CallEndedReason = "pipeline-error-anthropic-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultAnthropicLlmFailed                                                            CallEndedReason = "call.in-progress.error-vapifault-anthropic-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultAnthropic400BadRequestValidationFailed                                        CallEndedReason = "call.in-progress.error-vapifault-anthropic-400-bad-request-validation-failed"
+	CallEndedReasonCallInProgressErrorVapifaultAnthropic401Unauthorized                                                      CallEndedReason = "call.in-progress.error-vapifault-anthropic-401-unauthorized"
+	CallEndedReasonCallInProgressErrorVapifaultAnthropic403ModelAccessDenied                                                 CallEndedReason = "call.in-progress.error-vapifault-anthropic-403-model-access-denied"
+	CallEndedReasonCallInProgressErrorVapifaultAnthropic429ExceededQuota                                                     CallEndedReason = "call.in-progress.error-vapifault-anthropic-429-exceeded-quota"
+	CallEndedReasonCallInProgressErrorProviderfaultAnthropic500ServerError                                                   CallEndedReason = "call.in-progress.error-providerfault-anthropic-500-server-error"
+	CallEndedReasonCallInProgressErrorProviderfaultAnthropic503ServerOverloadedError                                         CallEndedReason = "call.in-progress.error-providerfault-anthropic-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorAnthropicBedrock400BadRequestValidationFailed                                                CallEndedReason = "pipeline-error-anthropic-bedrock-400-bad-request-validation-failed"
+	CallEndedReasonPipelineErrorAnthropicBedrock401Unauthorized                                                              CallEndedReason = "pipeline-error-anthropic-bedrock-401-unauthorized"
+	CallEndedReasonPipelineErrorAnthropicBedrock403ModelAccessDenied                                                         CallEndedReason = "pipeline-error-anthropic-bedrock-403-model-access-denied"
+	CallEndedReasonPipelineErrorAnthropicBedrock429ExceededQuota                                                             CallEndedReason = "pipeline-error-anthropic-bedrock-429-exceeded-quota"
+	CallEndedReasonPipelineErrorAnthropicBedrock500ServerError                                                               CallEndedReason = "pipeline-error-anthropic-bedrock-500-server-error"
+	CallEndedReasonPipelineErrorAnthropicBedrock503ServerOverloadedError                                                     CallEndedReason = "pipeline-error-anthropic-bedrock-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorAnthropicBedrockLlmFailed                                                                    CallEndedReason = "pipeline-error-anthropic-bedrock-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultAnthropicBedrockLlmFailed                                                     CallEndedReason = "call.in-progress.error-vapifault-anthropic-bedrock-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultAnthropicBedrock400BadRequestValidationFailed                                 CallEndedReason = "call.in-progress.error-vapifault-anthropic-bedrock-400-bad-request-validation-failed"
+	CallEndedReasonCallInProgressErrorVapifaultAnthropicBedrock401Unauthorized                                               CallEndedReason = "call.in-progress.error-vapifault-anthropic-bedrock-401-unauthorized"
+	CallEndedReasonCallInProgressErrorVapifaultAnthropicBedrock403ModelAccessDenied                                          CallEndedReason = "call.in-progress.error-vapifault-anthropic-bedrock-403-model-access-denied"
+	CallEndedReasonCallInProgressErrorVapifaultAnthropicBedrock429ExceededQuota                                              CallEndedReason = "call.in-progress.error-vapifault-anthropic-bedrock-429-exceeded-quota"
+	CallEndedReasonCallInProgressErrorProviderfaultAnthropicBedrock500ServerError                                            CallEndedReason = "call.in-progress.error-providerfault-anthropic-bedrock-500-server-error"
+	CallEndedReasonCallInProgressErrorProviderfaultAnthropicBedrock503ServerOverloadedError                                  CallEndedReason = "call.in-progress.error-providerfault-anthropic-bedrock-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorAnthropicVertex400BadRequestValidationFailed                                                 CallEndedReason = "pipeline-error-anthropic-vertex-400-bad-request-validation-failed"
+	CallEndedReasonPipelineErrorAnthropicVertex401Unauthorized                                                               CallEndedReason = "pipeline-error-anthropic-vertex-401-unauthorized"
+	CallEndedReasonPipelineErrorAnthropicVertex403ModelAccessDenied                                                          CallEndedReason = "pipeline-error-anthropic-vertex-403-model-access-denied"
+	CallEndedReasonPipelineErrorAnthropicVertex429ExceededQuota                                                              CallEndedReason = "pipeline-error-anthropic-vertex-429-exceeded-quota"
+	CallEndedReasonPipelineErrorAnthropicVertex500ServerError                                                                CallEndedReason = "pipeline-error-anthropic-vertex-500-server-error"
+	CallEndedReasonPipelineErrorAnthropicVertex503ServerOverloadedError                                                      CallEndedReason = "pipeline-error-anthropic-vertex-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorAnthropicVertexLlmFailed                                                                     CallEndedReason = "pipeline-error-anthropic-vertex-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultAnthropicVertexLlmFailed                                                      CallEndedReason = "call.in-progress.error-vapifault-anthropic-vertex-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultAnthropicVertex400BadRequestValidationFailed                                  CallEndedReason = "call.in-progress.error-vapifault-anthropic-vertex-400-bad-request-validation-failed"
+	CallEndedReasonCallInProgressErrorVapifaultAnthropicVertex401Unauthorized                                                CallEndedReason = "call.in-progress.error-vapifault-anthropic-vertex-401-unauthorized"
+	CallEndedReasonCallInProgressErrorVapifaultAnthropicVertex403ModelAccessDenied                                           CallEndedReason = "call.in-progress.error-vapifault-anthropic-vertex-403-model-access-denied"
+	CallEndedReasonCallInProgressErrorVapifaultAnthropicVertex429ExceededQuota                                               CallEndedReason = "call.in-progress.error-vapifault-anthropic-vertex-429-exceeded-quota"
+	CallEndedReasonCallInProgressErrorProviderfaultAnthropicVertex500ServerError                                             CallEndedReason = "call.in-progress.error-providerfault-anthropic-vertex-500-server-error"
+	CallEndedReasonCallInProgressErrorProviderfaultAnthropicVertex503ServerOverloadedError                                   CallEndedReason = "call.in-progress.error-providerfault-anthropic-vertex-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorTogetherAi400BadRequestValidationFailed                                                      CallEndedReason = "pipeline-error-together-ai-400-bad-request-validation-failed"
+	CallEndedReasonPipelineErrorTogetherAi401Unauthorized                                                                    CallEndedReason = "pipeline-error-together-ai-401-unauthorized"
+	CallEndedReasonPipelineErrorTogetherAi403ModelAccessDenied                                                               CallEndedReason = "pipeline-error-together-ai-403-model-access-denied"
+	CallEndedReasonPipelineErrorTogetherAi429ExceededQuota                                                                   CallEndedReason = "pipeline-error-together-ai-429-exceeded-quota"
+	CallEndedReasonPipelineErrorTogetherAi500ServerError                                                                     CallEndedReason = "pipeline-error-together-ai-500-server-error"
+	CallEndedReasonPipelineErrorTogetherAi503ServerOverloadedError                                                           CallEndedReason = "pipeline-error-together-ai-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorTogetherAiLlmFailed                                                                          CallEndedReason = "pipeline-error-together-ai-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultTogetherAiLlmFailed                                                           CallEndedReason = "call.in-progress.error-vapifault-together-ai-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultTogetherAi400BadRequestValidationFailed                                       CallEndedReason = "call.in-progress.error-vapifault-together-ai-400-bad-request-validation-failed"
+	CallEndedReasonCallInProgressErrorVapifaultTogetherAi401Unauthorized                                                     CallEndedReason = "call.in-progress.error-vapifault-together-ai-401-unauthorized"
+	CallEndedReasonCallInProgressErrorVapifaultTogetherAi403ModelAccessDenied                                                CallEndedReason = "call.in-progress.error-vapifault-together-ai-403-model-access-denied"
+	CallEndedReasonCallInProgressErrorVapifaultTogetherAi429ExceededQuota                                                    CallEndedReason = "call.in-progress.error-vapifault-together-ai-429-exceeded-quota"
+	CallEndedReasonCallInProgressErrorProviderfaultTogetherAi500ServerError                                                  CallEndedReason = "call.in-progress.error-providerfault-together-ai-500-server-error"
+	CallEndedReasonCallInProgressErrorProviderfaultTogetherAi503ServerOverloadedError                                        CallEndedReason = "call.in-progress.error-providerfault-together-ai-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorAnyscale400BadRequestValidationFailed                                                        CallEndedReason = "pipeline-error-anyscale-400-bad-request-validation-failed"
+	CallEndedReasonPipelineErrorAnyscale401Unauthorized                                                                      CallEndedReason = "pipeline-error-anyscale-401-unauthorized"
+	CallEndedReasonPipelineErrorAnyscale403ModelAccessDenied                                                                 CallEndedReason = "pipeline-error-anyscale-403-model-access-denied"
+	CallEndedReasonPipelineErrorAnyscale429ExceededQuota                                                                     CallEndedReason = "pipeline-error-anyscale-429-exceeded-quota"
+	CallEndedReasonPipelineErrorAnyscale500ServerError                                                                       CallEndedReason = "pipeline-error-anyscale-500-server-error"
+	CallEndedReasonPipelineErrorAnyscale503ServerOverloadedError                                                             CallEndedReason = "pipeline-error-anyscale-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorAnyscaleLlmFailed                                                                            CallEndedReason = "pipeline-error-anyscale-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultAnyscaleLlmFailed                                                             CallEndedReason = "call.in-progress.error-vapifault-anyscale-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultAnyscale400BadRequestValidationFailed                                         CallEndedReason = "call.in-progress.error-vapifault-anyscale-400-bad-request-validation-failed"
+	CallEndedReasonCallInProgressErrorVapifaultAnyscale401Unauthorized                                                       CallEndedReason = "call.in-progress.error-vapifault-anyscale-401-unauthorized"
+	CallEndedReasonCallInProgressErrorVapifaultAnyscale403ModelAccessDenied                                                  CallEndedReason = "call.in-progress.error-vapifault-anyscale-403-model-access-denied"
+	CallEndedReasonCallInProgressErrorVapifaultAnyscale429ExceededQuota                                                      CallEndedReason = "call.in-progress.error-vapifault-anyscale-429-exceeded-quota"
+	CallEndedReasonCallInProgressErrorProviderfaultAnyscale500ServerError                                                    CallEndedReason = "call.in-progress.error-providerfault-anyscale-500-server-error"
+	CallEndedReasonCallInProgressErrorProviderfaultAnyscale503ServerOverloadedError                                          CallEndedReason = "call.in-progress.error-providerfault-anyscale-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorOpenrouter400BadRequestValidationFailed                                                      CallEndedReason = "pipeline-error-openrouter-400-bad-request-validation-failed"
+	CallEndedReasonPipelineErrorOpenrouter401Unauthorized                                                                    CallEndedReason = "pipeline-error-openrouter-401-unauthorized"
+	CallEndedReasonPipelineErrorOpenrouter403ModelAccessDenied                                                               CallEndedReason = "pipeline-error-openrouter-403-model-access-denied"
+	CallEndedReasonPipelineErrorOpenrouter429ExceededQuota                                                                   CallEndedReason = "pipeline-error-openrouter-429-exceeded-quota"
+	CallEndedReasonPipelineErrorOpenrouter500ServerError                                                                     CallEndedReason = "pipeline-error-openrouter-500-server-error"
+	CallEndedReasonPipelineErrorOpenrouter503ServerOverloadedError                                                           CallEndedReason = "pipeline-error-openrouter-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorOpenrouterLlmFailed                                                                          CallEndedReason = "pipeline-error-openrouter-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultOpenrouterLlmFailed                                                           CallEndedReason = "call.in-progress.error-vapifault-openrouter-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultOpenrouter400BadRequestValidationFailed                                       CallEndedReason = "call.in-progress.error-vapifault-openrouter-400-bad-request-validation-failed"
+	CallEndedReasonCallInProgressErrorVapifaultOpenrouter401Unauthorized                                                     CallEndedReason = "call.in-progress.error-vapifault-openrouter-401-unauthorized"
+	CallEndedReasonCallInProgressErrorVapifaultOpenrouter403ModelAccessDenied                                                CallEndedReason = "call.in-progress.error-vapifault-openrouter-403-model-access-denied"
+	CallEndedReasonCallInProgressErrorVapifaultOpenrouter429ExceededQuota                                                    CallEndedReason = "call.in-progress.error-vapifault-openrouter-429-exceeded-quota"
+	CallEndedReasonCallInProgressErrorProviderfaultOpenrouter500ServerError                                                  CallEndedReason = "call.in-progress.error-providerfault-openrouter-500-server-error"
+	CallEndedReasonCallInProgressErrorProviderfaultOpenrouter503ServerOverloadedError                                        CallEndedReason = "call.in-progress.error-providerfault-openrouter-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorPerplexityAi400BadRequestValidationFailed                                                    CallEndedReason = "pipeline-error-perplexity-ai-400-bad-request-validation-failed"
+	CallEndedReasonPipelineErrorPerplexityAi401Unauthorized                                                                  CallEndedReason = "pipeline-error-perplexity-ai-401-unauthorized"
+	CallEndedReasonPipelineErrorPerplexityAi403ModelAccessDenied                                                             CallEndedReason = "pipeline-error-perplexity-ai-403-model-access-denied"
+	CallEndedReasonPipelineErrorPerplexityAi429ExceededQuota                                                                 CallEndedReason = "pipeline-error-perplexity-ai-429-exceeded-quota"
+	CallEndedReasonPipelineErrorPerplexityAi500ServerError                                                                   CallEndedReason = "pipeline-error-perplexity-ai-500-server-error"
+	CallEndedReasonPipelineErrorPerplexityAi503ServerOverloadedError                                                         CallEndedReason = "pipeline-error-perplexity-ai-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorPerplexityAiLlmFailed                                                                        CallEndedReason = "pipeline-error-perplexity-ai-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultPerplexityAiLlmFailed                                                         CallEndedReason = "call.in-progress.error-vapifault-perplexity-ai-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultPerplexityAi400BadRequestValidationFailed                                     CallEndedReason = "call.in-progress.error-vapifault-perplexity-ai-400-bad-request-validation-failed"
+	CallEndedReasonCallInProgressErrorVapifaultPerplexityAi401Unauthorized                                                   CallEndedReason = "call.in-progress.error-vapifault-perplexity-ai-401-unauthorized"
+	CallEndedReasonCallInProgressErrorVapifaultPerplexityAi403ModelAccessDenied                                              CallEndedReason = "call.in-progress.error-vapifault-perplexity-ai-403-model-access-denied"
+	CallEndedReasonCallInProgressErrorVapifaultPerplexityAi429ExceededQuota                                                  CallEndedReason = "call.in-progress.error-vapifault-perplexity-ai-429-exceeded-quota"
+	CallEndedReasonCallInProgressErrorProviderfaultPerplexityAi500ServerError                                                CallEndedReason = "call.in-progress.error-providerfault-perplexity-ai-500-server-error"
+	CallEndedReasonCallInProgressErrorProviderfaultPerplexityAi503ServerOverloadedError                                      CallEndedReason = "call.in-progress.error-providerfault-perplexity-ai-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorDeepinfra400BadRequestValidationFailed                                                       CallEndedReason = "pipeline-error-deepinfra-400-bad-request-validation-failed"
+	CallEndedReasonPipelineErrorDeepinfra401Unauthorized                                                                     CallEndedReason = "pipeline-error-deepinfra-401-unauthorized"
+	CallEndedReasonPipelineErrorDeepinfra403ModelAccessDenied                                                                CallEndedReason = "pipeline-error-deepinfra-403-model-access-denied"
+	CallEndedReasonPipelineErrorDeepinfra429ExceededQuota                                                                    CallEndedReason = "pipeline-error-deepinfra-429-exceeded-quota"
+	CallEndedReasonPipelineErrorDeepinfra500ServerError                                                                      CallEndedReason = "pipeline-error-deepinfra-500-server-error"
+	CallEndedReasonPipelineErrorDeepinfra503ServerOverloadedError                                                            CallEndedReason = "pipeline-error-deepinfra-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorDeepinfraLlmFailed                                                                           CallEndedReason = "pipeline-error-deepinfra-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultDeepinfraLlmFailed                                                            CallEndedReason = "call.in-progress.error-vapifault-deepinfra-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultDeepinfra400BadRequestValidationFailed                                        CallEndedReason = "call.in-progress.error-vapifault-deepinfra-400-bad-request-validation-failed"
+	CallEndedReasonCallInProgressErrorVapifaultDeepinfra401Unauthorized                                                      CallEndedReason = "call.in-progress.error-vapifault-deepinfra-401-unauthorized"
+	CallEndedReasonCallInProgressErrorVapifaultDeepinfra403ModelAccessDenied                                                 CallEndedReason = "call.in-progress.error-vapifault-deepinfra-403-model-access-denied"
+	CallEndedReasonCallInProgressErrorVapifaultDeepinfra429ExceededQuota                                                     CallEndedReason = "call.in-progress.error-vapifault-deepinfra-429-exceeded-quota"
+	CallEndedReasonCallInProgressErrorProviderfaultDeepinfra500ServerError                                                   CallEndedReason = "call.in-progress.error-providerfault-deepinfra-500-server-error"
+	CallEndedReasonCallInProgressErrorProviderfaultDeepinfra503ServerOverloadedError                                         CallEndedReason = "call.in-progress.error-providerfault-deepinfra-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorRunpod400BadRequestValidationFailed                                                          CallEndedReason = "pipeline-error-runpod-400-bad-request-validation-failed"
+	CallEndedReasonPipelineErrorRunpod401Unauthorized                                                                        CallEndedReason = "pipeline-error-runpod-401-unauthorized"
+	CallEndedReasonPipelineErrorRunpod403ModelAccessDenied                                                                   CallEndedReason = "pipeline-error-runpod-403-model-access-denied"
+	CallEndedReasonPipelineErrorRunpod429ExceededQuota                                                                       CallEndedReason = "pipeline-error-runpod-429-exceeded-quota"
+	CallEndedReasonPipelineErrorRunpod500ServerError                                                                         CallEndedReason = "pipeline-error-runpod-500-server-error"
+	CallEndedReasonPipelineErrorRunpod503ServerOverloadedError                                                               CallEndedReason = "pipeline-error-runpod-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorRunpodLlmFailed                                                                              CallEndedReason = "pipeline-error-runpod-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultRunpodLlmFailed                                                               CallEndedReason = "call.in-progress.error-vapifault-runpod-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultRunpod400BadRequestValidationFailed                                           CallEndedReason = "call.in-progress.error-vapifault-runpod-400-bad-request-validation-failed"
+	CallEndedReasonCallInProgressErrorVapifaultRunpod401Unauthorized                                                         CallEndedReason = "call.in-progress.error-vapifault-runpod-401-unauthorized"
+	CallEndedReasonCallInProgressErrorVapifaultRunpod403ModelAccessDenied                                                    CallEndedReason = "call.in-progress.error-vapifault-runpod-403-model-access-denied"
+	CallEndedReasonCallInProgressErrorVapifaultRunpod429ExceededQuota                                                        CallEndedReason = "call.in-progress.error-vapifault-runpod-429-exceeded-quota"
+	CallEndedReasonCallInProgressErrorProviderfaultRunpod500ServerError                                                      CallEndedReason = "call.in-progress.error-providerfault-runpod-500-server-error"
+	CallEndedReasonCallInProgressErrorProviderfaultRunpod503ServerOverloadedError                                            CallEndedReason = "call.in-progress.error-providerfault-runpod-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorCustomLlm400BadRequestValidationFailed                                                       CallEndedReason = "pipeline-error-custom-llm-400-bad-request-validation-failed"
+	CallEndedReasonPipelineErrorCustomLlm401Unauthorized                                                                     CallEndedReason = "pipeline-error-custom-llm-401-unauthorized"
+	CallEndedReasonPipelineErrorCustomLlm403ModelAccessDenied                                                                CallEndedReason = "pipeline-error-custom-llm-403-model-access-denied"
+	CallEndedReasonPipelineErrorCustomLlm429ExceededQuota                                                                    CallEndedReason = "pipeline-error-custom-llm-429-exceeded-quota"
+	CallEndedReasonPipelineErrorCustomLlm500ServerError                                                                      CallEndedReason = "pipeline-error-custom-llm-500-server-error"
+	CallEndedReasonPipelineErrorCustomLlm503ServerOverloadedError                                                            CallEndedReason = "pipeline-error-custom-llm-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorCustomLlmLlmFailed                                                                           CallEndedReason = "pipeline-error-custom-llm-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultCustomLlmLlmFailed                                                            CallEndedReason = "call.in-progress.error-vapifault-custom-llm-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultCustomLlm400BadRequestValidationFailed                                        CallEndedReason = "call.in-progress.error-vapifault-custom-llm-400-bad-request-validation-failed"
+	CallEndedReasonCallInProgressErrorVapifaultCustomLlm401Unauthorized                                                      CallEndedReason = "call.in-progress.error-vapifault-custom-llm-401-unauthorized"
+	CallEndedReasonCallInProgressErrorVapifaultCustomLlm403ModelAccessDenied                                                 CallEndedReason = "call.in-progress.error-vapifault-custom-llm-403-model-access-denied"
+	CallEndedReasonCallInProgressErrorVapifaultCustomLlm429ExceededQuota                                                     CallEndedReason = "call.in-progress.error-vapifault-custom-llm-429-exceeded-quota"
+	CallEndedReasonCallInProgressErrorProviderfaultCustomLlm500ServerError                                                   CallEndedReason = "call.in-progress.error-providerfault-custom-llm-500-server-error"
+	CallEndedReasonCallInProgressErrorProviderfaultCustomLlm503ServerOverloadedError                                         CallEndedReason = "call.in-progress.error-providerfault-custom-llm-503-server-overloaded-error"
+	CallEndedReasonPipelineErrorCustomVoiceFailed                                                                            CallEndedReason = "pipeline-error-custom-voice-failed"
+	CallEndedReasonPipelineErrorCartesiaSocketHangUp                                                                         CallEndedReason = "pipeline-error-cartesia-socket-hang-up"
+	CallEndedReasonPipelineErrorCartesiaRequestedPayment                                                                     CallEndedReason = "pipeline-error-cartesia-requested-payment"
+	CallEndedReasonPipelineErrorCartesia500ServerError                                                                       CallEndedReason = "pipeline-error-cartesia-500-server-error"
+	CallEndedReasonPipelineErrorCartesia503ServerError                                                                       CallEndedReason = "pipeline-error-cartesia-503-server-error"
+	CallEndedReasonPipelineErrorCartesia522ServerError                                                                       CallEndedReason = "pipeline-error-cartesia-522-server-error"
+	CallEndedReasonCallInProgressErrorVapifaultCartesiaSocketHangUp                                                          CallEndedReason = "call.in-progress.error-vapifault-cartesia-socket-hang-up"
+	CallEndedReasonCallInProgressErrorVapifaultCartesiaRequestedPayment                                                      CallEndedReason = "call.in-progress.error-vapifault-cartesia-requested-payment"
+	CallEndedReasonCallInProgressErrorProviderfaultCartesia500ServerError                                                    CallEndedReason = "call.in-progress.error-providerfault-cartesia-500-server-error"
+	CallEndedReasonCallInProgressErrorProviderfaultCartesia503ServerError                                                    CallEndedReason = "call.in-progress.error-providerfault-cartesia-503-server-error"
+	CallEndedReasonCallInProgressErrorProviderfaultCartesia522ServerError                                                    CallEndedReason = "call.in-progress.error-providerfault-cartesia-522-server-error"
+	CallEndedReasonPipelineErrorElevenLabsVoiceNotFound                                                                      CallEndedReason = "pipeline-error-eleven-labs-voice-not-found"
+	CallEndedReasonPipelineErrorElevenLabsQuotaExceeded                                                                      CallEndedReason = "pipeline-error-eleven-labs-quota-exceeded"
+	CallEndedReasonPipelineErrorElevenLabsUnauthorizedAccess                                                                 CallEndedReason = "pipeline-error-eleven-labs-unauthorized-access"
+	CallEndedReasonPipelineErrorElevenLabsUnauthorizedToAccessModel                                                          CallEndedReason = "pipeline-error-eleven-labs-unauthorized-to-access-model"
+	CallEndedReasonPipelineErrorElevenLabsProfessionalVoicesOnlyForCreatorPlus                                               CallEndedReason = "pipeline-error-eleven-labs-professional-voices-only-for-creator-plus"
+	CallEndedReasonPipelineErrorElevenLabsBlockedFreePlanAndRequestedUpgrade                                                 CallEndedReason = "pipeline-error-eleven-labs-blocked-free-plan-and-requested-upgrade"
+	CallEndedReasonPipelineErrorElevenLabsBlockedConcurrentRequestsAndRequestedUpgrade                                       CallEndedReason = "pipeline-error-eleven-labs-blocked-concurrent-requests-and-requested-upgrade"
+	CallEndedReasonPipelineErrorElevenLabsBlockedUsingInstantVoiceCloneAndRequestedUpgrade                                   CallEndedReason = "pipeline-error-eleven-labs-blocked-using-instant-voice-clone-and-requested-upgrade"
+	CallEndedReasonPipelineErrorElevenLabsSystemBusyAndRequestedUpgrade                                                      CallEndedReason = "pipeline-error-eleven-labs-system-busy-and-requested-upgrade"
+	CallEndedReasonPipelineErrorElevenLabsVoiceNotFineTuned                                                                  CallEndedReason = "pipeline-error-eleven-labs-voice-not-fine-tuned"
+	CallEndedReasonPipelineErrorElevenLabsInvalidApiKey                                                                      CallEndedReason = "pipeline-error-eleven-labs-invalid-api-key"
+	CallEndedReasonPipelineErrorElevenLabsInvalidVoiceSamples                                                                CallEndedReason = "pipeline-error-eleven-labs-invalid-voice-samples"
+	CallEndedReasonPipelineErrorElevenLabsVoiceDisabledByOwner                                                               CallEndedReason = "pipeline-error-eleven-labs-voice-disabled-by-owner"
+	CallEndedReasonPipelineErrorElevenLabsBlockedAccountInProbation                                                          CallEndedReason = "pipeline-error-eleven-labs-blocked-account-in-probation"
+	CallEndedReasonPipelineErrorElevenLabsBlockedContentAgainstTheirPolicy                                                   CallEndedReason = "pipeline-error-eleven-labs-blocked-content-against-their-policy"
+	CallEndedReasonPipelineErrorElevenLabsMissingSamplesForVoiceClone                                                        CallEndedReason = "pipeline-error-eleven-labs-missing-samples-for-voice-clone"
+	CallEndedReasonPipelineErrorElevenLabsVoiceNotFineTunedAndCannotBeUsed                                                   CallEndedReason = "pipeline-error-eleven-labs-voice-not-fine-tuned-and-cannot-be-used"
+	CallEndedReasonPipelineErrorElevenLabsVoiceNotAllowedForFreeUsers                                                        CallEndedReason = "pipeline-error-eleven-labs-voice-not-allowed-for-free-users"
+	CallEndedReasonPipelineErrorElevenLabsMaxCharacterLimitExceeded                                                          CallEndedReason = "pipeline-error-eleven-labs-max-character-limit-exceeded"
+	CallEndedReasonPipelineErrorElevenLabsBlockedVoicePotentiallyAgainstTermsOfServiceAndAwaitingVerification                CallEndedReason = "pipeline-error-eleven-labs-blocked-voice-potentially-against-terms-of-service-and-awaiting-verification"
+	CallEndedReasonPipelineErrorElevenLabs500ServerError                                                                     CallEndedReason = "pipeline-error-eleven-labs-500-server-error"
+	CallEndedReasonCallInProgressErrorVapifaultElevenLabsVoiceNotFound                                                       CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-voice-not-found"
+	CallEndedReasonCallInProgressErrorVapifaultElevenLabsQuotaExceeded                                                       CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-quota-exceeded"
+	CallEndedReasonCallInProgressErrorVapifaultElevenLabsUnauthorizedAccess                                                  CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-unauthorized-access"
+	CallEndedReasonCallInProgressErrorVapifaultElevenLabsUnauthorizedToAccessModel                                           CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-unauthorized-to-access-model"
+	CallEndedReasonCallInProgressErrorVapifaultElevenLabsProfessionalVoicesOnlyForCreatorPlus                                CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-professional-voices-only-for-creator-plus"
+	CallEndedReasonCallInProgressErrorVapifaultElevenLabsBlockedFreePlanAndRequestedUpgrade                                  CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-blocked-free-plan-and-requested-upgrade"
+	CallEndedReasonCallInProgressErrorVapifaultElevenLabsBlockedConcurrentRequestsAndRequestedUpgrade                        CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-blocked-concurrent-requests-and-requested-upgrade"
+	CallEndedReasonCallInProgressErrorVapifaultElevenLabsBlockedUsingInstantVoiceCloneAndRequestedUpgrade                    CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-blocked-using-instant-voice-clone-and-requested-upgrade"
+	CallEndedReasonCallInProgressErrorVapifaultElevenLabsSystemBusyAndRequestedUpgrade                                       CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-system-busy-and-requested-upgrade"
+	CallEndedReasonCallInProgressErrorVapifaultElevenLabsVoiceNotFineTuned                                                   CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-voice-not-fine-tuned"
+	CallEndedReasonCallInProgressErrorVapifaultElevenLabsInvalidApiKey                                                       CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-invalid-api-key"
+	CallEndedReasonCallInProgressErrorVapifaultElevenLabsInvalidVoiceSamples                                                 CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-invalid-voice-samples"
+	CallEndedReasonCallInProgressErrorVapifaultElevenLabsVoiceDisabledByOwner                                                CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-voice-disabled-by-owner"
+	CallEndedReasonCallInProgressErrorVapifaultElevenLabsBlockedAccountInProbation                                           CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-blocked-account-in-probation"
+	CallEndedReasonCallInProgressErrorVapifaultElevenLabsBlockedContentAgainstTheirPolicy                                    CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-blocked-content-against-their-policy"
+	CallEndedReasonCallInProgressErrorVapifaultElevenLabsMissingSamplesForVoiceClone                                         CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-missing-samples-for-voice-clone"
+	CallEndedReasonCallInProgressErrorVapifaultElevenLabsVoiceNotFineTunedAndCannotBeUsed                                    CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-voice-not-fine-tuned-and-cannot-be-used"
+	CallEndedReasonCallInProgressErrorVapifaultElevenLabsVoiceNotAllowedForFreeUsers                                         CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-voice-not-allowed-for-free-users"
+	CallEndedReasonCallInProgressErrorVapifaultElevenLabsMaxCharacterLimitExceeded                                           CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-max-character-limit-exceeded"
+	CallEndedReasonCallInProgressErrorVapifaultElevenLabsBlockedVoicePotentiallyAgainstTermsOfServiceAndAwaitingVerification CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-blocked-voice-potentially-against-terms-of-service-and-awaiting-verification"
+	CallEndedReasonCallInProgressErrorProviderfaultElevenLabs500ServerError                                                  CallEndedReason = "call.in-progress.error-providerfault-eleven-labs-500-server-error"
+	CallEndedReasonPipelineErrorPlayhtRequestTimedOut                                                                        CallEndedReason = "pipeline-error-playht-request-timed-out"
+	CallEndedReasonPipelineErrorPlayhtInvalidVoice                                                                           CallEndedReason = "pipeline-error-playht-invalid-voice"
+	CallEndedReasonPipelineErrorPlayhtUnexpectedError                                                                        CallEndedReason = "pipeline-error-playht-unexpected-error"
+	CallEndedReasonPipelineErrorPlayhtOutOfCredits                                                                           CallEndedReason = "pipeline-error-playht-out-of-credits"
+	CallEndedReasonPipelineErrorPlayhtInvalidEmotion                                                                         CallEndedReason = "pipeline-error-playht-invalid-emotion"
+	CallEndedReasonPipelineErrorPlayhtVoiceMustBeAValidVoiceManifestUri                                                      CallEndedReason = "pipeline-error-playht-voice-must-be-a-valid-voice-manifest-uri"
+	CallEndedReasonPipelineErrorPlayht401Unauthorized                                                                        CallEndedReason = "pipeline-error-playht-401-unauthorized"
+	CallEndedReasonPipelineErrorPlayht403ForbiddenOutOfCharacters                                                            CallEndedReason = "pipeline-error-playht-403-forbidden-out-of-characters"
+	CallEndedReasonPipelineErrorPlayht403ForbiddenApiAccessNotAvailable                                                      CallEndedReason = "pipeline-error-playht-403-forbidden-api-access-not-available"
+	CallEndedReasonPipelineErrorPlayht429ExceededQuota                                                                       CallEndedReason = "pipeline-error-playht-429-exceeded-quota"
+	CallEndedReasonPipelineErrorPlayht502GatewayError                                                                        CallEndedReason = "pipeline-error-playht-502-gateway-error"
+	CallEndedReasonPipelineErrorPlayht504GatewayError                                                                        CallEndedReason = "pipeline-error-playht-504-gateway-error"
+	CallEndedReasonCallInProgressErrorVapifaultPlayhtRequestTimedOut                                                         CallEndedReason = "call.in-progress.error-vapifault-playht-request-timed-out"
+	CallEndedReasonCallInProgressErrorVapifaultPlayhtInvalidVoice                                                            CallEndedReason = "call.in-progress.error-vapifault-playht-invalid-voice"
+	CallEndedReasonCallInProgressErrorVapifaultPlayhtUnexpectedError                                                         CallEndedReason = "call.in-progress.error-vapifault-playht-unexpected-error"
+	CallEndedReasonCallInProgressErrorVapifaultPlayhtOutOfCredits                                                            CallEndedReason = "call.in-progress.error-vapifault-playht-out-of-credits"
+	CallEndedReasonCallInProgressErrorVapifaultPlayhtInvalidEmotion                                                          CallEndedReason = "call.in-progress.error-vapifault-playht-invalid-emotion"
+	CallEndedReasonCallInProgressErrorVapifaultPlayhtVoiceMustBeAValidVoiceManifestUri                                       CallEndedReason = "call.in-progress.error-vapifault-playht-voice-must-be-a-valid-voice-manifest-uri"
+	CallEndedReasonCallInProgressErrorVapifaultPlayht401Unauthorized                                                         CallEndedReason = "call.in-progress.error-vapifault-playht-401-unauthorized"
+	CallEndedReasonCallInProgressErrorVapifaultPlayht403ForbiddenOutOfCharacters                                             CallEndedReason = "call.in-progress.error-vapifault-playht-403-forbidden-out-of-characters"
+	CallEndedReasonCallInProgressErrorVapifaultPlayht403ForbiddenApiAccessNotAvailable                                       CallEndedReason = "call.in-progress.error-vapifault-playht-403-forbidden-api-access-not-available"
+	CallEndedReasonCallInProgressErrorVapifaultPlayht429ExceededQuota                                                        CallEndedReason = "call.in-progress.error-vapifault-playht-429-exceeded-quota"
+	CallEndedReasonCallInProgressErrorProviderfaultPlayht502GatewayError                                                     CallEndedReason = "call.in-progress.error-providerfault-playht-502-gateway-error"
+	CallEndedReasonCallInProgressErrorProviderfaultPlayht504GatewayError                                                     CallEndedReason = "call.in-progress.error-providerfault-playht-504-gateway-error"
+	CallEndedReasonPipelineErrorCustomTranscriberFailed                                                                      CallEndedReason = "pipeline-error-custom-transcriber-failed"
+	CallEndedReasonCallInProgressErrorVapifaultCustomTranscriberFailed                                                       CallEndedReason = "call.in-progress.error-vapifault-custom-transcriber-failed"
+	CallEndedReasonPipelineErrorElevenLabsTranscriberFailed                                                                  CallEndedReason = "pipeline-error-eleven-labs-transcriber-failed"
+	CallEndedReasonCallInProgressErrorVapifaultElevenLabsTranscriberFailed                                                   CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-transcriber-failed"
+	CallEndedReasonPipelineErrorDeepgramReturning400NoSuchModelLanguageTierCombination                                       CallEndedReason = "pipeline-error-deepgram-returning-400-no-such-model-language-tier-combination"
+	CallEndedReasonPipelineErrorDeepgramReturning401InvalidCredentials                                                       CallEndedReason = "pipeline-error-deepgram-returning-401-invalid-credentials"
+	CallEndedReasonPipelineErrorDeepgramReturning403ModelAccessDenied                                                        CallEndedReason = "pipeline-error-deepgram-returning-403-model-access-denied"
+	CallEndedReasonPipelineErrorDeepgramReturning404NotFound                                                                 CallEndedReason = "pipeline-error-deepgram-returning-404-not-found"
+	CallEndedReasonPipelineErrorDeepgramReturning500InvalidJson                                                              CallEndedReason = "pipeline-error-deepgram-returning-500-invalid-json"
+	CallEndedReasonPipelineErrorDeepgramReturning502NetworkError                                                             CallEndedReason = "pipeline-error-deepgram-returning-502-network-error"
+	CallEndedReasonPipelineErrorDeepgramReturning502BadGatewayEhostunreach                                                   CallEndedReason = "pipeline-error-deepgram-returning-502-bad-gateway-ehostunreach"
+	CallEndedReasonCallInProgressErrorVapifaultDeepgramReturning400NoSuchModelLanguageTierCombination                        CallEndedReason = "call.in-progress.error-vapifault-deepgram-returning-400-no-such-model-language-tier-combination"
+	CallEndedReasonCallInProgressErrorVapifaultDeepgramReturning401InvalidCredentials                                        CallEndedReason = "call.in-progress.error-vapifault-deepgram-returning-401-invalid-credentials"
+	CallEndedReasonCallInProgressErrorVapifaultDeepgramReturning404NotFound                                                  CallEndedReason = "call.in-progress.error-vapifault-deepgram-returning-404-not-found"
+	CallEndedReasonCallInProgressErrorVapifaultDeepgramReturning403ModelAccessDenied                                         CallEndedReason = "call.in-progress.error-vapifault-deepgram-returning-403-model-access-denied"
+	CallEndedReasonCallInProgressErrorProviderfaultDeepgramReturning500InvalidJson                                           CallEndedReason = "call.in-progress.error-providerfault-deepgram-returning-500-invalid-json"
+	CallEndedReasonCallInProgressErrorProviderfaultDeepgramReturning502NetworkError                                          CallEndedReason = "call.in-progress.error-providerfault-deepgram-returning-502-network-error"
+	CallEndedReasonCallInProgressErrorProviderfaultDeepgramReturning502BadGatewayEhostunreach                                CallEndedReason = "call.in-progress.error-providerfault-deepgram-returning-502-bad-gateway-ehostunreach"
+	CallEndedReasonPipelineErrorGoogleTranscriberFailed                                                                      CallEndedReason = "pipeline-error-google-transcriber-failed"
+	CallEndedReasonCallInProgressErrorVapifaultGoogleTranscriberFailed                                                       CallEndedReason = "call.in-progress.error-vapifault-google-transcriber-failed"
+	CallEndedReasonPipelineErrorOpenaiTranscriberFailed                                                                      CallEndedReason = "pipeline-error-openai-transcriber-failed"
+	CallEndedReasonCallInProgressErrorVapifaultOpenaiTranscriberFailed                                                       CallEndedReason = "call.in-progress.error-vapifault-openai-transcriber-failed"
+	CallEndedReasonAssistantEndedCall                                                                                        CallEndedReason = "assistant-ended-call"
+	CallEndedReasonAssistantSaidEndCallPhrase                                                                                CallEndedReason = "assistant-said-end-call-phrase"
+	CallEndedReasonAssistantEndedCallWithHangupTask                                                                          CallEndedReason = "assistant-ended-call-with-hangup-task"
+	CallEndedReasonAssistantEndedCallAfterMessageSpoken                                                                      CallEndedReason = "assistant-ended-call-after-message-spoken"
+	CallEndedReasonAssistantForwardedCall                                                                                    CallEndedReason = "assistant-forwarded-call"
+	CallEndedReasonAssistantJoinTimedOut                                                                                     CallEndedReason = "assistant-join-timed-out"
+	CallEndedReasonCallInProgressErrorAssistantDidNotReceiveCustomerAudio                                                    CallEndedReason = "call.in-progress.error-assistant-did-not-receive-customer-audio"
+	CallEndedReasonCustomerBusy                                                                                              CallEndedReason = "customer-busy"
+	CallEndedReasonCustomerEndedCall                                                                                         CallEndedReason = "customer-ended-call"
+	CallEndedReasonCustomerDidNotAnswer                                                                                      CallEndedReason = "customer-did-not-answer"
+	CallEndedReasonCustomerDidNotGiveMicrophonePermission                                                                    CallEndedReason = "customer-did-not-give-microphone-permission"
+	CallEndedReasonExceededMaxDuration                                                                                       CallEndedReason = "exceeded-max-duration"
+	CallEndedReasonManuallyCanceled                                                                                          CallEndedReason = "manually-canceled"
+	CallEndedReasonPhoneCallProviderClosedWebsocket                                                                          CallEndedReason = "phone-call-provider-closed-websocket"
+	CallEndedReasonSilenceTimedOut                                                                                           CallEndedReason = "silence-timed-out"
+	CallEndedReasonCallInProgressErrorSipTelephonyProviderFailedToConnectCall                                                CallEndedReason = "call.in-progress.error-sip-telephony-provider-failed-to-connect-call"
+	CallEndedReasonTwilioFailedToConnectCall                                                                                 CallEndedReason = "twilio-failed-to-connect-call"
+	CallEndedReasonTwilioReportedCustomerMisdialed                                                                           CallEndedReason = "twilio-reported-customer-misdialed"
+	CallEndedReasonVonageRejected                                                                                            CallEndedReason = "vonage-rejected"
+	CallEndedReasonVoicemail                                                                                                 CallEndedReason = "voicemail"
 )
 
 func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 	switch s {
-	case "assistant-not-valid":
-		return CallEndedReasonAssistantNotValid, nil
-	case "assistant-not-provided":
-		return CallEndedReasonAssistantNotProvided, nil
 	case "call-start-error-neither-assistant-nor-server-set":
 		return CallEndedReasonCallStartErrorNeitherAssistantNorServerSet, nil
 	case "assistant-request-failed":
@@ -1210,38 +1628,30 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonAssistantRequestReturnedNoAssistant, nil
 	case "assistant-request-returned-forwarding-phone-number":
 		return CallEndedReasonAssistantRequestReturnedForwardingPhoneNumber, nil
-	case "assistant-ended-call":
-		return CallEndedReasonAssistantEndedCall, nil
-	case "assistant-said-end-call-phrase":
-		return CallEndedReasonAssistantSaidEndCallPhrase, nil
-	case "assistant-ended-call-with-hangup-task":
-		return CallEndedReasonAssistantEndedCallWithHangupTask, nil
-	case "assistant-forwarded-call":
-		return CallEndedReasonAssistantForwardedCall, nil
-	case "assistant-join-timed-out":
-		return CallEndedReasonAssistantJoinTimedOut, nil
-	case "customer-busy":
-		return CallEndedReasonCustomerBusy, nil
-	case "customer-ended-call":
-		return CallEndedReasonCustomerEndedCall, nil
-	case "customer-did-not-answer":
-		return CallEndedReasonCustomerDidNotAnswer, nil
-	case "customer-did-not-give-microphone-permission":
-		return CallEndedReasonCustomerDidNotGiveMicrophonePermission, nil
-	case "assistant-said-message-with-end-call-enabled":
-		return CallEndedReasonAssistantSaidMessageWithEndCallEnabled, nil
-	case "exceeded-max-duration":
-		return CallEndedReasonExceededMaxDuration, nil
-	case "manually-canceled":
-		return CallEndedReasonManuallyCanceled, nil
-	case "phone-call-provider-closed-websocket":
-		return CallEndedReasonPhoneCallProviderClosedWebsocket, nil
-	case "db-error":
-		return CallEndedReasonDbError, nil
+	case "call.start.error-get-org":
+		return CallEndedReasonCallStartErrorGetOrg, nil
+	case "call.start.error-get-subscription":
+		return CallEndedReasonCallStartErrorGetSubscription, nil
+	case "call.start.error-get-assistant":
+		return CallEndedReasonCallStartErrorGetAssistant, nil
+	case "call.start.error-get-phone-number":
+		return CallEndedReasonCallStartErrorGetPhoneNumber, nil
+	case "call.start.error-get-customer":
+		return CallEndedReasonCallStartErrorGetCustomer, nil
+	case "call.start.error-get-resources-validation":
+		return CallEndedReasonCallStartErrorGetResourcesValidation, nil
+	case "call.start.error-vapi-number-international":
+		return CallEndedReasonCallStartErrorVapiNumberInternational, nil
+	case "call.start.error-vapi-number-outbound-daily-limit":
+		return CallEndedReasonCallStartErrorVapiNumberOutboundDailyLimit, nil
+	case "call.start.error-get-transport":
+		return CallEndedReasonCallStartErrorGetTransport, nil
+	case "assistant-not-valid":
+		return CallEndedReasonAssistantNotValid, nil
+	case "database-error":
+		return CallEndedReasonDatabaseError, nil
 	case "assistant-not-found":
 		return CallEndedReasonAssistantNotFound, nil
-	case "license-check-failed":
-		return CallEndedReasonLicenseCheckFailed, nil
 	case "pipeline-error-openai-voice-failed":
 		return CallEndedReasonPipelineErrorOpenaiVoiceFailed, nil
 	case "pipeline-error-cartesia-voice-failed":
@@ -1258,24 +1668,42 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonPipelineErrorAzureVoiceFailed, nil
 	case "pipeline-error-rime-ai-voice-failed":
 		return CallEndedReasonPipelineErrorRimeAiVoiceFailed, nil
-	case "pipeline-error-neets-voice-failed":
-		return CallEndedReasonPipelineErrorNeetsVoiceFailed, nil
 	case "pipeline-error-smallest-ai-voice-failed":
 		return CallEndedReasonPipelineErrorSmallestAiVoiceFailed, nil
 	case "pipeline-error-neuphonic-voice-failed":
 		return CallEndedReasonPipelineErrorNeuphonicVoiceFailed, nil
-	case "pipeline-error-deepgram-transcriber-failed":
-		return CallEndedReasonPipelineErrorDeepgramTranscriberFailed, nil
-	case "pipeline-error-gladia-transcriber-failed":
-		return CallEndedReasonPipelineErrorGladiaTranscriberFailed, nil
-	case "pipeline-error-speechmatics-transcriber-failed":
-		return CallEndedReasonPipelineErrorSpeechmaticsTranscriberFailed, nil
-	case "pipeline-error-assembly-ai-transcriber-failed":
-		return CallEndedReasonPipelineErrorAssemblyAiTranscriberFailed, nil
-	case "pipeline-error-talkscriber-transcriber-failed":
-		return CallEndedReasonPipelineErrorTalkscriberTranscriberFailed, nil
-	case "pipeline-error-azure-speech-transcriber-failed":
-		return CallEndedReasonPipelineErrorAzureSpeechTranscriberFailed, nil
+	case "pipeline-error-hume-voice-failed":
+		return CallEndedReasonPipelineErrorHumeVoiceFailed, nil
+	case "pipeline-error-sesame-voice-failed":
+		return CallEndedReasonPipelineErrorSesameVoiceFailed, nil
+	case "pipeline-error-tavus-video-failed":
+		return CallEndedReasonPipelineErrorTavusVideoFailed, nil
+	case "call.in-progress.error-vapifault-openai-voice-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultOpenaiVoiceFailed, nil
+	case "call.in-progress.error-vapifault-cartesia-voice-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultCartesiaVoiceFailed, nil
+	case "call.in-progress.error-vapifault-deepgram-voice-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultDeepgramVoiceFailed, nil
+	case "call.in-progress.error-vapifault-eleven-labs-voice-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultElevenLabsVoiceFailed, nil
+	case "call.in-progress.error-vapifault-playht-voice-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultPlayhtVoiceFailed, nil
+	case "call.in-progress.error-vapifault-lmnt-voice-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultLmntVoiceFailed, nil
+	case "call.in-progress.error-vapifault-azure-voice-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultAzureVoiceFailed, nil
+	case "call.in-progress.error-vapifault-rime-ai-voice-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultRimeAiVoiceFailed, nil
+	case "call.in-progress.error-vapifault-smallest-ai-voice-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultSmallestAiVoiceFailed, nil
+	case "call.in-progress.error-vapifault-neuphonic-voice-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultNeuphonicVoiceFailed, nil
+	case "call.in-progress.error-vapifault-hume-voice-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultHumeVoiceFailed, nil
+	case "call.in-progress.error-vapifault-sesame-voice-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultSesameVoiceFailed, nil
+	case "call.in-progress.error-vapifault-tavus-video-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultTavusVideoFailed, nil
 	case "pipeline-error-vapi-llm-failed":
 		return CallEndedReasonPipelineErrorVapiLlmFailed, nil
 	case "pipeline-error-vapi-400-bad-request-validation-failed":
@@ -1288,8 +1716,68 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonPipelineErrorVapi429ExceededQuota, nil
 	case "pipeline-error-vapi-500-server-error":
 		return CallEndedReasonPipelineErrorVapi500ServerError, nil
-	case "pipeline-no-available-model":
-		return CallEndedReasonPipelineNoAvailableModel, nil
+	case "pipeline-error-vapi-503-server-overloaded-error":
+		return CallEndedReasonPipelineErrorVapi503ServerOverloadedError, nil
+	case "call.in-progress.error-vapifault-vapi-llm-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultVapiLlmFailed, nil
+	case "call.in-progress.error-vapifault-vapi-400-bad-request-validation-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultVapi400BadRequestValidationFailed, nil
+	case "call.in-progress.error-vapifault-vapi-401-unauthorized":
+		return CallEndedReasonCallInProgressErrorVapifaultVapi401Unauthorized, nil
+	case "call.in-progress.error-vapifault-vapi-403-model-access-denied":
+		return CallEndedReasonCallInProgressErrorVapifaultVapi403ModelAccessDenied, nil
+	case "call.in-progress.error-vapifault-vapi-429-exceeded-quota":
+		return CallEndedReasonCallInProgressErrorVapifaultVapi429ExceededQuota, nil
+	case "call.in-progress.error-providerfault-vapi-500-server-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultVapi500ServerError, nil
+	case "call.in-progress.error-providerfault-vapi-503-server-overloaded-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultVapi503ServerOverloadedError, nil
+	case "pipeline-error-deepgram-transcriber-failed":
+		return CallEndedReasonPipelineErrorDeepgramTranscriberFailed, nil
+	case "call.in-progress.error-vapifault-deepgram-transcriber-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultDeepgramTranscriberFailed, nil
+	case "pipeline-error-gladia-transcriber-failed":
+		return CallEndedReasonPipelineErrorGladiaTranscriberFailed, nil
+	case "call.in-progress.error-vapifault-gladia-transcriber-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultGladiaTranscriberFailed, nil
+	case "pipeline-error-speechmatics-transcriber-failed":
+		return CallEndedReasonPipelineErrorSpeechmaticsTranscriberFailed, nil
+	case "call.in-progress.error-vapifault-speechmatics-transcriber-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultSpeechmaticsTranscriberFailed, nil
+	case "pipeline-error-assembly-ai-transcriber-failed":
+		return CallEndedReasonPipelineErrorAssemblyAiTranscriberFailed, nil
+	case "pipeline-error-assembly-ai-returning-400-insufficent-funds":
+		return CallEndedReasonPipelineErrorAssemblyAiReturning400InsufficentFunds, nil
+	case "pipeline-error-assembly-ai-returning-400-paid-only-feature":
+		return CallEndedReasonPipelineErrorAssemblyAiReturning400PaidOnlyFeature, nil
+	case "pipeline-error-assembly-ai-returning-401-invalid-credentials":
+		return CallEndedReasonPipelineErrorAssemblyAiReturning401InvalidCredentials, nil
+	case "pipeline-error-assembly-ai-returning-500-invalid-schema":
+		return CallEndedReasonPipelineErrorAssemblyAiReturning500InvalidSchema, nil
+	case "pipeline-error-assembly-ai-returning-500-word-boost-parsing-failed":
+		return CallEndedReasonPipelineErrorAssemblyAiReturning500WordBoostParsingFailed, nil
+	case "call.in-progress.error-vapifault-assembly-ai-transcriber-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultAssemblyAiTranscriberFailed, nil
+	case "call.in-progress.error-vapifault-assembly-ai-returning-400-insufficent-funds":
+		return CallEndedReasonCallInProgressErrorVapifaultAssemblyAiReturning400InsufficentFunds, nil
+	case "call.in-progress.error-vapifault-assembly-ai-returning-400-paid-only-feature":
+		return CallEndedReasonCallInProgressErrorVapifaultAssemblyAiReturning400PaidOnlyFeature, nil
+	case "call.in-progress.error-vapifault-assembly-ai-returning-401-invalid-credentials":
+		return CallEndedReasonCallInProgressErrorVapifaultAssemblyAiReturning401InvalidCredentials, nil
+	case "call.in-progress.error-vapifault-assembly-ai-returning-500-invalid-schema":
+		return CallEndedReasonCallInProgressErrorVapifaultAssemblyAiReturning500InvalidSchema, nil
+	case "call.in-progress.error-vapifault-assembly-ai-returning-500-word-boost-parsing-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultAssemblyAiReturning500WordBoostParsingFailed, nil
+	case "pipeline-error-talkscriber-transcriber-failed":
+		return CallEndedReasonPipelineErrorTalkscriberTranscriberFailed, nil
+	case "call.in-progress.error-vapifault-talkscriber-transcriber-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultTalkscriberTranscriberFailed, nil
+	case "pipeline-error-azure-speech-transcriber-failed":
+		return CallEndedReasonPipelineErrorAzureSpeechTranscriberFailed, nil
+	case "call.in-progress.error-vapifault-azure-speech-transcriber-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultAzureSpeechTranscriberFailed, nil
+	case "call.in-progress.error-pipeline-no-available-llm-model":
+		return CallEndedReasonCallInProgressErrorPipelineNoAvailableLlmModel, nil
 	case "worker-shutdown":
 		return CallEndedReasonWorkerShutdown, nil
 	case "unknown-error":
@@ -1298,100 +1786,72 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonVonageDisconnected, nil
 	case "vonage-failed-to-connect-call":
 		return CallEndedReasonVonageFailedToConnectCall, nil
+	case "vonage-completed":
+		return CallEndedReasonVonageCompleted, nil
 	case "phone-call-provider-bypass-enabled-but-no-call-received":
 		return CallEndedReasonPhoneCallProviderBypassEnabledButNoCallReceived, nil
-	case "vapifault-phone-call-worker-setup-socket-error":
-		return CallEndedReasonVapifaultPhoneCallWorkerSetupSocketError, nil
-	case "vapifault-phone-call-worker-worker-setup-socket-timeout":
-		return CallEndedReasonVapifaultPhoneCallWorkerWorkerSetupSocketTimeout, nil
-	case "vapifault-phone-call-worker-could-not-find-call":
-		return CallEndedReasonVapifaultPhoneCallWorkerCouldNotFindCall, nil
-	case "vapifault-transport-never-connected":
-		return CallEndedReasonVapifaultTransportNeverConnected, nil
-	case "vapifault-web-call-worker-setup-failed":
-		return CallEndedReasonVapifaultWebCallWorkerSetupFailed, nil
-	case "vapifault-transport-connected-but-call-not-active":
-		return CallEndedReasonVapifaultTransportConnectedButCallNotActive, nil
-	case "vapifault-call-started-but-connection-to-transport-missing":
-		return CallEndedReasonVapifaultCallStartedButConnectionToTransportMissing, nil
-	case "pipeline-error-openai-llm-failed":
-		return CallEndedReasonPipelineErrorOpenaiLlmFailed, nil
-	case "pipeline-error-azure-openai-llm-failed":
-		return CallEndedReasonPipelineErrorAzureOpenaiLlmFailed, nil
-	case "pipeline-error-groq-llm-failed":
-		return CallEndedReasonPipelineErrorGroqLlmFailed, nil
-	case "pipeline-error-google-llm-failed":
-		return CallEndedReasonPipelineErrorGoogleLlmFailed, nil
-	case "pipeline-error-xai-llm-failed":
-		return CallEndedReasonPipelineErrorXaiLlmFailed, nil
-	case "pipeline-error-mistral-llm-failed":
-		return CallEndedReasonPipelineErrorMistralLlmFailed, nil
-	case "pipeline-error-inflection-ai-llm-failed":
-		return CallEndedReasonPipelineErrorInflectionAiLlmFailed, nil
-	case "pipeline-error-cerebras-llm-failed":
-		return CallEndedReasonPipelineErrorCerebrasLlmFailed, nil
-	case "pipeline-error-deep-seek-llm-failed":
-		return CallEndedReasonPipelineErrorDeepSeekLlmFailed, nil
+	case "call.in-progress.error-vapifault-transport-never-connected":
+		return CallEndedReasonCallInProgressErrorVapifaultTransportNeverConnected, nil
+	case "call.in-progress.error-vapifault-transport-connected-but-call-not-active":
+		return CallEndedReasonCallInProgressErrorVapifaultTransportConnectedButCallNotActive, nil
+	case "call.in-progress.error-vapifault-call-started-but-connection-to-transport-missing":
+		return CallEndedReasonCallInProgressErrorVapifaultCallStartedButConnectionToTransportMissing, nil
+	case "call.in-progress.error-vapifault-openai-llm-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultOpenaiLlmFailed, nil
+	case "call.in-progress.error-vapifault-azure-openai-llm-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultAzureOpenaiLlmFailed, nil
+	case "call.in-progress.error-vapifault-groq-llm-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultGroqLlmFailed, nil
+	case "call.in-progress.error-vapifault-google-llm-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultGoogleLlmFailed, nil
+	case "call.in-progress.error-vapifault-xai-llm-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultXaiLlmFailed, nil
+	case "call.in-progress.error-vapifault-mistral-llm-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultMistralLlmFailed, nil
+	case "call.in-progress.error-vapifault-inflection-ai-llm-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultInflectionAiLlmFailed, nil
+	case "call.in-progress.error-vapifault-cerebras-llm-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultCerebrasLlmFailed, nil
+	case "call.in-progress.error-vapifault-deep-seek-llm-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultDeepSeekLlmFailed, nil
 	case "pipeline-error-openai-400-bad-request-validation-failed":
 		return CallEndedReasonPipelineErrorOpenai400BadRequestValidationFailed, nil
 	case "pipeline-error-openai-401-unauthorized":
 		return CallEndedReasonPipelineErrorOpenai401Unauthorized, nil
+	case "pipeline-error-openai-401-incorrect-api-key":
+		return CallEndedReasonPipelineErrorOpenai401IncorrectApiKey, nil
+	case "pipeline-error-openai-401-account-not-in-organization":
+		return CallEndedReasonPipelineErrorOpenai401AccountNotInOrganization, nil
 	case "pipeline-error-openai-403-model-access-denied":
 		return CallEndedReasonPipelineErrorOpenai403ModelAccessDenied, nil
 	case "pipeline-error-openai-429-exceeded-quota":
 		return CallEndedReasonPipelineErrorOpenai429ExceededQuota, nil
+	case "pipeline-error-openai-429-rate-limit-reached":
+		return CallEndedReasonPipelineErrorOpenai429RateLimitReached, nil
 	case "pipeline-error-openai-500-server-error":
 		return CallEndedReasonPipelineErrorOpenai500ServerError, nil
-	case "pipeline-error-google-400-bad-request-validation-failed":
-		return CallEndedReasonPipelineErrorGoogle400BadRequestValidationFailed, nil
-	case "pipeline-error-google-401-unauthorized":
-		return CallEndedReasonPipelineErrorGoogle401Unauthorized, nil
-	case "pipeline-error-google-403-model-access-denied":
-		return CallEndedReasonPipelineErrorGoogle403ModelAccessDenied, nil
-	case "pipeline-error-google-429-exceeded-quota":
-		return CallEndedReasonPipelineErrorGoogle429ExceededQuota, nil
-	case "pipeline-error-google-500-server-error":
-		return CallEndedReasonPipelineErrorGoogle500ServerError, nil
-	case "pipeline-error-xai-400-bad-request-validation-failed":
-		return CallEndedReasonPipelineErrorXai400BadRequestValidationFailed, nil
-	case "pipeline-error-xai-401-unauthorized":
-		return CallEndedReasonPipelineErrorXai401Unauthorized, nil
-	case "pipeline-error-xai-403-model-access-denied":
-		return CallEndedReasonPipelineErrorXai403ModelAccessDenied, nil
-	case "pipeline-error-xai-429-exceeded-quota":
-		return CallEndedReasonPipelineErrorXai429ExceededQuota, nil
-	case "pipeline-error-xai-500-server-error":
-		return CallEndedReasonPipelineErrorXai500ServerError, nil
-	case "pipeline-error-mistral-400-bad-request-validation-failed":
-		return CallEndedReasonPipelineErrorMistral400BadRequestValidationFailed, nil
-	case "pipeline-error-mistral-401-unauthorized":
-		return CallEndedReasonPipelineErrorMistral401Unauthorized, nil
-	case "pipeline-error-mistral-403-model-access-denied":
-		return CallEndedReasonPipelineErrorMistral403ModelAccessDenied, nil
-	case "pipeline-error-mistral-429-exceeded-quota":
-		return CallEndedReasonPipelineErrorMistral429ExceededQuota, nil
-	case "pipeline-error-mistral-500-server-error":
-		return CallEndedReasonPipelineErrorMistral500ServerError, nil
-	case "pipeline-error-inflection-ai-400-bad-request-validation-failed":
-		return CallEndedReasonPipelineErrorInflectionAi400BadRequestValidationFailed, nil
-	case "pipeline-error-inflection-ai-401-unauthorized":
-		return CallEndedReasonPipelineErrorInflectionAi401Unauthorized, nil
-	case "pipeline-error-inflection-ai-403-model-access-denied":
-		return CallEndedReasonPipelineErrorInflectionAi403ModelAccessDenied, nil
-	case "pipeline-error-inflection-ai-429-exceeded-quota":
-		return CallEndedReasonPipelineErrorInflectionAi429ExceededQuota, nil
-	case "pipeline-error-inflection-ai-500-server-error":
-		return CallEndedReasonPipelineErrorInflectionAi500ServerError, nil
-	case "pipeline-error-deep-seek-400-bad-request-validation-failed":
-		return CallEndedReasonPipelineErrorDeepSeek400BadRequestValidationFailed, nil
-	case "pipeline-error-deep-seek-401-unauthorized":
-		return CallEndedReasonPipelineErrorDeepSeek401Unauthorized, nil
-	case "pipeline-error-deep-seek-403-model-access-denied":
-		return CallEndedReasonPipelineErrorDeepSeek403ModelAccessDenied, nil
-	case "pipeline-error-deep-seek-429-exceeded-quota":
-		return CallEndedReasonPipelineErrorDeepSeek429ExceededQuota, nil
-	case "pipeline-error-deep-seek-500-server-error":
-		return CallEndedReasonPipelineErrorDeepSeek500ServerError, nil
+	case "pipeline-error-openai-503-server-overloaded-error":
+		return CallEndedReasonPipelineErrorOpenai503ServerOverloadedError, nil
+	case "pipeline-error-openai-llm-failed":
+		return CallEndedReasonPipelineErrorOpenaiLlmFailed, nil
+	case "call.in-progress.error-vapifault-openai-400-bad-request-validation-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultOpenai400BadRequestValidationFailed, nil
+	case "call.in-progress.error-vapifault-openai-401-unauthorized":
+		return CallEndedReasonCallInProgressErrorVapifaultOpenai401Unauthorized, nil
+	case "call.in-progress.error-vapifault-openai-401-incorrect-api-key":
+		return CallEndedReasonCallInProgressErrorVapifaultOpenai401IncorrectApiKey, nil
+	case "call.in-progress.error-vapifault-openai-401-account-not-in-organization":
+		return CallEndedReasonCallInProgressErrorVapifaultOpenai401AccountNotInOrganization, nil
+	case "call.in-progress.error-vapifault-openai-403-model-access-denied":
+		return CallEndedReasonCallInProgressErrorVapifaultOpenai403ModelAccessDenied, nil
+	case "call.in-progress.error-vapifault-openai-429-exceeded-quota":
+		return CallEndedReasonCallInProgressErrorVapifaultOpenai429ExceededQuota, nil
+	case "call.in-progress.error-vapifault-openai-429-rate-limit-reached":
+		return CallEndedReasonCallInProgressErrorVapifaultOpenai429RateLimitReached, nil
+	case "call.in-progress.error-providerfault-openai-500-server-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultOpenai500ServerError, nil
+	case "call.in-progress.error-providerfault-openai-503-server-overloaded-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultOpenai503ServerOverloadedError, nil
 	case "pipeline-error-azure-openai-400-bad-request-validation-failed":
 		return CallEndedReasonPipelineErrorAzureOpenai400BadRequestValidationFailed, nil
 	case "pipeline-error-azure-openai-401-unauthorized":
@@ -1402,6 +1862,152 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonPipelineErrorAzureOpenai429ExceededQuota, nil
 	case "pipeline-error-azure-openai-500-server-error":
 		return CallEndedReasonPipelineErrorAzureOpenai500ServerError, nil
+	case "pipeline-error-azure-openai-503-server-overloaded-error":
+		return CallEndedReasonPipelineErrorAzureOpenai503ServerOverloadedError, nil
+	case "pipeline-error-azure-openai-llm-failed":
+		return CallEndedReasonPipelineErrorAzureOpenaiLlmFailed, nil
+	case "call.in-progress.error-vapifault-azure-openai-400-bad-request-validation-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultAzureOpenai400BadRequestValidationFailed, nil
+	case "call.in-progress.error-vapifault-azure-openai-401-unauthorized":
+		return CallEndedReasonCallInProgressErrorVapifaultAzureOpenai401Unauthorized, nil
+	case "call.in-progress.error-vapifault-azure-openai-403-model-access-denied":
+		return CallEndedReasonCallInProgressErrorVapifaultAzureOpenai403ModelAccessDenied, nil
+	case "call.in-progress.error-vapifault-azure-openai-429-exceeded-quota":
+		return CallEndedReasonCallInProgressErrorVapifaultAzureOpenai429ExceededQuota, nil
+	case "call.in-progress.error-providerfault-azure-openai-500-server-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultAzureOpenai500ServerError, nil
+	case "call.in-progress.error-providerfault-azure-openai-503-server-overloaded-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultAzureOpenai503ServerOverloadedError, nil
+	case "pipeline-error-google-400-bad-request-validation-failed":
+		return CallEndedReasonPipelineErrorGoogle400BadRequestValidationFailed, nil
+	case "pipeline-error-google-401-unauthorized":
+		return CallEndedReasonPipelineErrorGoogle401Unauthorized, nil
+	case "pipeline-error-google-403-model-access-denied":
+		return CallEndedReasonPipelineErrorGoogle403ModelAccessDenied, nil
+	case "pipeline-error-google-429-exceeded-quota":
+		return CallEndedReasonPipelineErrorGoogle429ExceededQuota, nil
+	case "pipeline-error-google-500-server-error":
+		return CallEndedReasonPipelineErrorGoogle500ServerError, nil
+	case "pipeline-error-google-503-server-overloaded-error":
+		return CallEndedReasonPipelineErrorGoogle503ServerOverloadedError, nil
+	case "pipeline-error-google-llm-failed":
+		return CallEndedReasonPipelineErrorGoogleLlmFailed, nil
+	case "call.in-progress.error-vapifault-google-400-bad-request-validation-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultGoogle400BadRequestValidationFailed, nil
+	case "call.in-progress.error-vapifault-google-401-unauthorized":
+		return CallEndedReasonCallInProgressErrorVapifaultGoogle401Unauthorized, nil
+	case "call.in-progress.error-vapifault-google-403-model-access-denied":
+		return CallEndedReasonCallInProgressErrorVapifaultGoogle403ModelAccessDenied, nil
+	case "call.in-progress.error-vapifault-google-429-exceeded-quota":
+		return CallEndedReasonCallInProgressErrorVapifaultGoogle429ExceededQuota, nil
+	case "call.in-progress.error-providerfault-google-500-server-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultGoogle500ServerError, nil
+	case "call.in-progress.error-providerfault-google-503-server-overloaded-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultGoogle503ServerOverloadedError, nil
+	case "pipeline-error-xai-400-bad-request-validation-failed":
+		return CallEndedReasonPipelineErrorXai400BadRequestValidationFailed, nil
+	case "pipeline-error-xai-401-unauthorized":
+		return CallEndedReasonPipelineErrorXai401Unauthorized, nil
+	case "pipeline-error-xai-403-model-access-denied":
+		return CallEndedReasonPipelineErrorXai403ModelAccessDenied, nil
+	case "pipeline-error-xai-429-exceeded-quota":
+		return CallEndedReasonPipelineErrorXai429ExceededQuota, nil
+	case "pipeline-error-xai-500-server-error":
+		return CallEndedReasonPipelineErrorXai500ServerError, nil
+	case "pipeline-error-xai-503-server-overloaded-error":
+		return CallEndedReasonPipelineErrorXai503ServerOverloadedError, nil
+	case "pipeline-error-xai-llm-failed":
+		return CallEndedReasonPipelineErrorXaiLlmFailed, nil
+	case "call.in-progress.error-vapifault-xai-400-bad-request-validation-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultXai400BadRequestValidationFailed, nil
+	case "call.in-progress.error-vapifault-xai-401-unauthorized":
+		return CallEndedReasonCallInProgressErrorVapifaultXai401Unauthorized, nil
+	case "call.in-progress.error-vapifault-xai-403-model-access-denied":
+		return CallEndedReasonCallInProgressErrorVapifaultXai403ModelAccessDenied, nil
+	case "call.in-progress.error-vapifault-xai-429-exceeded-quota":
+		return CallEndedReasonCallInProgressErrorVapifaultXai429ExceededQuota, nil
+	case "call.in-progress.error-providerfault-xai-500-server-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultXai500ServerError, nil
+	case "call.in-progress.error-providerfault-xai-503-server-overloaded-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultXai503ServerOverloadedError, nil
+	case "pipeline-error-mistral-400-bad-request-validation-failed":
+		return CallEndedReasonPipelineErrorMistral400BadRequestValidationFailed, nil
+	case "pipeline-error-mistral-401-unauthorized":
+		return CallEndedReasonPipelineErrorMistral401Unauthorized, nil
+	case "pipeline-error-mistral-403-model-access-denied":
+		return CallEndedReasonPipelineErrorMistral403ModelAccessDenied, nil
+	case "pipeline-error-mistral-429-exceeded-quota":
+		return CallEndedReasonPipelineErrorMistral429ExceededQuota, nil
+	case "pipeline-error-mistral-500-server-error":
+		return CallEndedReasonPipelineErrorMistral500ServerError, nil
+	case "pipeline-error-mistral-503-server-overloaded-error":
+		return CallEndedReasonPipelineErrorMistral503ServerOverloadedError, nil
+	case "pipeline-error-mistral-llm-failed":
+		return CallEndedReasonPipelineErrorMistralLlmFailed, nil
+	case "call.in-progress.error-vapifault-mistral-400-bad-request-validation-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultMistral400BadRequestValidationFailed, nil
+	case "call.in-progress.error-vapifault-mistral-401-unauthorized":
+		return CallEndedReasonCallInProgressErrorVapifaultMistral401Unauthorized, nil
+	case "call.in-progress.error-vapifault-mistral-403-model-access-denied":
+		return CallEndedReasonCallInProgressErrorVapifaultMistral403ModelAccessDenied, nil
+	case "call.in-progress.error-vapifault-mistral-429-exceeded-quota":
+		return CallEndedReasonCallInProgressErrorVapifaultMistral429ExceededQuota, nil
+	case "call.in-progress.error-providerfault-mistral-500-server-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultMistral500ServerError, nil
+	case "call.in-progress.error-providerfault-mistral-503-server-overloaded-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultMistral503ServerOverloadedError, nil
+	case "pipeline-error-inflection-ai-400-bad-request-validation-failed":
+		return CallEndedReasonPipelineErrorInflectionAi400BadRequestValidationFailed, nil
+	case "pipeline-error-inflection-ai-401-unauthorized":
+		return CallEndedReasonPipelineErrorInflectionAi401Unauthorized, nil
+	case "pipeline-error-inflection-ai-403-model-access-denied":
+		return CallEndedReasonPipelineErrorInflectionAi403ModelAccessDenied, nil
+	case "pipeline-error-inflection-ai-429-exceeded-quota":
+		return CallEndedReasonPipelineErrorInflectionAi429ExceededQuota, nil
+	case "pipeline-error-inflection-ai-500-server-error":
+		return CallEndedReasonPipelineErrorInflectionAi500ServerError, nil
+	case "pipeline-error-inflection-ai-503-server-overloaded-error":
+		return CallEndedReasonPipelineErrorInflectionAi503ServerOverloadedError, nil
+	case "pipeline-error-inflection-ai-llm-failed":
+		return CallEndedReasonPipelineErrorInflectionAiLlmFailed, nil
+	case "call.in-progress.error-vapifault-inflection-ai-400-bad-request-validation-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultInflectionAi400BadRequestValidationFailed, nil
+	case "call.in-progress.error-vapifault-inflection-ai-401-unauthorized":
+		return CallEndedReasonCallInProgressErrorVapifaultInflectionAi401Unauthorized, nil
+	case "call.in-progress.error-vapifault-inflection-ai-403-model-access-denied":
+		return CallEndedReasonCallInProgressErrorVapifaultInflectionAi403ModelAccessDenied, nil
+	case "call.in-progress.error-vapifault-inflection-ai-429-exceeded-quota":
+		return CallEndedReasonCallInProgressErrorVapifaultInflectionAi429ExceededQuota, nil
+	case "call.in-progress.error-providerfault-inflection-ai-500-server-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultInflectionAi500ServerError, nil
+	case "call.in-progress.error-providerfault-inflection-ai-503-server-overloaded-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultInflectionAi503ServerOverloadedError, nil
+	case "pipeline-error-deep-seek-400-bad-request-validation-failed":
+		return CallEndedReasonPipelineErrorDeepSeek400BadRequestValidationFailed, nil
+	case "pipeline-error-deep-seek-401-unauthorized":
+		return CallEndedReasonPipelineErrorDeepSeek401Unauthorized, nil
+	case "pipeline-error-deep-seek-403-model-access-denied":
+		return CallEndedReasonPipelineErrorDeepSeek403ModelAccessDenied, nil
+	case "pipeline-error-deep-seek-429-exceeded-quota":
+		return CallEndedReasonPipelineErrorDeepSeek429ExceededQuota, nil
+	case "pipeline-error-deep-seek-500-server-error":
+		return CallEndedReasonPipelineErrorDeepSeek500ServerError, nil
+	case "pipeline-error-deep-seek-503-server-overloaded-error":
+		return CallEndedReasonPipelineErrorDeepSeek503ServerOverloadedError, nil
+	case "pipeline-error-deep-seek-llm-failed":
+		return CallEndedReasonPipelineErrorDeepSeekLlmFailed, nil
+	case "call.in-progress.error-vapifault-deep-seek-400-bad-request-validation-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultDeepSeek400BadRequestValidationFailed, nil
+	case "call.in-progress.error-vapifault-deep-seek-401-unauthorized":
+		return CallEndedReasonCallInProgressErrorVapifaultDeepSeek401Unauthorized, nil
+	case "call.in-progress.error-vapifault-deep-seek-403-model-access-denied":
+		return CallEndedReasonCallInProgressErrorVapifaultDeepSeek403ModelAccessDenied, nil
+	case "call.in-progress.error-vapifault-deep-seek-429-exceeded-quota":
+		return CallEndedReasonCallInProgressErrorVapifaultDeepSeek429ExceededQuota, nil
+	case "call.in-progress.error-providerfault-deep-seek-500-server-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultDeepSeek500ServerError, nil
+	case "call.in-progress.error-providerfault-deep-seek-503-server-overloaded-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultDeepSeek503ServerOverloadedError, nil
 	case "pipeline-error-groq-400-bad-request-validation-failed":
 		return CallEndedReasonPipelineErrorGroq400BadRequestValidationFailed, nil
 	case "pipeline-error-groq-401-unauthorized":
@@ -1412,6 +2018,22 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonPipelineErrorGroq429ExceededQuota, nil
 	case "pipeline-error-groq-500-server-error":
 		return CallEndedReasonPipelineErrorGroq500ServerError, nil
+	case "pipeline-error-groq-503-server-overloaded-error":
+		return CallEndedReasonPipelineErrorGroq503ServerOverloadedError, nil
+	case "pipeline-error-groq-llm-failed":
+		return CallEndedReasonPipelineErrorGroqLlmFailed, nil
+	case "call.in-progress.error-vapifault-groq-400-bad-request-validation-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultGroq400BadRequestValidationFailed, nil
+	case "call.in-progress.error-vapifault-groq-401-unauthorized":
+		return CallEndedReasonCallInProgressErrorVapifaultGroq401Unauthorized, nil
+	case "call.in-progress.error-vapifault-groq-403-model-access-denied":
+		return CallEndedReasonCallInProgressErrorVapifaultGroq403ModelAccessDenied, nil
+	case "call.in-progress.error-vapifault-groq-429-exceeded-quota":
+		return CallEndedReasonCallInProgressErrorVapifaultGroq429ExceededQuota, nil
+	case "call.in-progress.error-providerfault-groq-500-server-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultGroq500ServerError, nil
+	case "call.in-progress.error-providerfault-groq-503-server-overloaded-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultGroq503ServerOverloadedError, nil
 	case "pipeline-error-cerebras-400-bad-request-validation-failed":
 		return CallEndedReasonPipelineErrorCerebras400BadRequestValidationFailed, nil
 	case "pipeline-error-cerebras-401-unauthorized":
@@ -1422,6 +2044,22 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonPipelineErrorCerebras429ExceededQuota, nil
 	case "pipeline-error-cerebras-500-server-error":
 		return CallEndedReasonPipelineErrorCerebras500ServerError, nil
+	case "pipeline-error-cerebras-503-server-overloaded-error":
+		return CallEndedReasonPipelineErrorCerebras503ServerOverloadedError, nil
+	case "pipeline-error-cerebras-llm-failed":
+		return CallEndedReasonPipelineErrorCerebrasLlmFailed, nil
+	case "call.in-progress.error-vapifault-cerebras-400-bad-request-validation-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultCerebras400BadRequestValidationFailed, nil
+	case "call.in-progress.error-vapifault-cerebras-401-unauthorized":
+		return CallEndedReasonCallInProgressErrorVapifaultCerebras401Unauthorized, nil
+	case "call.in-progress.error-vapifault-cerebras-403-model-access-denied":
+		return CallEndedReasonCallInProgressErrorVapifaultCerebras403ModelAccessDenied, nil
+	case "call.in-progress.error-vapifault-cerebras-429-exceeded-quota":
+		return CallEndedReasonCallInProgressErrorVapifaultCerebras429ExceededQuota, nil
+	case "call.in-progress.error-providerfault-cerebras-500-server-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultCerebras500ServerError, nil
+	case "call.in-progress.error-providerfault-cerebras-503-server-overloaded-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultCerebras503ServerOverloadedError, nil
 	case "pipeline-error-anthropic-400-bad-request-validation-failed":
 		return CallEndedReasonPipelineErrorAnthropic400BadRequestValidationFailed, nil
 	case "pipeline-error-anthropic-401-unauthorized":
@@ -1432,8 +2070,80 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonPipelineErrorAnthropic429ExceededQuota, nil
 	case "pipeline-error-anthropic-500-server-error":
 		return CallEndedReasonPipelineErrorAnthropic500ServerError, nil
+	case "pipeline-error-anthropic-503-server-overloaded-error":
+		return CallEndedReasonPipelineErrorAnthropic503ServerOverloadedError, nil
 	case "pipeline-error-anthropic-llm-failed":
 		return CallEndedReasonPipelineErrorAnthropicLlmFailed, nil
+	case "call.in-progress.error-vapifault-anthropic-llm-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultAnthropicLlmFailed, nil
+	case "call.in-progress.error-vapifault-anthropic-400-bad-request-validation-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultAnthropic400BadRequestValidationFailed, nil
+	case "call.in-progress.error-vapifault-anthropic-401-unauthorized":
+		return CallEndedReasonCallInProgressErrorVapifaultAnthropic401Unauthorized, nil
+	case "call.in-progress.error-vapifault-anthropic-403-model-access-denied":
+		return CallEndedReasonCallInProgressErrorVapifaultAnthropic403ModelAccessDenied, nil
+	case "call.in-progress.error-vapifault-anthropic-429-exceeded-quota":
+		return CallEndedReasonCallInProgressErrorVapifaultAnthropic429ExceededQuota, nil
+	case "call.in-progress.error-providerfault-anthropic-500-server-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultAnthropic500ServerError, nil
+	case "call.in-progress.error-providerfault-anthropic-503-server-overloaded-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultAnthropic503ServerOverloadedError, nil
+	case "pipeline-error-anthropic-bedrock-400-bad-request-validation-failed":
+		return CallEndedReasonPipelineErrorAnthropicBedrock400BadRequestValidationFailed, nil
+	case "pipeline-error-anthropic-bedrock-401-unauthorized":
+		return CallEndedReasonPipelineErrorAnthropicBedrock401Unauthorized, nil
+	case "pipeline-error-anthropic-bedrock-403-model-access-denied":
+		return CallEndedReasonPipelineErrorAnthropicBedrock403ModelAccessDenied, nil
+	case "pipeline-error-anthropic-bedrock-429-exceeded-quota":
+		return CallEndedReasonPipelineErrorAnthropicBedrock429ExceededQuota, nil
+	case "pipeline-error-anthropic-bedrock-500-server-error":
+		return CallEndedReasonPipelineErrorAnthropicBedrock500ServerError, nil
+	case "pipeline-error-anthropic-bedrock-503-server-overloaded-error":
+		return CallEndedReasonPipelineErrorAnthropicBedrock503ServerOverloadedError, nil
+	case "pipeline-error-anthropic-bedrock-llm-failed":
+		return CallEndedReasonPipelineErrorAnthropicBedrockLlmFailed, nil
+	case "call.in-progress.error-vapifault-anthropic-bedrock-llm-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultAnthropicBedrockLlmFailed, nil
+	case "call.in-progress.error-vapifault-anthropic-bedrock-400-bad-request-validation-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultAnthropicBedrock400BadRequestValidationFailed, nil
+	case "call.in-progress.error-vapifault-anthropic-bedrock-401-unauthorized":
+		return CallEndedReasonCallInProgressErrorVapifaultAnthropicBedrock401Unauthorized, nil
+	case "call.in-progress.error-vapifault-anthropic-bedrock-403-model-access-denied":
+		return CallEndedReasonCallInProgressErrorVapifaultAnthropicBedrock403ModelAccessDenied, nil
+	case "call.in-progress.error-vapifault-anthropic-bedrock-429-exceeded-quota":
+		return CallEndedReasonCallInProgressErrorVapifaultAnthropicBedrock429ExceededQuota, nil
+	case "call.in-progress.error-providerfault-anthropic-bedrock-500-server-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultAnthropicBedrock500ServerError, nil
+	case "call.in-progress.error-providerfault-anthropic-bedrock-503-server-overloaded-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultAnthropicBedrock503ServerOverloadedError, nil
+	case "pipeline-error-anthropic-vertex-400-bad-request-validation-failed":
+		return CallEndedReasonPipelineErrorAnthropicVertex400BadRequestValidationFailed, nil
+	case "pipeline-error-anthropic-vertex-401-unauthorized":
+		return CallEndedReasonPipelineErrorAnthropicVertex401Unauthorized, nil
+	case "pipeline-error-anthropic-vertex-403-model-access-denied":
+		return CallEndedReasonPipelineErrorAnthropicVertex403ModelAccessDenied, nil
+	case "pipeline-error-anthropic-vertex-429-exceeded-quota":
+		return CallEndedReasonPipelineErrorAnthropicVertex429ExceededQuota, nil
+	case "pipeline-error-anthropic-vertex-500-server-error":
+		return CallEndedReasonPipelineErrorAnthropicVertex500ServerError, nil
+	case "pipeline-error-anthropic-vertex-503-server-overloaded-error":
+		return CallEndedReasonPipelineErrorAnthropicVertex503ServerOverloadedError, nil
+	case "pipeline-error-anthropic-vertex-llm-failed":
+		return CallEndedReasonPipelineErrorAnthropicVertexLlmFailed, nil
+	case "call.in-progress.error-vapifault-anthropic-vertex-llm-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultAnthropicVertexLlmFailed, nil
+	case "call.in-progress.error-vapifault-anthropic-vertex-400-bad-request-validation-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultAnthropicVertex400BadRequestValidationFailed, nil
+	case "call.in-progress.error-vapifault-anthropic-vertex-401-unauthorized":
+		return CallEndedReasonCallInProgressErrorVapifaultAnthropicVertex401Unauthorized, nil
+	case "call.in-progress.error-vapifault-anthropic-vertex-403-model-access-denied":
+		return CallEndedReasonCallInProgressErrorVapifaultAnthropicVertex403ModelAccessDenied, nil
+	case "call.in-progress.error-vapifault-anthropic-vertex-429-exceeded-quota":
+		return CallEndedReasonCallInProgressErrorVapifaultAnthropicVertex429ExceededQuota, nil
+	case "call.in-progress.error-providerfault-anthropic-vertex-500-server-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultAnthropicVertex500ServerError, nil
+	case "call.in-progress.error-providerfault-anthropic-vertex-503-server-overloaded-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultAnthropicVertex503ServerOverloadedError, nil
 	case "pipeline-error-together-ai-400-bad-request-validation-failed":
 		return CallEndedReasonPipelineErrorTogetherAi400BadRequestValidationFailed, nil
 	case "pipeline-error-together-ai-401-unauthorized":
@@ -1444,8 +2154,24 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonPipelineErrorTogetherAi429ExceededQuota, nil
 	case "pipeline-error-together-ai-500-server-error":
 		return CallEndedReasonPipelineErrorTogetherAi500ServerError, nil
+	case "pipeline-error-together-ai-503-server-overloaded-error":
+		return CallEndedReasonPipelineErrorTogetherAi503ServerOverloadedError, nil
 	case "pipeline-error-together-ai-llm-failed":
 		return CallEndedReasonPipelineErrorTogetherAiLlmFailed, nil
+	case "call.in-progress.error-vapifault-together-ai-llm-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultTogetherAiLlmFailed, nil
+	case "call.in-progress.error-vapifault-together-ai-400-bad-request-validation-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultTogetherAi400BadRequestValidationFailed, nil
+	case "call.in-progress.error-vapifault-together-ai-401-unauthorized":
+		return CallEndedReasonCallInProgressErrorVapifaultTogetherAi401Unauthorized, nil
+	case "call.in-progress.error-vapifault-together-ai-403-model-access-denied":
+		return CallEndedReasonCallInProgressErrorVapifaultTogetherAi403ModelAccessDenied, nil
+	case "call.in-progress.error-vapifault-together-ai-429-exceeded-quota":
+		return CallEndedReasonCallInProgressErrorVapifaultTogetherAi429ExceededQuota, nil
+	case "call.in-progress.error-providerfault-together-ai-500-server-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultTogetherAi500ServerError, nil
+	case "call.in-progress.error-providerfault-together-ai-503-server-overloaded-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultTogetherAi503ServerOverloadedError, nil
 	case "pipeline-error-anyscale-400-bad-request-validation-failed":
 		return CallEndedReasonPipelineErrorAnyscale400BadRequestValidationFailed, nil
 	case "pipeline-error-anyscale-401-unauthorized":
@@ -1456,8 +2182,24 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonPipelineErrorAnyscale429ExceededQuota, nil
 	case "pipeline-error-anyscale-500-server-error":
 		return CallEndedReasonPipelineErrorAnyscale500ServerError, nil
+	case "pipeline-error-anyscale-503-server-overloaded-error":
+		return CallEndedReasonPipelineErrorAnyscale503ServerOverloadedError, nil
 	case "pipeline-error-anyscale-llm-failed":
 		return CallEndedReasonPipelineErrorAnyscaleLlmFailed, nil
+	case "call.in-progress.error-vapifault-anyscale-llm-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultAnyscaleLlmFailed, nil
+	case "call.in-progress.error-vapifault-anyscale-400-bad-request-validation-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultAnyscale400BadRequestValidationFailed, nil
+	case "call.in-progress.error-vapifault-anyscale-401-unauthorized":
+		return CallEndedReasonCallInProgressErrorVapifaultAnyscale401Unauthorized, nil
+	case "call.in-progress.error-vapifault-anyscale-403-model-access-denied":
+		return CallEndedReasonCallInProgressErrorVapifaultAnyscale403ModelAccessDenied, nil
+	case "call.in-progress.error-vapifault-anyscale-429-exceeded-quota":
+		return CallEndedReasonCallInProgressErrorVapifaultAnyscale429ExceededQuota, nil
+	case "call.in-progress.error-providerfault-anyscale-500-server-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultAnyscale500ServerError, nil
+	case "call.in-progress.error-providerfault-anyscale-503-server-overloaded-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultAnyscale503ServerOverloadedError, nil
 	case "pipeline-error-openrouter-400-bad-request-validation-failed":
 		return CallEndedReasonPipelineErrorOpenrouter400BadRequestValidationFailed, nil
 	case "pipeline-error-openrouter-401-unauthorized":
@@ -1468,8 +2210,24 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonPipelineErrorOpenrouter429ExceededQuota, nil
 	case "pipeline-error-openrouter-500-server-error":
 		return CallEndedReasonPipelineErrorOpenrouter500ServerError, nil
+	case "pipeline-error-openrouter-503-server-overloaded-error":
+		return CallEndedReasonPipelineErrorOpenrouter503ServerOverloadedError, nil
 	case "pipeline-error-openrouter-llm-failed":
 		return CallEndedReasonPipelineErrorOpenrouterLlmFailed, nil
+	case "call.in-progress.error-vapifault-openrouter-llm-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultOpenrouterLlmFailed, nil
+	case "call.in-progress.error-vapifault-openrouter-400-bad-request-validation-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultOpenrouter400BadRequestValidationFailed, nil
+	case "call.in-progress.error-vapifault-openrouter-401-unauthorized":
+		return CallEndedReasonCallInProgressErrorVapifaultOpenrouter401Unauthorized, nil
+	case "call.in-progress.error-vapifault-openrouter-403-model-access-denied":
+		return CallEndedReasonCallInProgressErrorVapifaultOpenrouter403ModelAccessDenied, nil
+	case "call.in-progress.error-vapifault-openrouter-429-exceeded-quota":
+		return CallEndedReasonCallInProgressErrorVapifaultOpenrouter429ExceededQuota, nil
+	case "call.in-progress.error-providerfault-openrouter-500-server-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultOpenrouter500ServerError, nil
+	case "call.in-progress.error-providerfault-openrouter-503-server-overloaded-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultOpenrouter503ServerOverloadedError, nil
 	case "pipeline-error-perplexity-ai-400-bad-request-validation-failed":
 		return CallEndedReasonPipelineErrorPerplexityAi400BadRequestValidationFailed, nil
 	case "pipeline-error-perplexity-ai-401-unauthorized":
@@ -1480,8 +2238,24 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonPipelineErrorPerplexityAi429ExceededQuota, nil
 	case "pipeline-error-perplexity-ai-500-server-error":
 		return CallEndedReasonPipelineErrorPerplexityAi500ServerError, nil
+	case "pipeline-error-perplexity-ai-503-server-overloaded-error":
+		return CallEndedReasonPipelineErrorPerplexityAi503ServerOverloadedError, nil
 	case "pipeline-error-perplexity-ai-llm-failed":
 		return CallEndedReasonPipelineErrorPerplexityAiLlmFailed, nil
+	case "call.in-progress.error-vapifault-perplexity-ai-llm-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultPerplexityAiLlmFailed, nil
+	case "call.in-progress.error-vapifault-perplexity-ai-400-bad-request-validation-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultPerplexityAi400BadRequestValidationFailed, nil
+	case "call.in-progress.error-vapifault-perplexity-ai-401-unauthorized":
+		return CallEndedReasonCallInProgressErrorVapifaultPerplexityAi401Unauthorized, nil
+	case "call.in-progress.error-vapifault-perplexity-ai-403-model-access-denied":
+		return CallEndedReasonCallInProgressErrorVapifaultPerplexityAi403ModelAccessDenied, nil
+	case "call.in-progress.error-vapifault-perplexity-ai-429-exceeded-quota":
+		return CallEndedReasonCallInProgressErrorVapifaultPerplexityAi429ExceededQuota, nil
+	case "call.in-progress.error-providerfault-perplexity-ai-500-server-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultPerplexityAi500ServerError, nil
+	case "call.in-progress.error-providerfault-perplexity-ai-503-server-overloaded-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultPerplexityAi503ServerOverloadedError, nil
 	case "pipeline-error-deepinfra-400-bad-request-validation-failed":
 		return CallEndedReasonPipelineErrorDeepinfra400BadRequestValidationFailed, nil
 	case "pipeline-error-deepinfra-401-unauthorized":
@@ -1492,8 +2266,24 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonPipelineErrorDeepinfra429ExceededQuota, nil
 	case "pipeline-error-deepinfra-500-server-error":
 		return CallEndedReasonPipelineErrorDeepinfra500ServerError, nil
+	case "pipeline-error-deepinfra-503-server-overloaded-error":
+		return CallEndedReasonPipelineErrorDeepinfra503ServerOverloadedError, nil
 	case "pipeline-error-deepinfra-llm-failed":
 		return CallEndedReasonPipelineErrorDeepinfraLlmFailed, nil
+	case "call.in-progress.error-vapifault-deepinfra-llm-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultDeepinfraLlmFailed, nil
+	case "call.in-progress.error-vapifault-deepinfra-400-bad-request-validation-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultDeepinfra400BadRequestValidationFailed, nil
+	case "call.in-progress.error-vapifault-deepinfra-401-unauthorized":
+		return CallEndedReasonCallInProgressErrorVapifaultDeepinfra401Unauthorized, nil
+	case "call.in-progress.error-vapifault-deepinfra-403-model-access-denied":
+		return CallEndedReasonCallInProgressErrorVapifaultDeepinfra403ModelAccessDenied, nil
+	case "call.in-progress.error-vapifault-deepinfra-429-exceeded-quota":
+		return CallEndedReasonCallInProgressErrorVapifaultDeepinfra429ExceededQuota, nil
+	case "call.in-progress.error-providerfault-deepinfra-500-server-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultDeepinfra500ServerError, nil
+	case "call.in-progress.error-providerfault-deepinfra-503-server-overloaded-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultDeepinfra503ServerOverloadedError, nil
 	case "pipeline-error-runpod-400-bad-request-validation-failed":
 		return CallEndedReasonPipelineErrorRunpod400BadRequestValidationFailed, nil
 	case "pipeline-error-runpod-401-unauthorized":
@@ -1504,8 +2294,24 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonPipelineErrorRunpod429ExceededQuota, nil
 	case "pipeline-error-runpod-500-server-error":
 		return CallEndedReasonPipelineErrorRunpod500ServerError, nil
+	case "pipeline-error-runpod-503-server-overloaded-error":
+		return CallEndedReasonPipelineErrorRunpod503ServerOverloadedError, nil
 	case "pipeline-error-runpod-llm-failed":
 		return CallEndedReasonPipelineErrorRunpodLlmFailed, nil
+	case "call.in-progress.error-vapifault-runpod-llm-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultRunpodLlmFailed, nil
+	case "call.in-progress.error-vapifault-runpod-400-bad-request-validation-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultRunpod400BadRequestValidationFailed, nil
+	case "call.in-progress.error-vapifault-runpod-401-unauthorized":
+		return CallEndedReasonCallInProgressErrorVapifaultRunpod401Unauthorized, nil
+	case "call.in-progress.error-vapifault-runpod-403-model-access-denied":
+		return CallEndedReasonCallInProgressErrorVapifaultRunpod403ModelAccessDenied, nil
+	case "call.in-progress.error-vapifault-runpod-429-exceeded-quota":
+		return CallEndedReasonCallInProgressErrorVapifaultRunpod429ExceededQuota, nil
+	case "call.in-progress.error-providerfault-runpod-500-server-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultRunpod500ServerError, nil
+	case "call.in-progress.error-providerfault-runpod-503-server-overloaded-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultRunpod503ServerOverloadedError, nil
 	case "pipeline-error-custom-llm-400-bad-request-validation-failed":
 		return CallEndedReasonPipelineErrorCustomLlm400BadRequestValidationFailed, nil
 	case "pipeline-error-custom-llm-401-unauthorized":
@@ -1516,8 +2322,24 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonPipelineErrorCustomLlm429ExceededQuota, nil
 	case "pipeline-error-custom-llm-500-server-error":
 		return CallEndedReasonPipelineErrorCustomLlm500ServerError, nil
+	case "pipeline-error-custom-llm-503-server-overloaded-error":
+		return CallEndedReasonPipelineErrorCustomLlm503ServerOverloadedError, nil
 	case "pipeline-error-custom-llm-llm-failed":
 		return CallEndedReasonPipelineErrorCustomLlmLlmFailed, nil
+	case "call.in-progress.error-vapifault-custom-llm-llm-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultCustomLlmLlmFailed, nil
+	case "call.in-progress.error-vapifault-custom-llm-400-bad-request-validation-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultCustomLlm400BadRequestValidationFailed, nil
+	case "call.in-progress.error-vapifault-custom-llm-401-unauthorized":
+		return CallEndedReasonCallInProgressErrorVapifaultCustomLlm401Unauthorized, nil
+	case "call.in-progress.error-vapifault-custom-llm-403-model-access-denied":
+		return CallEndedReasonCallInProgressErrorVapifaultCustomLlm403ModelAccessDenied, nil
+	case "call.in-progress.error-vapifault-custom-llm-429-exceeded-quota":
+		return CallEndedReasonCallInProgressErrorVapifaultCustomLlm429ExceededQuota, nil
+	case "call.in-progress.error-providerfault-custom-llm-500-server-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultCustomLlm500ServerError, nil
+	case "call.in-progress.error-providerfault-custom-llm-503-server-overloaded-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultCustomLlm503ServerOverloadedError, nil
 	case "pipeline-error-custom-voice-failed":
 		return CallEndedReasonPipelineErrorCustomVoiceFailed, nil
 	case "pipeline-error-cartesia-socket-hang-up":
@@ -1530,6 +2352,16 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonPipelineErrorCartesia503ServerError, nil
 	case "pipeline-error-cartesia-522-server-error":
 		return CallEndedReasonPipelineErrorCartesia522ServerError, nil
+	case "call.in-progress.error-vapifault-cartesia-socket-hang-up":
+		return CallEndedReasonCallInProgressErrorVapifaultCartesiaSocketHangUp, nil
+	case "call.in-progress.error-vapifault-cartesia-requested-payment":
+		return CallEndedReasonCallInProgressErrorVapifaultCartesiaRequestedPayment, nil
+	case "call.in-progress.error-providerfault-cartesia-500-server-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultCartesia500ServerError, nil
+	case "call.in-progress.error-providerfault-cartesia-503-server-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultCartesia503ServerError, nil
+	case "call.in-progress.error-providerfault-cartesia-522-server-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultCartesia522ServerError, nil
 	case "pipeline-error-eleven-labs-voice-not-found":
 		return CallEndedReasonPipelineErrorElevenLabsVoiceNotFound, nil
 	case "pipeline-error-eleven-labs-quota-exceeded":
@@ -1566,12 +2398,54 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonPipelineErrorElevenLabsVoiceNotFineTunedAndCannotBeUsed, nil
 	case "pipeline-error-eleven-labs-voice-not-allowed-for-free-users":
 		return CallEndedReasonPipelineErrorElevenLabsVoiceNotAllowedForFreeUsers, nil
-	case "pipeline-error-eleven-labs-500-server-error":
-		return CallEndedReasonPipelineErrorElevenLabs500ServerError, nil
 	case "pipeline-error-eleven-labs-max-character-limit-exceeded":
 		return CallEndedReasonPipelineErrorElevenLabsMaxCharacterLimitExceeded, nil
 	case "pipeline-error-eleven-labs-blocked-voice-potentially-against-terms-of-service-and-awaiting-verification":
 		return CallEndedReasonPipelineErrorElevenLabsBlockedVoicePotentiallyAgainstTermsOfServiceAndAwaitingVerification, nil
+	case "pipeline-error-eleven-labs-500-server-error":
+		return CallEndedReasonPipelineErrorElevenLabs500ServerError, nil
+	case "call.in-progress.error-vapifault-eleven-labs-voice-not-found":
+		return CallEndedReasonCallInProgressErrorVapifaultElevenLabsVoiceNotFound, nil
+	case "call.in-progress.error-vapifault-eleven-labs-quota-exceeded":
+		return CallEndedReasonCallInProgressErrorVapifaultElevenLabsQuotaExceeded, nil
+	case "call.in-progress.error-vapifault-eleven-labs-unauthorized-access":
+		return CallEndedReasonCallInProgressErrorVapifaultElevenLabsUnauthorizedAccess, nil
+	case "call.in-progress.error-vapifault-eleven-labs-unauthorized-to-access-model":
+		return CallEndedReasonCallInProgressErrorVapifaultElevenLabsUnauthorizedToAccessModel, nil
+	case "call.in-progress.error-vapifault-eleven-labs-professional-voices-only-for-creator-plus":
+		return CallEndedReasonCallInProgressErrorVapifaultElevenLabsProfessionalVoicesOnlyForCreatorPlus, nil
+	case "call.in-progress.error-vapifault-eleven-labs-blocked-free-plan-and-requested-upgrade":
+		return CallEndedReasonCallInProgressErrorVapifaultElevenLabsBlockedFreePlanAndRequestedUpgrade, nil
+	case "call.in-progress.error-vapifault-eleven-labs-blocked-concurrent-requests-and-requested-upgrade":
+		return CallEndedReasonCallInProgressErrorVapifaultElevenLabsBlockedConcurrentRequestsAndRequestedUpgrade, nil
+	case "call.in-progress.error-vapifault-eleven-labs-blocked-using-instant-voice-clone-and-requested-upgrade":
+		return CallEndedReasonCallInProgressErrorVapifaultElevenLabsBlockedUsingInstantVoiceCloneAndRequestedUpgrade, nil
+	case "call.in-progress.error-vapifault-eleven-labs-system-busy-and-requested-upgrade":
+		return CallEndedReasonCallInProgressErrorVapifaultElevenLabsSystemBusyAndRequestedUpgrade, nil
+	case "call.in-progress.error-vapifault-eleven-labs-voice-not-fine-tuned":
+		return CallEndedReasonCallInProgressErrorVapifaultElevenLabsVoiceNotFineTuned, nil
+	case "call.in-progress.error-vapifault-eleven-labs-invalid-api-key":
+		return CallEndedReasonCallInProgressErrorVapifaultElevenLabsInvalidApiKey, nil
+	case "call.in-progress.error-vapifault-eleven-labs-invalid-voice-samples":
+		return CallEndedReasonCallInProgressErrorVapifaultElevenLabsInvalidVoiceSamples, nil
+	case "call.in-progress.error-vapifault-eleven-labs-voice-disabled-by-owner":
+		return CallEndedReasonCallInProgressErrorVapifaultElevenLabsVoiceDisabledByOwner, nil
+	case "call.in-progress.error-vapifault-eleven-labs-blocked-account-in-probation":
+		return CallEndedReasonCallInProgressErrorVapifaultElevenLabsBlockedAccountInProbation, nil
+	case "call.in-progress.error-vapifault-eleven-labs-blocked-content-against-their-policy":
+		return CallEndedReasonCallInProgressErrorVapifaultElevenLabsBlockedContentAgainstTheirPolicy, nil
+	case "call.in-progress.error-vapifault-eleven-labs-missing-samples-for-voice-clone":
+		return CallEndedReasonCallInProgressErrorVapifaultElevenLabsMissingSamplesForVoiceClone, nil
+	case "call.in-progress.error-vapifault-eleven-labs-voice-not-fine-tuned-and-cannot-be-used":
+		return CallEndedReasonCallInProgressErrorVapifaultElevenLabsVoiceNotFineTunedAndCannotBeUsed, nil
+	case "call.in-progress.error-vapifault-eleven-labs-voice-not-allowed-for-free-users":
+		return CallEndedReasonCallInProgressErrorVapifaultElevenLabsVoiceNotAllowedForFreeUsers, nil
+	case "call.in-progress.error-vapifault-eleven-labs-max-character-limit-exceeded":
+		return CallEndedReasonCallInProgressErrorVapifaultElevenLabsMaxCharacterLimitExceeded, nil
+	case "call.in-progress.error-vapifault-eleven-labs-blocked-voice-potentially-against-terms-of-service-and-awaiting-verification":
+		return CallEndedReasonCallInProgressErrorVapifaultElevenLabsBlockedVoicePotentiallyAgainstTermsOfServiceAndAwaitingVerification, nil
+	case "call.in-progress.error-providerfault-eleven-labs-500-server-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultElevenLabs500ServerError, nil
 	case "pipeline-error-playht-request-timed-out":
 		return CallEndedReasonPipelineErrorPlayhtRequestTimedOut, nil
 	case "pipeline-error-playht-invalid-voice":
@@ -1596,28 +2470,106 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonPipelineErrorPlayht502GatewayError, nil
 	case "pipeline-error-playht-504-gateway-error":
 		return CallEndedReasonPipelineErrorPlayht504GatewayError, nil
-	case "pipeline-error-tavus-video-failed":
-		return CallEndedReasonPipelineErrorTavusVideoFailed, nil
+	case "call.in-progress.error-vapifault-playht-request-timed-out":
+		return CallEndedReasonCallInProgressErrorVapifaultPlayhtRequestTimedOut, nil
+	case "call.in-progress.error-vapifault-playht-invalid-voice":
+		return CallEndedReasonCallInProgressErrorVapifaultPlayhtInvalidVoice, nil
+	case "call.in-progress.error-vapifault-playht-unexpected-error":
+		return CallEndedReasonCallInProgressErrorVapifaultPlayhtUnexpectedError, nil
+	case "call.in-progress.error-vapifault-playht-out-of-credits":
+		return CallEndedReasonCallInProgressErrorVapifaultPlayhtOutOfCredits, nil
+	case "call.in-progress.error-vapifault-playht-invalid-emotion":
+		return CallEndedReasonCallInProgressErrorVapifaultPlayhtInvalidEmotion, nil
+	case "call.in-progress.error-vapifault-playht-voice-must-be-a-valid-voice-manifest-uri":
+		return CallEndedReasonCallInProgressErrorVapifaultPlayhtVoiceMustBeAValidVoiceManifestUri, nil
+	case "call.in-progress.error-vapifault-playht-401-unauthorized":
+		return CallEndedReasonCallInProgressErrorVapifaultPlayht401Unauthorized, nil
+	case "call.in-progress.error-vapifault-playht-403-forbidden-out-of-characters":
+		return CallEndedReasonCallInProgressErrorVapifaultPlayht403ForbiddenOutOfCharacters, nil
+	case "call.in-progress.error-vapifault-playht-403-forbidden-api-access-not-available":
+		return CallEndedReasonCallInProgressErrorVapifaultPlayht403ForbiddenApiAccessNotAvailable, nil
+	case "call.in-progress.error-vapifault-playht-429-exceeded-quota":
+		return CallEndedReasonCallInProgressErrorVapifaultPlayht429ExceededQuota, nil
+	case "call.in-progress.error-providerfault-playht-502-gateway-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultPlayht502GatewayError, nil
+	case "call.in-progress.error-providerfault-playht-504-gateway-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultPlayht504GatewayError, nil
 	case "pipeline-error-custom-transcriber-failed":
 		return CallEndedReasonPipelineErrorCustomTranscriberFailed, nil
-	case "pipeline-error-deepgram-returning-403-model-access-denied":
-		return CallEndedReasonPipelineErrorDeepgramReturning403ModelAccessDenied, nil
-	case "pipeline-error-deepgram-returning-401-invalid-credentials":
-		return CallEndedReasonPipelineErrorDeepgramReturning401InvalidCredentials, nil
-	case "pipeline-error-deepgram-returning-404-not-found":
-		return CallEndedReasonPipelineErrorDeepgramReturning404NotFound, nil
+	case "call.in-progress.error-vapifault-custom-transcriber-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultCustomTranscriberFailed, nil
+	case "pipeline-error-eleven-labs-transcriber-failed":
+		return CallEndedReasonPipelineErrorElevenLabsTranscriberFailed, nil
+	case "call.in-progress.error-vapifault-eleven-labs-transcriber-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultElevenLabsTranscriberFailed, nil
 	case "pipeline-error-deepgram-returning-400-no-such-model-language-tier-combination":
 		return CallEndedReasonPipelineErrorDeepgramReturning400NoSuchModelLanguageTierCombination, nil
+	case "pipeline-error-deepgram-returning-401-invalid-credentials":
+		return CallEndedReasonPipelineErrorDeepgramReturning401InvalidCredentials, nil
+	case "pipeline-error-deepgram-returning-403-model-access-denied":
+		return CallEndedReasonPipelineErrorDeepgramReturning403ModelAccessDenied, nil
+	case "pipeline-error-deepgram-returning-404-not-found":
+		return CallEndedReasonPipelineErrorDeepgramReturning404NotFound, nil
 	case "pipeline-error-deepgram-returning-500-invalid-json":
 		return CallEndedReasonPipelineErrorDeepgramReturning500InvalidJson, nil
 	case "pipeline-error-deepgram-returning-502-network-error":
 		return CallEndedReasonPipelineErrorDeepgramReturning502NetworkError, nil
 	case "pipeline-error-deepgram-returning-502-bad-gateway-ehostunreach":
 		return CallEndedReasonPipelineErrorDeepgramReturning502BadGatewayEhostunreach, nil
+	case "call.in-progress.error-vapifault-deepgram-returning-400-no-such-model-language-tier-combination":
+		return CallEndedReasonCallInProgressErrorVapifaultDeepgramReturning400NoSuchModelLanguageTierCombination, nil
+	case "call.in-progress.error-vapifault-deepgram-returning-401-invalid-credentials":
+		return CallEndedReasonCallInProgressErrorVapifaultDeepgramReturning401InvalidCredentials, nil
+	case "call.in-progress.error-vapifault-deepgram-returning-404-not-found":
+		return CallEndedReasonCallInProgressErrorVapifaultDeepgramReturning404NotFound, nil
+	case "call.in-progress.error-vapifault-deepgram-returning-403-model-access-denied":
+		return CallEndedReasonCallInProgressErrorVapifaultDeepgramReturning403ModelAccessDenied, nil
+	case "call.in-progress.error-providerfault-deepgram-returning-500-invalid-json":
+		return CallEndedReasonCallInProgressErrorProviderfaultDeepgramReturning500InvalidJson, nil
+	case "call.in-progress.error-providerfault-deepgram-returning-502-network-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultDeepgramReturning502NetworkError, nil
+	case "call.in-progress.error-providerfault-deepgram-returning-502-bad-gateway-ehostunreach":
+		return CallEndedReasonCallInProgressErrorProviderfaultDeepgramReturning502BadGatewayEhostunreach, nil
+	case "pipeline-error-google-transcriber-failed":
+		return CallEndedReasonPipelineErrorGoogleTranscriberFailed, nil
+	case "call.in-progress.error-vapifault-google-transcriber-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultGoogleTranscriberFailed, nil
+	case "pipeline-error-openai-transcriber-failed":
+		return CallEndedReasonPipelineErrorOpenaiTranscriberFailed, nil
+	case "call.in-progress.error-vapifault-openai-transcriber-failed":
+		return CallEndedReasonCallInProgressErrorVapifaultOpenaiTranscriberFailed, nil
+	case "assistant-ended-call":
+		return CallEndedReasonAssistantEndedCall, nil
+	case "assistant-said-end-call-phrase":
+		return CallEndedReasonAssistantSaidEndCallPhrase, nil
+	case "assistant-ended-call-with-hangup-task":
+		return CallEndedReasonAssistantEndedCallWithHangupTask, nil
+	case "assistant-ended-call-after-message-spoken":
+		return CallEndedReasonAssistantEndedCallAfterMessageSpoken, nil
+	case "assistant-forwarded-call":
+		return CallEndedReasonAssistantForwardedCall, nil
+	case "assistant-join-timed-out":
+		return CallEndedReasonAssistantJoinTimedOut, nil
+	case "call.in-progress.error-assistant-did-not-receive-customer-audio":
+		return CallEndedReasonCallInProgressErrorAssistantDidNotReceiveCustomerAudio, nil
+	case "customer-busy":
+		return CallEndedReasonCustomerBusy, nil
+	case "customer-ended-call":
+		return CallEndedReasonCustomerEndedCall, nil
+	case "customer-did-not-answer":
+		return CallEndedReasonCustomerDidNotAnswer, nil
+	case "customer-did-not-give-microphone-permission":
+		return CallEndedReasonCustomerDidNotGiveMicrophonePermission, nil
+	case "exceeded-max-duration":
+		return CallEndedReasonExceededMaxDuration, nil
+	case "manually-canceled":
+		return CallEndedReasonManuallyCanceled, nil
+	case "phone-call-provider-closed-websocket":
+		return CallEndedReasonPhoneCallProviderClosedWebsocket, nil
 	case "silence-timed-out":
 		return CallEndedReasonSilenceTimedOut, nil
-	case "sip-gateway-failed-to-connect-call":
-		return CallEndedReasonSipGatewayFailedToConnectCall, nil
+	case "call.in-progress.error-sip-telephony-provider-failed-to-connect-call":
+		return CallEndedReasonCallInProgressErrorSipTelephonyProviderFailedToConnectCall, nil
 	case "twilio-failed-to-connect-call":
 		return CallEndedReasonTwilioFailedToConnectCall, nil
 	case "twilio-reported-customer-misdialed":
@@ -1769,6 +2721,7 @@ const (
 	CallPhoneCallProviderTwilio CallPhoneCallProvider = "twilio"
 	CallPhoneCallProviderVonage CallPhoneCallProvider = "vonage"
 	CallPhoneCallProviderVapi   CallPhoneCallProvider = "vapi"
+	CallPhoneCallProviderTelnyx CallPhoneCallProvider = "telnyx"
 )
 
 func NewCallPhoneCallProviderFromString(s string) (CallPhoneCallProvider, error) {
@@ -1779,6 +2732,8 @@ func NewCallPhoneCallProviderFromString(s string) (CallPhoneCallProvider, error)
 		return CallPhoneCallProviderVonage, nil
 	case "vapi":
 		return CallPhoneCallProviderVapi, nil
+	case "telnyx":
+		return CallPhoneCallProviderTelnyx, nil
 	}
 	var t CallPhoneCallProvider
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -1817,6 +2772,7 @@ func (c CallPhoneCallTransport) Ptr() *CallPhoneCallTransport {
 type CallStatus string
 
 const (
+	CallStatusScheduled  CallStatus = "scheduled"
 	CallStatusQueued     CallStatus = "queued"
 	CallStatusRinging    CallStatus = "ringing"
 	CallStatusInProgress CallStatus = "in-progress"
@@ -1826,6 +2782,8 @@ const (
 
 func NewCallStatusFromString(s string) (CallStatus, error) {
 	switch s {
+	case "scheduled":
+		return CallStatusScheduled, nil
 	case "queued":
 		return CallStatusQueued, nil
 	case "ringing":
@@ -1852,6 +2810,7 @@ const (
 	CallTypeInboundPhoneCall  CallType = "inboundPhoneCall"
 	CallTypeOutboundPhoneCall CallType = "outboundPhoneCall"
 	CallTypeWebCall           CallType = "webCall"
+	CallTypeVapiWebsocketCall CallType = "vapi.websocketCall"
 )
 
 func NewCallTypeFromString(s string) (CallType, error) {
@@ -1862,6 +2821,8 @@ func NewCallTypeFromString(s string) (CallType, error) {
 		return CallTypeOutboundPhoneCall, nil
 	case "webCall":
 		return CallTypeWebCall, nil
+	case "vapi.websocketCall":
+		return CallTypeVapiWebsocketCall, nil
 	}
 	var t CallType
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -2012,6 +2973,9 @@ type CreateCustomerDto struct {
 	NumberE164CheckEnabled *bool `json:"numberE164CheckEnabled,omitempty" url:"numberE164CheckEnabled,omitempty"`
 	// This is the extension that will be dialed after the call is answered.
 	Extension *string `json:"extension,omitempty" url:"extension,omitempty"`
+	// These are the overrides for the assistant's settings and template variables specific to this customer.
+	// This allows customization of the assistant's behavior for individual customers in batch calls.
+	AssistantOverrides *AssistantOverrides `json:"assistantOverrides,omitempty" url:"assistantOverrides,omitempty"`
 	// This is the number of the customer.
 	Number *string `json:"number,omitempty" url:"number,omitempty"`
 	// This is the SIP URI of the customer.
@@ -2037,6 +3001,13 @@ func (c *CreateCustomerDto) GetExtension() *string {
 		return nil
 	}
 	return c.Extension
+}
+
+func (c *CreateCustomerDto) GetAssistantOverrides() *AssistantOverrides {
+	if c == nil {
+		return nil
+	}
+	return c.AssistantOverrides
 }
 
 func (c *CreateCustomerDto) GetNumber() *string {
@@ -2450,6 +3421,84 @@ func (m *Monitor) String() string {
 	return fmt.Sprintf("%#v", m)
 }
 
+type SchedulePlan struct {
+	// This is the ISO 8601 date-time string of the earliest time the call can be scheduled.
+	EarliestAt time.Time `json:"earliestAt" url:"earliestAt"`
+	// This is the ISO 8601 date-time string of the latest time the call can be scheduled.
+	LatestAt *time.Time `json:"latestAt,omitempty" url:"latestAt,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulePlan) GetEarliestAt() time.Time {
+	if s == nil {
+		return time.Time{}
+	}
+	return s.EarliestAt
+}
+
+func (s *SchedulePlan) GetLatestAt() *time.Time {
+	if s == nil {
+		return nil
+	}
+	return s.LatestAt
+}
+
+func (s *SchedulePlan) GetExtraProperties() map[string]interface{} {
+	return s.extraProperties
+}
+
+func (s *SchedulePlan) UnmarshalJSON(data []byte) error {
+	type embed SchedulePlan
+	var unmarshaler = struct {
+		embed
+		EarliestAt *internal.DateTime `json:"earliestAt"`
+		LatestAt   *internal.DateTime `json:"latestAt,omitempty"`
+	}{
+		embed: embed(*s),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*s = SchedulePlan(unmarshaler.embed)
+	s.EarliestAt = unmarshaler.EarliestAt.Time()
+	s.LatestAt = unmarshaler.LatestAt.TimePtr()
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulePlan) MarshalJSON() ([]byte, error) {
+	type embed SchedulePlan
+	var marshaler = struct {
+		embed
+		EarliestAt *internal.DateTime `json:"earliestAt"`
+		LatestAt   *internal.DateTime `json:"latestAt,omitempty"`
+	}{
+		embed:      embed(*s),
+		EarliestAt: internal.NewDateTime(s.EarliestAt),
+		LatestAt:   internal.NewOptionalDateTime(s.LatestAt),
+	}
+	return json.Marshal(marshaler)
+}
+
+func (s *SchedulePlan) String() string {
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
 type TranscriberCost struct {
 	// This is the type of cost, always 'transcriber' for this class.
 	// This is the transcriber that was used during the call.
@@ -2539,64 +3588,6 @@ func (t *TranscriberCost) MarshalJSON() ([]byte, error) {
 }
 
 func (t *TranscriberCost) String() string {
-	if len(t.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(t); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", t)
-}
-
-type Transport struct {
-	// This is the provider used for the call.
-	Provider *TransportProvider `json:"provider,omitempty" url:"provider,omitempty"`
-	// This is determines whether the assistant will have video enabled.
-	//
-	// Only relevant for `webCall` type.
-	AssistantVideoEnabled *bool `json:"assistantVideoEnabled,omitempty" url:"assistantVideoEnabled,omitempty"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (t *Transport) GetProvider() *TransportProvider {
-	if t == nil {
-		return nil
-	}
-	return t.Provider
-}
-
-func (t *Transport) GetAssistantVideoEnabled() *bool {
-	if t == nil {
-		return nil
-	}
-	return t.AssistantVideoEnabled
-}
-
-func (t *Transport) GetExtraProperties() map[string]interface{} {
-	return t.extraProperties
-}
-
-func (t *Transport) UnmarshalJSON(data []byte) error {
-	type unmarshaler Transport
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*t = Transport(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *t)
-	if err != nil {
-		return err
-	}
-	t.extraProperties = extraProperties
-	t.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (t *Transport) String() string {
 	if len(t.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
 			return value
@@ -2721,35 +3712,6 @@ func NewTransportCostProviderFromString(s string) (TransportCostProvider, error)
 }
 
 func (t TransportCostProvider) Ptr() *TransportCostProvider {
-	return &t
-}
-
-// This is the provider used for the call.
-type TransportProvider string
-
-const (
-	TransportProviderTwilio TransportProvider = "twilio"
-	TransportProviderVonage TransportProvider = "vonage"
-	TransportProviderVapi   TransportProvider = "vapi"
-	TransportProviderDaily  TransportProvider = "daily"
-)
-
-func NewTransportProviderFromString(s string) (TransportProvider, error) {
-	switch s {
-	case "twilio":
-		return TransportProviderTwilio, nil
-	case "vonage":
-		return TransportProviderVonage, nil
-	case "vapi":
-		return TransportProviderVapi, nil
-	case "daily":
-		return TransportProviderDaily, nil
-	}
-	var t TransportProvider
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (t TransportProvider) Ptr() *TransportProvider {
 	return &t
 }
 
@@ -2966,6 +3928,222 @@ func (v *VoiceCost) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", v)
+}
+
+type VoicemailDetectionCost struct {
+	// This is the type of cost, always 'voicemail-detection' for this class.
+	// This is the model that was used to perform the analysis.
+	Model map[string]interface{} `json:"model,omitempty" url:"model,omitempty"`
+	// This is the provider that was used to detect the voicemail.
+	Provider VoicemailDetectionCostProvider `json:"provider" url:"provider"`
+	// This is the number of prompt text tokens used in the voicemail detection.
+	PromptTextTokens float64 `json:"promptTextTokens" url:"promptTextTokens"`
+	// This is the number of prompt audio tokens used in the voicemail detection.
+	PromptAudioTokens float64 `json:"promptAudioTokens" url:"promptAudioTokens"`
+	// This is the number of completion text tokens used in the voicemail detection.
+	CompletionTextTokens float64 `json:"completionTextTokens" url:"completionTextTokens"`
+	// This is the number of completion audio tokens used in the voicemail detection.
+	CompletionAudioTokens float64 `json:"completionAudioTokens" url:"completionAudioTokens"`
+	// This is the cost of the component in USD.
+	Cost  float64 `json:"cost" url:"cost"`
+	type_ string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (v *VoicemailDetectionCost) GetModel() map[string]interface{} {
+	if v == nil {
+		return nil
+	}
+	return v.Model
+}
+
+func (v *VoicemailDetectionCost) GetProvider() VoicemailDetectionCostProvider {
+	if v == nil {
+		return ""
+	}
+	return v.Provider
+}
+
+func (v *VoicemailDetectionCost) GetPromptTextTokens() float64 {
+	if v == nil {
+		return 0
+	}
+	return v.PromptTextTokens
+}
+
+func (v *VoicemailDetectionCost) GetPromptAudioTokens() float64 {
+	if v == nil {
+		return 0
+	}
+	return v.PromptAudioTokens
+}
+
+func (v *VoicemailDetectionCost) GetCompletionTextTokens() float64 {
+	if v == nil {
+		return 0
+	}
+	return v.CompletionTextTokens
+}
+
+func (v *VoicemailDetectionCost) GetCompletionAudioTokens() float64 {
+	if v == nil {
+		return 0
+	}
+	return v.CompletionAudioTokens
+}
+
+func (v *VoicemailDetectionCost) GetCost() float64 {
+	if v == nil {
+		return 0
+	}
+	return v.Cost
+}
+
+func (v *VoicemailDetectionCost) Type() string {
+	return v.type_
+}
+
+func (v *VoicemailDetectionCost) GetExtraProperties() map[string]interface{} {
+	return v.extraProperties
+}
+
+func (v *VoicemailDetectionCost) UnmarshalJSON(data []byte) error {
+	type embed VoicemailDetectionCost
+	var unmarshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*v),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*v = VoicemailDetectionCost(unmarshaler.embed)
+	if unmarshaler.Type != "voicemail-detection" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", v, "voicemail-detection", unmarshaler.Type)
+	}
+	v.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *v, "type")
+	if err != nil {
+		return err
+	}
+	v.extraProperties = extraProperties
+	v.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (v *VoicemailDetectionCost) MarshalJSON() ([]byte, error) {
+	type embed VoicemailDetectionCost
+	var marshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*v),
+		Type:  "voicemail-detection",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (v *VoicemailDetectionCost) String() string {
+	if len(v.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(v.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(v); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", v)
+}
+
+// This is the provider that was used to detect the voicemail.
+type VoicemailDetectionCostProvider string
+
+const (
+	VoicemailDetectionCostProviderTwilio VoicemailDetectionCostProvider = "twilio"
+	VoicemailDetectionCostProviderGoogle VoicemailDetectionCostProvider = "google"
+	VoicemailDetectionCostProviderOpenai VoicemailDetectionCostProvider = "openai"
+)
+
+func NewVoicemailDetectionCostProviderFromString(s string) (VoicemailDetectionCostProvider, error) {
+	switch s {
+	case "twilio":
+		return VoicemailDetectionCostProviderTwilio, nil
+	case "google":
+		return VoicemailDetectionCostProviderGoogle, nil
+	case "openai":
+		return VoicemailDetectionCostProviderOpenai, nil
+	}
+	var t VoicemailDetectionCostProvider
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (v VoicemailDetectionCostProvider) Ptr() *VoicemailDetectionCostProvider {
+	return &v
+}
+
+type CallsCreateResponse struct {
+	Call              *Call
+	CallBatchResponse *CallBatchResponse
+
+	typ string
+}
+
+func (c *CallsCreateResponse) GetCall() *Call {
+	if c == nil {
+		return nil
+	}
+	return c.Call
+}
+
+func (c *CallsCreateResponse) GetCallBatchResponse() *CallBatchResponse {
+	if c == nil {
+		return nil
+	}
+	return c.CallBatchResponse
+}
+
+func (c *CallsCreateResponse) UnmarshalJSON(data []byte) error {
+	valueCall := new(Call)
+	if err := json.Unmarshal(data, &valueCall); err == nil {
+		c.typ = "Call"
+		c.Call = valueCall
+		return nil
+	}
+	valueCallBatchResponse := new(CallBatchResponse)
+	if err := json.Unmarshal(data, &valueCallBatchResponse); err == nil {
+		c.typ = "CallBatchResponse"
+		c.CallBatchResponse = valueCallBatchResponse
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c CallsCreateResponse) MarshalJSON() ([]byte, error) {
+	if c.typ == "Call" || c.Call != nil {
+		return json.Marshal(c.Call)
+	}
+	if c.typ == "CallBatchResponse" || c.CallBatchResponse != nil {
+		return json.Marshal(c.CallBatchResponse)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type CallsCreateResponseVisitor interface {
+	VisitCall(*Call) error
+	VisitCallBatchResponse(*CallBatchResponse) error
+}
+
+func (c *CallsCreateResponse) Accept(visitor CallsCreateResponseVisitor) error {
+	if c.typ == "Call" || c.Call != nil {
+		return visitor.VisitCall(c.Call)
+	}
+	if c.typ == "CallBatchResponse" || c.CallBatchResponse != nil {
+		return visitor.VisitCallBatchResponse(c.CallBatchResponse)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
 }
 
 type UpdateCallDto struct {

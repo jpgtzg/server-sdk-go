@@ -5,7 +5,6 @@ package client
 import (
 	analytics "github.com/VapiAI/server-sdk-go/analytics"
 	assistants "github.com/VapiAI/server-sdk-go/assistants"
-	blocks "github.com/VapiAI/server-sdk-go/blocks"
 	calls "github.com/VapiAI/server-sdk-go/calls"
 	core "github.com/VapiAI/server-sdk-go/core"
 	files "github.com/VapiAI/server-sdk-go/files"
@@ -19,6 +18,7 @@ import (
 	testsuites "github.com/VapiAI/server-sdk-go/testsuites"
 	testsuitetests "github.com/VapiAI/server-sdk-go/testsuitetests"
 	tools "github.com/VapiAI/server-sdk-go/tools"
+	workflow "github.com/VapiAI/server-sdk-go/workflow"
 	http "net/http"
 )
 
@@ -30,16 +30,16 @@ type Client struct {
 	Calls          *calls.Client
 	Assistants     *assistants.Client
 	PhoneNumbers   *phonenumbers.Client
-	Squads         *squads.Client
-	KnowledgeBases *knowledgebases.Client
-	Blocks         *blocks.Client
 	Tools          *tools.Client
 	Files          *files.Client
-	Analytics      *analytics.Client
-	Logs           *logs.Client
+	KnowledgeBases *knowledgebases.Client
+	Workflow       *workflow.Client
+	Squads         *squads.Client
 	TestSuites     *testsuites.Client
 	TestSuiteTests *testsuitetests.Client
 	TestSuiteRuns  *testsuiteruns.Client
+	Analytics      *analytics.Client
+	Logs           *logs.Client
 }
 
 func NewClient(opts ...option.RequestOption) *Client {
@@ -56,15 +56,15 @@ func NewClient(opts ...option.RequestOption) *Client {
 		Calls:          calls.NewClient(opts...),
 		Assistants:     assistants.NewClient(opts...),
 		PhoneNumbers:   phonenumbers.NewClient(opts...),
-		Squads:         squads.NewClient(opts...),
-		KnowledgeBases: knowledgebases.NewClient(opts...),
-		Blocks:         blocks.NewClient(opts...),
 		Tools:          tools.NewClient(opts...),
 		Files:          files.NewClient(opts...),
-		Analytics:      analytics.NewClient(opts...),
-		Logs:           logs.NewClient(opts...),
+		KnowledgeBases: knowledgebases.NewClient(opts...),
+		Workflow:       workflow.NewClient(opts...),
+		Squads:         squads.NewClient(opts...),
 		TestSuites:     testsuites.NewClient(opts...),
 		TestSuiteTests: testsuitetests.NewClient(opts...),
 		TestSuiteRuns:  testsuiteruns.NewClient(opts...),
+		Analytics:      analytics.NewClient(opts...),
+		Logs:           logs.NewClient(opts...),
 	}
 }

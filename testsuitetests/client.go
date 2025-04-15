@@ -81,9 +81,9 @@ func (c *Client) TestSuiteTestControllerFindAllPaginated(
 func (c *Client) TestSuiteTestControllerCreate(
 	ctx context.Context,
 	testSuiteId string,
-	request *serversdkgo.CreateTestSuiteTestVoiceDto,
+	request *serversdkgo.TestSuiteTestControllerCreateRequest,
 	opts ...option.RequestOption,
-) (*serversdkgo.TestSuiteTestVoice, error) {
+) (*serversdkgo.TestSuiteTestControllerCreateResponse, error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -100,7 +100,7 @@ func (c *Client) TestSuiteTestControllerCreate(
 	)
 	headers.Set("Content-Type", "application/json")
 
-	var response *serversdkgo.TestSuiteTestVoice
+	var response *serversdkgo.TestSuiteTestControllerCreateResponse
 	if err := c.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -125,7 +125,7 @@ func (c *Client) TestSuiteTestControllerFindOne(
 	testSuiteId string,
 	id string,
 	opts ...option.RequestOption,
-) (*serversdkgo.TestSuiteTestVoice, error) {
+) (*serversdkgo.TestSuiteTestControllerFindOneResponse, error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -142,7 +142,7 @@ func (c *Client) TestSuiteTestControllerFindOne(
 		options.ToHeader(),
 	)
 
-	var response *serversdkgo.TestSuiteTestVoice
+	var response *serversdkgo.TestSuiteTestControllerFindOneResponse
 	if err := c.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -166,7 +166,7 @@ func (c *Client) TestSuiteTestControllerRemove(
 	testSuiteId string,
 	id string,
 	opts ...option.RequestOption,
-) (*serversdkgo.TestSuiteTestVoice, error) {
+) (*serversdkgo.TestSuiteTestControllerRemoveResponse, error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -183,7 +183,7 @@ func (c *Client) TestSuiteTestControllerRemove(
 		options.ToHeader(),
 	)
 
-	var response *serversdkgo.TestSuiteTestVoice
+	var response *serversdkgo.TestSuiteTestControllerRemoveResponse
 	if err := c.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -206,9 +206,9 @@ func (c *Client) TestSuiteTestControllerUpdate(
 	ctx context.Context,
 	testSuiteId string,
 	id string,
-	request *serversdkgo.UpdateTestSuiteTestVoiceDto,
+	request *serversdkgo.TestSuiteTestControllerUpdateRequest,
 	opts ...option.RequestOption,
-) (*serversdkgo.TestSuiteTestVoice, error) {
+) (*serversdkgo.TestSuiteTestControllerUpdateResponse, error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -226,7 +226,7 @@ func (c *Client) TestSuiteTestControllerUpdate(
 	)
 	headers.Set("Content-Type", "application/json")
 
-	var response *serversdkgo.TestSuiteTestVoice
+	var response *serversdkgo.TestSuiteTestControllerUpdateResponse
 	if err := c.caller.Call(
 		ctx,
 		&internal.CallParams{

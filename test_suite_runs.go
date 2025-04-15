@@ -298,6 +298,7 @@ const (
 	TestSuiteRunStatusQueued     TestSuiteRunStatus = "queued"
 	TestSuiteRunStatusInProgress TestSuiteRunStatus = "in-progress"
 	TestSuiteRunStatusCompleted  TestSuiteRunStatus = "completed"
+	TestSuiteRunStatusFailed     TestSuiteRunStatus = "failed"
 )
 
 func NewTestSuiteRunStatusFromString(s string) (TestSuiteRunStatus, error) {
@@ -308,6 +309,8 @@ func NewTestSuiteRunStatusFromString(s string) (TestSuiteRunStatus, error) {
 		return TestSuiteRunStatusInProgress, nil
 	case "completed":
 		return TestSuiteRunStatusCompleted, nil
+	case "failed":
+		return TestSuiteRunStatusFailed, nil
 	}
 	var t TestSuiteRunStatus
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -322,6 +325,10 @@ type TestSuiteRunTestAttempt struct {
 	ScorerResults []*TestSuiteRunScorerAi `json:"scorerResults,omitempty" url:"scorerResults,omitempty"`
 	// This is the call made during the test attempt.
 	Call *TestSuiteRunTestAttemptCall `json:"call,omitempty" url:"call,omitempty"`
+	// This is the call ID for the test attempt.
+	CallId *string `json:"callId,omitempty" url:"callId,omitempty"`
+	// This is the metadata for the test attempt.
+	Metadata *TestSuiteRunTestAttemptMetadata `json:"metadata,omitempty" url:"metadata,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -339,6 +346,20 @@ func (t *TestSuiteRunTestAttempt) GetCall() *TestSuiteRunTestAttemptCall {
 		return nil
 	}
 	return t.Call
+}
+
+func (t *TestSuiteRunTestAttempt) GetCallId() *string {
+	if t == nil {
+		return nil
+	}
+	return t.CallId
+}
+
+func (t *TestSuiteRunTestAttempt) GetMetadata() *TestSuiteRunTestAttemptMetadata {
+	if t == nil {
+		return nil
+	}
+	return t.Metadata
 }
 
 func (t *TestSuiteRunTestAttempt) GetExtraProperties() map[string]interface{} {
@@ -374,7 +395,7 @@ func (t *TestSuiteRunTestAttempt) String() string {
 }
 
 type TestSuiteRunTestAttemptCall struct {
-	// This is the artifact associated with the call.
+	// This is the artifact of the call.
 	Artifact *Artifact `json:"artifact,omitempty" url:"artifact,omitempty"`
 
 	extraProperties map[string]interface{}
@@ -409,6 +430,53 @@ func (t *TestSuiteRunTestAttemptCall) UnmarshalJSON(data []byte) error {
 }
 
 func (t *TestSuiteRunTestAttemptCall) String() string {
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+type TestSuiteRunTestAttemptMetadata struct {
+	// This is the session ID for the test attempt.
+	SessionId string `json:"sessionId" url:"sessionId"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TestSuiteRunTestAttemptMetadata) GetSessionId() string {
+	if t == nil {
+		return ""
+	}
+	return t.SessionId
+}
+
+func (t *TestSuiteRunTestAttemptMetadata) GetExtraProperties() map[string]interface{} {
+	return t.extraProperties
+}
+
+func (t *TestSuiteRunTestAttemptMetadata) UnmarshalJSON(data []byte) error {
+	type unmarshaler TestSuiteRunTestAttemptMetadata
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = TestSuiteRunTestAttemptMetadata(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TestSuiteRunTestAttemptMetadata) String() string {
 	if len(t.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
 			return value

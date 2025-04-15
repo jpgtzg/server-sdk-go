@@ -40,7 +40,8 @@ type Assistant struct {
 	// This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
 	//
 	// If unspecified, assistant will wait for user to speak and use the model to respond once they speak.
-	FirstMessage *string `json:"firstMessage,omitempty" url:"firstMessage,omitempty"`
+	FirstMessage                     *string `json:"firstMessage,omitempty" url:"firstMessage,omitempty"`
+	FirstMessageInterruptionsEnabled *bool   `json:"firstMessageInterruptionsEnabled,omitempty" url:"firstMessageInterruptionsEnabled,omitempty"`
 	// This is the mode for the first message. Default is 'assistant-speaks-first'.
 	//
 	// Use:
@@ -50,7 +51,11 @@ type Assistant struct {
 	//
 	// @default 'assistant-speaks-first'
 	FirstMessageMode *AssistantFirstMessageMode `json:"firstMessageMode,omitempty" url:"firstMessageMode,omitempty"`
-	// These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input. You can check the shape of the messages in ClientMessage schema.
+	// These are the settings to configure or disable voicemail detection. Alternatively, voicemail detection can be configured using the model.tools=[VoicemailTool].
+	// This uses Twilio's built-in detection while the VoicemailTool relies on the model to detect if a voicemail was reached.
+	// You can use neither of them, one of them, or both of them. By default, Twilio built-in detection is enabled while VoicemailTool is not.
+	VoicemailDetection *AssistantVoicemailDetection `json:"voicemailDetection,omitempty" url:"voicemailDetection,omitempty"`
+	// These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
 	ClientMessages []AssistantClientMessagesItem `json:"clientMessages,omitempty" url:"clientMessages,omitempty"`
 	// These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
 	ServerMessages []AssistantServerMessagesItem `json:"serverMessages,omitempty" url:"serverMessages,omitempty"`
@@ -63,6 +68,7 @@ type Assistant struct {
 	// @default 600 (10 minutes)
 	MaxDurationSeconds *float64 `json:"maxDurationSeconds,omitempty" url:"maxDurationSeconds,omitempty"`
 	// This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
+	// You can also provide a custom sound by providing a URL to an audio file.
 	BackgroundSound *AssistantBackgroundSound `json:"backgroundSound,omitempty" url:"backgroundSound,omitempty"`
 	// This enables filtering of noise and background speech while the user is talking.
 	//
@@ -78,16 +84,15 @@ type Assistant struct {
 	ModelOutputInMessagesEnabled *bool `json:"modelOutputInMessagesEnabled,omitempty" url:"modelOutputInMessagesEnabled,omitempty"`
 	// These are the configurations to be passed to the transport providers of assistant's calls, like Twilio. You can store multiple configurations for different transport providers. For a call, only the configuration matching the call transport provider is used.
 	TransportConfigurations []*TransportConfigurationTwilio `json:"transportConfigurations,omitempty" url:"transportConfigurations,omitempty"`
+	// This is the plan for observability configuration of assistant's calls.
+	// Currently supports Langfuse for tracing and monitoring.
+	ObservabilityPlan *LangfuseObservabilityPlan `json:"observabilityPlan,omitempty" url:"observabilityPlan,omitempty"`
 	// These are dynamic credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials.
 	Credentials []*AssistantCredentialsItem `json:"credentials,omitempty" url:"credentials,omitempty"`
 	// This is the name of the assistant.
 	//
 	// This is required when you want to transfer between assistants in a call.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
-	// These are the settings to configure or disable voicemail detection. Alternatively, voicemail detection can be configured using the model.tools=[VoicemailTool].
-	// This uses Twilio's built-in detection while the VoicemailTool relies on the model to detect if a voicemail was reached.
-	// You can use neither of them, one of them, or both of them. By default, Twilio built-in detection is enabled while VoicemailTool is not.
-	VoicemailDetection *TwilioVoicemailDetection `json:"voicemailDetection,omitempty" url:"voicemailDetection,omitempty"`
 	// This is the message that the assistant will say if the call is forwarded to voicemail.
 	//
 	// If unspecified, it will hang up.
@@ -146,7 +151,8 @@ type Assistant struct {
 	// 3. org.serverUrl
 	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 	// This is a set of actions that will be performed on certain events.
-	Hooks []*AssistantHooks `json:"hooks,omitempty" url:"hooks,omitempty"`
+	Hooks           []*AssistantHooks `json:"hooks,omitempty" url:"hooks,omitempty"`
+	KeypadInputPlan *KeypadInputPlan  `json:"keypadInputPlan,omitempty" url:"keypadInputPlan,omitempty"`
 	// This is the unique identifier for the assistant.
 	Id string `json:"id" url:"id"`
 	// This is the unique identifier for the org that this assistant belongs to.
@@ -188,11 +194,25 @@ func (a *Assistant) GetFirstMessage() *string {
 	return a.FirstMessage
 }
 
+func (a *Assistant) GetFirstMessageInterruptionsEnabled() *bool {
+	if a == nil {
+		return nil
+	}
+	return a.FirstMessageInterruptionsEnabled
+}
+
 func (a *Assistant) GetFirstMessageMode() *AssistantFirstMessageMode {
 	if a == nil {
 		return nil
 	}
 	return a.FirstMessageMode
+}
+
+func (a *Assistant) GetVoicemailDetection() *AssistantVoicemailDetection {
+	if a == nil {
+		return nil
+	}
+	return a.VoicemailDetection
 }
 
 func (a *Assistant) GetClientMessages() []AssistantClientMessagesItem {
@@ -251,6 +271,13 @@ func (a *Assistant) GetTransportConfigurations() []*TransportConfigurationTwilio
 	return a.TransportConfigurations
 }
 
+func (a *Assistant) GetObservabilityPlan() *LangfuseObservabilityPlan {
+	if a == nil {
+		return nil
+	}
+	return a.ObservabilityPlan
+}
+
 func (a *Assistant) GetCredentials() []*AssistantCredentialsItem {
 	if a == nil {
 		return nil
@@ -263,13 +290,6 @@ func (a *Assistant) GetName() *string {
 		return nil
 	}
 	return a.Name
-}
-
-func (a *Assistant) GetVoicemailDetection() *TwilioVoicemailDetection {
-	if a == nil {
-		return nil
-	}
-	return a.VoicemailDetection
 }
 
 func (a *Assistant) GetVoicemailMessage() *string {
@@ -370,6 +390,13 @@ func (a *Assistant) GetHooks() []*AssistantHooks {
 	return a.Hooks
 }
 
+func (a *Assistant) GetKeypadInputPlan() *KeypadInputPlan {
+	if a == nil {
+		return nil
+	}
+	return a.KeypadInputPlan
+}
+
 func (a *Assistant) GetId() string {
 	if a == nil {
 		return ""
@@ -453,46 +480,110 @@ func (a *Assistant) String() string {
 }
 
 // This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
-type AssistantBackgroundSound string
+// You can also provide a custom sound by providing a URL to an audio file.
+type AssistantBackgroundSound struct {
+	AssistantBackgroundSoundZero AssistantBackgroundSoundZero
+	String                       string
+
+	typ string
+}
+
+func (a *AssistantBackgroundSound) GetAssistantBackgroundSoundZero() AssistantBackgroundSoundZero {
+	if a == nil {
+		return ""
+	}
+	return a.AssistantBackgroundSoundZero
+}
+
+func (a *AssistantBackgroundSound) GetString() string {
+	if a == nil {
+		return ""
+	}
+	return a.String
+}
+
+func (a *AssistantBackgroundSound) UnmarshalJSON(data []byte) error {
+	var valueAssistantBackgroundSoundZero AssistantBackgroundSoundZero
+	if err := json.Unmarshal(data, &valueAssistantBackgroundSoundZero); err == nil {
+		a.typ = "AssistantBackgroundSoundZero"
+		a.AssistantBackgroundSoundZero = valueAssistantBackgroundSoundZero
+		return nil
+	}
+	var valueString string
+	if err := json.Unmarshal(data, &valueString); err == nil {
+		a.typ = "String"
+		a.String = valueString
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, a)
+}
+
+func (a AssistantBackgroundSound) MarshalJSON() ([]byte, error) {
+	if a.typ == "AssistantBackgroundSoundZero" || a.AssistantBackgroundSoundZero != "" {
+		return json.Marshal(a.AssistantBackgroundSoundZero)
+	}
+	if a.typ == "String" || a.String != "" {
+		return json.Marshal(a.String)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
+type AssistantBackgroundSoundVisitor interface {
+	VisitAssistantBackgroundSoundZero(AssistantBackgroundSoundZero) error
+	VisitString(string) error
+}
+
+func (a *AssistantBackgroundSound) Accept(visitor AssistantBackgroundSoundVisitor) error {
+	if a.typ == "AssistantBackgroundSoundZero" || a.AssistantBackgroundSoundZero != "" {
+		return visitor.VisitAssistantBackgroundSoundZero(a.AssistantBackgroundSoundZero)
+	}
+	if a.typ == "String" || a.String != "" {
+		return visitor.VisitString(a.String)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
+type AssistantBackgroundSoundZero string
 
 const (
-	AssistantBackgroundSoundOff    AssistantBackgroundSound = "off"
-	AssistantBackgroundSoundOffice AssistantBackgroundSound = "office"
+	AssistantBackgroundSoundZeroOff    AssistantBackgroundSoundZero = "off"
+	AssistantBackgroundSoundZeroOffice AssistantBackgroundSoundZero = "office"
 )
 
-func NewAssistantBackgroundSoundFromString(s string) (AssistantBackgroundSound, error) {
+func NewAssistantBackgroundSoundZeroFromString(s string) (AssistantBackgroundSoundZero, error) {
 	switch s {
 	case "off":
-		return AssistantBackgroundSoundOff, nil
+		return AssistantBackgroundSoundZeroOff, nil
 	case "office":
-		return AssistantBackgroundSoundOffice, nil
+		return AssistantBackgroundSoundZeroOffice, nil
 	}
-	var t AssistantBackgroundSound
+	var t AssistantBackgroundSoundZero
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
 }
 
-func (a AssistantBackgroundSound) Ptr() *AssistantBackgroundSound {
+func (a AssistantBackgroundSoundZero) Ptr() *AssistantBackgroundSoundZero {
 	return &a
 }
 
 type AssistantClientMessagesItem string
 
 const (
-	AssistantClientMessagesItemConversationUpdate AssistantClientMessagesItem = "conversation-update"
-	AssistantClientMessagesItemFunctionCall       AssistantClientMessagesItem = "function-call"
-	AssistantClientMessagesItemFunctionCallResult AssistantClientMessagesItem = "function-call-result"
-	AssistantClientMessagesItemHang               AssistantClientMessagesItem = "hang"
-	AssistantClientMessagesItemLanguageChanged    AssistantClientMessagesItem = "language-changed"
-	AssistantClientMessagesItemMetadata           AssistantClientMessagesItem = "metadata"
-	AssistantClientMessagesItemModelOutput        AssistantClientMessagesItem = "model-output"
-	AssistantClientMessagesItemSpeechUpdate       AssistantClientMessagesItem = "speech-update"
-	AssistantClientMessagesItemStatusUpdate       AssistantClientMessagesItem = "status-update"
-	AssistantClientMessagesItemTranscript         AssistantClientMessagesItem = "transcript"
-	AssistantClientMessagesItemToolCalls          AssistantClientMessagesItem = "tool-calls"
-	AssistantClientMessagesItemToolCallsResult    AssistantClientMessagesItem = "tool-calls-result"
-	AssistantClientMessagesItemTransferUpdate     AssistantClientMessagesItem = "transfer-update"
-	AssistantClientMessagesItemUserInterrupted    AssistantClientMessagesItem = "user-interrupted"
-	AssistantClientMessagesItemVoiceInput         AssistantClientMessagesItem = "voice-input"
+	AssistantClientMessagesItemConversationUpdate  AssistantClientMessagesItem = "conversation-update"
+	AssistantClientMessagesItemFunctionCall        AssistantClientMessagesItem = "function-call"
+	AssistantClientMessagesItemFunctionCallResult  AssistantClientMessagesItem = "function-call-result"
+	AssistantClientMessagesItemHang                AssistantClientMessagesItem = "hang"
+	AssistantClientMessagesItemLanguageChanged     AssistantClientMessagesItem = "language-changed"
+	AssistantClientMessagesItemMetadata            AssistantClientMessagesItem = "metadata"
+	AssistantClientMessagesItemModelOutput         AssistantClientMessagesItem = "model-output"
+	AssistantClientMessagesItemSpeechUpdate        AssistantClientMessagesItem = "speech-update"
+	AssistantClientMessagesItemStatusUpdate        AssistantClientMessagesItem = "status-update"
+	AssistantClientMessagesItemTranscript          AssistantClientMessagesItem = "transcript"
+	AssistantClientMessagesItemToolCalls           AssistantClientMessagesItem = "tool-calls"
+	AssistantClientMessagesItemToolCallsResult     AssistantClientMessagesItem = "tool-calls-result"
+	AssistantClientMessagesItemTransferUpdate      AssistantClientMessagesItem = "transfer-update"
+	AssistantClientMessagesItemUserInterrupted     AssistantClientMessagesItem = "user-interrupted"
+	AssistantClientMessagesItemVoiceInput          AssistantClientMessagesItem = "voice-input"
+	AssistantClientMessagesItemWorkflowNodeStarted AssistantClientMessagesItem = "workflow.node.started"
 )
 
 func NewAssistantClientMessagesItemFromString(s string) (AssistantClientMessagesItem, error) {
@@ -527,6 +618,8 @@ func NewAssistantClientMessagesItemFromString(s string) (AssistantClientMessages
 		return AssistantClientMessagesItemUserInterrupted, nil
 	case "voice-input":
 		return AssistantClientMessagesItemVoiceInput, nil
+	case "workflow.node.started":
+		return AssistantClientMessagesItemWorkflowNodeStarted, nil
 	}
 	var t AssistantClientMessagesItem
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -537,42 +630,62 @@ func (a AssistantClientMessagesItem) Ptr() *AssistantClientMessagesItem {
 }
 
 type AssistantCredentialsItem struct {
-	CreateAnthropicCredentialDto    *CreateAnthropicCredentialDto
-	CreateAnyscaleCredentialDto     *CreateAnyscaleCredentialDto
-	CreateAssemblyAiCredentialDto   *CreateAssemblyAiCredentialDto
-	CreateAzureOpenAiCredentialDto  *CreateAzureOpenAiCredentialDto
-	CreateAzureCredentialDto        *CreateAzureCredentialDto
-	CreateByoSipTrunkCredentialDto  *CreateByoSipTrunkCredentialDto
-	CreateCartesiaCredentialDto     *CreateCartesiaCredentialDto
-	CreateCloudflareCredentialDto   *CreateCloudflareCredentialDto
-	CreateCustomLlmCredentialDto    *CreateCustomLlmCredentialDto
-	CreateDeepgramCredentialDto     *CreateDeepgramCredentialDto
-	CreateDeepInfraCredentialDto    *CreateDeepInfraCredentialDto
-	CreateDeepSeekCredentialDto     *CreateDeepSeekCredentialDto
-	CreateElevenLabsCredentialDto   *CreateElevenLabsCredentialDto
-	CreateGcpCredentialDto          *CreateGcpCredentialDto
-	CreateGladiaCredentialDto       *CreateGladiaCredentialDto
-	CreateGoHighLevelCredentialDto  *CreateGoHighLevelCredentialDto
-	CreateGroqCredentialDto         *CreateGroqCredentialDto
-	CreateLangfuseCredentialDto     *CreateLangfuseCredentialDto
-	CreateLmntCredentialDto         *CreateLmntCredentialDto
-	CreateMakeCredentialDto         *CreateMakeCredentialDto
-	CreateOpenAiCredentialDto       *CreateOpenAiCredentialDto
-	CreateOpenRouterCredentialDto   *CreateOpenRouterCredentialDto
-	CreatePerplexityAiCredentialDto *CreatePerplexityAiCredentialDto
-	CreatePlayHtCredentialDto       *CreatePlayHtCredentialDto
-	CreateRimeAiCredentialDto       *CreateRimeAiCredentialDto
-	CreateRunpodCredentialDto       *CreateRunpodCredentialDto
-	CreateS3CredentialDto           *CreateS3CredentialDto
-	CreateSmallestAiCredentialDto   *CreateSmallestAiCredentialDto
-	CreateTavusCredentialDto        *CreateTavusCredentialDto
-	CreateTogetherAiCredentialDto   *CreateTogetherAiCredentialDto
-	CreateTwilioCredentialDto       *CreateTwilioCredentialDto
-	CreateVonageCredentialDto       *CreateVonageCredentialDto
-	CreateWebhookCredentialDto      *CreateWebhookCredentialDto
-	CreateXAiCredentialDto          *CreateXAiCredentialDto
+	CreateElevenLabsCredentialDto                        *CreateElevenLabsCredentialDto
+	CreateAnthropicCredentialDto                         *CreateAnthropicCredentialDto
+	CreateAnyscaleCredentialDto                          *CreateAnyscaleCredentialDto
+	CreateAssemblyAiCredentialDto                        *CreateAssemblyAiCredentialDto
+	CreateAzureOpenAiCredentialDto                       *CreateAzureOpenAiCredentialDto
+	CreateAzureCredentialDto                             *CreateAzureCredentialDto
+	CreateByoSipTrunkCredentialDto                       *CreateByoSipTrunkCredentialDto
+	CreateCartesiaCredentialDto                          *CreateCartesiaCredentialDto
+	CreateCerebrasCredentialDto                          *CreateCerebrasCredentialDto
+	CreateCloudflareCredentialDto                        *CreateCloudflareCredentialDto
+	CreateCustomLlmCredentialDto                         *CreateCustomLlmCredentialDto
+	CreateDeepgramCredentialDto                          *CreateDeepgramCredentialDto
+	CreateDeepInfraCredentialDto                         *CreateDeepInfraCredentialDto
+	CreateDeepSeekCredentialDto                          *CreateDeepSeekCredentialDto
+	CreateGcpCredentialDto                               *CreateGcpCredentialDto
+	CreateGladiaCredentialDto                            *CreateGladiaCredentialDto
+	CreateGoHighLevelCredentialDto                       *CreateGoHighLevelCredentialDto
+	CreateGoogleCredentialDto                            *CreateGoogleCredentialDto
+	CreateGroqCredentialDto                              *CreateGroqCredentialDto
+	CreateInflectionAiCredentialDto                      *CreateInflectionAiCredentialDto
+	CreateLangfuseCredentialDto                          *CreateLangfuseCredentialDto
+	CreateLmntCredentialDto                              *CreateLmntCredentialDto
+	CreateMakeCredentialDto                              *CreateMakeCredentialDto
+	CreateOpenAiCredentialDto                            *CreateOpenAiCredentialDto
+	CreateOpenRouterCredentialDto                        *CreateOpenRouterCredentialDto
+	CreatePerplexityAiCredentialDto                      *CreatePerplexityAiCredentialDto
+	CreatePlayHtCredentialDto                            *CreatePlayHtCredentialDto
+	CreateRimeAiCredentialDto                            *CreateRimeAiCredentialDto
+	CreateRunpodCredentialDto                            *CreateRunpodCredentialDto
+	CreateS3CredentialDto                                *CreateS3CredentialDto
+	CreateSupabaseCredentialDto                          *CreateSupabaseCredentialDto
+	CreateSmallestAiCredentialDto                        *CreateSmallestAiCredentialDto
+	CreateTavusCredentialDto                             *CreateTavusCredentialDto
+	CreateTogetherAiCredentialDto                        *CreateTogetherAiCredentialDto
+	CreateTwilioCredentialDto                            *CreateTwilioCredentialDto
+	CreateVonageCredentialDto                            *CreateVonageCredentialDto
+	CreateWebhookCredentialDto                           *CreateWebhookCredentialDto
+	CreateXAiCredentialDto                               *CreateXAiCredentialDto
+	CreateNeuphonicCredentialDto                         *CreateNeuphonicCredentialDto
+	CreateHumeCredentialDto                              *CreateHumeCredentialDto
+	CreateMistralCredentialDto                           *CreateMistralCredentialDto
+	CreateSpeechmaticsCredentialDto                      *CreateSpeechmaticsCredentialDto
+	CreateTrieveCredentialDto                            *CreateTrieveCredentialDto
+	CreateGoogleCalendarOAuth2ClientCredentialDto        *CreateGoogleCalendarOAuth2ClientCredentialDto
+	CreateGoogleCalendarOAuth2AuthorizationCredentialDto *CreateGoogleCalendarOAuth2AuthorizationCredentialDto
+	CreateGoogleSheetsOAuth2AuthorizationCredentialDto   *CreateGoogleSheetsOAuth2AuthorizationCredentialDto
+	CreateSlackOAuth2AuthorizationCredentialDto          *CreateSlackOAuth2AuthorizationCredentialDto
 
 	typ string
+}
+
+func (a *AssistantCredentialsItem) GetCreateElevenLabsCredentialDto() *CreateElevenLabsCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateElevenLabsCredentialDto
 }
 
 func (a *AssistantCredentialsItem) GetCreateAnthropicCredentialDto() *CreateAnthropicCredentialDto {
@@ -624,6 +737,13 @@ func (a *AssistantCredentialsItem) GetCreateCartesiaCredentialDto() *CreateCarte
 	return a.CreateCartesiaCredentialDto
 }
 
+func (a *AssistantCredentialsItem) GetCreateCerebrasCredentialDto() *CreateCerebrasCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateCerebrasCredentialDto
+}
+
 func (a *AssistantCredentialsItem) GetCreateCloudflareCredentialDto() *CreateCloudflareCredentialDto {
 	if a == nil {
 		return nil
@@ -659,13 +779,6 @@ func (a *AssistantCredentialsItem) GetCreateDeepSeekCredentialDto() *CreateDeepS
 	return a.CreateDeepSeekCredentialDto
 }
 
-func (a *AssistantCredentialsItem) GetCreateElevenLabsCredentialDto() *CreateElevenLabsCredentialDto {
-	if a == nil {
-		return nil
-	}
-	return a.CreateElevenLabsCredentialDto
-}
-
 func (a *AssistantCredentialsItem) GetCreateGcpCredentialDto() *CreateGcpCredentialDto {
 	if a == nil {
 		return nil
@@ -687,11 +800,25 @@ func (a *AssistantCredentialsItem) GetCreateGoHighLevelCredentialDto() *CreateGo
 	return a.CreateGoHighLevelCredentialDto
 }
 
+func (a *AssistantCredentialsItem) GetCreateGoogleCredentialDto() *CreateGoogleCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateGoogleCredentialDto
+}
+
 func (a *AssistantCredentialsItem) GetCreateGroqCredentialDto() *CreateGroqCredentialDto {
 	if a == nil {
 		return nil
 	}
 	return a.CreateGroqCredentialDto
+}
+
+func (a *AssistantCredentialsItem) GetCreateInflectionAiCredentialDto() *CreateInflectionAiCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateInflectionAiCredentialDto
 }
 
 func (a *AssistantCredentialsItem) GetCreateLangfuseCredentialDto() *CreateLangfuseCredentialDto {
@@ -764,6 +891,13 @@ func (a *AssistantCredentialsItem) GetCreateS3CredentialDto() *CreateS3Credentia
 	return a.CreateS3CredentialDto
 }
 
+func (a *AssistantCredentialsItem) GetCreateSupabaseCredentialDto() *CreateSupabaseCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateSupabaseCredentialDto
+}
+
 func (a *AssistantCredentialsItem) GetCreateSmallestAiCredentialDto() *CreateSmallestAiCredentialDto {
 	if a == nil {
 		return nil
@@ -813,7 +947,76 @@ func (a *AssistantCredentialsItem) GetCreateXAiCredentialDto() *CreateXAiCredent
 	return a.CreateXAiCredentialDto
 }
 
+func (a *AssistantCredentialsItem) GetCreateNeuphonicCredentialDto() *CreateNeuphonicCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateNeuphonicCredentialDto
+}
+
+func (a *AssistantCredentialsItem) GetCreateHumeCredentialDto() *CreateHumeCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateHumeCredentialDto
+}
+
+func (a *AssistantCredentialsItem) GetCreateMistralCredentialDto() *CreateMistralCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateMistralCredentialDto
+}
+
+func (a *AssistantCredentialsItem) GetCreateSpeechmaticsCredentialDto() *CreateSpeechmaticsCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateSpeechmaticsCredentialDto
+}
+
+func (a *AssistantCredentialsItem) GetCreateTrieveCredentialDto() *CreateTrieveCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateTrieveCredentialDto
+}
+
+func (a *AssistantCredentialsItem) GetCreateGoogleCalendarOAuth2ClientCredentialDto() *CreateGoogleCalendarOAuth2ClientCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateGoogleCalendarOAuth2ClientCredentialDto
+}
+
+func (a *AssistantCredentialsItem) GetCreateGoogleCalendarOAuth2AuthorizationCredentialDto() *CreateGoogleCalendarOAuth2AuthorizationCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateGoogleCalendarOAuth2AuthorizationCredentialDto
+}
+
+func (a *AssistantCredentialsItem) GetCreateGoogleSheetsOAuth2AuthorizationCredentialDto() *CreateGoogleSheetsOAuth2AuthorizationCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateGoogleSheetsOAuth2AuthorizationCredentialDto
+}
+
+func (a *AssistantCredentialsItem) GetCreateSlackOAuth2AuthorizationCredentialDto() *CreateSlackOAuth2AuthorizationCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateSlackOAuth2AuthorizationCredentialDto
+}
+
 func (a *AssistantCredentialsItem) UnmarshalJSON(data []byte) error {
+	valueCreateElevenLabsCredentialDto := new(CreateElevenLabsCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateElevenLabsCredentialDto); err == nil {
+		a.typ = "CreateElevenLabsCredentialDto"
+		a.CreateElevenLabsCredentialDto = valueCreateElevenLabsCredentialDto
+		return nil
+	}
 	valueCreateAnthropicCredentialDto := new(CreateAnthropicCredentialDto)
 	if err := json.Unmarshal(data, &valueCreateAnthropicCredentialDto); err == nil {
 		a.typ = "CreateAnthropicCredentialDto"
@@ -856,6 +1059,12 @@ func (a *AssistantCredentialsItem) UnmarshalJSON(data []byte) error {
 		a.CreateCartesiaCredentialDto = valueCreateCartesiaCredentialDto
 		return nil
 	}
+	valueCreateCerebrasCredentialDto := new(CreateCerebrasCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateCerebrasCredentialDto); err == nil {
+		a.typ = "CreateCerebrasCredentialDto"
+		a.CreateCerebrasCredentialDto = valueCreateCerebrasCredentialDto
+		return nil
+	}
 	valueCreateCloudflareCredentialDto := new(CreateCloudflareCredentialDto)
 	if err := json.Unmarshal(data, &valueCreateCloudflareCredentialDto); err == nil {
 		a.typ = "CreateCloudflareCredentialDto"
@@ -886,12 +1095,6 @@ func (a *AssistantCredentialsItem) UnmarshalJSON(data []byte) error {
 		a.CreateDeepSeekCredentialDto = valueCreateDeepSeekCredentialDto
 		return nil
 	}
-	valueCreateElevenLabsCredentialDto := new(CreateElevenLabsCredentialDto)
-	if err := json.Unmarshal(data, &valueCreateElevenLabsCredentialDto); err == nil {
-		a.typ = "CreateElevenLabsCredentialDto"
-		a.CreateElevenLabsCredentialDto = valueCreateElevenLabsCredentialDto
-		return nil
-	}
 	valueCreateGcpCredentialDto := new(CreateGcpCredentialDto)
 	if err := json.Unmarshal(data, &valueCreateGcpCredentialDto); err == nil {
 		a.typ = "CreateGcpCredentialDto"
@@ -910,10 +1113,22 @@ func (a *AssistantCredentialsItem) UnmarshalJSON(data []byte) error {
 		a.CreateGoHighLevelCredentialDto = valueCreateGoHighLevelCredentialDto
 		return nil
 	}
+	valueCreateGoogleCredentialDto := new(CreateGoogleCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoogleCredentialDto); err == nil {
+		a.typ = "CreateGoogleCredentialDto"
+		a.CreateGoogleCredentialDto = valueCreateGoogleCredentialDto
+		return nil
+	}
 	valueCreateGroqCredentialDto := new(CreateGroqCredentialDto)
 	if err := json.Unmarshal(data, &valueCreateGroqCredentialDto); err == nil {
 		a.typ = "CreateGroqCredentialDto"
 		a.CreateGroqCredentialDto = valueCreateGroqCredentialDto
+		return nil
+	}
+	valueCreateInflectionAiCredentialDto := new(CreateInflectionAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateInflectionAiCredentialDto); err == nil {
+		a.typ = "CreateInflectionAiCredentialDto"
+		a.CreateInflectionAiCredentialDto = valueCreateInflectionAiCredentialDto
 		return nil
 	}
 	valueCreateLangfuseCredentialDto := new(CreateLangfuseCredentialDto)
@@ -976,6 +1191,12 @@ func (a *AssistantCredentialsItem) UnmarshalJSON(data []byte) error {
 		a.CreateS3CredentialDto = valueCreateS3CredentialDto
 		return nil
 	}
+	valueCreateSupabaseCredentialDto := new(CreateSupabaseCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateSupabaseCredentialDto); err == nil {
+		a.typ = "CreateSupabaseCredentialDto"
+		a.CreateSupabaseCredentialDto = valueCreateSupabaseCredentialDto
+		return nil
+	}
 	valueCreateSmallestAiCredentialDto := new(CreateSmallestAiCredentialDto)
 	if err := json.Unmarshal(data, &valueCreateSmallestAiCredentialDto); err == nil {
 		a.typ = "CreateSmallestAiCredentialDto"
@@ -1018,10 +1239,67 @@ func (a *AssistantCredentialsItem) UnmarshalJSON(data []byte) error {
 		a.CreateXAiCredentialDto = valueCreateXAiCredentialDto
 		return nil
 	}
+	valueCreateNeuphonicCredentialDto := new(CreateNeuphonicCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateNeuphonicCredentialDto); err == nil {
+		a.typ = "CreateNeuphonicCredentialDto"
+		a.CreateNeuphonicCredentialDto = valueCreateNeuphonicCredentialDto
+		return nil
+	}
+	valueCreateHumeCredentialDto := new(CreateHumeCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateHumeCredentialDto); err == nil {
+		a.typ = "CreateHumeCredentialDto"
+		a.CreateHumeCredentialDto = valueCreateHumeCredentialDto
+		return nil
+	}
+	valueCreateMistralCredentialDto := new(CreateMistralCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateMistralCredentialDto); err == nil {
+		a.typ = "CreateMistralCredentialDto"
+		a.CreateMistralCredentialDto = valueCreateMistralCredentialDto
+		return nil
+	}
+	valueCreateSpeechmaticsCredentialDto := new(CreateSpeechmaticsCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateSpeechmaticsCredentialDto); err == nil {
+		a.typ = "CreateSpeechmaticsCredentialDto"
+		a.CreateSpeechmaticsCredentialDto = valueCreateSpeechmaticsCredentialDto
+		return nil
+	}
+	valueCreateTrieveCredentialDto := new(CreateTrieveCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateTrieveCredentialDto); err == nil {
+		a.typ = "CreateTrieveCredentialDto"
+		a.CreateTrieveCredentialDto = valueCreateTrieveCredentialDto
+		return nil
+	}
+	valueCreateGoogleCalendarOAuth2ClientCredentialDto := new(CreateGoogleCalendarOAuth2ClientCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoogleCalendarOAuth2ClientCredentialDto); err == nil {
+		a.typ = "CreateGoogleCalendarOAuth2ClientCredentialDto"
+		a.CreateGoogleCalendarOAuth2ClientCredentialDto = valueCreateGoogleCalendarOAuth2ClientCredentialDto
+		return nil
+	}
+	valueCreateGoogleCalendarOAuth2AuthorizationCredentialDto := new(CreateGoogleCalendarOAuth2AuthorizationCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoogleCalendarOAuth2AuthorizationCredentialDto); err == nil {
+		a.typ = "CreateGoogleCalendarOAuth2AuthorizationCredentialDto"
+		a.CreateGoogleCalendarOAuth2AuthorizationCredentialDto = valueCreateGoogleCalendarOAuth2AuthorizationCredentialDto
+		return nil
+	}
+	valueCreateGoogleSheetsOAuth2AuthorizationCredentialDto := new(CreateGoogleSheetsOAuth2AuthorizationCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoogleSheetsOAuth2AuthorizationCredentialDto); err == nil {
+		a.typ = "CreateGoogleSheetsOAuth2AuthorizationCredentialDto"
+		a.CreateGoogleSheetsOAuth2AuthorizationCredentialDto = valueCreateGoogleSheetsOAuth2AuthorizationCredentialDto
+		return nil
+	}
+	valueCreateSlackOAuth2AuthorizationCredentialDto := new(CreateSlackOAuth2AuthorizationCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateSlackOAuth2AuthorizationCredentialDto); err == nil {
+		a.typ = "CreateSlackOAuth2AuthorizationCredentialDto"
+		a.CreateSlackOAuth2AuthorizationCredentialDto = valueCreateSlackOAuth2AuthorizationCredentialDto
+		return nil
+	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, a)
 }
 
 func (a AssistantCredentialsItem) MarshalJSON() ([]byte, error) {
+	if a.typ == "CreateElevenLabsCredentialDto" || a.CreateElevenLabsCredentialDto != nil {
+		return json.Marshal(a.CreateElevenLabsCredentialDto)
+	}
 	if a.typ == "CreateAnthropicCredentialDto" || a.CreateAnthropicCredentialDto != nil {
 		return json.Marshal(a.CreateAnthropicCredentialDto)
 	}
@@ -1043,6 +1321,9 @@ func (a AssistantCredentialsItem) MarshalJSON() ([]byte, error) {
 	if a.typ == "CreateCartesiaCredentialDto" || a.CreateCartesiaCredentialDto != nil {
 		return json.Marshal(a.CreateCartesiaCredentialDto)
 	}
+	if a.typ == "CreateCerebrasCredentialDto" || a.CreateCerebrasCredentialDto != nil {
+		return json.Marshal(a.CreateCerebrasCredentialDto)
+	}
 	if a.typ == "CreateCloudflareCredentialDto" || a.CreateCloudflareCredentialDto != nil {
 		return json.Marshal(a.CreateCloudflareCredentialDto)
 	}
@@ -1058,9 +1339,6 @@ func (a AssistantCredentialsItem) MarshalJSON() ([]byte, error) {
 	if a.typ == "CreateDeepSeekCredentialDto" || a.CreateDeepSeekCredentialDto != nil {
 		return json.Marshal(a.CreateDeepSeekCredentialDto)
 	}
-	if a.typ == "CreateElevenLabsCredentialDto" || a.CreateElevenLabsCredentialDto != nil {
-		return json.Marshal(a.CreateElevenLabsCredentialDto)
-	}
 	if a.typ == "CreateGcpCredentialDto" || a.CreateGcpCredentialDto != nil {
 		return json.Marshal(a.CreateGcpCredentialDto)
 	}
@@ -1070,8 +1348,14 @@ func (a AssistantCredentialsItem) MarshalJSON() ([]byte, error) {
 	if a.typ == "CreateGoHighLevelCredentialDto" || a.CreateGoHighLevelCredentialDto != nil {
 		return json.Marshal(a.CreateGoHighLevelCredentialDto)
 	}
+	if a.typ == "CreateGoogleCredentialDto" || a.CreateGoogleCredentialDto != nil {
+		return json.Marshal(a.CreateGoogleCredentialDto)
+	}
 	if a.typ == "CreateGroqCredentialDto" || a.CreateGroqCredentialDto != nil {
 		return json.Marshal(a.CreateGroqCredentialDto)
+	}
+	if a.typ == "CreateInflectionAiCredentialDto" || a.CreateInflectionAiCredentialDto != nil {
+		return json.Marshal(a.CreateInflectionAiCredentialDto)
 	}
 	if a.typ == "CreateLangfuseCredentialDto" || a.CreateLangfuseCredentialDto != nil {
 		return json.Marshal(a.CreateLangfuseCredentialDto)
@@ -1103,6 +1387,9 @@ func (a AssistantCredentialsItem) MarshalJSON() ([]byte, error) {
 	if a.typ == "CreateS3CredentialDto" || a.CreateS3CredentialDto != nil {
 		return json.Marshal(a.CreateS3CredentialDto)
 	}
+	if a.typ == "CreateSupabaseCredentialDto" || a.CreateSupabaseCredentialDto != nil {
+		return json.Marshal(a.CreateSupabaseCredentialDto)
+	}
 	if a.typ == "CreateSmallestAiCredentialDto" || a.CreateSmallestAiCredentialDto != nil {
 		return json.Marshal(a.CreateSmallestAiCredentialDto)
 	}
@@ -1124,10 +1411,38 @@ func (a AssistantCredentialsItem) MarshalJSON() ([]byte, error) {
 	if a.typ == "CreateXAiCredentialDto" || a.CreateXAiCredentialDto != nil {
 		return json.Marshal(a.CreateXAiCredentialDto)
 	}
+	if a.typ == "CreateNeuphonicCredentialDto" || a.CreateNeuphonicCredentialDto != nil {
+		return json.Marshal(a.CreateNeuphonicCredentialDto)
+	}
+	if a.typ == "CreateHumeCredentialDto" || a.CreateHumeCredentialDto != nil {
+		return json.Marshal(a.CreateHumeCredentialDto)
+	}
+	if a.typ == "CreateMistralCredentialDto" || a.CreateMistralCredentialDto != nil {
+		return json.Marshal(a.CreateMistralCredentialDto)
+	}
+	if a.typ == "CreateSpeechmaticsCredentialDto" || a.CreateSpeechmaticsCredentialDto != nil {
+		return json.Marshal(a.CreateSpeechmaticsCredentialDto)
+	}
+	if a.typ == "CreateTrieveCredentialDto" || a.CreateTrieveCredentialDto != nil {
+		return json.Marshal(a.CreateTrieveCredentialDto)
+	}
+	if a.typ == "CreateGoogleCalendarOAuth2ClientCredentialDto" || a.CreateGoogleCalendarOAuth2ClientCredentialDto != nil {
+		return json.Marshal(a.CreateGoogleCalendarOAuth2ClientCredentialDto)
+	}
+	if a.typ == "CreateGoogleCalendarOAuth2AuthorizationCredentialDto" || a.CreateGoogleCalendarOAuth2AuthorizationCredentialDto != nil {
+		return json.Marshal(a.CreateGoogleCalendarOAuth2AuthorizationCredentialDto)
+	}
+	if a.typ == "CreateGoogleSheetsOAuth2AuthorizationCredentialDto" || a.CreateGoogleSheetsOAuth2AuthorizationCredentialDto != nil {
+		return json.Marshal(a.CreateGoogleSheetsOAuth2AuthorizationCredentialDto)
+	}
+	if a.typ == "CreateSlackOAuth2AuthorizationCredentialDto" || a.CreateSlackOAuth2AuthorizationCredentialDto != nil {
+		return json.Marshal(a.CreateSlackOAuth2AuthorizationCredentialDto)
+	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", a)
 }
 
 type AssistantCredentialsItemVisitor interface {
+	VisitCreateElevenLabsCredentialDto(*CreateElevenLabsCredentialDto) error
 	VisitCreateAnthropicCredentialDto(*CreateAnthropicCredentialDto) error
 	VisitCreateAnyscaleCredentialDto(*CreateAnyscaleCredentialDto) error
 	VisitCreateAssemblyAiCredentialDto(*CreateAssemblyAiCredentialDto) error
@@ -1135,16 +1450,18 @@ type AssistantCredentialsItemVisitor interface {
 	VisitCreateAzureCredentialDto(*CreateAzureCredentialDto) error
 	VisitCreateByoSipTrunkCredentialDto(*CreateByoSipTrunkCredentialDto) error
 	VisitCreateCartesiaCredentialDto(*CreateCartesiaCredentialDto) error
+	VisitCreateCerebrasCredentialDto(*CreateCerebrasCredentialDto) error
 	VisitCreateCloudflareCredentialDto(*CreateCloudflareCredentialDto) error
 	VisitCreateCustomLlmCredentialDto(*CreateCustomLlmCredentialDto) error
 	VisitCreateDeepgramCredentialDto(*CreateDeepgramCredentialDto) error
 	VisitCreateDeepInfraCredentialDto(*CreateDeepInfraCredentialDto) error
 	VisitCreateDeepSeekCredentialDto(*CreateDeepSeekCredentialDto) error
-	VisitCreateElevenLabsCredentialDto(*CreateElevenLabsCredentialDto) error
 	VisitCreateGcpCredentialDto(*CreateGcpCredentialDto) error
 	VisitCreateGladiaCredentialDto(*CreateGladiaCredentialDto) error
 	VisitCreateGoHighLevelCredentialDto(*CreateGoHighLevelCredentialDto) error
+	VisitCreateGoogleCredentialDto(*CreateGoogleCredentialDto) error
 	VisitCreateGroqCredentialDto(*CreateGroqCredentialDto) error
+	VisitCreateInflectionAiCredentialDto(*CreateInflectionAiCredentialDto) error
 	VisitCreateLangfuseCredentialDto(*CreateLangfuseCredentialDto) error
 	VisitCreateLmntCredentialDto(*CreateLmntCredentialDto) error
 	VisitCreateMakeCredentialDto(*CreateMakeCredentialDto) error
@@ -1155,6 +1472,7 @@ type AssistantCredentialsItemVisitor interface {
 	VisitCreateRimeAiCredentialDto(*CreateRimeAiCredentialDto) error
 	VisitCreateRunpodCredentialDto(*CreateRunpodCredentialDto) error
 	VisitCreateS3CredentialDto(*CreateS3CredentialDto) error
+	VisitCreateSupabaseCredentialDto(*CreateSupabaseCredentialDto) error
 	VisitCreateSmallestAiCredentialDto(*CreateSmallestAiCredentialDto) error
 	VisitCreateTavusCredentialDto(*CreateTavusCredentialDto) error
 	VisitCreateTogetherAiCredentialDto(*CreateTogetherAiCredentialDto) error
@@ -1162,9 +1480,21 @@ type AssistantCredentialsItemVisitor interface {
 	VisitCreateVonageCredentialDto(*CreateVonageCredentialDto) error
 	VisitCreateWebhookCredentialDto(*CreateWebhookCredentialDto) error
 	VisitCreateXAiCredentialDto(*CreateXAiCredentialDto) error
+	VisitCreateNeuphonicCredentialDto(*CreateNeuphonicCredentialDto) error
+	VisitCreateHumeCredentialDto(*CreateHumeCredentialDto) error
+	VisitCreateMistralCredentialDto(*CreateMistralCredentialDto) error
+	VisitCreateSpeechmaticsCredentialDto(*CreateSpeechmaticsCredentialDto) error
+	VisitCreateTrieveCredentialDto(*CreateTrieveCredentialDto) error
+	VisitCreateGoogleCalendarOAuth2ClientCredentialDto(*CreateGoogleCalendarOAuth2ClientCredentialDto) error
+	VisitCreateGoogleCalendarOAuth2AuthorizationCredentialDto(*CreateGoogleCalendarOAuth2AuthorizationCredentialDto) error
+	VisitCreateGoogleSheetsOAuth2AuthorizationCredentialDto(*CreateGoogleSheetsOAuth2AuthorizationCredentialDto) error
+	VisitCreateSlackOAuth2AuthorizationCredentialDto(*CreateSlackOAuth2AuthorizationCredentialDto) error
 }
 
 func (a *AssistantCredentialsItem) Accept(visitor AssistantCredentialsItemVisitor) error {
+	if a.typ == "CreateElevenLabsCredentialDto" || a.CreateElevenLabsCredentialDto != nil {
+		return visitor.VisitCreateElevenLabsCredentialDto(a.CreateElevenLabsCredentialDto)
+	}
 	if a.typ == "CreateAnthropicCredentialDto" || a.CreateAnthropicCredentialDto != nil {
 		return visitor.VisitCreateAnthropicCredentialDto(a.CreateAnthropicCredentialDto)
 	}
@@ -1186,6 +1516,9 @@ func (a *AssistantCredentialsItem) Accept(visitor AssistantCredentialsItemVisito
 	if a.typ == "CreateCartesiaCredentialDto" || a.CreateCartesiaCredentialDto != nil {
 		return visitor.VisitCreateCartesiaCredentialDto(a.CreateCartesiaCredentialDto)
 	}
+	if a.typ == "CreateCerebrasCredentialDto" || a.CreateCerebrasCredentialDto != nil {
+		return visitor.VisitCreateCerebrasCredentialDto(a.CreateCerebrasCredentialDto)
+	}
 	if a.typ == "CreateCloudflareCredentialDto" || a.CreateCloudflareCredentialDto != nil {
 		return visitor.VisitCreateCloudflareCredentialDto(a.CreateCloudflareCredentialDto)
 	}
@@ -1201,9 +1534,6 @@ func (a *AssistantCredentialsItem) Accept(visitor AssistantCredentialsItemVisito
 	if a.typ == "CreateDeepSeekCredentialDto" || a.CreateDeepSeekCredentialDto != nil {
 		return visitor.VisitCreateDeepSeekCredentialDto(a.CreateDeepSeekCredentialDto)
 	}
-	if a.typ == "CreateElevenLabsCredentialDto" || a.CreateElevenLabsCredentialDto != nil {
-		return visitor.VisitCreateElevenLabsCredentialDto(a.CreateElevenLabsCredentialDto)
-	}
 	if a.typ == "CreateGcpCredentialDto" || a.CreateGcpCredentialDto != nil {
 		return visitor.VisitCreateGcpCredentialDto(a.CreateGcpCredentialDto)
 	}
@@ -1213,8 +1543,14 @@ func (a *AssistantCredentialsItem) Accept(visitor AssistantCredentialsItemVisito
 	if a.typ == "CreateGoHighLevelCredentialDto" || a.CreateGoHighLevelCredentialDto != nil {
 		return visitor.VisitCreateGoHighLevelCredentialDto(a.CreateGoHighLevelCredentialDto)
 	}
+	if a.typ == "CreateGoogleCredentialDto" || a.CreateGoogleCredentialDto != nil {
+		return visitor.VisitCreateGoogleCredentialDto(a.CreateGoogleCredentialDto)
+	}
 	if a.typ == "CreateGroqCredentialDto" || a.CreateGroqCredentialDto != nil {
 		return visitor.VisitCreateGroqCredentialDto(a.CreateGroqCredentialDto)
+	}
+	if a.typ == "CreateInflectionAiCredentialDto" || a.CreateInflectionAiCredentialDto != nil {
+		return visitor.VisitCreateInflectionAiCredentialDto(a.CreateInflectionAiCredentialDto)
 	}
 	if a.typ == "CreateLangfuseCredentialDto" || a.CreateLangfuseCredentialDto != nil {
 		return visitor.VisitCreateLangfuseCredentialDto(a.CreateLangfuseCredentialDto)
@@ -1246,6 +1582,9 @@ func (a *AssistantCredentialsItem) Accept(visitor AssistantCredentialsItemVisito
 	if a.typ == "CreateS3CredentialDto" || a.CreateS3CredentialDto != nil {
 		return visitor.VisitCreateS3CredentialDto(a.CreateS3CredentialDto)
 	}
+	if a.typ == "CreateSupabaseCredentialDto" || a.CreateSupabaseCredentialDto != nil {
+		return visitor.VisitCreateSupabaseCredentialDto(a.CreateSupabaseCredentialDto)
+	}
 	if a.typ == "CreateSmallestAiCredentialDto" || a.CreateSmallestAiCredentialDto != nil {
 		return visitor.VisitCreateSmallestAiCredentialDto(a.CreateSmallestAiCredentialDto)
 	}
@@ -1266,6 +1605,33 @@ func (a *AssistantCredentialsItem) Accept(visitor AssistantCredentialsItemVisito
 	}
 	if a.typ == "CreateXAiCredentialDto" || a.CreateXAiCredentialDto != nil {
 		return visitor.VisitCreateXAiCredentialDto(a.CreateXAiCredentialDto)
+	}
+	if a.typ == "CreateNeuphonicCredentialDto" || a.CreateNeuphonicCredentialDto != nil {
+		return visitor.VisitCreateNeuphonicCredentialDto(a.CreateNeuphonicCredentialDto)
+	}
+	if a.typ == "CreateHumeCredentialDto" || a.CreateHumeCredentialDto != nil {
+		return visitor.VisitCreateHumeCredentialDto(a.CreateHumeCredentialDto)
+	}
+	if a.typ == "CreateMistralCredentialDto" || a.CreateMistralCredentialDto != nil {
+		return visitor.VisitCreateMistralCredentialDto(a.CreateMistralCredentialDto)
+	}
+	if a.typ == "CreateSpeechmaticsCredentialDto" || a.CreateSpeechmaticsCredentialDto != nil {
+		return visitor.VisitCreateSpeechmaticsCredentialDto(a.CreateSpeechmaticsCredentialDto)
+	}
+	if a.typ == "CreateTrieveCredentialDto" || a.CreateTrieveCredentialDto != nil {
+		return visitor.VisitCreateTrieveCredentialDto(a.CreateTrieveCredentialDto)
+	}
+	if a.typ == "CreateGoogleCalendarOAuth2ClientCredentialDto" || a.CreateGoogleCalendarOAuth2ClientCredentialDto != nil {
+		return visitor.VisitCreateGoogleCalendarOAuth2ClientCredentialDto(a.CreateGoogleCalendarOAuth2ClientCredentialDto)
+	}
+	if a.typ == "CreateGoogleCalendarOAuth2AuthorizationCredentialDto" || a.CreateGoogleCalendarOAuth2AuthorizationCredentialDto != nil {
+		return visitor.VisitCreateGoogleCalendarOAuth2AuthorizationCredentialDto(a.CreateGoogleCalendarOAuth2AuthorizationCredentialDto)
+	}
+	if a.typ == "CreateGoogleSheetsOAuth2AuthorizationCredentialDto" || a.CreateGoogleSheetsOAuth2AuthorizationCredentialDto != nil {
+		return visitor.VisitCreateGoogleSheetsOAuth2AuthorizationCredentialDto(a.CreateGoogleSheetsOAuth2AuthorizationCredentialDto)
+	}
+	if a.typ == "CreateSlackOAuth2AuthorizationCredentialDto" || a.CreateSlackOAuth2AuthorizationCredentialDto != nil {
+		return visitor.VisitCreateSlackOAuth2AuthorizationCredentialDto(a.CreateSlackOAuth2AuthorizationCredentialDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", a)
 }
@@ -1307,12 +1673,13 @@ func (a AssistantFirstMessageMode) Ptr() *AssistantFirstMessageMode {
 type AssistantModel struct {
 	AnyscaleModel     *AnyscaleModel
 	AnthropicModel    *AnthropicModel
+	CerebrasModel     *CerebrasModel
 	CustomLlmModel    *CustomLlmModel
 	DeepInfraModel    *DeepInfraModel
+	DeepSeekModel     *DeepSeekModel
 	GoogleModel       *GoogleModel
 	GroqModel         *GroqModel
 	InflectionAiModel *InflectionAiModel
-	DeepSeekModel     *DeepSeekModel
 	OpenAiModel       *OpenAiModel
 	OpenRouterModel   *OpenRouterModel
 	PerplexityAiModel *PerplexityAiModel
@@ -1337,6 +1704,13 @@ func (a *AssistantModel) GetAnthropicModel() *AnthropicModel {
 	return a.AnthropicModel
 }
 
+func (a *AssistantModel) GetCerebrasModel() *CerebrasModel {
+	if a == nil {
+		return nil
+	}
+	return a.CerebrasModel
+}
+
 func (a *AssistantModel) GetCustomLlmModel() *CustomLlmModel {
 	if a == nil {
 		return nil
@@ -1349,6 +1723,13 @@ func (a *AssistantModel) GetDeepInfraModel() *DeepInfraModel {
 		return nil
 	}
 	return a.DeepInfraModel
+}
+
+func (a *AssistantModel) GetDeepSeekModel() *DeepSeekModel {
+	if a == nil {
+		return nil
+	}
+	return a.DeepSeekModel
 }
 
 func (a *AssistantModel) GetGoogleModel() *GoogleModel {
@@ -1370,13 +1751,6 @@ func (a *AssistantModel) GetInflectionAiModel() *InflectionAiModel {
 		return nil
 	}
 	return a.InflectionAiModel
-}
-
-func (a *AssistantModel) GetDeepSeekModel() *DeepSeekModel {
-	if a == nil {
-		return nil
-	}
-	return a.DeepSeekModel
 }
 
 func (a *AssistantModel) GetOpenAiModel() *OpenAiModel {
@@ -1434,6 +1808,12 @@ func (a *AssistantModel) UnmarshalJSON(data []byte) error {
 		a.AnthropicModel = valueAnthropicModel
 		return nil
 	}
+	valueCerebrasModel := new(CerebrasModel)
+	if err := json.Unmarshal(data, &valueCerebrasModel); err == nil {
+		a.typ = "CerebrasModel"
+		a.CerebrasModel = valueCerebrasModel
+		return nil
+	}
 	valueCustomLlmModel := new(CustomLlmModel)
 	if err := json.Unmarshal(data, &valueCustomLlmModel); err == nil {
 		a.typ = "CustomLlmModel"
@@ -1444,6 +1824,12 @@ func (a *AssistantModel) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &valueDeepInfraModel); err == nil {
 		a.typ = "DeepInfraModel"
 		a.DeepInfraModel = valueDeepInfraModel
+		return nil
+	}
+	valueDeepSeekModel := new(DeepSeekModel)
+	if err := json.Unmarshal(data, &valueDeepSeekModel); err == nil {
+		a.typ = "DeepSeekModel"
+		a.DeepSeekModel = valueDeepSeekModel
 		return nil
 	}
 	valueGoogleModel := new(GoogleModel)
@@ -1462,12 +1848,6 @@ func (a *AssistantModel) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &valueInflectionAiModel); err == nil {
 		a.typ = "InflectionAiModel"
 		a.InflectionAiModel = valueInflectionAiModel
-		return nil
-	}
-	valueDeepSeekModel := new(DeepSeekModel)
-	if err := json.Unmarshal(data, &valueDeepSeekModel); err == nil {
-		a.typ = "DeepSeekModel"
-		a.DeepSeekModel = valueDeepSeekModel
 		return nil
 	}
 	valueOpenAiModel := new(OpenAiModel)
@@ -1516,11 +1896,17 @@ func (a AssistantModel) MarshalJSON() ([]byte, error) {
 	if a.typ == "AnthropicModel" || a.AnthropicModel != nil {
 		return json.Marshal(a.AnthropicModel)
 	}
+	if a.typ == "CerebrasModel" || a.CerebrasModel != nil {
+		return json.Marshal(a.CerebrasModel)
+	}
 	if a.typ == "CustomLlmModel" || a.CustomLlmModel != nil {
 		return json.Marshal(a.CustomLlmModel)
 	}
 	if a.typ == "DeepInfraModel" || a.DeepInfraModel != nil {
 		return json.Marshal(a.DeepInfraModel)
+	}
+	if a.typ == "DeepSeekModel" || a.DeepSeekModel != nil {
+		return json.Marshal(a.DeepSeekModel)
 	}
 	if a.typ == "GoogleModel" || a.GoogleModel != nil {
 		return json.Marshal(a.GoogleModel)
@@ -1530,9 +1916,6 @@ func (a AssistantModel) MarshalJSON() ([]byte, error) {
 	}
 	if a.typ == "InflectionAiModel" || a.InflectionAiModel != nil {
 		return json.Marshal(a.InflectionAiModel)
-	}
-	if a.typ == "DeepSeekModel" || a.DeepSeekModel != nil {
-		return json.Marshal(a.DeepSeekModel)
 	}
 	if a.typ == "OpenAiModel" || a.OpenAiModel != nil {
 		return json.Marshal(a.OpenAiModel)
@@ -1558,12 +1941,13 @@ func (a AssistantModel) MarshalJSON() ([]byte, error) {
 type AssistantModelVisitor interface {
 	VisitAnyscaleModel(*AnyscaleModel) error
 	VisitAnthropicModel(*AnthropicModel) error
+	VisitCerebrasModel(*CerebrasModel) error
 	VisitCustomLlmModel(*CustomLlmModel) error
 	VisitDeepInfraModel(*DeepInfraModel) error
+	VisitDeepSeekModel(*DeepSeekModel) error
 	VisitGoogleModel(*GoogleModel) error
 	VisitGroqModel(*GroqModel) error
 	VisitInflectionAiModel(*InflectionAiModel) error
-	VisitDeepSeekModel(*DeepSeekModel) error
 	VisitOpenAiModel(*OpenAiModel) error
 	VisitOpenRouterModel(*OpenRouterModel) error
 	VisitPerplexityAiModel(*PerplexityAiModel) error
@@ -1579,11 +1963,17 @@ func (a *AssistantModel) Accept(visitor AssistantModelVisitor) error {
 	if a.typ == "AnthropicModel" || a.AnthropicModel != nil {
 		return visitor.VisitAnthropicModel(a.AnthropicModel)
 	}
+	if a.typ == "CerebrasModel" || a.CerebrasModel != nil {
+		return visitor.VisitCerebrasModel(a.CerebrasModel)
+	}
 	if a.typ == "CustomLlmModel" || a.CustomLlmModel != nil {
 		return visitor.VisitCustomLlmModel(a.CustomLlmModel)
 	}
 	if a.typ == "DeepInfraModel" || a.DeepInfraModel != nil {
 		return visitor.VisitDeepInfraModel(a.DeepInfraModel)
+	}
+	if a.typ == "DeepSeekModel" || a.DeepSeekModel != nil {
+		return visitor.VisitDeepSeekModel(a.DeepSeekModel)
 	}
 	if a.typ == "GoogleModel" || a.GoogleModel != nil {
 		return visitor.VisitGoogleModel(a.GoogleModel)
@@ -1593,9 +1983,6 @@ func (a *AssistantModel) Accept(visitor AssistantModelVisitor) error {
 	}
 	if a.typ == "InflectionAiModel" || a.InflectionAiModel != nil {
 		return visitor.VisitInflectionAiModel(a.InflectionAiModel)
-	}
-	if a.typ == "DeepSeekModel" || a.DeepSeekModel != nil {
-		return visitor.VisitDeepSeekModel(a.DeepSeekModel)
 	}
 	if a.typ == "OpenAiModel" || a.OpenAiModel != nil {
 		return visitor.VisitOpenAiModel(a.OpenAiModel)
@@ -1687,12 +2074,16 @@ func (a AssistantServerMessagesItem) Ptr() *AssistantServerMessagesItem {
 
 // These are the options for the assistant's transcriber.
 type AssistantTranscriber struct {
-	AssemblyAiTranscriber  *AssemblyAiTranscriber
-	AzureSpeechTranscriber *AzureSpeechTranscriber
-	CustomTranscriber      *CustomTranscriber
-	DeepgramTranscriber    *DeepgramTranscriber
-	GladiaTranscriber      *GladiaTranscriber
-	TalkscriberTranscriber *TalkscriberTranscriber
+	AssemblyAiTranscriber   *AssemblyAiTranscriber
+	AzureSpeechTranscriber  *AzureSpeechTranscriber
+	CustomTranscriber       *CustomTranscriber
+	DeepgramTranscriber     *DeepgramTranscriber
+	ElevenLabsTranscriber   *ElevenLabsTranscriber
+	GladiaTranscriber       *GladiaTranscriber
+	SpeechmaticsTranscriber *SpeechmaticsTranscriber
+	TalkscriberTranscriber  *TalkscriberTranscriber
+	GoogleTranscriber       *GoogleTranscriber
+	OpenAiTranscriber       *OpenAiTranscriber
 
 	typ string
 }
@@ -1725,6 +2116,13 @@ func (a *AssistantTranscriber) GetDeepgramTranscriber() *DeepgramTranscriber {
 	return a.DeepgramTranscriber
 }
 
+func (a *AssistantTranscriber) GetElevenLabsTranscriber() *ElevenLabsTranscriber {
+	if a == nil {
+		return nil
+	}
+	return a.ElevenLabsTranscriber
+}
+
 func (a *AssistantTranscriber) GetGladiaTranscriber() *GladiaTranscriber {
 	if a == nil {
 		return nil
@@ -1732,11 +2130,32 @@ func (a *AssistantTranscriber) GetGladiaTranscriber() *GladiaTranscriber {
 	return a.GladiaTranscriber
 }
 
+func (a *AssistantTranscriber) GetSpeechmaticsTranscriber() *SpeechmaticsTranscriber {
+	if a == nil {
+		return nil
+	}
+	return a.SpeechmaticsTranscriber
+}
+
 func (a *AssistantTranscriber) GetTalkscriberTranscriber() *TalkscriberTranscriber {
 	if a == nil {
 		return nil
 	}
 	return a.TalkscriberTranscriber
+}
+
+func (a *AssistantTranscriber) GetGoogleTranscriber() *GoogleTranscriber {
+	if a == nil {
+		return nil
+	}
+	return a.GoogleTranscriber
+}
+
+func (a *AssistantTranscriber) GetOpenAiTranscriber() *OpenAiTranscriber {
+	if a == nil {
+		return nil
+	}
+	return a.OpenAiTranscriber
 }
 
 func (a *AssistantTranscriber) UnmarshalJSON(data []byte) error {
@@ -1764,16 +2183,40 @@ func (a *AssistantTranscriber) UnmarshalJSON(data []byte) error {
 		a.DeepgramTranscriber = valueDeepgramTranscriber
 		return nil
 	}
+	valueElevenLabsTranscriber := new(ElevenLabsTranscriber)
+	if err := json.Unmarshal(data, &valueElevenLabsTranscriber); err == nil {
+		a.typ = "ElevenLabsTranscriber"
+		a.ElevenLabsTranscriber = valueElevenLabsTranscriber
+		return nil
+	}
 	valueGladiaTranscriber := new(GladiaTranscriber)
 	if err := json.Unmarshal(data, &valueGladiaTranscriber); err == nil {
 		a.typ = "GladiaTranscriber"
 		a.GladiaTranscriber = valueGladiaTranscriber
 		return nil
 	}
+	valueSpeechmaticsTranscriber := new(SpeechmaticsTranscriber)
+	if err := json.Unmarshal(data, &valueSpeechmaticsTranscriber); err == nil {
+		a.typ = "SpeechmaticsTranscriber"
+		a.SpeechmaticsTranscriber = valueSpeechmaticsTranscriber
+		return nil
+	}
 	valueTalkscriberTranscriber := new(TalkscriberTranscriber)
 	if err := json.Unmarshal(data, &valueTalkscriberTranscriber); err == nil {
 		a.typ = "TalkscriberTranscriber"
 		a.TalkscriberTranscriber = valueTalkscriberTranscriber
+		return nil
+	}
+	valueGoogleTranscriber := new(GoogleTranscriber)
+	if err := json.Unmarshal(data, &valueGoogleTranscriber); err == nil {
+		a.typ = "GoogleTranscriber"
+		a.GoogleTranscriber = valueGoogleTranscriber
+		return nil
+	}
+	valueOpenAiTranscriber := new(OpenAiTranscriber)
+	if err := json.Unmarshal(data, &valueOpenAiTranscriber); err == nil {
+		a.typ = "OpenAiTranscriber"
+		a.OpenAiTranscriber = valueOpenAiTranscriber
 		return nil
 	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, a)
@@ -1792,11 +2235,23 @@ func (a AssistantTranscriber) MarshalJSON() ([]byte, error) {
 	if a.typ == "DeepgramTranscriber" || a.DeepgramTranscriber != nil {
 		return json.Marshal(a.DeepgramTranscriber)
 	}
+	if a.typ == "ElevenLabsTranscriber" || a.ElevenLabsTranscriber != nil {
+		return json.Marshal(a.ElevenLabsTranscriber)
+	}
 	if a.typ == "GladiaTranscriber" || a.GladiaTranscriber != nil {
 		return json.Marshal(a.GladiaTranscriber)
 	}
+	if a.typ == "SpeechmaticsTranscriber" || a.SpeechmaticsTranscriber != nil {
+		return json.Marshal(a.SpeechmaticsTranscriber)
+	}
 	if a.typ == "TalkscriberTranscriber" || a.TalkscriberTranscriber != nil {
 		return json.Marshal(a.TalkscriberTranscriber)
+	}
+	if a.typ == "GoogleTranscriber" || a.GoogleTranscriber != nil {
+		return json.Marshal(a.GoogleTranscriber)
+	}
+	if a.typ == "OpenAiTranscriber" || a.OpenAiTranscriber != nil {
+		return json.Marshal(a.OpenAiTranscriber)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", a)
 }
@@ -1806,8 +2261,12 @@ type AssistantTranscriberVisitor interface {
 	VisitAzureSpeechTranscriber(*AzureSpeechTranscriber) error
 	VisitCustomTranscriber(*CustomTranscriber) error
 	VisitDeepgramTranscriber(*DeepgramTranscriber) error
+	VisitElevenLabsTranscriber(*ElevenLabsTranscriber) error
 	VisitGladiaTranscriber(*GladiaTranscriber) error
+	VisitSpeechmaticsTranscriber(*SpeechmaticsTranscriber) error
 	VisitTalkscriberTranscriber(*TalkscriberTranscriber) error
+	VisitGoogleTranscriber(*GoogleTranscriber) error
+	VisitOpenAiTranscriber(*OpenAiTranscriber) error
 }
 
 func (a *AssistantTranscriber) Accept(visitor AssistantTranscriberVisitor) error {
@@ -1823,11 +2282,23 @@ func (a *AssistantTranscriber) Accept(visitor AssistantTranscriberVisitor) error
 	if a.typ == "DeepgramTranscriber" || a.DeepgramTranscriber != nil {
 		return visitor.VisitDeepgramTranscriber(a.DeepgramTranscriber)
 	}
+	if a.typ == "ElevenLabsTranscriber" || a.ElevenLabsTranscriber != nil {
+		return visitor.VisitElevenLabsTranscriber(a.ElevenLabsTranscriber)
+	}
 	if a.typ == "GladiaTranscriber" || a.GladiaTranscriber != nil {
 		return visitor.VisitGladiaTranscriber(a.GladiaTranscriber)
 	}
+	if a.typ == "SpeechmaticsTranscriber" || a.SpeechmaticsTranscriber != nil {
+		return visitor.VisitSpeechmaticsTranscriber(a.SpeechmaticsTranscriber)
+	}
 	if a.typ == "TalkscriberTranscriber" || a.TalkscriberTranscriber != nil {
 		return visitor.VisitTalkscriberTranscriber(a.TalkscriberTranscriber)
+	}
+	if a.typ == "GoogleTranscriber" || a.GoogleTranscriber != nil {
+		return visitor.VisitGoogleTranscriber(a.GoogleTranscriber)
+	}
+	if a.typ == "OpenAiTranscriber" || a.OpenAiTranscriber != nil {
+		return visitor.VisitOpenAiTranscriber(a.OpenAiTranscriber)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", a)
 }
@@ -1839,13 +2310,15 @@ type AssistantVoice struct {
 	CustomVoice     *CustomVoice
 	DeepgramVoice   *DeepgramVoice
 	ElevenLabsVoice *ElevenLabsVoice
+	HumeVoice       *HumeVoice
 	LmntVoice       *LmntVoice
-	NeetsVoice      *NeetsVoice
+	NeuphonicVoice  *NeuphonicVoice
 	OpenAiVoice     *OpenAiVoice
 	PlayHtVoice     *PlayHtVoice
 	RimeAiVoice     *RimeAiVoice
 	SmallestAiVoice *SmallestAiVoice
 	TavusVoice      *TavusVoice
+	VapiVoice       *VapiVoice
 
 	typ string
 }
@@ -1885,6 +2358,13 @@ func (a *AssistantVoice) GetElevenLabsVoice() *ElevenLabsVoice {
 	return a.ElevenLabsVoice
 }
 
+func (a *AssistantVoice) GetHumeVoice() *HumeVoice {
+	if a == nil {
+		return nil
+	}
+	return a.HumeVoice
+}
+
 func (a *AssistantVoice) GetLmntVoice() *LmntVoice {
 	if a == nil {
 		return nil
@@ -1892,11 +2372,11 @@ func (a *AssistantVoice) GetLmntVoice() *LmntVoice {
 	return a.LmntVoice
 }
 
-func (a *AssistantVoice) GetNeetsVoice() *NeetsVoice {
+func (a *AssistantVoice) GetNeuphonicVoice() *NeuphonicVoice {
 	if a == nil {
 		return nil
 	}
-	return a.NeetsVoice
+	return a.NeuphonicVoice
 }
 
 func (a *AssistantVoice) GetOpenAiVoice() *OpenAiVoice {
@@ -1934,6 +2414,13 @@ func (a *AssistantVoice) GetTavusVoice() *TavusVoice {
 	return a.TavusVoice
 }
 
+func (a *AssistantVoice) GetVapiVoice() *VapiVoice {
+	if a == nil {
+		return nil
+	}
+	return a.VapiVoice
+}
+
 func (a *AssistantVoice) UnmarshalJSON(data []byte) error {
 	valueAzureVoice := new(AzureVoice)
 	if err := json.Unmarshal(data, &valueAzureVoice); err == nil {
@@ -1965,16 +2452,22 @@ func (a *AssistantVoice) UnmarshalJSON(data []byte) error {
 		a.ElevenLabsVoice = valueElevenLabsVoice
 		return nil
 	}
+	valueHumeVoice := new(HumeVoice)
+	if err := json.Unmarshal(data, &valueHumeVoice); err == nil {
+		a.typ = "HumeVoice"
+		a.HumeVoice = valueHumeVoice
+		return nil
+	}
 	valueLmntVoice := new(LmntVoice)
 	if err := json.Unmarshal(data, &valueLmntVoice); err == nil {
 		a.typ = "LmntVoice"
 		a.LmntVoice = valueLmntVoice
 		return nil
 	}
-	valueNeetsVoice := new(NeetsVoice)
-	if err := json.Unmarshal(data, &valueNeetsVoice); err == nil {
-		a.typ = "NeetsVoice"
-		a.NeetsVoice = valueNeetsVoice
+	valueNeuphonicVoice := new(NeuphonicVoice)
+	if err := json.Unmarshal(data, &valueNeuphonicVoice); err == nil {
+		a.typ = "NeuphonicVoice"
+		a.NeuphonicVoice = valueNeuphonicVoice
 		return nil
 	}
 	valueOpenAiVoice := new(OpenAiVoice)
@@ -2007,6 +2500,12 @@ func (a *AssistantVoice) UnmarshalJSON(data []byte) error {
 		a.TavusVoice = valueTavusVoice
 		return nil
 	}
+	valueVapiVoice := new(VapiVoice)
+	if err := json.Unmarshal(data, &valueVapiVoice); err == nil {
+		a.typ = "VapiVoice"
+		a.VapiVoice = valueVapiVoice
+		return nil
+	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, a)
 }
 
@@ -2026,11 +2525,14 @@ func (a AssistantVoice) MarshalJSON() ([]byte, error) {
 	if a.typ == "ElevenLabsVoice" || a.ElevenLabsVoice != nil {
 		return json.Marshal(a.ElevenLabsVoice)
 	}
+	if a.typ == "HumeVoice" || a.HumeVoice != nil {
+		return json.Marshal(a.HumeVoice)
+	}
 	if a.typ == "LmntVoice" || a.LmntVoice != nil {
 		return json.Marshal(a.LmntVoice)
 	}
-	if a.typ == "NeetsVoice" || a.NeetsVoice != nil {
-		return json.Marshal(a.NeetsVoice)
+	if a.typ == "NeuphonicVoice" || a.NeuphonicVoice != nil {
+		return json.Marshal(a.NeuphonicVoice)
 	}
 	if a.typ == "OpenAiVoice" || a.OpenAiVoice != nil {
 		return json.Marshal(a.OpenAiVoice)
@@ -2047,6 +2549,9 @@ func (a AssistantVoice) MarshalJSON() ([]byte, error) {
 	if a.typ == "TavusVoice" || a.TavusVoice != nil {
 		return json.Marshal(a.TavusVoice)
 	}
+	if a.typ == "VapiVoice" || a.VapiVoice != nil {
+		return json.Marshal(a.VapiVoice)
+	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", a)
 }
 
@@ -2056,13 +2561,15 @@ type AssistantVoiceVisitor interface {
 	VisitCustomVoice(*CustomVoice) error
 	VisitDeepgramVoice(*DeepgramVoice) error
 	VisitElevenLabsVoice(*ElevenLabsVoice) error
+	VisitHumeVoice(*HumeVoice) error
 	VisitLmntVoice(*LmntVoice) error
-	VisitNeetsVoice(*NeetsVoice) error
+	VisitNeuphonicVoice(*NeuphonicVoice) error
 	VisitOpenAiVoice(*OpenAiVoice) error
 	VisitPlayHtVoice(*PlayHtVoice) error
 	VisitRimeAiVoice(*RimeAiVoice) error
 	VisitSmallestAiVoice(*SmallestAiVoice) error
 	VisitTavusVoice(*TavusVoice) error
+	VisitVapiVoice(*VapiVoice) error
 }
 
 func (a *AssistantVoice) Accept(visitor AssistantVoiceVisitor) error {
@@ -2081,11 +2588,14 @@ func (a *AssistantVoice) Accept(visitor AssistantVoiceVisitor) error {
 	if a.typ == "ElevenLabsVoice" || a.ElevenLabsVoice != nil {
 		return visitor.VisitElevenLabsVoice(a.ElevenLabsVoice)
 	}
+	if a.typ == "HumeVoice" || a.HumeVoice != nil {
+		return visitor.VisitHumeVoice(a.HumeVoice)
+	}
 	if a.typ == "LmntVoice" || a.LmntVoice != nil {
 		return visitor.VisitLmntVoice(a.LmntVoice)
 	}
-	if a.typ == "NeetsVoice" || a.NeetsVoice != nil {
-		return visitor.VisitNeetsVoice(a.NeetsVoice)
+	if a.typ == "NeuphonicVoice" || a.NeuphonicVoice != nil {
+		return visitor.VisitNeuphonicVoice(a.NeuphonicVoice)
 	}
 	if a.typ == "OpenAiVoice" || a.OpenAiVoice != nil {
 		return visitor.VisitOpenAiVoice(a.OpenAiVoice)
@@ -2102,50 +2612,203 @@ func (a *AssistantVoice) Accept(visitor AssistantVoiceVisitor) error {
 	if a.typ == "TavusVoice" || a.TavusVoice != nil {
 		return visitor.VisitTavusVoice(a.TavusVoice)
 	}
+	if a.typ == "VapiVoice" || a.VapiVoice != nil {
+		return visitor.VisitVapiVoice(a.VapiVoice)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
+// These are the settings to configure or disable voicemail detection. Alternatively, voicemail detection can be configured using the model.tools=[VoicemailTool].
+// This uses Twilio's built-in detection while the VoicemailTool relies on the model to detect if a voicemail was reached.
+// You can use neither of them, one of them, or both of them. By default, Twilio built-in detection is enabled while VoicemailTool is not.
+type AssistantVoicemailDetection struct {
+	GoogleVoicemailDetectionPlan *GoogleVoicemailDetectionPlan
+	OpenAiVoicemailDetectionPlan *OpenAiVoicemailDetectionPlan
+	TwilioVoicemailDetectionPlan *TwilioVoicemailDetectionPlan
+
+	typ string
+}
+
+func (a *AssistantVoicemailDetection) GetGoogleVoicemailDetectionPlan() *GoogleVoicemailDetectionPlan {
+	if a == nil {
+		return nil
+	}
+	return a.GoogleVoicemailDetectionPlan
+}
+
+func (a *AssistantVoicemailDetection) GetOpenAiVoicemailDetectionPlan() *OpenAiVoicemailDetectionPlan {
+	if a == nil {
+		return nil
+	}
+	return a.OpenAiVoicemailDetectionPlan
+}
+
+func (a *AssistantVoicemailDetection) GetTwilioVoicemailDetectionPlan() *TwilioVoicemailDetectionPlan {
+	if a == nil {
+		return nil
+	}
+	return a.TwilioVoicemailDetectionPlan
+}
+
+func (a *AssistantVoicemailDetection) UnmarshalJSON(data []byte) error {
+	valueGoogleVoicemailDetectionPlan := new(GoogleVoicemailDetectionPlan)
+	if err := json.Unmarshal(data, &valueGoogleVoicemailDetectionPlan); err == nil {
+		a.typ = "GoogleVoicemailDetectionPlan"
+		a.GoogleVoicemailDetectionPlan = valueGoogleVoicemailDetectionPlan
+		return nil
+	}
+	valueOpenAiVoicemailDetectionPlan := new(OpenAiVoicemailDetectionPlan)
+	if err := json.Unmarshal(data, &valueOpenAiVoicemailDetectionPlan); err == nil {
+		a.typ = "OpenAiVoicemailDetectionPlan"
+		a.OpenAiVoicemailDetectionPlan = valueOpenAiVoicemailDetectionPlan
+		return nil
+	}
+	valueTwilioVoicemailDetectionPlan := new(TwilioVoicemailDetectionPlan)
+	if err := json.Unmarshal(data, &valueTwilioVoicemailDetectionPlan); err == nil {
+		a.typ = "TwilioVoicemailDetectionPlan"
+		a.TwilioVoicemailDetectionPlan = valueTwilioVoicemailDetectionPlan
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, a)
+}
+
+func (a AssistantVoicemailDetection) MarshalJSON() ([]byte, error) {
+	if a.typ == "GoogleVoicemailDetectionPlan" || a.GoogleVoicemailDetectionPlan != nil {
+		return json.Marshal(a.GoogleVoicemailDetectionPlan)
+	}
+	if a.typ == "OpenAiVoicemailDetectionPlan" || a.OpenAiVoicemailDetectionPlan != nil {
+		return json.Marshal(a.OpenAiVoicemailDetectionPlan)
+	}
+	if a.typ == "TwilioVoicemailDetectionPlan" || a.TwilioVoicemailDetectionPlan != nil {
+		return json.Marshal(a.TwilioVoicemailDetectionPlan)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
+type AssistantVoicemailDetectionVisitor interface {
+	VisitGoogleVoicemailDetectionPlan(*GoogleVoicemailDetectionPlan) error
+	VisitOpenAiVoicemailDetectionPlan(*OpenAiVoicemailDetectionPlan) error
+	VisitTwilioVoicemailDetectionPlan(*TwilioVoicemailDetectionPlan) error
+}
+
+func (a *AssistantVoicemailDetection) Accept(visitor AssistantVoicemailDetectionVisitor) error {
+	if a.typ == "GoogleVoicemailDetectionPlan" || a.GoogleVoicemailDetectionPlan != nil {
+		return visitor.VisitGoogleVoicemailDetectionPlan(a.GoogleVoicemailDetectionPlan)
+	}
+	if a.typ == "OpenAiVoicemailDetectionPlan" || a.OpenAiVoicemailDetectionPlan != nil {
+		return visitor.VisitOpenAiVoicemailDetectionPlan(a.OpenAiVoicemailDetectionPlan)
+	}
+	if a.typ == "TwilioVoicemailDetectionPlan" || a.TwilioVoicemailDetectionPlan != nil {
+		return visitor.VisitTwilioVoicemailDetectionPlan(a.TwilioVoicemailDetectionPlan)
+	}
 	return fmt.Errorf("type %T does not include a non-empty union type", a)
 }
 
 // This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
-type UpdateAssistantDtoBackgroundSound string
+// You can also provide a custom sound by providing a URL to an audio file.
+type UpdateAssistantDtoBackgroundSound struct {
+	UpdateAssistantDtoBackgroundSoundZero UpdateAssistantDtoBackgroundSoundZero
+	String                                string
+
+	typ string
+}
+
+func (u *UpdateAssistantDtoBackgroundSound) GetUpdateAssistantDtoBackgroundSoundZero() UpdateAssistantDtoBackgroundSoundZero {
+	if u == nil {
+		return ""
+	}
+	return u.UpdateAssistantDtoBackgroundSoundZero
+}
+
+func (u *UpdateAssistantDtoBackgroundSound) GetString() string {
+	if u == nil {
+		return ""
+	}
+	return u.String
+}
+
+func (u *UpdateAssistantDtoBackgroundSound) UnmarshalJSON(data []byte) error {
+	var valueUpdateAssistantDtoBackgroundSoundZero UpdateAssistantDtoBackgroundSoundZero
+	if err := json.Unmarshal(data, &valueUpdateAssistantDtoBackgroundSoundZero); err == nil {
+		u.typ = "UpdateAssistantDtoBackgroundSoundZero"
+		u.UpdateAssistantDtoBackgroundSoundZero = valueUpdateAssistantDtoBackgroundSoundZero
+		return nil
+	}
+	var valueString string
+	if err := json.Unmarshal(data, &valueString); err == nil {
+		u.typ = "String"
+		u.String = valueString
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, u)
+}
+
+func (u UpdateAssistantDtoBackgroundSound) MarshalJSON() ([]byte, error) {
+	if u.typ == "UpdateAssistantDtoBackgroundSoundZero" || u.UpdateAssistantDtoBackgroundSoundZero != "" {
+		return json.Marshal(u.UpdateAssistantDtoBackgroundSoundZero)
+	}
+	if u.typ == "String" || u.String != "" {
+		return json.Marshal(u.String)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", u)
+}
+
+type UpdateAssistantDtoBackgroundSoundVisitor interface {
+	VisitUpdateAssistantDtoBackgroundSoundZero(UpdateAssistantDtoBackgroundSoundZero) error
+	VisitString(string) error
+}
+
+func (u *UpdateAssistantDtoBackgroundSound) Accept(visitor UpdateAssistantDtoBackgroundSoundVisitor) error {
+	if u.typ == "UpdateAssistantDtoBackgroundSoundZero" || u.UpdateAssistantDtoBackgroundSoundZero != "" {
+		return visitor.VisitUpdateAssistantDtoBackgroundSoundZero(u.UpdateAssistantDtoBackgroundSoundZero)
+	}
+	if u.typ == "String" || u.String != "" {
+		return visitor.VisitString(u.String)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", u)
+}
+
+type UpdateAssistantDtoBackgroundSoundZero string
 
 const (
-	UpdateAssistantDtoBackgroundSoundOff    UpdateAssistantDtoBackgroundSound = "off"
-	UpdateAssistantDtoBackgroundSoundOffice UpdateAssistantDtoBackgroundSound = "office"
+	UpdateAssistantDtoBackgroundSoundZeroOff    UpdateAssistantDtoBackgroundSoundZero = "off"
+	UpdateAssistantDtoBackgroundSoundZeroOffice UpdateAssistantDtoBackgroundSoundZero = "office"
 )
 
-func NewUpdateAssistantDtoBackgroundSoundFromString(s string) (UpdateAssistantDtoBackgroundSound, error) {
+func NewUpdateAssistantDtoBackgroundSoundZeroFromString(s string) (UpdateAssistantDtoBackgroundSoundZero, error) {
 	switch s {
 	case "off":
-		return UpdateAssistantDtoBackgroundSoundOff, nil
+		return UpdateAssistantDtoBackgroundSoundZeroOff, nil
 	case "office":
-		return UpdateAssistantDtoBackgroundSoundOffice, nil
+		return UpdateAssistantDtoBackgroundSoundZeroOffice, nil
 	}
-	var t UpdateAssistantDtoBackgroundSound
+	var t UpdateAssistantDtoBackgroundSoundZero
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
 }
 
-func (u UpdateAssistantDtoBackgroundSound) Ptr() *UpdateAssistantDtoBackgroundSound {
+func (u UpdateAssistantDtoBackgroundSoundZero) Ptr() *UpdateAssistantDtoBackgroundSoundZero {
 	return &u
 }
 
 type UpdateAssistantDtoClientMessagesItem string
 
 const (
-	UpdateAssistantDtoClientMessagesItemConversationUpdate UpdateAssistantDtoClientMessagesItem = "conversation-update"
-	UpdateAssistantDtoClientMessagesItemFunctionCall       UpdateAssistantDtoClientMessagesItem = "function-call"
-	UpdateAssistantDtoClientMessagesItemFunctionCallResult UpdateAssistantDtoClientMessagesItem = "function-call-result"
-	UpdateAssistantDtoClientMessagesItemHang               UpdateAssistantDtoClientMessagesItem = "hang"
-	UpdateAssistantDtoClientMessagesItemLanguageChanged    UpdateAssistantDtoClientMessagesItem = "language-changed"
-	UpdateAssistantDtoClientMessagesItemMetadata           UpdateAssistantDtoClientMessagesItem = "metadata"
-	UpdateAssistantDtoClientMessagesItemModelOutput        UpdateAssistantDtoClientMessagesItem = "model-output"
-	UpdateAssistantDtoClientMessagesItemSpeechUpdate       UpdateAssistantDtoClientMessagesItem = "speech-update"
-	UpdateAssistantDtoClientMessagesItemStatusUpdate       UpdateAssistantDtoClientMessagesItem = "status-update"
-	UpdateAssistantDtoClientMessagesItemTranscript         UpdateAssistantDtoClientMessagesItem = "transcript"
-	UpdateAssistantDtoClientMessagesItemToolCalls          UpdateAssistantDtoClientMessagesItem = "tool-calls"
-	UpdateAssistantDtoClientMessagesItemToolCallsResult    UpdateAssistantDtoClientMessagesItem = "tool-calls-result"
-	UpdateAssistantDtoClientMessagesItemTransferUpdate     UpdateAssistantDtoClientMessagesItem = "transfer-update"
-	UpdateAssistantDtoClientMessagesItemUserInterrupted    UpdateAssistantDtoClientMessagesItem = "user-interrupted"
-	UpdateAssistantDtoClientMessagesItemVoiceInput         UpdateAssistantDtoClientMessagesItem = "voice-input"
+	UpdateAssistantDtoClientMessagesItemConversationUpdate  UpdateAssistantDtoClientMessagesItem = "conversation-update"
+	UpdateAssistantDtoClientMessagesItemFunctionCall        UpdateAssistantDtoClientMessagesItem = "function-call"
+	UpdateAssistantDtoClientMessagesItemFunctionCallResult  UpdateAssistantDtoClientMessagesItem = "function-call-result"
+	UpdateAssistantDtoClientMessagesItemHang                UpdateAssistantDtoClientMessagesItem = "hang"
+	UpdateAssistantDtoClientMessagesItemLanguageChanged     UpdateAssistantDtoClientMessagesItem = "language-changed"
+	UpdateAssistantDtoClientMessagesItemMetadata            UpdateAssistantDtoClientMessagesItem = "metadata"
+	UpdateAssistantDtoClientMessagesItemModelOutput         UpdateAssistantDtoClientMessagesItem = "model-output"
+	UpdateAssistantDtoClientMessagesItemSpeechUpdate        UpdateAssistantDtoClientMessagesItem = "speech-update"
+	UpdateAssistantDtoClientMessagesItemStatusUpdate        UpdateAssistantDtoClientMessagesItem = "status-update"
+	UpdateAssistantDtoClientMessagesItemTranscript          UpdateAssistantDtoClientMessagesItem = "transcript"
+	UpdateAssistantDtoClientMessagesItemToolCalls           UpdateAssistantDtoClientMessagesItem = "tool-calls"
+	UpdateAssistantDtoClientMessagesItemToolCallsResult     UpdateAssistantDtoClientMessagesItem = "tool-calls-result"
+	UpdateAssistantDtoClientMessagesItemTransferUpdate      UpdateAssistantDtoClientMessagesItem = "transfer-update"
+	UpdateAssistantDtoClientMessagesItemUserInterrupted     UpdateAssistantDtoClientMessagesItem = "user-interrupted"
+	UpdateAssistantDtoClientMessagesItemVoiceInput          UpdateAssistantDtoClientMessagesItem = "voice-input"
+	UpdateAssistantDtoClientMessagesItemWorkflowNodeStarted UpdateAssistantDtoClientMessagesItem = "workflow.node.started"
 )
 
 func NewUpdateAssistantDtoClientMessagesItemFromString(s string) (UpdateAssistantDtoClientMessagesItem, error) {
@@ -2180,6 +2843,8 @@ func NewUpdateAssistantDtoClientMessagesItemFromString(s string) (UpdateAssistan
 		return UpdateAssistantDtoClientMessagesItemUserInterrupted, nil
 	case "voice-input":
 		return UpdateAssistantDtoClientMessagesItemVoiceInput, nil
+	case "workflow.node.started":
+		return UpdateAssistantDtoClientMessagesItemWorkflowNodeStarted, nil
 	}
 	var t UpdateAssistantDtoClientMessagesItem
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -2190,42 +2855,62 @@ func (u UpdateAssistantDtoClientMessagesItem) Ptr() *UpdateAssistantDtoClientMes
 }
 
 type UpdateAssistantDtoCredentialsItem struct {
-	CreateAnthropicCredentialDto    *CreateAnthropicCredentialDto
-	CreateAnyscaleCredentialDto     *CreateAnyscaleCredentialDto
-	CreateAssemblyAiCredentialDto   *CreateAssemblyAiCredentialDto
-	CreateAzureOpenAiCredentialDto  *CreateAzureOpenAiCredentialDto
-	CreateAzureCredentialDto        *CreateAzureCredentialDto
-	CreateByoSipTrunkCredentialDto  *CreateByoSipTrunkCredentialDto
-	CreateCartesiaCredentialDto     *CreateCartesiaCredentialDto
-	CreateCloudflareCredentialDto   *CreateCloudflareCredentialDto
-	CreateCustomLlmCredentialDto    *CreateCustomLlmCredentialDto
-	CreateDeepgramCredentialDto     *CreateDeepgramCredentialDto
-	CreateDeepInfraCredentialDto    *CreateDeepInfraCredentialDto
-	CreateDeepSeekCredentialDto     *CreateDeepSeekCredentialDto
-	CreateElevenLabsCredentialDto   *CreateElevenLabsCredentialDto
-	CreateGcpCredentialDto          *CreateGcpCredentialDto
-	CreateGladiaCredentialDto       *CreateGladiaCredentialDto
-	CreateGoHighLevelCredentialDto  *CreateGoHighLevelCredentialDto
-	CreateGroqCredentialDto         *CreateGroqCredentialDto
-	CreateLangfuseCredentialDto     *CreateLangfuseCredentialDto
-	CreateLmntCredentialDto         *CreateLmntCredentialDto
-	CreateMakeCredentialDto         *CreateMakeCredentialDto
-	CreateOpenAiCredentialDto       *CreateOpenAiCredentialDto
-	CreateOpenRouterCredentialDto   *CreateOpenRouterCredentialDto
-	CreatePerplexityAiCredentialDto *CreatePerplexityAiCredentialDto
-	CreatePlayHtCredentialDto       *CreatePlayHtCredentialDto
-	CreateRimeAiCredentialDto       *CreateRimeAiCredentialDto
-	CreateRunpodCredentialDto       *CreateRunpodCredentialDto
-	CreateS3CredentialDto           *CreateS3CredentialDto
-	CreateSmallestAiCredentialDto   *CreateSmallestAiCredentialDto
-	CreateTavusCredentialDto        *CreateTavusCredentialDto
-	CreateTogetherAiCredentialDto   *CreateTogetherAiCredentialDto
-	CreateTwilioCredentialDto       *CreateTwilioCredentialDto
-	CreateVonageCredentialDto       *CreateVonageCredentialDto
-	CreateWebhookCredentialDto      *CreateWebhookCredentialDto
-	CreateXAiCredentialDto          *CreateXAiCredentialDto
+	CreateElevenLabsCredentialDto                        *CreateElevenLabsCredentialDto
+	CreateAnthropicCredentialDto                         *CreateAnthropicCredentialDto
+	CreateAnyscaleCredentialDto                          *CreateAnyscaleCredentialDto
+	CreateAssemblyAiCredentialDto                        *CreateAssemblyAiCredentialDto
+	CreateAzureOpenAiCredentialDto                       *CreateAzureOpenAiCredentialDto
+	CreateAzureCredentialDto                             *CreateAzureCredentialDto
+	CreateByoSipTrunkCredentialDto                       *CreateByoSipTrunkCredentialDto
+	CreateCartesiaCredentialDto                          *CreateCartesiaCredentialDto
+	CreateCerebrasCredentialDto                          *CreateCerebrasCredentialDto
+	CreateCloudflareCredentialDto                        *CreateCloudflareCredentialDto
+	CreateCustomLlmCredentialDto                         *CreateCustomLlmCredentialDto
+	CreateDeepgramCredentialDto                          *CreateDeepgramCredentialDto
+	CreateDeepInfraCredentialDto                         *CreateDeepInfraCredentialDto
+	CreateDeepSeekCredentialDto                          *CreateDeepSeekCredentialDto
+	CreateGcpCredentialDto                               *CreateGcpCredentialDto
+	CreateGladiaCredentialDto                            *CreateGladiaCredentialDto
+	CreateGoHighLevelCredentialDto                       *CreateGoHighLevelCredentialDto
+	CreateGoogleCredentialDto                            *CreateGoogleCredentialDto
+	CreateGroqCredentialDto                              *CreateGroqCredentialDto
+	CreateInflectionAiCredentialDto                      *CreateInflectionAiCredentialDto
+	CreateLangfuseCredentialDto                          *CreateLangfuseCredentialDto
+	CreateLmntCredentialDto                              *CreateLmntCredentialDto
+	CreateMakeCredentialDto                              *CreateMakeCredentialDto
+	CreateOpenAiCredentialDto                            *CreateOpenAiCredentialDto
+	CreateOpenRouterCredentialDto                        *CreateOpenRouterCredentialDto
+	CreatePerplexityAiCredentialDto                      *CreatePerplexityAiCredentialDto
+	CreatePlayHtCredentialDto                            *CreatePlayHtCredentialDto
+	CreateRimeAiCredentialDto                            *CreateRimeAiCredentialDto
+	CreateRunpodCredentialDto                            *CreateRunpodCredentialDto
+	CreateS3CredentialDto                                *CreateS3CredentialDto
+	CreateSupabaseCredentialDto                          *CreateSupabaseCredentialDto
+	CreateSmallestAiCredentialDto                        *CreateSmallestAiCredentialDto
+	CreateTavusCredentialDto                             *CreateTavusCredentialDto
+	CreateTogetherAiCredentialDto                        *CreateTogetherAiCredentialDto
+	CreateTwilioCredentialDto                            *CreateTwilioCredentialDto
+	CreateVonageCredentialDto                            *CreateVonageCredentialDto
+	CreateWebhookCredentialDto                           *CreateWebhookCredentialDto
+	CreateXAiCredentialDto                               *CreateXAiCredentialDto
+	CreateNeuphonicCredentialDto                         *CreateNeuphonicCredentialDto
+	CreateHumeCredentialDto                              *CreateHumeCredentialDto
+	CreateMistralCredentialDto                           *CreateMistralCredentialDto
+	CreateSpeechmaticsCredentialDto                      *CreateSpeechmaticsCredentialDto
+	CreateTrieveCredentialDto                            *CreateTrieveCredentialDto
+	CreateGoogleCalendarOAuth2ClientCredentialDto        *CreateGoogleCalendarOAuth2ClientCredentialDto
+	CreateGoogleCalendarOAuth2AuthorizationCredentialDto *CreateGoogleCalendarOAuth2AuthorizationCredentialDto
+	CreateGoogleSheetsOAuth2AuthorizationCredentialDto   *CreateGoogleSheetsOAuth2AuthorizationCredentialDto
+	CreateSlackOAuth2AuthorizationCredentialDto          *CreateSlackOAuth2AuthorizationCredentialDto
 
 	typ string
+}
+
+func (u *UpdateAssistantDtoCredentialsItem) GetCreateElevenLabsCredentialDto() *CreateElevenLabsCredentialDto {
+	if u == nil {
+		return nil
+	}
+	return u.CreateElevenLabsCredentialDto
 }
 
 func (u *UpdateAssistantDtoCredentialsItem) GetCreateAnthropicCredentialDto() *CreateAnthropicCredentialDto {
@@ -2277,6 +2962,13 @@ func (u *UpdateAssistantDtoCredentialsItem) GetCreateCartesiaCredentialDto() *Cr
 	return u.CreateCartesiaCredentialDto
 }
 
+func (u *UpdateAssistantDtoCredentialsItem) GetCreateCerebrasCredentialDto() *CreateCerebrasCredentialDto {
+	if u == nil {
+		return nil
+	}
+	return u.CreateCerebrasCredentialDto
+}
+
 func (u *UpdateAssistantDtoCredentialsItem) GetCreateCloudflareCredentialDto() *CreateCloudflareCredentialDto {
 	if u == nil {
 		return nil
@@ -2312,13 +3004,6 @@ func (u *UpdateAssistantDtoCredentialsItem) GetCreateDeepSeekCredentialDto() *Cr
 	return u.CreateDeepSeekCredentialDto
 }
 
-func (u *UpdateAssistantDtoCredentialsItem) GetCreateElevenLabsCredentialDto() *CreateElevenLabsCredentialDto {
-	if u == nil {
-		return nil
-	}
-	return u.CreateElevenLabsCredentialDto
-}
-
 func (u *UpdateAssistantDtoCredentialsItem) GetCreateGcpCredentialDto() *CreateGcpCredentialDto {
 	if u == nil {
 		return nil
@@ -2340,11 +3025,25 @@ func (u *UpdateAssistantDtoCredentialsItem) GetCreateGoHighLevelCredentialDto() 
 	return u.CreateGoHighLevelCredentialDto
 }
 
+func (u *UpdateAssistantDtoCredentialsItem) GetCreateGoogleCredentialDto() *CreateGoogleCredentialDto {
+	if u == nil {
+		return nil
+	}
+	return u.CreateGoogleCredentialDto
+}
+
 func (u *UpdateAssistantDtoCredentialsItem) GetCreateGroqCredentialDto() *CreateGroqCredentialDto {
 	if u == nil {
 		return nil
 	}
 	return u.CreateGroqCredentialDto
+}
+
+func (u *UpdateAssistantDtoCredentialsItem) GetCreateInflectionAiCredentialDto() *CreateInflectionAiCredentialDto {
+	if u == nil {
+		return nil
+	}
+	return u.CreateInflectionAiCredentialDto
 }
 
 func (u *UpdateAssistantDtoCredentialsItem) GetCreateLangfuseCredentialDto() *CreateLangfuseCredentialDto {
@@ -2417,6 +3116,13 @@ func (u *UpdateAssistantDtoCredentialsItem) GetCreateS3CredentialDto() *CreateS3
 	return u.CreateS3CredentialDto
 }
 
+func (u *UpdateAssistantDtoCredentialsItem) GetCreateSupabaseCredentialDto() *CreateSupabaseCredentialDto {
+	if u == nil {
+		return nil
+	}
+	return u.CreateSupabaseCredentialDto
+}
+
 func (u *UpdateAssistantDtoCredentialsItem) GetCreateSmallestAiCredentialDto() *CreateSmallestAiCredentialDto {
 	if u == nil {
 		return nil
@@ -2466,7 +3172,76 @@ func (u *UpdateAssistantDtoCredentialsItem) GetCreateXAiCredentialDto() *CreateX
 	return u.CreateXAiCredentialDto
 }
 
+func (u *UpdateAssistantDtoCredentialsItem) GetCreateNeuphonicCredentialDto() *CreateNeuphonicCredentialDto {
+	if u == nil {
+		return nil
+	}
+	return u.CreateNeuphonicCredentialDto
+}
+
+func (u *UpdateAssistantDtoCredentialsItem) GetCreateHumeCredentialDto() *CreateHumeCredentialDto {
+	if u == nil {
+		return nil
+	}
+	return u.CreateHumeCredentialDto
+}
+
+func (u *UpdateAssistantDtoCredentialsItem) GetCreateMistralCredentialDto() *CreateMistralCredentialDto {
+	if u == nil {
+		return nil
+	}
+	return u.CreateMistralCredentialDto
+}
+
+func (u *UpdateAssistantDtoCredentialsItem) GetCreateSpeechmaticsCredentialDto() *CreateSpeechmaticsCredentialDto {
+	if u == nil {
+		return nil
+	}
+	return u.CreateSpeechmaticsCredentialDto
+}
+
+func (u *UpdateAssistantDtoCredentialsItem) GetCreateTrieveCredentialDto() *CreateTrieveCredentialDto {
+	if u == nil {
+		return nil
+	}
+	return u.CreateTrieveCredentialDto
+}
+
+func (u *UpdateAssistantDtoCredentialsItem) GetCreateGoogleCalendarOAuth2ClientCredentialDto() *CreateGoogleCalendarOAuth2ClientCredentialDto {
+	if u == nil {
+		return nil
+	}
+	return u.CreateGoogleCalendarOAuth2ClientCredentialDto
+}
+
+func (u *UpdateAssistantDtoCredentialsItem) GetCreateGoogleCalendarOAuth2AuthorizationCredentialDto() *CreateGoogleCalendarOAuth2AuthorizationCredentialDto {
+	if u == nil {
+		return nil
+	}
+	return u.CreateGoogleCalendarOAuth2AuthorizationCredentialDto
+}
+
+func (u *UpdateAssistantDtoCredentialsItem) GetCreateGoogleSheetsOAuth2AuthorizationCredentialDto() *CreateGoogleSheetsOAuth2AuthorizationCredentialDto {
+	if u == nil {
+		return nil
+	}
+	return u.CreateGoogleSheetsOAuth2AuthorizationCredentialDto
+}
+
+func (u *UpdateAssistantDtoCredentialsItem) GetCreateSlackOAuth2AuthorizationCredentialDto() *CreateSlackOAuth2AuthorizationCredentialDto {
+	if u == nil {
+		return nil
+	}
+	return u.CreateSlackOAuth2AuthorizationCredentialDto
+}
+
 func (u *UpdateAssistantDtoCredentialsItem) UnmarshalJSON(data []byte) error {
+	valueCreateElevenLabsCredentialDto := new(CreateElevenLabsCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateElevenLabsCredentialDto); err == nil {
+		u.typ = "CreateElevenLabsCredentialDto"
+		u.CreateElevenLabsCredentialDto = valueCreateElevenLabsCredentialDto
+		return nil
+	}
 	valueCreateAnthropicCredentialDto := new(CreateAnthropicCredentialDto)
 	if err := json.Unmarshal(data, &valueCreateAnthropicCredentialDto); err == nil {
 		u.typ = "CreateAnthropicCredentialDto"
@@ -2509,6 +3284,12 @@ func (u *UpdateAssistantDtoCredentialsItem) UnmarshalJSON(data []byte) error {
 		u.CreateCartesiaCredentialDto = valueCreateCartesiaCredentialDto
 		return nil
 	}
+	valueCreateCerebrasCredentialDto := new(CreateCerebrasCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateCerebrasCredentialDto); err == nil {
+		u.typ = "CreateCerebrasCredentialDto"
+		u.CreateCerebrasCredentialDto = valueCreateCerebrasCredentialDto
+		return nil
+	}
 	valueCreateCloudflareCredentialDto := new(CreateCloudflareCredentialDto)
 	if err := json.Unmarshal(data, &valueCreateCloudflareCredentialDto); err == nil {
 		u.typ = "CreateCloudflareCredentialDto"
@@ -2539,12 +3320,6 @@ func (u *UpdateAssistantDtoCredentialsItem) UnmarshalJSON(data []byte) error {
 		u.CreateDeepSeekCredentialDto = valueCreateDeepSeekCredentialDto
 		return nil
 	}
-	valueCreateElevenLabsCredentialDto := new(CreateElevenLabsCredentialDto)
-	if err := json.Unmarshal(data, &valueCreateElevenLabsCredentialDto); err == nil {
-		u.typ = "CreateElevenLabsCredentialDto"
-		u.CreateElevenLabsCredentialDto = valueCreateElevenLabsCredentialDto
-		return nil
-	}
 	valueCreateGcpCredentialDto := new(CreateGcpCredentialDto)
 	if err := json.Unmarshal(data, &valueCreateGcpCredentialDto); err == nil {
 		u.typ = "CreateGcpCredentialDto"
@@ -2563,10 +3338,22 @@ func (u *UpdateAssistantDtoCredentialsItem) UnmarshalJSON(data []byte) error {
 		u.CreateGoHighLevelCredentialDto = valueCreateGoHighLevelCredentialDto
 		return nil
 	}
+	valueCreateGoogleCredentialDto := new(CreateGoogleCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoogleCredentialDto); err == nil {
+		u.typ = "CreateGoogleCredentialDto"
+		u.CreateGoogleCredentialDto = valueCreateGoogleCredentialDto
+		return nil
+	}
 	valueCreateGroqCredentialDto := new(CreateGroqCredentialDto)
 	if err := json.Unmarshal(data, &valueCreateGroqCredentialDto); err == nil {
 		u.typ = "CreateGroqCredentialDto"
 		u.CreateGroqCredentialDto = valueCreateGroqCredentialDto
+		return nil
+	}
+	valueCreateInflectionAiCredentialDto := new(CreateInflectionAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateInflectionAiCredentialDto); err == nil {
+		u.typ = "CreateInflectionAiCredentialDto"
+		u.CreateInflectionAiCredentialDto = valueCreateInflectionAiCredentialDto
 		return nil
 	}
 	valueCreateLangfuseCredentialDto := new(CreateLangfuseCredentialDto)
@@ -2629,6 +3416,12 @@ func (u *UpdateAssistantDtoCredentialsItem) UnmarshalJSON(data []byte) error {
 		u.CreateS3CredentialDto = valueCreateS3CredentialDto
 		return nil
 	}
+	valueCreateSupabaseCredentialDto := new(CreateSupabaseCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateSupabaseCredentialDto); err == nil {
+		u.typ = "CreateSupabaseCredentialDto"
+		u.CreateSupabaseCredentialDto = valueCreateSupabaseCredentialDto
+		return nil
+	}
 	valueCreateSmallestAiCredentialDto := new(CreateSmallestAiCredentialDto)
 	if err := json.Unmarshal(data, &valueCreateSmallestAiCredentialDto); err == nil {
 		u.typ = "CreateSmallestAiCredentialDto"
@@ -2671,10 +3464,67 @@ func (u *UpdateAssistantDtoCredentialsItem) UnmarshalJSON(data []byte) error {
 		u.CreateXAiCredentialDto = valueCreateXAiCredentialDto
 		return nil
 	}
+	valueCreateNeuphonicCredentialDto := new(CreateNeuphonicCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateNeuphonicCredentialDto); err == nil {
+		u.typ = "CreateNeuphonicCredentialDto"
+		u.CreateNeuphonicCredentialDto = valueCreateNeuphonicCredentialDto
+		return nil
+	}
+	valueCreateHumeCredentialDto := new(CreateHumeCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateHumeCredentialDto); err == nil {
+		u.typ = "CreateHumeCredentialDto"
+		u.CreateHumeCredentialDto = valueCreateHumeCredentialDto
+		return nil
+	}
+	valueCreateMistralCredentialDto := new(CreateMistralCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateMistralCredentialDto); err == nil {
+		u.typ = "CreateMistralCredentialDto"
+		u.CreateMistralCredentialDto = valueCreateMistralCredentialDto
+		return nil
+	}
+	valueCreateSpeechmaticsCredentialDto := new(CreateSpeechmaticsCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateSpeechmaticsCredentialDto); err == nil {
+		u.typ = "CreateSpeechmaticsCredentialDto"
+		u.CreateSpeechmaticsCredentialDto = valueCreateSpeechmaticsCredentialDto
+		return nil
+	}
+	valueCreateTrieveCredentialDto := new(CreateTrieveCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateTrieveCredentialDto); err == nil {
+		u.typ = "CreateTrieveCredentialDto"
+		u.CreateTrieveCredentialDto = valueCreateTrieveCredentialDto
+		return nil
+	}
+	valueCreateGoogleCalendarOAuth2ClientCredentialDto := new(CreateGoogleCalendarOAuth2ClientCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoogleCalendarOAuth2ClientCredentialDto); err == nil {
+		u.typ = "CreateGoogleCalendarOAuth2ClientCredentialDto"
+		u.CreateGoogleCalendarOAuth2ClientCredentialDto = valueCreateGoogleCalendarOAuth2ClientCredentialDto
+		return nil
+	}
+	valueCreateGoogleCalendarOAuth2AuthorizationCredentialDto := new(CreateGoogleCalendarOAuth2AuthorizationCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoogleCalendarOAuth2AuthorizationCredentialDto); err == nil {
+		u.typ = "CreateGoogleCalendarOAuth2AuthorizationCredentialDto"
+		u.CreateGoogleCalendarOAuth2AuthorizationCredentialDto = valueCreateGoogleCalendarOAuth2AuthorizationCredentialDto
+		return nil
+	}
+	valueCreateGoogleSheetsOAuth2AuthorizationCredentialDto := new(CreateGoogleSheetsOAuth2AuthorizationCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoogleSheetsOAuth2AuthorizationCredentialDto); err == nil {
+		u.typ = "CreateGoogleSheetsOAuth2AuthorizationCredentialDto"
+		u.CreateGoogleSheetsOAuth2AuthorizationCredentialDto = valueCreateGoogleSheetsOAuth2AuthorizationCredentialDto
+		return nil
+	}
+	valueCreateSlackOAuth2AuthorizationCredentialDto := new(CreateSlackOAuth2AuthorizationCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateSlackOAuth2AuthorizationCredentialDto); err == nil {
+		u.typ = "CreateSlackOAuth2AuthorizationCredentialDto"
+		u.CreateSlackOAuth2AuthorizationCredentialDto = valueCreateSlackOAuth2AuthorizationCredentialDto
+		return nil
+	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, u)
 }
 
 func (u UpdateAssistantDtoCredentialsItem) MarshalJSON() ([]byte, error) {
+	if u.typ == "CreateElevenLabsCredentialDto" || u.CreateElevenLabsCredentialDto != nil {
+		return json.Marshal(u.CreateElevenLabsCredentialDto)
+	}
 	if u.typ == "CreateAnthropicCredentialDto" || u.CreateAnthropicCredentialDto != nil {
 		return json.Marshal(u.CreateAnthropicCredentialDto)
 	}
@@ -2696,6 +3546,9 @@ func (u UpdateAssistantDtoCredentialsItem) MarshalJSON() ([]byte, error) {
 	if u.typ == "CreateCartesiaCredentialDto" || u.CreateCartesiaCredentialDto != nil {
 		return json.Marshal(u.CreateCartesiaCredentialDto)
 	}
+	if u.typ == "CreateCerebrasCredentialDto" || u.CreateCerebrasCredentialDto != nil {
+		return json.Marshal(u.CreateCerebrasCredentialDto)
+	}
 	if u.typ == "CreateCloudflareCredentialDto" || u.CreateCloudflareCredentialDto != nil {
 		return json.Marshal(u.CreateCloudflareCredentialDto)
 	}
@@ -2711,9 +3564,6 @@ func (u UpdateAssistantDtoCredentialsItem) MarshalJSON() ([]byte, error) {
 	if u.typ == "CreateDeepSeekCredentialDto" || u.CreateDeepSeekCredentialDto != nil {
 		return json.Marshal(u.CreateDeepSeekCredentialDto)
 	}
-	if u.typ == "CreateElevenLabsCredentialDto" || u.CreateElevenLabsCredentialDto != nil {
-		return json.Marshal(u.CreateElevenLabsCredentialDto)
-	}
 	if u.typ == "CreateGcpCredentialDto" || u.CreateGcpCredentialDto != nil {
 		return json.Marshal(u.CreateGcpCredentialDto)
 	}
@@ -2723,8 +3573,14 @@ func (u UpdateAssistantDtoCredentialsItem) MarshalJSON() ([]byte, error) {
 	if u.typ == "CreateGoHighLevelCredentialDto" || u.CreateGoHighLevelCredentialDto != nil {
 		return json.Marshal(u.CreateGoHighLevelCredentialDto)
 	}
+	if u.typ == "CreateGoogleCredentialDto" || u.CreateGoogleCredentialDto != nil {
+		return json.Marshal(u.CreateGoogleCredentialDto)
+	}
 	if u.typ == "CreateGroqCredentialDto" || u.CreateGroqCredentialDto != nil {
 		return json.Marshal(u.CreateGroqCredentialDto)
+	}
+	if u.typ == "CreateInflectionAiCredentialDto" || u.CreateInflectionAiCredentialDto != nil {
+		return json.Marshal(u.CreateInflectionAiCredentialDto)
 	}
 	if u.typ == "CreateLangfuseCredentialDto" || u.CreateLangfuseCredentialDto != nil {
 		return json.Marshal(u.CreateLangfuseCredentialDto)
@@ -2756,6 +3612,9 @@ func (u UpdateAssistantDtoCredentialsItem) MarshalJSON() ([]byte, error) {
 	if u.typ == "CreateS3CredentialDto" || u.CreateS3CredentialDto != nil {
 		return json.Marshal(u.CreateS3CredentialDto)
 	}
+	if u.typ == "CreateSupabaseCredentialDto" || u.CreateSupabaseCredentialDto != nil {
+		return json.Marshal(u.CreateSupabaseCredentialDto)
+	}
 	if u.typ == "CreateSmallestAiCredentialDto" || u.CreateSmallestAiCredentialDto != nil {
 		return json.Marshal(u.CreateSmallestAiCredentialDto)
 	}
@@ -2777,10 +3636,38 @@ func (u UpdateAssistantDtoCredentialsItem) MarshalJSON() ([]byte, error) {
 	if u.typ == "CreateXAiCredentialDto" || u.CreateXAiCredentialDto != nil {
 		return json.Marshal(u.CreateXAiCredentialDto)
 	}
+	if u.typ == "CreateNeuphonicCredentialDto" || u.CreateNeuphonicCredentialDto != nil {
+		return json.Marshal(u.CreateNeuphonicCredentialDto)
+	}
+	if u.typ == "CreateHumeCredentialDto" || u.CreateHumeCredentialDto != nil {
+		return json.Marshal(u.CreateHumeCredentialDto)
+	}
+	if u.typ == "CreateMistralCredentialDto" || u.CreateMistralCredentialDto != nil {
+		return json.Marshal(u.CreateMistralCredentialDto)
+	}
+	if u.typ == "CreateSpeechmaticsCredentialDto" || u.CreateSpeechmaticsCredentialDto != nil {
+		return json.Marshal(u.CreateSpeechmaticsCredentialDto)
+	}
+	if u.typ == "CreateTrieveCredentialDto" || u.CreateTrieveCredentialDto != nil {
+		return json.Marshal(u.CreateTrieveCredentialDto)
+	}
+	if u.typ == "CreateGoogleCalendarOAuth2ClientCredentialDto" || u.CreateGoogleCalendarOAuth2ClientCredentialDto != nil {
+		return json.Marshal(u.CreateGoogleCalendarOAuth2ClientCredentialDto)
+	}
+	if u.typ == "CreateGoogleCalendarOAuth2AuthorizationCredentialDto" || u.CreateGoogleCalendarOAuth2AuthorizationCredentialDto != nil {
+		return json.Marshal(u.CreateGoogleCalendarOAuth2AuthorizationCredentialDto)
+	}
+	if u.typ == "CreateGoogleSheetsOAuth2AuthorizationCredentialDto" || u.CreateGoogleSheetsOAuth2AuthorizationCredentialDto != nil {
+		return json.Marshal(u.CreateGoogleSheetsOAuth2AuthorizationCredentialDto)
+	}
+	if u.typ == "CreateSlackOAuth2AuthorizationCredentialDto" || u.CreateSlackOAuth2AuthorizationCredentialDto != nil {
+		return json.Marshal(u.CreateSlackOAuth2AuthorizationCredentialDto)
+	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", u)
 }
 
 type UpdateAssistantDtoCredentialsItemVisitor interface {
+	VisitCreateElevenLabsCredentialDto(*CreateElevenLabsCredentialDto) error
 	VisitCreateAnthropicCredentialDto(*CreateAnthropicCredentialDto) error
 	VisitCreateAnyscaleCredentialDto(*CreateAnyscaleCredentialDto) error
 	VisitCreateAssemblyAiCredentialDto(*CreateAssemblyAiCredentialDto) error
@@ -2788,16 +3675,18 @@ type UpdateAssistantDtoCredentialsItemVisitor interface {
 	VisitCreateAzureCredentialDto(*CreateAzureCredentialDto) error
 	VisitCreateByoSipTrunkCredentialDto(*CreateByoSipTrunkCredentialDto) error
 	VisitCreateCartesiaCredentialDto(*CreateCartesiaCredentialDto) error
+	VisitCreateCerebrasCredentialDto(*CreateCerebrasCredentialDto) error
 	VisitCreateCloudflareCredentialDto(*CreateCloudflareCredentialDto) error
 	VisitCreateCustomLlmCredentialDto(*CreateCustomLlmCredentialDto) error
 	VisitCreateDeepgramCredentialDto(*CreateDeepgramCredentialDto) error
 	VisitCreateDeepInfraCredentialDto(*CreateDeepInfraCredentialDto) error
 	VisitCreateDeepSeekCredentialDto(*CreateDeepSeekCredentialDto) error
-	VisitCreateElevenLabsCredentialDto(*CreateElevenLabsCredentialDto) error
 	VisitCreateGcpCredentialDto(*CreateGcpCredentialDto) error
 	VisitCreateGladiaCredentialDto(*CreateGladiaCredentialDto) error
 	VisitCreateGoHighLevelCredentialDto(*CreateGoHighLevelCredentialDto) error
+	VisitCreateGoogleCredentialDto(*CreateGoogleCredentialDto) error
 	VisitCreateGroqCredentialDto(*CreateGroqCredentialDto) error
+	VisitCreateInflectionAiCredentialDto(*CreateInflectionAiCredentialDto) error
 	VisitCreateLangfuseCredentialDto(*CreateLangfuseCredentialDto) error
 	VisitCreateLmntCredentialDto(*CreateLmntCredentialDto) error
 	VisitCreateMakeCredentialDto(*CreateMakeCredentialDto) error
@@ -2808,6 +3697,7 @@ type UpdateAssistantDtoCredentialsItemVisitor interface {
 	VisitCreateRimeAiCredentialDto(*CreateRimeAiCredentialDto) error
 	VisitCreateRunpodCredentialDto(*CreateRunpodCredentialDto) error
 	VisitCreateS3CredentialDto(*CreateS3CredentialDto) error
+	VisitCreateSupabaseCredentialDto(*CreateSupabaseCredentialDto) error
 	VisitCreateSmallestAiCredentialDto(*CreateSmallestAiCredentialDto) error
 	VisitCreateTavusCredentialDto(*CreateTavusCredentialDto) error
 	VisitCreateTogetherAiCredentialDto(*CreateTogetherAiCredentialDto) error
@@ -2815,9 +3705,21 @@ type UpdateAssistantDtoCredentialsItemVisitor interface {
 	VisitCreateVonageCredentialDto(*CreateVonageCredentialDto) error
 	VisitCreateWebhookCredentialDto(*CreateWebhookCredentialDto) error
 	VisitCreateXAiCredentialDto(*CreateXAiCredentialDto) error
+	VisitCreateNeuphonicCredentialDto(*CreateNeuphonicCredentialDto) error
+	VisitCreateHumeCredentialDto(*CreateHumeCredentialDto) error
+	VisitCreateMistralCredentialDto(*CreateMistralCredentialDto) error
+	VisitCreateSpeechmaticsCredentialDto(*CreateSpeechmaticsCredentialDto) error
+	VisitCreateTrieveCredentialDto(*CreateTrieveCredentialDto) error
+	VisitCreateGoogleCalendarOAuth2ClientCredentialDto(*CreateGoogleCalendarOAuth2ClientCredentialDto) error
+	VisitCreateGoogleCalendarOAuth2AuthorizationCredentialDto(*CreateGoogleCalendarOAuth2AuthorizationCredentialDto) error
+	VisitCreateGoogleSheetsOAuth2AuthorizationCredentialDto(*CreateGoogleSheetsOAuth2AuthorizationCredentialDto) error
+	VisitCreateSlackOAuth2AuthorizationCredentialDto(*CreateSlackOAuth2AuthorizationCredentialDto) error
 }
 
 func (u *UpdateAssistantDtoCredentialsItem) Accept(visitor UpdateAssistantDtoCredentialsItemVisitor) error {
+	if u.typ == "CreateElevenLabsCredentialDto" || u.CreateElevenLabsCredentialDto != nil {
+		return visitor.VisitCreateElevenLabsCredentialDto(u.CreateElevenLabsCredentialDto)
+	}
 	if u.typ == "CreateAnthropicCredentialDto" || u.CreateAnthropicCredentialDto != nil {
 		return visitor.VisitCreateAnthropicCredentialDto(u.CreateAnthropicCredentialDto)
 	}
@@ -2839,6 +3741,9 @@ func (u *UpdateAssistantDtoCredentialsItem) Accept(visitor UpdateAssistantDtoCre
 	if u.typ == "CreateCartesiaCredentialDto" || u.CreateCartesiaCredentialDto != nil {
 		return visitor.VisitCreateCartesiaCredentialDto(u.CreateCartesiaCredentialDto)
 	}
+	if u.typ == "CreateCerebrasCredentialDto" || u.CreateCerebrasCredentialDto != nil {
+		return visitor.VisitCreateCerebrasCredentialDto(u.CreateCerebrasCredentialDto)
+	}
 	if u.typ == "CreateCloudflareCredentialDto" || u.CreateCloudflareCredentialDto != nil {
 		return visitor.VisitCreateCloudflareCredentialDto(u.CreateCloudflareCredentialDto)
 	}
@@ -2854,9 +3759,6 @@ func (u *UpdateAssistantDtoCredentialsItem) Accept(visitor UpdateAssistantDtoCre
 	if u.typ == "CreateDeepSeekCredentialDto" || u.CreateDeepSeekCredentialDto != nil {
 		return visitor.VisitCreateDeepSeekCredentialDto(u.CreateDeepSeekCredentialDto)
 	}
-	if u.typ == "CreateElevenLabsCredentialDto" || u.CreateElevenLabsCredentialDto != nil {
-		return visitor.VisitCreateElevenLabsCredentialDto(u.CreateElevenLabsCredentialDto)
-	}
 	if u.typ == "CreateGcpCredentialDto" || u.CreateGcpCredentialDto != nil {
 		return visitor.VisitCreateGcpCredentialDto(u.CreateGcpCredentialDto)
 	}
@@ -2866,8 +3768,14 @@ func (u *UpdateAssistantDtoCredentialsItem) Accept(visitor UpdateAssistantDtoCre
 	if u.typ == "CreateGoHighLevelCredentialDto" || u.CreateGoHighLevelCredentialDto != nil {
 		return visitor.VisitCreateGoHighLevelCredentialDto(u.CreateGoHighLevelCredentialDto)
 	}
+	if u.typ == "CreateGoogleCredentialDto" || u.CreateGoogleCredentialDto != nil {
+		return visitor.VisitCreateGoogleCredentialDto(u.CreateGoogleCredentialDto)
+	}
 	if u.typ == "CreateGroqCredentialDto" || u.CreateGroqCredentialDto != nil {
 		return visitor.VisitCreateGroqCredentialDto(u.CreateGroqCredentialDto)
+	}
+	if u.typ == "CreateInflectionAiCredentialDto" || u.CreateInflectionAiCredentialDto != nil {
+		return visitor.VisitCreateInflectionAiCredentialDto(u.CreateInflectionAiCredentialDto)
 	}
 	if u.typ == "CreateLangfuseCredentialDto" || u.CreateLangfuseCredentialDto != nil {
 		return visitor.VisitCreateLangfuseCredentialDto(u.CreateLangfuseCredentialDto)
@@ -2899,6 +3807,9 @@ func (u *UpdateAssistantDtoCredentialsItem) Accept(visitor UpdateAssistantDtoCre
 	if u.typ == "CreateS3CredentialDto" || u.CreateS3CredentialDto != nil {
 		return visitor.VisitCreateS3CredentialDto(u.CreateS3CredentialDto)
 	}
+	if u.typ == "CreateSupabaseCredentialDto" || u.CreateSupabaseCredentialDto != nil {
+		return visitor.VisitCreateSupabaseCredentialDto(u.CreateSupabaseCredentialDto)
+	}
 	if u.typ == "CreateSmallestAiCredentialDto" || u.CreateSmallestAiCredentialDto != nil {
 		return visitor.VisitCreateSmallestAiCredentialDto(u.CreateSmallestAiCredentialDto)
 	}
@@ -2919,6 +3830,33 @@ func (u *UpdateAssistantDtoCredentialsItem) Accept(visitor UpdateAssistantDtoCre
 	}
 	if u.typ == "CreateXAiCredentialDto" || u.CreateXAiCredentialDto != nil {
 		return visitor.VisitCreateXAiCredentialDto(u.CreateXAiCredentialDto)
+	}
+	if u.typ == "CreateNeuphonicCredentialDto" || u.CreateNeuphonicCredentialDto != nil {
+		return visitor.VisitCreateNeuphonicCredentialDto(u.CreateNeuphonicCredentialDto)
+	}
+	if u.typ == "CreateHumeCredentialDto" || u.CreateHumeCredentialDto != nil {
+		return visitor.VisitCreateHumeCredentialDto(u.CreateHumeCredentialDto)
+	}
+	if u.typ == "CreateMistralCredentialDto" || u.CreateMistralCredentialDto != nil {
+		return visitor.VisitCreateMistralCredentialDto(u.CreateMistralCredentialDto)
+	}
+	if u.typ == "CreateSpeechmaticsCredentialDto" || u.CreateSpeechmaticsCredentialDto != nil {
+		return visitor.VisitCreateSpeechmaticsCredentialDto(u.CreateSpeechmaticsCredentialDto)
+	}
+	if u.typ == "CreateTrieveCredentialDto" || u.CreateTrieveCredentialDto != nil {
+		return visitor.VisitCreateTrieveCredentialDto(u.CreateTrieveCredentialDto)
+	}
+	if u.typ == "CreateGoogleCalendarOAuth2ClientCredentialDto" || u.CreateGoogleCalendarOAuth2ClientCredentialDto != nil {
+		return visitor.VisitCreateGoogleCalendarOAuth2ClientCredentialDto(u.CreateGoogleCalendarOAuth2ClientCredentialDto)
+	}
+	if u.typ == "CreateGoogleCalendarOAuth2AuthorizationCredentialDto" || u.CreateGoogleCalendarOAuth2AuthorizationCredentialDto != nil {
+		return visitor.VisitCreateGoogleCalendarOAuth2AuthorizationCredentialDto(u.CreateGoogleCalendarOAuth2AuthorizationCredentialDto)
+	}
+	if u.typ == "CreateGoogleSheetsOAuth2AuthorizationCredentialDto" || u.CreateGoogleSheetsOAuth2AuthorizationCredentialDto != nil {
+		return visitor.VisitCreateGoogleSheetsOAuth2AuthorizationCredentialDto(u.CreateGoogleSheetsOAuth2AuthorizationCredentialDto)
+	}
+	if u.typ == "CreateSlackOAuth2AuthorizationCredentialDto" || u.CreateSlackOAuth2AuthorizationCredentialDto != nil {
+		return visitor.VisitCreateSlackOAuth2AuthorizationCredentialDto(u.CreateSlackOAuth2AuthorizationCredentialDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", u)
 }
@@ -2960,12 +3898,13 @@ func (u UpdateAssistantDtoFirstMessageMode) Ptr() *UpdateAssistantDtoFirstMessag
 type UpdateAssistantDtoModel struct {
 	AnyscaleModel     *AnyscaleModel
 	AnthropicModel    *AnthropicModel
+	CerebrasModel     *CerebrasModel
 	CustomLlmModel    *CustomLlmModel
 	DeepInfraModel    *DeepInfraModel
+	DeepSeekModel     *DeepSeekModel
 	GoogleModel       *GoogleModel
 	GroqModel         *GroqModel
 	InflectionAiModel *InflectionAiModel
-	DeepSeekModel     *DeepSeekModel
 	OpenAiModel       *OpenAiModel
 	OpenRouterModel   *OpenRouterModel
 	PerplexityAiModel *PerplexityAiModel
@@ -2990,6 +3929,13 @@ func (u *UpdateAssistantDtoModel) GetAnthropicModel() *AnthropicModel {
 	return u.AnthropicModel
 }
 
+func (u *UpdateAssistantDtoModel) GetCerebrasModel() *CerebrasModel {
+	if u == nil {
+		return nil
+	}
+	return u.CerebrasModel
+}
+
 func (u *UpdateAssistantDtoModel) GetCustomLlmModel() *CustomLlmModel {
 	if u == nil {
 		return nil
@@ -3002,6 +3948,13 @@ func (u *UpdateAssistantDtoModel) GetDeepInfraModel() *DeepInfraModel {
 		return nil
 	}
 	return u.DeepInfraModel
+}
+
+func (u *UpdateAssistantDtoModel) GetDeepSeekModel() *DeepSeekModel {
+	if u == nil {
+		return nil
+	}
+	return u.DeepSeekModel
 }
 
 func (u *UpdateAssistantDtoModel) GetGoogleModel() *GoogleModel {
@@ -3023,13 +3976,6 @@ func (u *UpdateAssistantDtoModel) GetInflectionAiModel() *InflectionAiModel {
 		return nil
 	}
 	return u.InflectionAiModel
-}
-
-func (u *UpdateAssistantDtoModel) GetDeepSeekModel() *DeepSeekModel {
-	if u == nil {
-		return nil
-	}
-	return u.DeepSeekModel
 }
 
 func (u *UpdateAssistantDtoModel) GetOpenAiModel() *OpenAiModel {
@@ -3087,6 +4033,12 @@ func (u *UpdateAssistantDtoModel) UnmarshalJSON(data []byte) error {
 		u.AnthropicModel = valueAnthropicModel
 		return nil
 	}
+	valueCerebrasModel := new(CerebrasModel)
+	if err := json.Unmarshal(data, &valueCerebrasModel); err == nil {
+		u.typ = "CerebrasModel"
+		u.CerebrasModel = valueCerebrasModel
+		return nil
+	}
 	valueCustomLlmModel := new(CustomLlmModel)
 	if err := json.Unmarshal(data, &valueCustomLlmModel); err == nil {
 		u.typ = "CustomLlmModel"
@@ -3097,6 +4049,12 @@ func (u *UpdateAssistantDtoModel) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &valueDeepInfraModel); err == nil {
 		u.typ = "DeepInfraModel"
 		u.DeepInfraModel = valueDeepInfraModel
+		return nil
+	}
+	valueDeepSeekModel := new(DeepSeekModel)
+	if err := json.Unmarshal(data, &valueDeepSeekModel); err == nil {
+		u.typ = "DeepSeekModel"
+		u.DeepSeekModel = valueDeepSeekModel
 		return nil
 	}
 	valueGoogleModel := new(GoogleModel)
@@ -3115,12 +4073,6 @@ func (u *UpdateAssistantDtoModel) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &valueInflectionAiModel); err == nil {
 		u.typ = "InflectionAiModel"
 		u.InflectionAiModel = valueInflectionAiModel
-		return nil
-	}
-	valueDeepSeekModel := new(DeepSeekModel)
-	if err := json.Unmarshal(data, &valueDeepSeekModel); err == nil {
-		u.typ = "DeepSeekModel"
-		u.DeepSeekModel = valueDeepSeekModel
 		return nil
 	}
 	valueOpenAiModel := new(OpenAiModel)
@@ -3169,11 +4121,17 @@ func (u UpdateAssistantDtoModel) MarshalJSON() ([]byte, error) {
 	if u.typ == "AnthropicModel" || u.AnthropicModel != nil {
 		return json.Marshal(u.AnthropicModel)
 	}
+	if u.typ == "CerebrasModel" || u.CerebrasModel != nil {
+		return json.Marshal(u.CerebrasModel)
+	}
 	if u.typ == "CustomLlmModel" || u.CustomLlmModel != nil {
 		return json.Marshal(u.CustomLlmModel)
 	}
 	if u.typ == "DeepInfraModel" || u.DeepInfraModel != nil {
 		return json.Marshal(u.DeepInfraModel)
+	}
+	if u.typ == "DeepSeekModel" || u.DeepSeekModel != nil {
+		return json.Marshal(u.DeepSeekModel)
 	}
 	if u.typ == "GoogleModel" || u.GoogleModel != nil {
 		return json.Marshal(u.GoogleModel)
@@ -3183,9 +4141,6 @@ func (u UpdateAssistantDtoModel) MarshalJSON() ([]byte, error) {
 	}
 	if u.typ == "InflectionAiModel" || u.InflectionAiModel != nil {
 		return json.Marshal(u.InflectionAiModel)
-	}
-	if u.typ == "DeepSeekModel" || u.DeepSeekModel != nil {
-		return json.Marshal(u.DeepSeekModel)
 	}
 	if u.typ == "OpenAiModel" || u.OpenAiModel != nil {
 		return json.Marshal(u.OpenAiModel)
@@ -3211,12 +4166,13 @@ func (u UpdateAssistantDtoModel) MarshalJSON() ([]byte, error) {
 type UpdateAssistantDtoModelVisitor interface {
 	VisitAnyscaleModel(*AnyscaleModel) error
 	VisitAnthropicModel(*AnthropicModel) error
+	VisitCerebrasModel(*CerebrasModel) error
 	VisitCustomLlmModel(*CustomLlmModel) error
 	VisitDeepInfraModel(*DeepInfraModel) error
+	VisitDeepSeekModel(*DeepSeekModel) error
 	VisitGoogleModel(*GoogleModel) error
 	VisitGroqModel(*GroqModel) error
 	VisitInflectionAiModel(*InflectionAiModel) error
-	VisitDeepSeekModel(*DeepSeekModel) error
 	VisitOpenAiModel(*OpenAiModel) error
 	VisitOpenRouterModel(*OpenRouterModel) error
 	VisitPerplexityAiModel(*PerplexityAiModel) error
@@ -3232,11 +4188,17 @@ func (u *UpdateAssistantDtoModel) Accept(visitor UpdateAssistantDtoModelVisitor)
 	if u.typ == "AnthropicModel" || u.AnthropicModel != nil {
 		return visitor.VisitAnthropicModel(u.AnthropicModel)
 	}
+	if u.typ == "CerebrasModel" || u.CerebrasModel != nil {
+		return visitor.VisitCerebrasModel(u.CerebrasModel)
+	}
 	if u.typ == "CustomLlmModel" || u.CustomLlmModel != nil {
 		return visitor.VisitCustomLlmModel(u.CustomLlmModel)
 	}
 	if u.typ == "DeepInfraModel" || u.DeepInfraModel != nil {
 		return visitor.VisitDeepInfraModel(u.DeepInfraModel)
+	}
+	if u.typ == "DeepSeekModel" || u.DeepSeekModel != nil {
+		return visitor.VisitDeepSeekModel(u.DeepSeekModel)
 	}
 	if u.typ == "GoogleModel" || u.GoogleModel != nil {
 		return visitor.VisitGoogleModel(u.GoogleModel)
@@ -3246,9 +4208,6 @@ func (u *UpdateAssistantDtoModel) Accept(visitor UpdateAssistantDtoModelVisitor)
 	}
 	if u.typ == "InflectionAiModel" || u.InflectionAiModel != nil {
 		return visitor.VisitInflectionAiModel(u.InflectionAiModel)
-	}
-	if u.typ == "DeepSeekModel" || u.DeepSeekModel != nil {
-		return visitor.VisitDeepSeekModel(u.DeepSeekModel)
 	}
 	if u.typ == "OpenAiModel" || u.OpenAiModel != nil {
 		return visitor.VisitOpenAiModel(u.OpenAiModel)
@@ -3340,12 +4299,16 @@ func (u UpdateAssistantDtoServerMessagesItem) Ptr() *UpdateAssistantDtoServerMes
 
 // These are the options for the assistant's transcriber.
 type UpdateAssistantDtoTranscriber struct {
-	AssemblyAiTranscriber  *AssemblyAiTranscriber
-	AzureSpeechTranscriber *AzureSpeechTranscriber
-	CustomTranscriber      *CustomTranscriber
-	DeepgramTranscriber    *DeepgramTranscriber
-	GladiaTranscriber      *GladiaTranscriber
-	TalkscriberTranscriber *TalkscriberTranscriber
+	AssemblyAiTranscriber   *AssemblyAiTranscriber
+	AzureSpeechTranscriber  *AzureSpeechTranscriber
+	CustomTranscriber       *CustomTranscriber
+	DeepgramTranscriber     *DeepgramTranscriber
+	ElevenLabsTranscriber   *ElevenLabsTranscriber
+	GladiaTranscriber       *GladiaTranscriber
+	SpeechmaticsTranscriber *SpeechmaticsTranscriber
+	TalkscriberTranscriber  *TalkscriberTranscriber
+	GoogleTranscriber       *GoogleTranscriber
+	OpenAiTranscriber       *OpenAiTranscriber
 
 	typ string
 }
@@ -3378,6 +4341,13 @@ func (u *UpdateAssistantDtoTranscriber) GetDeepgramTranscriber() *DeepgramTransc
 	return u.DeepgramTranscriber
 }
 
+func (u *UpdateAssistantDtoTranscriber) GetElevenLabsTranscriber() *ElevenLabsTranscriber {
+	if u == nil {
+		return nil
+	}
+	return u.ElevenLabsTranscriber
+}
+
 func (u *UpdateAssistantDtoTranscriber) GetGladiaTranscriber() *GladiaTranscriber {
 	if u == nil {
 		return nil
@@ -3385,11 +4355,32 @@ func (u *UpdateAssistantDtoTranscriber) GetGladiaTranscriber() *GladiaTranscribe
 	return u.GladiaTranscriber
 }
 
+func (u *UpdateAssistantDtoTranscriber) GetSpeechmaticsTranscriber() *SpeechmaticsTranscriber {
+	if u == nil {
+		return nil
+	}
+	return u.SpeechmaticsTranscriber
+}
+
 func (u *UpdateAssistantDtoTranscriber) GetTalkscriberTranscriber() *TalkscriberTranscriber {
 	if u == nil {
 		return nil
 	}
 	return u.TalkscriberTranscriber
+}
+
+func (u *UpdateAssistantDtoTranscriber) GetGoogleTranscriber() *GoogleTranscriber {
+	if u == nil {
+		return nil
+	}
+	return u.GoogleTranscriber
+}
+
+func (u *UpdateAssistantDtoTranscriber) GetOpenAiTranscriber() *OpenAiTranscriber {
+	if u == nil {
+		return nil
+	}
+	return u.OpenAiTranscriber
 }
 
 func (u *UpdateAssistantDtoTranscriber) UnmarshalJSON(data []byte) error {
@@ -3417,16 +4408,40 @@ func (u *UpdateAssistantDtoTranscriber) UnmarshalJSON(data []byte) error {
 		u.DeepgramTranscriber = valueDeepgramTranscriber
 		return nil
 	}
+	valueElevenLabsTranscriber := new(ElevenLabsTranscriber)
+	if err := json.Unmarshal(data, &valueElevenLabsTranscriber); err == nil {
+		u.typ = "ElevenLabsTranscriber"
+		u.ElevenLabsTranscriber = valueElevenLabsTranscriber
+		return nil
+	}
 	valueGladiaTranscriber := new(GladiaTranscriber)
 	if err := json.Unmarshal(data, &valueGladiaTranscriber); err == nil {
 		u.typ = "GladiaTranscriber"
 		u.GladiaTranscriber = valueGladiaTranscriber
 		return nil
 	}
+	valueSpeechmaticsTranscriber := new(SpeechmaticsTranscriber)
+	if err := json.Unmarshal(data, &valueSpeechmaticsTranscriber); err == nil {
+		u.typ = "SpeechmaticsTranscriber"
+		u.SpeechmaticsTranscriber = valueSpeechmaticsTranscriber
+		return nil
+	}
 	valueTalkscriberTranscriber := new(TalkscriberTranscriber)
 	if err := json.Unmarshal(data, &valueTalkscriberTranscriber); err == nil {
 		u.typ = "TalkscriberTranscriber"
 		u.TalkscriberTranscriber = valueTalkscriberTranscriber
+		return nil
+	}
+	valueGoogleTranscriber := new(GoogleTranscriber)
+	if err := json.Unmarshal(data, &valueGoogleTranscriber); err == nil {
+		u.typ = "GoogleTranscriber"
+		u.GoogleTranscriber = valueGoogleTranscriber
+		return nil
+	}
+	valueOpenAiTranscriber := new(OpenAiTranscriber)
+	if err := json.Unmarshal(data, &valueOpenAiTranscriber); err == nil {
+		u.typ = "OpenAiTranscriber"
+		u.OpenAiTranscriber = valueOpenAiTranscriber
 		return nil
 	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, u)
@@ -3445,11 +4460,23 @@ func (u UpdateAssistantDtoTranscriber) MarshalJSON() ([]byte, error) {
 	if u.typ == "DeepgramTranscriber" || u.DeepgramTranscriber != nil {
 		return json.Marshal(u.DeepgramTranscriber)
 	}
+	if u.typ == "ElevenLabsTranscriber" || u.ElevenLabsTranscriber != nil {
+		return json.Marshal(u.ElevenLabsTranscriber)
+	}
 	if u.typ == "GladiaTranscriber" || u.GladiaTranscriber != nil {
 		return json.Marshal(u.GladiaTranscriber)
 	}
+	if u.typ == "SpeechmaticsTranscriber" || u.SpeechmaticsTranscriber != nil {
+		return json.Marshal(u.SpeechmaticsTranscriber)
+	}
 	if u.typ == "TalkscriberTranscriber" || u.TalkscriberTranscriber != nil {
 		return json.Marshal(u.TalkscriberTranscriber)
+	}
+	if u.typ == "GoogleTranscriber" || u.GoogleTranscriber != nil {
+		return json.Marshal(u.GoogleTranscriber)
+	}
+	if u.typ == "OpenAiTranscriber" || u.OpenAiTranscriber != nil {
+		return json.Marshal(u.OpenAiTranscriber)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", u)
 }
@@ -3459,8 +4486,12 @@ type UpdateAssistantDtoTranscriberVisitor interface {
 	VisitAzureSpeechTranscriber(*AzureSpeechTranscriber) error
 	VisitCustomTranscriber(*CustomTranscriber) error
 	VisitDeepgramTranscriber(*DeepgramTranscriber) error
+	VisitElevenLabsTranscriber(*ElevenLabsTranscriber) error
 	VisitGladiaTranscriber(*GladiaTranscriber) error
+	VisitSpeechmaticsTranscriber(*SpeechmaticsTranscriber) error
 	VisitTalkscriberTranscriber(*TalkscriberTranscriber) error
+	VisitGoogleTranscriber(*GoogleTranscriber) error
+	VisitOpenAiTranscriber(*OpenAiTranscriber) error
 }
 
 func (u *UpdateAssistantDtoTranscriber) Accept(visitor UpdateAssistantDtoTranscriberVisitor) error {
@@ -3476,11 +4507,23 @@ func (u *UpdateAssistantDtoTranscriber) Accept(visitor UpdateAssistantDtoTranscr
 	if u.typ == "DeepgramTranscriber" || u.DeepgramTranscriber != nil {
 		return visitor.VisitDeepgramTranscriber(u.DeepgramTranscriber)
 	}
+	if u.typ == "ElevenLabsTranscriber" || u.ElevenLabsTranscriber != nil {
+		return visitor.VisitElevenLabsTranscriber(u.ElevenLabsTranscriber)
+	}
 	if u.typ == "GladiaTranscriber" || u.GladiaTranscriber != nil {
 		return visitor.VisitGladiaTranscriber(u.GladiaTranscriber)
 	}
+	if u.typ == "SpeechmaticsTranscriber" || u.SpeechmaticsTranscriber != nil {
+		return visitor.VisitSpeechmaticsTranscriber(u.SpeechmaticsTranscriber)
+	}
 	if u.typ == "TalkscriberTranscriber" || u.TalkscriberTranscriber != nil {
 		return visitor.VisitTalkscriberTranscriber(u.TalkscriberTranscriber)
+	}
+	if u.typ == "GoogleTranscriber" || u.GoogleTranscriber != nil {
+		return visitor.VisitGoogleTranscriber(u.GoogleTranscriber)
+	}
+	if u.typ == "OpenAiTranscriber" || u.OpenAiTranscriber != nil {
+		return visitor.VisitOpenAiTranscriber(u.OpenAiTranscriber)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", u)
 }
@@ -3492,13 +4535,15 @@ type UpdateAssistantDtoVoice struct {
 	CustomVoice     *CustomVoice
 	DeepgramVoice   *DeepgramVoice
 	ElevenLabsVoice *ElevenLabsVoice
+	HumeVoice       *HumeVoice
 	LmntVoice       *LmntVoice
-	NeetsVoice      *NeetsVoice
+	NeuphonicVoice  *NeuphonicVoice
 	OpenAiVoice     *OpenAiVoice
 	PlayHtVoice     *PlayHtVoice
 	RimeAiVoice     *RimeAiVoice
 	SmallestAiVoice *SmallestAiVoice
 	TavusVoice      *TavusVoice
+	VapiVoice       *VapiVoice
 
 	typ string
 }
@@ -3538,6 +4583,13 @@ func (u *UpdateAssistantDtoVoice) GetElevenLabsVoice() *ElevenLabsVoice {
 	return u.ElevenLabsVoice
 }
 
+func (u *UpdateAssistantDtoVoice) GetHumeVoice() *HumeVoice {
+	if u == nil {
+		return nil
+	}
+	return u.HumeVoice
+}
+
 func (u *UpdateAssistantDtoVoice) GetLmntVoice() *LmntVoice {
 	if u == nil {
 		return nil
@@ -3545,11 +4597,11 @@ func (u *UpdateAssistantDtoVoice) GetLmntVoice() *LmntVoice {
 	return u.LmntVoice
 }
 
-func (u *UpdateAssistantDtoVoice) GetNeetsVoice() *NeetsVoice {
+func (u *UpdateAssistantDtoVoice) GetNeuphonicVoice() *NeuphonicVoice {
 	if u == nil {
 		return nil
 	}
-	return u.NeetsVoice
+	return u.NeuphonicVoice
 }
 
 func (u *UpdateAssistantDtoVoice) GetOpenAiVoice() *OpenAiVoice {
@@ -3587,6 +4639,13 @@ func (u *UpdateAssistantDtoVoice) GetTavusVoice() *TavusVoice {
 	return u.TavusVoice
 }
 
+func (u *UpdateAssistantDtoVoice) GetVapiVoice() *VapiVoice {
+	if u == nil {
+		return nil
+	}
+	return u.VapiVoice
+}
+
 func (u *UpdateAssistantDtoVoice) UnmarshalJSON(data []byte) error {
 	valueAzureVoice := new(AzureVoice)
 	if err := json.Unmarshal(data, &valueAzureVoice); err == nil {
@@ -3618,16 +4677,22 @@ func (u *UpdateAssistantDtoVoice) UnmarshalJSON(data []byte) error {
 		u.ElevenLabsVoice = valueElevenLabsVoice
 		return nil
 	}
+	valueHumeVoice := new(HumeVoice)
+	if err := json.Unmarshal(data, &valueHumeVoice); err == nil {
+		u.typ = "HumeVoice"
+		u.HumeVoice = valueHumeVoice
+		return nil
+	}
 	valueLmntVoice := new(LmntVoice)
 	if err := json.Unmarshal(data, &valueLmntVoice); err == nil {
 		u.typ = "LmntVoice"
 		u.LmntVoice = valueLmntVoice
 		return nil
 	}
-	valueNeetsVoice := new(NeetsVoice)
-	if err := json.Unmarshal(data, &valueNeetsVoice); err == nil {
-		u.typ = "NeetsVoice"
-		u.NeetsVoice = valueNeetsVoice
+	valueNeuphonicVoice := new(NeuphonicVoice)
+	if err := json.Unmarshal(data, &valueNeuphonicVoice); err == nil {
+		u.typ = "NeuphonicVoice"
+		u.NeuphonicVoice = valueNeuphonicVoice
 		return nil
 	}
 	valueOpenAiVoice := new(OpenAiVoice)
@@ -3660,6 +4725,12 @@ func (u *UpdateAssistantDtoVoice) UnmarshalJSON(data []byte) error {
 		u.TavusVoice = valueTavusVoice
 		return nil
 	}
+	valueVapiVoice := new(VapiVoice)
+	if err := json.Unmarshal(data, &valueVapiVoice); err == nil {
+		u.typ = "VapiVoice"
+		u.VapiVoice = valueVapiVoice
+		return nil
+	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, u)
 }
 
@@ -3679,11 +4750,14 @@ func (u UpdateAssistantDtoVoice) MarshalJSON() ([]byte, error) {
 	if u.typ == "ElevenLabsVoice" || u.ElevenLabsVoice != nil {
 		return json.Marshal(u.ElevenLabsVoice)
 	}
+	if u.typ == "HumeVoice" || u.HumeVoice != nil {
+		return json.Marshal(u.HumeVoice)
+	}
 	if u.typ == "LmntVoice" || u.LmntVoice != nil {
 		return json.Marshal(u.LmntVoice)
 	}
-	if u.typ == "NeetsVoice" || u.NeetsVoice != nil {
-		return json.Marshal(u.NeetsVoice)
+	if u.typ == "NeuphonicVoice" || u.NeuphonicVoice != nil {
+		return json.Marshal(u.NeuphonicVoice)
 	}
 	if u.typ == "OpenAiVoice" || u.OpenAiVoice != nil {
 		return json.Marshal(u.OpenAiVoice)
@@ -3700,6 +4774,9 @@ func (u UpdateAssistantDtoVoice) MarshalJSON() ([]byte, error) {
 	if u.typ == "TavusVoice" || u.TavusVoice != nil {
 		return json.Marshal(u.TavusVoice)
 	}
+	if u.typ == "VapiVoice" || u.VapiVoice != nil {
+		return json.Marshal(u.VapiVoice)
+	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", u)
 }
 
@@ -3709,13 +4786,15 @@ type UpdateAssistantDtoVoiceVisitor interface {
 	VisitCustomVoice(*CustomVoice) error
 	VisitDeepgramVoice(*DeepgramVoice) error
 	VisitElevenLabsVoice(*ElevenLabsVoice) error
+	VisitHumeVoice(*HumeVoice) error
 	VisitLmntVoice(*LmntVoice) error
-	VisitNeetsVoice(*NeetsVoice) error
+	VisitNeuphonicVoice(*NeuphonicVoice) error
 	VisitOpenAiVoice(*OpenAiVoice) error
 	VisitPlayHtVoice(*PlayHtVoice) error
 	VisitRimeAiVoice(*RimeAiVoice) error
 	VisitSmallestAiVoice(*SmallestAiVoice) error
 	VisitTavusVoice(*TavusVoice) error
+	VisitVapiVoice(*VapiVoice) error
 }
 
 func (u *UpdateAssistantDtoVoice) Accept(visitor UpdateAssistantDtoVoiceVisitor) error {
@@ -3734,11 +4813,14 @@ func (u *UpdateAssistantDtoVoice) Accept(visitor UpdateAssistantDtoVoiceVisitor)
 	if u.typ == "ElevenLabsVoice" || u.ElevenLabsVoice != nil {
 		return visitor.VisitElevenLabsVoice(u.ElevenLabsVoice)
 	}
+	if u.typ == "HumeVoice" || u.HumeVoice != nil {
+		return visitor.VisitHumeVoice(u.HumeVoice)
+	}
 	if u.typ == "LmntVoice" || u.LmntVoice != nil {
 		return visitor.VisitLmntVoice(u.LmntVoice)
 	}
-	if u.typ == "NeetsVoice" || u.NeetsVoice != nil {
-		return visitor.VisitNeetsVoice(u.NeetsVoice)
+	if u.typ == "NeuphonicVoice" || u.NeuphonicVoice != nil {
+		return visitor.VisitNeuphonicVoice(u.NeuphonicVoice)
 	}
 	if u.typ == "OpenAiVoice" || u.OpenAiVoice != nil {
 		return visitor.VisitOpenAiVoice(u.OpenAiVoice)
@@ -3755,6 +4837,95 @@ func (u *UpdateAssistantDtoVoice) Accept(visitor UpdateAssistantDtoVoiceVisitor)
 	if u.typ == "TavusVoice" || u.TavusVoice != nil {
 		return visitor.VisitTavusVoice(u.TavusVoice)
 	}
+	if u.typ == "VapiVoice" || u.VapiVoice != nil {
+		return visitor.VisitVapiVoice(u.VapiVoice)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", u)
+}
+
+// These are the settings to configure or disable voicemail detection. Alternatively, voicemail detection can be configured using the model.tools=[VoicemailTool].
+// This uses Twilio's built-in detection while the VoicemailTool relies on the model to detect if a voicemail was reached.
+// You can use neither of them, one of them, or both of them. By default, Twilio built-in detection is enabled while VoicemailTool is not.
+type UpdateAssistantDtoVoicemailDetection struct {
+	GoogleVoicemailDetectionPlan *GoogleVoicemailDetectionPlan
+	OpenAiVoicemailDetectionPlan *OpenAiVoicemailDetectionPlan
+	TwilioVoicemailDetectionPlan *TwilioVoicemailDetectionPlan
+
+	typ string
+}
+
+func (u *UpdateAssistantDtoVoicemailDetection) GetGoogleVoicemailDetectionPlan() *GoogleVoicemailDetectionPlan {
+	if u == nil {
+		return nil
+	}
+	return u.GoogleVoicemailDetectionPlan
+}
+
+func (u *UpdateAssistantDtoVoicemailDetection) GetOpenAiVoicemailDetectionPlan() *OpenAiVoicemailDetectionPlan {
+	if u == nil {
+		return nil
+	}
+	return u.OpenAiVoicemailDetectionPlan
+}
+
+func (u *UpdateAssistantDtoVoicemailDetection) GetTwilioVoicemailDetectionPlan() *TwilioVoicemailDetectionPlan {
+	if u == nil {
+		return nil
+	}
+	return u.TwilioVoicemailDetectionPlan
+}
+
+func (u *UpdateAssistantDtoVoicemailDetection) UnmarshalJSON(data []byte) error {
+	valueGoogleVoicemailDetectionPlan := new(GoogleVoicemailDetectionPlan)
+	if err := json.Unmarshal(data, &valueGoogleVoicemailDetectionPlan); err == nil {
+		u.typ = "GoogleVoicemailDetectionPlan"
+		u.GoogleVoicemailDetectionPlan = valueGoogleVoicemailDetectionPlan
+		return nil
+	}
+	valueOpenAiVoicemailDetectionPlan := new(OpenAiVoicemailDetectionPlan)
+	if err := json.Unmarshal(data, &valueOpenAiVoicemailDetectionPlan); err == nil {
+		u.typ = "OpenAiVoicemailDetectionPlan"
+		u.OpenAiVoicemailDetectionPlan = valueOpenAiVoicemailDetectionPlan
+		return nil
+	}
+	valueTwilioVoicemailDetectionPlan := new(TwilioVoicemailDetectionPlan)
+	if err := json.Unmarshal(data, &valueTwilioVoicemailDetectionPlan); err == nil {
+		u.typ = "TwilioVoicemailDetectionPlan"
+		u.TwilioVoicemailDetectionPlan = valueTwilioVoicemailDetectionPlan
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, u)
+}
+
+func (u UpdateAssistantDtoVoicemailDetection) MarshalJSON() ([]byte, error) {
+	if u.typ == "GoogleVoicemailDetectionPlan" || u.GoogleVoicemailDetectionPlan != nil {
+		return json.Marshal(u.GoogleVoicemailDetectionPlan)
+	}
+	if u.typ == "OpenAiVoicemailDetectionPlan" || u.OpenAiVoicemailDetectionPlan != nil {
+		return json.Marshal(u.OpenAiVoicemailDetectionPlan)
+	}
+	if u.typ == "TwilioVoicemailDetectionPlan" || u.TwilioVoicemailDetectionPlan != nil {
+		return json.Marshal(u.TwilioVoicemailDetectionPlan)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", u)
+}
+
+type UpdateAssistantDtoVoicemailDetectionVisitor interface {
+	VisitGoogleVoicemailDetectionPlan(*GoogleVoicemailDetectionPlan) error
+	VisitOpenAiVoicemailDetectionPlan(*OpenAiVoicemailDetectionPlan) error
+	VisitTwilioVoicemailDetectionPlan(*TwilioVoicemailDetectionPlan) error
+}
+
+func (u *UpdateAssistantDtoVoicemailDetection) Accept(visitor UpdateAssistantDtoVoicemailDetectionVisitor) error {
+	if u.typ == "GoogleVoicemailDetectionPlan" || u.GoogleVoicemailDetectionPlan != nil {
+		return visitor.VisitGoogleVoicemailDetectionPlan(u.GoogleVoicemailDetectionPlan)
+	}
+	if u.typ == "OpenAiVoicemailDetectionPlan" || u.OpenAiVoicemailDetectionPlan != nil {
+		return visitor.VisitOpenAiVoicemailDetectionPlan(u.OpenAiVoicemailDetectionPlan)
+	}
+	if u.typ == "TwilioVoicemailDetectionPlan" || u.TwilioVoicemailDetectionPlan != nil {
+		return visitor.VisitTwilioVoicemailDetectionPlan(u.TwilioVoicemailDetectionPlan)
+	}
 	return fmt.Errorf("type %T does not include a non-empty union type", u)
 }
 
@@ -3768,7 +4939,8 @@ type UpdateAssistantDto struct {
 	// This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
 	//
 	// If unspecified, assistant will wait for user to speak and use the model to respond once they speak.
-	FirstMessage *string `json:"firstMessage,omitempty" url:"-"`
+	FirstMessage                     *string `json:"firstMessage,omitempty" url:"-"`
+	FirstMessageInterruptionsEnabled *bool   `json:"firstMessageInterruptionsEnabled,omitempty" url:"-"`
 	// This is the mode for the first message. Default is 'assistant-speaks-first'.
 	//
 	// Use:
@@ -3778,7 +4950,11 @@ type UpdateAssistantDto struct {
 	//
 	// @default 'assistant-speaks-first'
 	FirstMessageMode *UpdateAssistantDtoFirstMessageMode `json:"firstMessageMode,omitempty" url:"-"`
-	// These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input. You can check the shape of the messages in ClientMessage schema.
+	// These are the settings to configure or disable voicemail detection. Alternatively, voicemail detection can be configured using the model.tools=[VoicemailTool].
+	// This uses Twilio's built-in detection while the VoicemailTool relies on the model to detect if a voicemail was reached.
+	// You can use neither of them, one of them, or both of them. By default, Twilio built-in detection is enabled while VoicemailTool is not.
+	VoicemailDetection *UpdateAssistantDtoVoicemailDetection `json:"voicemailDetection,omitempty" url:"-"`
+	// These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
 	ClientMessages []UpdateAssistantDtoClientMessagesItem `json:"clientMessages,omitempty" url:"-"`
 	// These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
 	ServerMessages []UpdateAssistantDtoServerMessagesItem `json:"serverMessages,omitempty" url:"-"`
@@ -3791,6 +4967,7 @@ type UpdateAssistantDto struct {
 	// @default 600 (10 minutes)
 	MaxDurationSeconds *float64 `json:"maxDurationSeconds,omitempty" url:"-"`
 	// This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
+	// You can also provide a custom sound by providing a URL to an audio file.
 	BackgroundSound *UpdateAssistantDtoBackgroundSound `json:"backgroundSound,omitempty" url:"-"`
 	// This enables filtering of noise and background speech while the user is talking.
 	//
@@ -3806,16 +4983,15 @@ type UpdateAssistantDto struct {
 	ModelOutputInMessagesEnabled *bool `json:"modelOutputInMessagesEnabled,omitempty" url:"-"`
 	// These are the configurations to be passed to the transport providers of assistant's calls, like Twilio. You can store multiple configurations for different transport providers. For a call, only the configuration matching the call transport provider is used.
 	TransportConfigurations []*TransportConfigurationTwilio `json:"transportConfigurations,omitempty" url:"-"`
+	// This is the plan for observability configuration of assistant's calls.
+	// Currently supports Langfuse for tracing and monitoring.
+	ObservabilityPlan *LangfuseObservabilityPlan `json:"observabilityPlan,omitempty" url:"-"`
 	// These are dynamic credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials.
 	Credentials []*UpdateAssistantDtoCredentialsItem `json:"credentials,omitempty" url:"-"`
 	// This is the name of the assistant.
 	//
 	// This is required when you want to transfer between assistants in a call.
 	Name *string `json:"name,omitempty" url:"-"`
-	// These are the settings to configure or disable voicemail detection. Alternatively, voicemail detection can be configured using the model.tools=[VoicemailTool].
-	// This uses Twilio's built-in detection while the VoicemailTool relies on the model to detect if a voicemail was reached.
-	// You can use neither of them, one of them, or both of them. By default, Twilio built-in detection is enabled while VoicemailTool is not.
-	VoicemailDetection *TwilioVoicemailDetection `json:"voicemailDetection,omitempty" url:"-"`
 	// This is the message that the assistant will say if the call is forwarded to voicemail.
 	//
 	// If unspecified, it will hang up.
@@ -3874,5 +5050,6 @@ type UpdateAssistantDto struct {
 	// 3. org.serverUrl
 	Server *Server `json:"server,omitempty" url:"-"`
 	// This is a set of actions that will be performed on certain events.
-	Hooks []*AssistantHooks `json:"hooks,omitempty" url:"-"`
+	Hooks           []*AssistantHooks `json:"hooks,omitempty" url:"-"`
+	KeypadInputPlan *KeypadInputPlan  `json:"keypadInputPlan,omitempty" url:"-"`
 }

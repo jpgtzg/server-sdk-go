@@ -40,7 +40,7 @@ type CreateTrieveKnowledgeBaseDto struct {
 	// - Not enough relevant context is being fed as knowledge base context.
 	SearchPlan *TrieveKnowledgeBaseSearchPlan `json:"searchPlan,omitempty" url:"searchPlan,omitempty"`
 	// This is the plan if you want us to create/import a new vector store using Trieve.
-	CreatePlan *CreateTrieveKnowledgeBaseDtoCreatePlan `json:"createPlan,omitempty" url:"createPlan,omitempty"`
+	CreatePlan *TrieveKnowledgeBaseImport `json:"createPlan,omitempty" url:"createPlan,omitempty"`
 	provider   string
 
 	extraProperties map[string]interface{}
@@ -61,7 +61,7 @@ func (c *CreateTrieveKnowledgeBaseDto) GetSearchPlan() *TrieveKnowledgeBaseSearc
 	return c.SearchPlan
 }
 
-func (c *CreateTrieveKnowledgeBaseDto) GetCreatePlan() *CreateTrieveKnowledgeBaseDtoCreatePlan {
+func (c *CreateTrieveKnowledgeBaseDto) GetCreatePlan() *TrieveKnowledgeBaseImport {
 	if c == nil {
 		return nil
 	}
@@ -123,69 +123,6 @@ func (c *CreateTrieveKnowledgeBaseDto) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", c)
-}
-
-// This is the plan if you want us to create/import a new vector store using Trieve.
-type CreateTrieveKnowledgeBaseDtoCreatePlan struct {
-	TrieveKnowledgeBaseCreate *TrieveKnowledgeBaseCreate
-	TrieveKnowledgeBaseImport *TrieveKnowledgeBaseImport
-
-	typ string
-}
-
-func (c *CreateTrieveKnowledgeBaseDtoCreatePlan) GetTrieveKnowledgeBaseCreate() *TrieveKnowledgeBaseCreate {
-	if c == nil {
-		return nil
-	}
-	return c.TrieveKnowledgeBaseCreate
-}
-
-func (c *CreateTrieveKnowledgeBaseDtoCreatePlan) GetTrieveKnowledgeBaseImport() *TrieveKnowledgeBaseImport {
-	if c == nil {
-		return nil
-	}
-	return c.TrieveKnowledgeBaseImport
-}
-
-func (c *CreateTrieveKnowledgeBaseDtoCreatePlan) UnmarshalJSON(data []byte) error {
-	valueTrieveKnowledgeBaseCreate := new(TrieveKnowledgeBaseCreate)
-	if err := json.Unmarshal(data, &valueTrieveKnowledgeBaseCreate); err == nil {
-		c.typ = "TrieveKnowledgeBaseCreate"
-		c.TrieveKnowledgeBaseCreate = valueTrieveKnowledgeBaseCreate
-		return nil
-	}
-	valueTrieveKnowledgeBaseImport := new(TrieveKnowledgeBaseImport)
-	if err := json.Unmarshal(data, &valueTrieveKnowledgeBaseImport); err == nil {
-		c.typ = "TrieveKnowledgeBaseImport"
-		c.TrieveKnowledgeBaseImport = valueTrieveKnowledgeBaseImport
-		return nil
-	}
-	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
-}
-
-func (c CreateTrieveKnowledgeBaseDtoCreatePlan) MarshalJSON() ([]byte, error) {
-	if c.typ == "TrieveKnowledgeBaseCreate" || c.TrieveKnowledgeBaseCreate != nil {
-		return json.Marshal(c.TrieveKnowledgeBaseCreate)
-	}
-	if c.typ == "TrieveKnowledgeBaseImport" || c.TrieveKnowledgeBaseImport != nil {
-		return json.Marshal(c.TrieveKnowledgeBaseImport)
-	}
-	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
-}
-
-type CreateTrieveKnowledgeBaseDtoCreatePlanVisitor interface {
-	VisitTrieveKnowledgeBaseCreate(*TrieveKnowledgeBaseCreate) error
-	VisitTrieveKnowledgeBaseImport(*TrieveKnowledgeBaseImport) error
-}
-
-func (c *CreateTrieveKnowledgeBaseDtoCreatePlan) Accept(visitor CreateTrieveKnowledgeBaseDtoCreatePlanVisitor) error {
-	if c.typ == "TrieveKnowledgeBaseCreate" || c.TrieveKnowledgeBaseCreate != nil {
-		return visitor.VisitTrieveKnowledgeBaseCreate(c.TrieveKnowledgeBaseCreate)
-	}
-	if c.typ == "TrieveKnowledgeBaseImport" || c.TrieveKnowledgeBaseImport != nil {
-		return visitor.VisitTrieveKnowledgeBaseImport(c.TrieveKnowledgeBaseImport)
-	}
-	return fmt.Errorf("type %T does not include a non-empty union type", c)
 }
 
 type CustomKnowledgeBase struct {
@@ -329,7 +266,7 @@ type TrieveKnowledgeBase struct {
 	// - Not enough relevant context is being fed as knowledge base context.
 	SearchPlan *TrieveKnowledgeBaseSearchPlan `json:"searchPlan,omitempty" url:"searchPlan,omitempty"`
 	// This is the plan if you want us to create/import a new vector store using Trieve.
-	CreatePlan *TrieveKnowledgeBaseCreatePlan `json:"createPlan,omitempty" url:"createPlan,omitempty"`
+	CreatePlan *TrieveKnowledgeBaseImport `json:"createPlan,omitempty" url:"createPlan,omitempty"`
 	// This is the id of the knowledge base.
 	Id string `json:"id" url:"id"`
 	// This is the org id of the knowledge base.
@@ -354,7 +291,7 @@ func (t *TrieveKnowledgeBase) GetSearchPlan() *TrieveKnowledgeBaseSearchPlan {
 	return t.SearchPlan
 }
 
-func (t *TrieveKnowledgeBase) GetCreatePlan() *TrieveKnowledgeBaseCreatePlan {
+func (t *TrieveKnowledgeBase) GetCreatePlan() *TrieveKnowledgeBaseImport {
 	if t == nil {
 		return nil
 	}
@@ -430,226 +367,6 @@ func (t *TrieveKnowledgeBase) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", t)
-}
-
-type TrieveKnowledgeBaseChunkPlan struct {
-	// These are the file ids that will be used to create the vector store. To upload files, use the `POST /files` endpoint.
-	FileIds []string `json:"fileIds,omitempty" url:"fileIds,omitempty"`
-	// These are the websites that will be used to create the vector store.
-	Websites []string `json:"websites,omitempty" url:"websites,omitempty"`
-	// This is an optional field which allows you to specify the number of splits you want per chunk. If not specified, the default 20 is used. However, you may want to use a different number.
-	TargetSplitsPerChunk *float64 `json:"targetSplitsPerChunk,omitempty" url:"targetSplitsPerChunk,omitempty"`
-	// This is an optional field which allows you to specify the delimiters to use when splitting the file before chunking the text. If not specified, the default [.!?\n] are used to split into sentences. However, you may want to use spaces or other delimiters.
-	SplitDelimiters []string `json:"splitDelimiters,omitempty" url:"splitDelimiters,omitempty"`
-	// This is an optional field which allows you to specify whether or not to rebalance the chunks created from the file. If not specified, the default true is used. If true, Trieve will evenly distribute remainder splits across chunks such that 66 splits with a target_splits_per_chunk of 20 will result in 3 chunks with 22 splits each.
-	RebalanceChunks *bool `json:"rebalanceChunks,omitempty" url:"rebalanceChunks,omitempty"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (t *TrieveKnowledgeBaseChunkPlan) GetFileIds() []string {
-	if t == nil {
-		return nil
-	}
-	return t.FileIds
-}
-
-func (t *TrieveKnowledgeBaseChunkPlan) GetWebsites() []string {
-	if t == nil {
-		return nil
-	}
-	return t.Websites
-}
-
-func (t *TrieveKnowledgeBaseChunkPlan) GetTargetSplitsPerChunk() *float64 {
-	if t == nil {
-		return nil
-	}
-	return t.TargetSplitsPerChunk
-}
-
-func (t *TrieveKnowledgeBaseChunkPlan) GetSplitDelimiters() []string {
-	if t == nil {
-		return nil
-	}
-	return t.SplitDelimiters
-}
-
-func (t *TrieveKnowledgeBaseChunkPlan) GetRebalanceChunks() *bool {
-	if t == nil {
-		return nil
-	}
-	return t.RebalanceChunks
-}
-
-func (t *TrieveKnowledgeBaseChunkPlan) GetExtraProperties() map[string]interface{} {
-	return t.extraProperties
-}
-
-func (t *TrieveKnowledgeBaseChunkPlan) UnmarshalJSON(data []byte) error {
-	type unmarshaler TrieveKnowledgeBaseChunkPlan
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*t = TrieveKnowledgeBaseChunkPlan(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *t)
-	if err != nil {
-		return err
-	}
-	t.extraProperties = extraProperties
-	t.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (t *TrieveKnowledgeBaseChunkPlan) String() string {
-	if len(t.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(t); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", t)
-}
-
-type TrieveKnowledgeBaseCreate struct {
-	// This is to create a new dataset on Trieve.
-	// These are the chunk plans used to create the dataset.
-	ChunkPlans []*TrieveKnowledgeBaseChunkPlan `json:"chunkPlans,omitempty" url:"chunkPlans,omitempty"`
-	type_      string
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (t *TrieveKnowledgeBaseCreate) GetChunkPlans() []*TrieveKnowledgeBaseChunkPlan {
-	if t == nil {
-		return nil
-	}
-	return t.ChunkPlans
-}
-
-func (t *TrieveKnowledgeBaseCreate) Type() string {
-	return t.type_
-}
-
-func (t *TrieveKnowledgeBaseCreate) GetExtraProperties() map[string]interface{} {
-	return t.extraProperties
-}
-
-func (t *TrieveKnowledgeBaseCreate) UnmarshalJSON(data []byte) error {
-	type embed TrieveKnowledgeBaseCreate
-	var unmarshaler = struct {
-		embed
-		Type string `json:"type"`
-	}{
-		embed: embed(*t),
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
-		return err
-	}
-	*t = TrieveKnowledgeBaseCreate(unmarshaler.embed)
-	if unmarshaler.Type != "create" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", t, "create", unmarshaler.Type)
-	}
-	t.type_ = unmarshaler.Type
-	extraProperties, err := internal.ExtractExtraProperties(data, *t, "type")
-	if err != nil {
-		return err
-	}
-	t.extraProperties = extraProperties
-	t.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (t *TrieveKnowledgeBaseCreate) MarshalJSON() ([]byte, error) {
-	type embed TrieveKnowledgeBaseCreate
-	var marshaler = struct {
-		embed
-		Type string `json:"type"`
-	}{
-		embed: embed(*t),
-		Type:  "create",
-	}
-	return json.Marshal(marshaler)
-}
-
-func (t *TrieveKnowledgeBaseCreate) String() string {
-	if len(t.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(t); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", t)
-}
-
-// This is the plan if you want us to create/import a new vector store using Trieve.
-type TrieveKnowledgeBaseCreatePlan struct {
-	TrieveKnowledgeBaseCreate *TrieveKnowledgeBaseCreate
-	TrieveKnowledgeBaseImport *TrieveKnowledgeBaseImport
-
-	typ string
-}
-
-func (t *TrieveKnowledgeBaseCreatePlan) GetTrieveKnowledgeBaseCreate() *TrieveKnowledgeBaseCreate {
-	if t == nil {
-		return nil
-	}
-	return t.TrieveKnowledgeBaseCreate
-}
-
-func (t *TrieveKnowledgeBaseCreatePlan) GetTrieveKnowledgeBaseImport() *TrieveKnowledgeBaseImport {
-	if t == nil {
-		return nil
-	}
-	return t.TrieveKnowledgeBaseImport
-}
-
-func (t *TrieveKnowledgeBaseCreatePlan) UnmarshalJSON(data []byte) error {
-	valueTrieveKnowledgeBaseCreate := new(TrieveKnowledgeBaseCreate)
-	if err := json.Unmarshal(data, &valueTrieveKnowledgeBaseCreate); err == nil {
-		t.typ = "TrieveKnowledgeBaseCreate"
-		t.TrieveKnowledgeBaseCreate = valueTrieveKnowledgeBaseCreate
-		return nil
-	}
-	valueTrieveKnowledgeBaseImport := new(TrieveKnowledgeBaseImport)
-	if err := json.Unmarshal(data, &valueTrieveKnowledgeBaseImport); err == nil {
-		t.typ = "TrieveKnowledgeBaseImport"
-		t.TrieveKnowledgeBaseImport = valueTrieveKnowledgeBaseImport
-		return nil
-	}
-	return fmt.Errorf("%s cannot be deserialized as a %T", data, t)
-}
-
-func (t TrieveKnowledgeBaseCreatePlan) MarshalJSON() ([]byte, error) {
-	if t.typ == "TrieveKnowledgeBaseCreate" || t.TrieveKnowledgeBaseCreate != nil {
-		return json.Marshal(t.TrieveKnowledgeBaseCreate)
-	}
-	if t.typ == "TrieveKnowledgeBaseImport" || t.TrieveKnowledgeBaseImport != nil {
-		return json.Marshal(t.TrieveKnowledgeBaseImport)
-	}
-	return nil, fmt.Errorf("type %T does not include a non-empty union type", t)
-}
-
-type TrieveKnowledgeBaseCreatePlanVisitor interface {
-	VisitTrieveKnowledgeBaseCreate(*TrieveKnowledgeBaseCreate) error
-	VisitTrieveKnowledgeBaseImport(*TrieveKnowledgeBaseImport) error
-}
-
-func (t *TrieveKnowledgeBaseCreatePlan) Accept(visitor TrieveKnowledgeBaseCreatePlanVisitor) error {
-	if t.typ == "TrieveKnowledgeBaseCreate" || t.TrieveKnowledgeBaseCreate != nil {
-		return visitor.VisitTrieveKnowledgeBaseCreate(t.TrieveKnowledgeBaseCreate)
-	}
-	if t.typ == "TrieveKnowledgeBaseImport" || t.TrieveKnowledgeBaseImport != nil {
-		return visitor.VisitTrieveKnowledgeBaseImport(t.TrieveKnowledgeBaseImport)
-	}
-	return fmt.Errorf("type %T does not include a non-empty union type", t)
 }
 
 type TrieveKnowledgeBaseImport struct {
@@ -926,7 +643,7 @@ type UpdateTrieveKnowledgeBaseDto struct {
 	// - Not enough relevant context is being fed as knowledge base context.
 	SearchPlan *TrieveKnowledgeBaseSearchPlan `json:"searchPlan,omitempty" url:"searchPlan,omitempty"`
 	// This is the plan if you want us to create/import a new vector store using Trieve.
-	CreatePlan *UpdateTrieveKnowledgeBaseDtoCreatePlan `json:"createPlan,omitempty" url:"createPlan,omitempty"`
+	CreatePlan *TrieveKnowledgeBaseImport `json:"createPlan,omitempty" url:"createPlan,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -946,7 +663,7 @@ func (u *UpdateTrieveKnowledgeBaseDto) GetSearchPlan() *TrieveKnowledgeBaseSearc
 	return u.SearchPlan
 }
 
-func (u *UpdateTrieveKnowledgeBaseDto) GetCreatePlan() *UpdateTrieveKnowledgeBaseDtoCreatePlan {
+func (u *UpdateTrieveKnowledgeBaseDto) GetCreatePlan() *TrieveKnowledgeBaseImport {
 	if u == nil {
 		return nil
 	}
@@ -983,69 +700,6 @@ func (u *UpdateTrieveKnowledgeBaseDto) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", u)
-}
-
-// This is the plan if you want us to create/import a new vector store using Trieve.
-type UpdateTrieveKnowledgeBaseDtoCreatePlan struct {
-	TrieveKnowledgeBaseCreate *TrieveKnowledgeBaseCreate
-	TrieveKnowledgeBaseImport *TrieveKnowledgeBaseImport
-
-	typ string
-}
-
-func (u *UpdateTrieveKnowledgeBaseDtoCreatePlan) GetTrieveKnowledgeBaseCreate() *TrieveKnowledgeBaseCreate {
-	if u == nil {
-		return nil
-	}
-	return u.TrieveKnowledgeBaseCreate
-}
-
-func (u *UpdateTrieveKnowledgeBaseDtoCreatePlan) GetTrieveKnowledgeBaseImport() *TrieveKnowledgeBaseImport {
-	if u == nil {
-		return nil
-	}
-	return u.TrieveKnowledgeBaseImport
-}
-
-func (u *UpdateTrieveKnowledgeBaseDtoCreatePlan) UnmarshalJSON(data []byte) error {
-	valueTrieveKnowledgeBaseCreate := new(TrieveKnowledgeBaseCreate)
-	if err := json.Unmarshal(data, &valueTrieveKnowledgeBaseCreate); err == nil {
-		u.typ = "TrieveKnowledgeBaseCreate"
-		u.TrieveKnowledgeBaseCreate = valueTrieveKnowledgeBaseCreate
-		return nil
-	}
-	valueTrieveKnowledgeBaseImport := new(TrieveKnowledgeBaseImport)
-	if err := json.Unmarshal(data, &valueTrieveKnowledgeBaseImport); err == nil {
-		u.typ = "TrieveKnowledgeBaseImport"
-		u.TrieveKnowledgeBaseImport = valueTrieveKnowledgeBaseImport
-		return nil
-	}
-	return fmt.Errorf("%s cannot be deserialized as a %T", data, u)
-}
-
-func (u UpdateTrieveKnowledgeBaseDtoCreatePlan) MarshalJSON() ([]byte, error) {
-	if u.typ == "TrieveKnowledgeBaseCreate" || u.TrieveKnowledgeBaseCreate != nil {
-		return json.Marshal(u.TrieveKnowledgeBaseCreate)
-	}
-	if u.typ == "TrieveKnowledgeBaseImport" || u.TrieveKnowledgeBaseImport != nil {
-		return json.Marshal(u.TrieveKnowledgeBaseImport)
-	}
-	return nil, fmt.Errorf("type %T does not include a non-empty union type", u)
-}
-
-type UpdateTrieveKnowledgeBaseDtoCreatePlanVisitor interface {
-	VisitTrieveKnowledgeBaseCreate(*TrieveKnowledgeBaseCreate) error
-	VisitTrieveKnowledgeBaseImport(*TrieveKnowledgeBaseImport) error
-}
-
-func (u *UpdateTrieveKnowledgeBaseDtoCreatePlan) Accept(visitor UpdateTrieveKnowledgeBaseDtoCreatePlanVisitor) error {
-	if u.typ == "TrieveKnowledgeBaseCreate" || u.TrieveKnowledgeBaseCreate != nil {
-		return visitor.VisitTrieveKnowledgeBaseCreate(u.TrieveKnowledgeBaseCreate)
-	}
-	if u.typ == "TrieveKnowledgeBaseImport" || u.TrieveKnowledgeBaseImport != nil {
-		return visitor.VisitTrieveKnowledgeBaseImport(u.TrieveKnowledgeBaseImport)
-	}
-	return fmt.Errorf("type %T does not include a non-empty union type", u)
 }
 
 type KnowledgeBasesCreateRequest struct {
