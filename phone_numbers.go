@@ -38,6 +38,8 @@ type ByoPhoneNumber struct {
 	//
 	// If this is not set and above conditions are met, the inbound call is hung up with an error message.
 	FallbackDestination *ByoPhoneNumberFallbackDestination `json:"fallbackDestination,omitempty" url:"fallbackDestination,omitempty"`
+	// This is the hooks that will be used for incoming calls to this phone number.
+	Hooks []*PhoneNumberHookCallRinging `json:"hooks,omitempty" url:"hooks,omitempty"`
 	// This is the flag to toggle the E164 check for the `number` field. This is an advanced property which should be used if you know your use case requires it.
 	//
 	// Use cases:
@@ -93,6 +95,13 @@ func (b *ByoPhoneNumber) GetFallbackDestination() *ByoPhoneNumberFallbackDestina
 		return nil
 	}
 	return b.FallbackDestination
+}
+
+func (b *ByoPhoneNumber) GetHooks() []*PhoneNumberHookCallRinging {
+	if b == nil {
+		return nil
+	}
+	return b.Hooks
 }
 
 func (b *ByoPhoneNumber) GetNumberE164CheckEnabled() *bool {
@@ -346,6 +355,8 @@ type CreateByoPhoneNumberDto struct {
 	//
 	// If this is not set and above conditions are met, the inbound call is hung up with an error message.
 	FallbackDestination *CreateByoPhoneNumberDtoFallbackDestination `json:"fallbackDestination,omitempty" url:"fallbackDestination,omitempty"`
+	// This is the hooks that will be used for incoming calls to this phone number.
+	Hooks []*PhoneNumberHookCallRinging `json:"hooks,omitempty" url:"hooks,omitempty"`
 	// This is the flag to toggle the E164 check for the `number` field. This is an advanced property which should be used if you know your use case requires it.
 	//
 	// Use cases:
@@ -391,6 +402,13 @@ func (c *CreateByoPhoneNumberDto) GetFallbackDestination() *CreateByoPhoneNumber
 		return nil
 	}
 	return c.FallbackDestination
+}
+
+func (c *CreateByoPhoneNumberDto) GetHooks() []*PhoneNumberHookCallRinging {
+	if c == nil {
+		return nil
+	}
+	return c.Hooks
 }
 
 func (c *CreateByoPhoneNumberDto) GetNumberE164CheckEnabled() *bool {
@@ -575,6 +593,8 @@ type CreateTelnyxPhoneNumberDto struct {
 	//
 	// If this is not set and above conditions are met, the inbound call is hung up with an error message.
 	FallbackDestination *CreateTelnyxPhoneNumberDtoFallbackDestination `json:"fallbackDestination,omitempty" url:"fallbackDestination,omitempty"`
+	// This is the hooks that will be used for incoming calls to this phone number.
+	Hooks []*PhoneNumberHookCallRinging `json:"hooks,omitempty" url:"hooks,omitempty"`
 	// These are the digits of the phone number you own on your Telnyx.
 	Number string `json:"number" url:"number"`
 	// This is the credential you added in dashboard.vapi.ai/keys. This is used to configure the number to send inbound calls to Vapi, make outbound calls and do live call updates like transfers and hangups.
@@ -608,6 +628,13 @@ func (c *CreateTelnyxPhoneNumberDto) GetFallbackDestination() *CreateTelnyxPhone
 		return nil
 	}
 	return c.FallbackDestination
+}
+
+func (c *CreateTelnyxPhoneNumberDto) GetHooks() []*PhoneNumberHookCallRinging {
+	if c == nil {
+		return nil
+	}
+	return c.Hooks
 }
 
 func (c *CreateTelnyxPhoneNumberDto) GetNumber() string {
@@ -785,6 +812,8 @@ type CreateTwilioPhoneNumberDto struct {
 	//
 	// If this is not set and above conditions are met, the inbound call is hung up with an error message.
 	FallbackDestination *CreateTwilioPhoneNumberDtoFallbackDestination `json:"fallbackDestination,omitempty" url:"fallbackDestination,omitempty"`
+	// This is the hooks that will be used for incoming calls to this phone number.
+	Hooks []*PhoneNumberHookCallRinging `json:"hooks,omitempty" url:"hooks,omitempty"`
 	// These are the digits of the phone number you own on your Twilio.
 	Number string `json:"number" url:"number"`
 	// This is the Twilio Account SID for the phone number.
@@ -820,6 +849,13 @@ func (c *CreateTwilioPhoneNumberDto) GetFallbackDestination() *CreateTwilioPhone
 		return nil
 	}
 	return c.FallbackDestination
+}
+
+func (c *CreateTwilioPhoneNumberDto) GetHooks() []*PhoneNumberHookCallRinging {
+	if c == nil {
+		return nil
+	}
+	return c.Hooks
 }
 
 func (c *CreateTwilioPhoneNumberDto) GetNumber() string {
@@ -1004,6 +1040,8 @@ type CreateVapiPhoneNumberDto struct {
 	//
 	// If this is not set and above conditions are met, the inbound call is hung up with an error message.
 	FallbackDestination *CreateVapiPhoneNumberDtoFallbackDestination `json:"fallbackDestination,omitempty" url:"fallbackDestination,omitempty"`
+	// This is the hooks that will be used for incoming calls to this phone number.
+	Hooks []*PhoneNumberHookCallRinging `json:"hooks,omitempty" url:"hooks,omitempty"`
 	// This is the area code of the phone number to purchase.
 	NumberDesiredAreaCode *string `json:"numberDesiredAreaCode,omitempty" url:"numberDesiredAreaCode,omitempty"`
 	// This is the SIP URI of the phone number. You can SIP INVITE this. The assistant attached to this number will answer.
@@ -1043,6 +1081,13 @@ func (c *CreateVapiPhoneNumberDto) GetFallbackDestination() *CreateVapiPhoneNumb
 		return nil
 	}
 	return c.FallbackDestination
+}
+
+func (c *CreateVapiPhoneNumberDto) GetHooks() []*PhoneNumberHookCallRinging {
+	if c == nil {
+		return nil
+	}
+	return c.Hooks
 }
 
 func (c *CreateVapiPhoneNumberDto) GetNumberDesiredAreaCode() *string {
@@ -1227,6 +1272,8 @@ type CreateVonagePhoneNumberDto struct {
 	//
 	// If this is not set and above conditions are met, the inbound call is hung up with an error message.
 	FallbackDestination *CreateVonagePhoneNumberDtoFallbackDestination `json:"fallbackDestination,omitempty" url:"fallbackDestination,omitempty"`
+	// This is the hooks that will be used for incoming calls to this phone number.
+	Hooks []*PhoneNumberHookCallRinging `json:"hooks,omitempty" url:"hooks,omitempty"`
 	// These are the digits of the phone number you own on your Vonage.
 	Number string `json:"number" url:"number"`
 	// This is the credential you added in dashboard.vapi.ai/keys. This is used to configure the number to send inbound calls to Vapi, make outbound calls and do live call updates like transfers and hangups.
@@ -1260,6 +1307,13 @@ func (c *CreateVonagePhoneNumberDto) GetFallbackDestination() *CreateVonagePhone
 		return nil
 	}
 	return c.FallbackDestination
+}
+
+func (c *CreateVonagePhoneNumberDto) GetHooks() []*PhoneNumberHookCallRinging {
+	if c == nil {
+		return nil
+	}
+	return c.Hooks
 }
 
 func (c *CreateVonagePhoneNumberDto) GetNumber() string {
@@ -1502,6 +1556,8 @@ type TelnyxPhoneNumber struct {
 	//
 	// If this is not set and above conditions are met, the inbound call is hung up with an error message.
 	FallbackDestination *TelnyxPhoneNumberFallbackDestination `json:"fallbackDestination,omitempty" url:"fallbackDestination,omitempty"`
+	// This is the hooks that will be used for incoming calls to this phone number.
+	Hooks []*PhoneNumberHookCallRinging `json:"hooks,omitempty" url:"hooks,omitempty"`
 	// This is the unique identifier for the phone number.
 	Id string `json:"id" url:"id"`
 	// This is the unique identifier for the org that this phone number belongs to.
@@ -1545,6 +1601,13 @@ func (t *TelnyxPhoneNumber) GetFallbackDestination() *TelnyxPhoneNumberFallbackD
 		return nil
 	}
 	return t.FallbackDestination
+}
+
+func (t *TelnyxPhoneNumber) GetHooks() []*PhoneNumberHookCallRinging {
+	if t == nil {
+		return nil
+	}
+	return t.Hooks
 }
 
 func (t *TelnyxPhoneNumber) GetId() string {
@@ -1791,6 +1854,8 @@ type TwilioPhoneNumber struct {
 	//
 	// If this is not set and above conditions are met, the inbound call is hung up with an error message.
 	FallbackDestination *TwilioPhoneNumberFallbackDestination `json:"fallbackDestination,omitempty" url:"fallbackDestination,omitempty"`
+	// This is the hooks that will be used for incoming calls to this phone number.
+	Hooks []*PhoneNumberHookCallRinging `json:"hooks,omitempty" url:"hooks,omitempty"`
 	// This is the unique identifier for the phone number.
 	Id string `json:"id" url:"id"`
 	// This is the unique identifier for the org that this phone number belongs to.
@@ -1836,6 +1901,13 @@ func (t *TwilioPhoneNumber) GetFallbackDestination() *TwilioPhoneNumberFallbackD
 		return nil
 	}
 	return t.FallbackDestination
+}
+
+func (t *TwilioPhoneNumber) GetHooks() []*PhoneNumberHookCallRinging {
+	if t == nil {
+		return nil
+	}
+	return t.Hooks
 }
 
 func (t *TwilioPhoneNumber) GetId() string {
@@ -2089,6 +2161,8 @@ type UpdateByoPhoneNumberDto struct {
 	//
 	// If this is not set and above conditions are met, the inbound call is hung up with an error message.
 	FallbackDestination *UpdateByoPhoneNumberDtoFallbackDestination `json:"fallbackDestination,omitempty" url:"fallbackDestination,omitempty"`
+	// This is the hooks that will be used for incoming calls to this phone number.
+	Hooks []*PhoneNumberHookCallRinging `json:"hooks,omitempty" url:"hooks,omitempty"`
 	// This is the flag to toggle the E164 check for the `number` field. This is an advanced property which should be used if you know your use case requires it.
 	//
 	// Use cases:
@@ -2133,6 +2207,13 @@ func (u *UpdateByoPhoneNumberDto) GetFallbackDestination() *UpdateByoPhoneNumber
 		return nil
 	}
 	return u.FallbackDestination
+}
+
+func (u *UpdateByoPhoneNumberDto) GetHooks() []*PhoneNumberHookCallRinging {
+	if u == nil {
+		return nil
+	}
+	return u.Hooks
 }
 
 func (u *UpdateByoPhoneNumberDto) GetNumberE164CheckEnabled() *bool {
@@ -2292,6 +2373,8 @@ type UpdateTelnyxPhoneNumberDto struct {
 	//
 	// If this is not set and above conditions are met, the inbound call is hung up with an error message.
 	FallbackDestination *UpdateTelnyxPhoneNumberDtoFallbackDestination `json:"fallbackDestination,omitempty" url:"fallbackDestination,omitempty"`
+	// This is the hooks that will be used for incoming calls to this phone number.
+	Hooks []*PhoneNumberHookCallRinging `json:"hooks,omitempty" url:"hooks,omitempty"`
 	// This is the name of the phone number. This is just for your own reference.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
@@ -2324,6 +2407,13 @@ func (u *UpdateTelnyxPhoneNumberDto) GetFallbackDestination() *UpdateTelnyxPhone
 		return nil
 	}
 	return u.FallbackDestination
+}
+
+func (u *UpdateTelnyxPhoneNumberDto) GetHooks() []*PhoneNumberHookCallRinging {
+	if u == nil {
+		return nil
+	}
+	return u.Hooks
 }
 
 func (u *UpdateTelnyxPhoneNumberDto) GetName() *string {
@@ -2476,6 +2566,8 @@ type UpdateTwilioPhoneNumberDto struct {
 	//
 	// If this is not set and above conditions are met, the inbound call is hung up with an error message.
 	FallbackDestination *UpdateTwilioPhoneNumberDtoFallbackDestination `json:"fallbackDestination,omitempty" url:"fallbackDestination,omitempty"`
+	// This is the hooks that will be used for incoming calls to this phone number.
+	Hooks []*PhoneNumberHookCallRinging `json:"hooks,omitempty" url:"hooks,omitempty"`
 	// This is the name of the phone number. This is just for your own reference.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
@@ -2510,6 +2602,13 @@ func (u *UpdateTwilioPhoneNumberDto) GetFallbackDestination() *UpdateTwilioPhone
 		return nil
 	}
 	return u.FallbackDestination
+}
+
+func (u *UpdateTwilioPhoneNumberDto) GetHooks() []*PhoneNumberHookCallRinging {
+	if u == nil {
+		return nil
+	}
+	return u.Hooks
 }
 
 func (u *UpdateTwilioPhoneNumberDto) GetName() *string {
@@ -2669,6 +2768,8 @@ type UpdateVapiPhoneNumberDto struct {
 	//
 	// If this is not set and above conditions are met, the inbound call is hung up with an error message.
 	FallbackDestination *UpdateVapiPhoneNumberDtoFallbackDestination `json:"fallbackDestination,omitempty" url:"fallbackDestination,omitempty"`
+	// This is the hooks that will be used for incoming calls to this phone number.
+	Hooks []*PhoneNumberHookCallRinging `json:"hooks,omitempty" url:"hooks,omitempty"`
 	// This is the name of the phone number. This is just for your own reference.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
@@ -2705,6 +2806,13 @@ func (u *UpdateVapiPhoneNumberDto) GetFallbackDestination() *UpdateVapiPhoneNumb
 		return nil
 	}
 	return u.FallbackDestination
+}
+
+func (u *UpdateVapiPhoneNumberDto) GetHooks() []*PhoneNumberHookCallRinging {
+	if u == nil {
+		return nil
+	}
+	return u.Hooks
 }
 
 func (u *UpdateVapiPhoneNumberDto) GetName() *string {
@@ -2857,6 +2965,8 @@ type UpdateVonagePhoneNumberDto struct {
 	//
 	// If this is not set and above conditions are met, the inbound call is hung up with an error message.
 	FallbackDestination *UpdateVonagePhoneNumberDtoFallbackDestination `json:"fallbackDestination,omitempty" url:"fallbackDestination,omitempty"`
+	// This is the hooks that will be used for incoming calls to this phone number.
+	Hooks []*PhoneNumberHookCallRinging `json:"hooks,omitempty" url:"hooks,omitempty"`
 	// This is the name of the phone number. This is just for your own reference.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
@@ -2889,6 +2999,13 @@ func (u *UpdateVonagePhoneNumberDto) GetFallbackDestination() *UpdateVonagePhone
 		return nil
 	}
 	return u.FallbackDestination
+}
+
+func (u *UpdateVonagePhoneNumberDto) GetHooks() []*PhoneNumberHookCallRinging {
+	if u == nil {
+		return nil
+	}
+	return u.Hooks
 }
 
 func (u *UpdateVonagePhoneNumberDto) GetName() *string {
@@ -3041,6 +3158,8 @@ type VapiPhoneNumber struct {
 	//
 	// If this is not set and above conditions are met, the inbound call is hung up with an error message.
 	FallbackDestination *VapiPhoneNumberFallbackDestination `json:"fallbackDestination,omitempty" url:"fallbackDestination,omitempty"`
+	// This is the hooks that will be used for incoming calls to this phone number.
+	Hooks []*PhoneNumberHookCallRinging `json:"hooks,omitempty" url:"hooks,omitempty"`
 	// This is the unique identifier for the phone number.
 	Id string `json:"id" url:"id"`
 	// This is the unique identifier for the org that this phone number belongs to.
@@ -3092,6 +3211,13 @@ func (v *VapiPhoneNumber) GetFallbackDestination() *VapiPhoneNumberFallbackDesti
 		return nil
 	}
 	return v.FallbackDestination
+}
+
+func (v *VapiPhoneNumber) GetHooks() []*PhoneNumberHookCallRinging {
+	if v == nil {
+		return nil
+	}
+	return v.Hooks
 }
 
 func (v *VapiPhoneNumber) GetId() string {
@@ -3352,6 +3478,8 @@ type VonagePhoneNumber struct {
 	//
 	// If this is not set and above conditions are met, the inbound call is hung up with an error message.
 	FallbackDestination *VonagePhoneNumberFallbackDestination `json:"fallbackDestination,omitempty" url:"fallbackDestination,omitempty"`
+	// This is the hooks that will be used for incoming calls to this phone number.
+	Hooks []*PhoneNumberHookCallRinging `json:"hooks,omitempty" url:"hooks,omitempty"`
 	// This is the unique identifier for the phone number.
 	Id string `json:"id" url:"id"`
 	// This is the unique identifier for the org that this phone number belongs to.
@@ -3395,6 +3523,13 @@ func (v *VonagePhoneNumber) GetFallbackDestination() *VonagePhoneNumberFallbackD
 		return nil
 	}
 	return v.FallbackDestination
+}
+
+func (v *VonagePhoneNumber) GetHooks() []*PhoneNumberHookCallRinging {
+	if v == nil {
+		return nil
+	}
+	return v.Hooks
 }
 
 func (v *VonagePhoneNumber) GetId() string {

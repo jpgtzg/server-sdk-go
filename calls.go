@@ -1606,6 +1606,8 @@ const (
 	CallEndedReasonPhoneCallProviderClosedWebsocket                                                                          CallEndedReason = "phone-call-provider-closed-websocket"
 	CallEndedReasonSilenceTimedOut                                                                                           CallEndedReason = "silence-timed-out"
 	CallEndedReasonCallInProgressErrorSipTelephonyProviderFailedToConnectCall                                                CallEndedReason = "call.in-progress.error-sip-telephony-provider-failed-to-connect-call"
+	CallEndedReasonCallRingingHookExecutedSay                                                                                CallEndedReason = "call.ringing.hook-executed-say"
+	CallEndedReasonCallRingingHookExecutedTransfer                                                                           CallEndedReason = "call.ringing.hook-executed-transfer"
 	CallEndedReasonTwilioFailedToConnectCall                                                                                 CallEndedReason = "twilio-failed-to-connect-call"
 	CallEndedReasonTwilioReportedCustomerMisdialed                                                                           CallEndedReason = "twilio-reported-customer-misdialed"
 	CallEndedReasonVonageRejected                                                                                            CallEndedReason = "vonage-rejected"
@@ -2570,6 +2572,10 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonSilenceTimedOut, nil
 	case "call.in-progress.error-sip-telephony-provider-failed-to-connect-call":
 		return CallEndedReasonCallInProgressErrorSipTelephonyProviderFailedToConnectCall, nil
+	case "call.ringing.hook-executed-say":
+		return CallEndedReasonCallRingingHookExecutedSay, nil
+	case "call.ringing.hook-executed-transfer":
+		return CallEndedReasonCallRingingHookExecutedTransfer, nil
 	case "twilio-failed-to-connect-call":
 		return CallEndedReasonTwilioFailedToConnectCall, nil
 	case "twilio-reported-customer-misdialed":
@@ -3071,6 +3077,8 @@ type ImportTwilioPhoneNumberDto struct {
 	//
 	// If this is not set and above conditions are met, the inbound call is hung up with an error message.
 	FallbackDestination *ImportTwilioPhoneNumberDtoFallbackDestination `json:"fallbackDestination,omitempty" url:"fallbackDestination,omitempty"`
+	// This is the hooks that will be used for incoming calls to this phone number.
+	Hooks []*PhoneNumberHookCallRinging `json:"hooks,omitempty" url:"hooks,omitempty"`
 	// These are the digits of the phone number you own on your Twilio.
 	TwilioPhoneNumber string `json:"twilioPhoneNumber" url:"twilioPhoneNumber"`
 	// This is your Twilio Account SID that will be used to handle this phone number.
@@ -3105,6 +3113,13 @@ func (i *ImportTwilioPhoneNumberDto) GetFallbackDestination() *ImportTwilioPhone
 		return nil
 	}
 	return i.FallbackDestination
+}
+
+func (i *ImportTwilioPhoneNumberDto) GetHooks() []*PhoneNumberHookCallRinging {
+	if i == nil {
+		return nil
+	}
+	return i.Hooks
 }
 
 func (i *ImportTwilioPhoneNumberDto) GetTwilioPhoneNumber() string {

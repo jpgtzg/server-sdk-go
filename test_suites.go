@@ -61,12 +61,20 @@ type UpdateTestSuiteDto struct {
 }
 
 type TargetPlan struct {
-	// This is the phoneNumberId that is being tested.
+	// This is the phone number that is being tested.
+	// During the actual test, it'll be called and the assistant attached to it will pick up and be tested.
+	// To test an assistant directly, send assistantId instead.
 	PhoneNumberId *string `json:"phoneNumberId,omitempty" url:"phoneNumberId,omitempty"`
-	// This is the phone number that is being tested. Only use this if you have not imported the phone number to Vapi.
+	// This can be any phone number (even not on Vapi).
+	// During the actual test, it'll be called.
+	// To test a Vapi number, send phoneNumberId. To test an assistant directly, send assistantId instead.
 	PhoneNumber *TestSuitePhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
-	// This is the assistantId that is being tested.
+	// This is the assistant being tested.
+	// During the actual test, it'll invoked directly.
+	// To test the assistant over phone number, send phoneNumberId instead.
 	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
+	// This is the assistant overrides applied to assistantId before it is tested.
+	AssistantOverrides *AssistantOverrides `json:"assistantOverrides,omitempty" url:"assistantOverrides,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -91,6 +99,13 @@ func (t *TargetPlan) GetAssistantId() *string {
 		return nil
 	}
 	return t.AssistantId
+}
+
+func (t *TargetPlan) GetAssistantOverrides() *AssistantOverrides {
+	if t == nil {
+		return nil
+	}
+	return t.AssistantOverrides
 }
 
 func (t *TargetPlan) GetExtraProperties() map[string]interface{} {

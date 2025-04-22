@@ -7874,14 +7874,14 @@ func (c *CartesiaCredential) String() string {
 }
 
 type CartesiaExperimentalControls struct {
-	Speed   *CartesiaExperimentalControlsSpeed   `json:"speed,omitempty" url:"speed,omitempty"`
+	Speed   *CartesiaSpeedControl                `json:"speed,omitempty" url:"speed,omitempty"`
 	Emotion *CartesiaExperimentalControlsEmotion `json:"emotion,omitempty" url:"emotion,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
 }
 
-func (c *CartesiaExperimentalControls) GetSpeed() *CartesiaExperimentalControlsSpeed {
+func (c *CartesiaExperimentalControls) GetSpeed() *CartesiaSpeedControl {
 	if c == nil {
 		return nil
 	}
@@ -8003,29 +8003,60 @@ func (c CartesiaExperimentalControlsEmotion) Ptr() *CartesiaExperimentalControls
 	return &c
 }
 
-type CartesiaExperimentalControlsSpeed struct {
-	CartesiaExperimentalControlsSpeed *CartesiaExperimentalControlsSpeed
+type CartesiaExperimentalControlsSpeed string
+
+const (
+	CartesiaExperimentalControlsSpeedSlowest CartesiaExperimentalControlsSpeed = "slowest"
+	CartesiaExperimentalControlsSpeedSlow    CartesiaExperimentalControlsSpeed = "slow"
+	CartesiaExperimentalControlsSpeedNormal  CartesiaExperimentalControlsSpeed = "normal"
+	CartesiaExperimentalControlsSpeedFast    CartesiaExperimentalControlsSpeed = "fast"
+	CartesiaExperimentalControlsSpeedFastest CartesiaExperimentalControlsSpeed = "fastest"
+)
+
+func NewCartesiaExperimentalControlsSpeedFromString(s string) (CartesiaExperimentalControlsSpeed, error) {
+	switch s {
+	case "slowest":
+		return CartesiaExperimentalControlsSpeedSlowest, nil
+	case "slow":
+		return CartesiaExperimentalControlsSpeedSlow, nil
+	case "normal":
+		return CartesiaExperimentalControlsSpeedNormal, nil
+	case "fast":
+		return CartesiaExperimentalControlsSpeedFast, nil
+	case "fastest":
+		return CartesiaExperimentalControlsSpeedFastest, nil
+	}
+	var t CartesiaExperimentalControlsSpeed
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (c CartesiaExperimentalControlsSpeed) Ptr() *CartesiaExperimentalControlsSpeed {
+	return &c
+}
+
+type CartesiaSpeedControl struct {
+	CartesiaExperimentalControlsSpeed CartesiaExperimentalControlsSpeed
 	Double                            float64
 
 	typ string
 }
 
-func (c *CartesiaExperimentalControlsSpeed) GetCartesiaExperimentalControlsSpeed() *CartesiaExperimentalControlsSpeed {
+func (c *CartesiaSpeedControl) GetCartesiaExperimentalControlsSpeed() CartesiaExperimentalControlsSpeed {
 	if c == nil {
-		return nil
+		return ""
 	}
 	return c.CartesiaExperimentalControlsSpeed
 }
 
-func (c *CartesiaExperimentalControlsSpeed) GetDouble() float64 {
+func (c *CartesiaSpeedControl) GetDouble() float64 {
 	if c == nil {
 		return 0
 	}
 	return c.Double
 }
 
-func (c *CartesiaExperimentalControlsSpeed) UnmarshalJSON(data []byte) error {
-	valueCartesiaExperimentalControlsSpeed := new(CartesiaExperimentalControlsSpeed)
+func (c *CartesiaSpeedControl) UnmarshalJSON(data []byte) error {
+	var valueCartesiaExperimentalControlsSpeed CartesiaExperimentalControlsSpeed
 	if err := json.Unmarshal(data, &valueCartesiaExperimentalControlsSpeed); err == nil {
 		c.typ = "CartesiaExperimentalControlsSpeed"
 		c.CartesiaExperimentalControlsSpeed = valueCartesiaExperimentalControlsSpeed
@@ -8040,8 +8071,8 @@ func (c *CartesiaExperimentalControlsSpeed) UnmarshalJSON(data []byte) error {
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
 }
 
-func (c CartesiaExperimentalControlsSpeed) MarshalJSON() ([]byte, error) {
-	if c.typ == "CartesiaExperimentalControlsSpeed" || c.CartesiaExperimentalControlsSpeed != nil {
+func (c CartesiaSpeedControl) MarshalJSON() ([]byte, error) {
+	if c.typ == "CartesiaExperimentalControlsSpeed" || c.CartesiaExperimentalControlsSpeed != "" {
 		return json.Marshal(c.CartesiaExperimentalControlsSpeed)
 	}
 	if c.typ == "Double" || c.Double != 0 {
@@ -8050,13 +8081,13 @@ func (c CartesiaExperimentalControlsSpeed) MarshalJSON() ([]byte, error) {
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
 }
 
-type CartesiaExperimentalControlsSpeedVisitor interface {
-	VisitCartesiaExperimentalControlsSpeed(*CartesiaExperimentalControlsSpeed) error
+type CartesiaSpeedControlVisitor interface {
+	VisitCartesiaExperimentalControlsSpeed(CartesiaExperimentalControlsSpeed) error
 	VisitDouble(float64) error
 }
 
-func (c *CartesiaExperimentalControlsSpeed) Accept(visitor CartesiaExperimentalControlsSpeedVisitor) error {
-	if c.typ == "CartesiaExperimentalControlsSpeed" || c.CartesiaExperimentalControlsSpeed != nil {
+func (c *CartesiaSpeedControl) Accept(visitor CartesiaSpeedControlVisitor) error {
+	if c.typ == "CartesiaExperimentalControlsSpeed" || c.CartesiaExperimentalControlsSpeed != "" {
 		return visitor.VisitCartesiaExperimentalControlsSpeed(c.CartesiaExperimentalControlsSpeed)
 	}
 	if c.typ == "Double" || c.Double != 0 {
@@ -26576,6 +26607,9 @@ func (d DeepgramTranscriberLanguage) Ptr() *DeepgramTranscriberLanguage {
 type DeepgramTranscriberModel string
 
 const (
+	DeepgramTranscriberModelNova3                 DeepgramTranscriberModel = "nova-3"
+	DeepgramTranscriberModelNova3General          DeepgramTranscriberModel = "nova-3-general"
+	DeepgramTranscriberModelNova3Medical          DeepgramTranscriberModel = "nova-3-medical"
 	DeepgramTranscriberModelNova2                 DeepgramTranscriberModel = "nova-2"
 	DeepgramTranscriberModelNova2General          DeepgramTranscriberModel = "nova-2-general"
 	DeepgramTranscriberModelNova2Meeting          DeepgramTranscriberModel = "nova-2-meeting"
@@ -26608,6 +26642,12 @@ const (
 
 func NewDeepgramTranscriberModelFromString(s string) (DeepgramTranscriberModel, error) {
 	switch s {
+	case "nova-3":
+		return DeepgramTranscriberModelNova3, nil
+	case "nova-3-general":
+		return DeepgramTranscriberModelNova3General, nil
+	case "nova-3-medical":
+		return DeepgramTranscriberModelNova3Medical, nil
 	case "nova-2":
 		return DeepgramTranscriberModelNova2, nil
 	case "nova-2-general":
@@ -26676,7 +26716,9 @@ func (d DeepgramTranscriberModel) Ptr() *DeepgramTranscriberModel {
 type DeepgramVoice struct {
 	// This is the voice provider that will be used.
 	// This is the provider-specific ID that will be used.
-	VoiceId *DeepgramVoiceId `json:"voiceId,omitempty" url:"voiceId,omitempty"`
+	VoiceId DeepgramVoiceId `json:"voiceId" url:"voiceId"`
+	// This is the model that will be used. Defaults to 'aura-2' when not specified.
+	Model *DeepgramVoiceModel `json:"model,omitempty" url:"model,omitempty"`
 	// If set to true, this will add mip_opt_out=true as a query parameter of all API requests. See https://developers.deepgram.com/docs/the-deepgram-model-improvement-partnership-program#want-to-opt-out
 	//
 	// This will only be used if you are using your own Deepgram API key.
@@ -26693,11 +26735,18 @@ type DeepgramVoice struct {
 	rawJSON         json.RawMessage
 }
 
-func (d *DeepgramVoice) GetVoiceId() *DeepgramVoiceId {
+func (d *DeepgramVoice) GetVoiceId() DeepgramVoiceId {
+	if d == nil {
+		return ""
+	}
+	return d.VoiceId
+}
+
+func (d *DeepgramVoice) GetModel() *DeepgramVoiceModel {
 	if d == nil {
 		return nil
 	}
-	return d.VoiceId
+	return d.Model
 }
 
 func (d *DeepgramVoice) GetMipOptOut() *bool {
@@ -26779,117 +26828,177 @@ func (d *DeepgramVoice) String() string {
 }
 
 // This is the provider-specific ID that will be used.
-type DeepgramVoiceId struct {
-	DeepgramVoiceIdEnum DeepgramVoiceIdEnum
-	String              string
-
-	typ string
-}
-
-func (d *DeepgramVoiceId) GetDeepgramVoiceIdEnum() DeepgramVoiceIdEnum {
-	if d == nil {
-		return ""
-	}
-	return d.DeepgramVoiceIdEnum
-}
-
-func (d *DeepgramVoiceId) GetString() string {
-	if d == nil {
-		return ""
-	}
-	return d.String
-}
-
-func (d *DeepgramVoiceId) UnmarshalJSON(data []byte) error {
-	var valueDeepgramVoiceIdEnum DeepgramVoiceIdEnum
-	if err := json.Unmarshal(data, &valueDeepgramVoiceIdEnum); err == nil {
-		d.typ = "DeepgramVoiceIdEnum"
-		d.DeepgramVoiceIdEnum = valueDeepgramVoiceIdEnum
-		return nil
-	}
-	var valueString string
-	if err := json.Unmarshal(data, &valueString); err == nil {
-		d.typ = "String"
-		d.String = valueString
-		return nil
-	}
-	return fmt.Errorf("%s cannot be deserialized as a %T", data, d)
-}
-
-func (d DeepgramVoiceId) MarshalJSON() ([]byte, error) {
-	if d.typ == "DeepgramVoiceIdEnum" || d.DeepgramVoiceIdEnum != "" {
-		return json.Marshal(d.DeepgramVoiceIdEnum)
-	}
-	if d.typ == "String" || d.String != "" {
-		return json.Marshal(d.String)
-	}
-	return nil, fmt.Errorf("type %T does not include a non-empty union type", d)
-}
-
-type DeepgramVoiceIdVisitor interface {
-	VisitDeepgramVoiceIdEnum(DeepgramVoiceIdEnum) error
-	VisitString(string) error
-}
-
-func (d *DeepgramVoiceId) Accept(visitor DeepgramVoiceIdVisitor) error {
-	if d.typ == "DeepgramVoiceIdEnum" || d.DeepgramVoiceIdEnum != "" {
-		return visitor.VisitDeepgramVoiceIdEnum(d.DeepgramVoiceIdEnum)
-	}
-	if d.typ == "String" || d.String != "" {
-		return visitor.VisitString(d.String)
-	}
-	return fmt.Errorf("type %T does not include a non-empty union type", d)
-}
-
-type DeepgramVoiceIdEnum string
+type DeepgramVoiceId string
 
 const (
-	DeepgramVoiceIdEnumAsteria DeepgramVoiceIdEnum = "asteria"
-	DeepgramVoiceIdEnumLuna    DeepgramVoiceIdEnum = "luna"
-	DeepgramVoiceIdEnumStella  DeepgramVoiceIdEnum = "stella"
-	DeepgramVoiceIdEnumAthena  DeepgramVoiceIdEnum = "athena"
-	DeepgramVoiceIdEnumHera    DeepgramVoiceIdEnum = "hera"
-	DeepgramVoiceIdEnumOrion   DeepgramVoiceIdEnum = "orion"
-	DeepgramVoiceIdEnumArcas   DeepgramVoiceIdEnum = "arcas"
-	DeepgramVoiceIdEnumPerseus DeepgramVoiceIdEnum = "perseus"
-	DeepgramVoiceIdEnumAngus   DeepgramVoiceIdEnum = "angus"
-	DeepgramVoiceIdEnumOrpheus DeepgramVoiceIdEnum = "orpheus"
-	DeepgramVoiceIdEnumHelios  DeepgramVoiceIdEnum = "helios"
-	DeepgramVoiceIdEnumZeus    DeepgramVoiceIdEnum = "zeus"
+	DeepgramVoiceIdAsteria   DeepgramVoiceId = "asteria"
+	DeepgramVoiceIdLuna      DeepgramVoiceId = "luna"
+	DeepgramVoiceIdStella    DeepgramVoiceId = "stella"
+	DeepgramVoiceIdAthena    DeepgramVoiceId = "athena"
+	DeepgramVoiceIdHera      DeepgramVoiceId = "hera"
+	DeepgramVoiceIdOrion     DeepgramVoiceId = "orion"
+	DeepgramVoiceIdArcas     DeepgramVoiceId = "arcas"
+	DeepgramVoiceIdPerseus   DeepgramVoiceId = "perseus"
+	DeepgramVoiceIdAngus     DeepgramVoiceId = "angus"
+	DeepgramVoiceIdOrpheus   DeepgramVoiceId = "orpheus"
+	DeepgramVoiceIdHelios    DeepgramVoiceId = "helios"
+	DeepgramVoiceIdZeus      DeepgramVoiceId = "zeus"
+	DeepgramVoiceIdThalia    DeepgramVoiceId = "thalia"
+	DeepgramVoiceIdAndromeda DeepgramVoiceId = "andromeda"
+	DeepgramVoiceIdHelena    DeepgramVoiceId = "helena"
+	DeepgramVoiceIdApollo    DeepgramVoiceId = "apollo"
+	DeepgramVoiceIdAries     DeepgramVoiceId = "aries"
+	DeepgramVoiceIdAmalthea  DeepgramVoiceId = "amalthea"
+	DeepgramVoiceIdAtlas     DeepgramVoiceId = "atlas"
+	DeepgramVoiceIdAurora    DeepgramVoiceId = "aurora"
+	DeepgramVoiceIdCallista  DeepgramVoiceId = "callista"
+	DeepgramVoiceIdCora      DeepgramVoiceId = "cora"
+	DeepgramVoiceIdCordelia  DeepgramVoiceId = "cordelia"
+	DeepgramVoiceIdDelia     DeepgramVoiceId = "delia"
+	DeepgramVoiceIdDraco     DeepgramVoiceId = "draco"
+	DeepgramVoiceIdElectra   DeepgramVoiceId = "electra"
+	DeepgramVoiceIdHarmonia  DeepgramVoiceId = "harmonia"
+	DeepgramVoiceIdHermes    DeepgramVoiceId = "hermes"
+	DeepgramVoiceIdHyperion  DeepgramVoiceId = "hyperion"
+	DeepgramVoiceIdIris      DeepgramVoiceId = "iris"
+	DeepgramVoiceIdJanus     DeepgramVoiceId = "janus"
+	DeepgramVoiceIdJuno      DeepgramVoiceId = "juno"
+	DeepgramVoiceIdJupiter   DeepgramVoiceId = "jupiter"
+	DeepgramVoiceIdMars      DeepgramVoiceId = "mars"
+	DeepgramVoiceIdMinerva   DeepgramVoiceId = "minerva"
+	DeepgramVoiceIdNeptune   DeepgramVoiceId = "neptune"
+	DeepgramVoiceIdOdysseus  DeepgramVoiceId = "odysseus"
+	DeepgramVoiceIdOphelia   DeepgramVoiceId = "ophelia"
+	DeepgramVoiceIdPandora   DeepgramVoiceId = "pandora"
+	DeepgramVoiceIdPhoebe    DeepgramVoiceId = "phoebe"
+	DeepgramVoiceIdPluto     DeepgramVoiceId = "pluto"
+	DeepgramVoiceIdSaturn    DeepgramVoiceId = "saturn"
+	DeepgramVoiceIdSelene    DeepgramVoiceId = "selene"
+	DeepgramVoiceIdTheia     DeepgramVoiceId = "theia"
+	DeepgramVoiceIdVesta     DeepgramVoiceId = "vesta"
 )
 
-func NewDeepgramVoiceIdEnumFromString(s string) (DeepgramVoiceIdEnum, error) {
+func NewDeepgramVoiceIdFromString(s string) (DeepgramVoiceId, error) {
 	switch s {
 	case "asteria":
-		return DeepgramVoiceIdEnumAsteria, nil
+		return DeepgramVoiceIdAsteria, nil
 	case "luna":
-		return DeepgramVoiceIdEnumLuna, nil
+		return DeepgramVoiceIdLuna, nil
 	case "stella":
-		return DeepgramVoiceIdEnumStella, nil
+		return DeepgramVoiceIdStella, nil
 	case "athena":
-		return DeepgramVoiceIdEnumAthena, nil
+		return DeepgramVoiceIdAthena, nil
 	case "hera":
-		return DeepgramVoiceIdEnumHera, nil
+		return DeepgramVoiceIdHera, nil
 	case "orion":
-		return DeepgramVoiceIdEnumOrion, nil
+		return DeepgramVoiceIdOrion, nil
 	case "arcas":
-		return DeepgramVoiceIdEnumArcas, nil
+		return DeepgramVoiceIdArcas, nil
 	case "perseus":
-		return DeepgramVoiceIdEnumPerseus, nil
+		return DeepgramVoiceIdPerseus, nil
 	case "angus":
-		return DeepgramVoiceIdEnumAngus, nil
+		return DeepgramVoiceIdAngus, nil
 	case "orpheus":
-		return DeepgramVoiceIdEnumOrpheus, nil
+		return DeepgramVoiceIdOrpheus, nil
 	case "helios":
-		return DeepgramVoiceIdEnumHelios, nil
+		return DeepgramVoiceIdHelios, nil
 	case "zeus":
-		return DeepgramVoiceIdEnumZeus, nil
+		return DeepgramVoiceIdZeus, nil
+	case "thalia":
+		return DeepgramVoiceIdThalia, nil
+	case "andromeda":
+		return DeepgramVoiceIdAndromeda, nil
+	case "helena":
+		return DeepgramVoiceIdHelena, nil
+	case "apollo":
+		return DeepgramVoiceIdApollo, nil
+	case "aries":
+		return DeepgramVoiceIdAries, nil
+	case "amalthea":
+		return DeepgramVoiceIdAmalthea, nil
+	case "atlas":
+		return DeepgramVoiceIdAtlas, nil
+	case "aurora":
+		return DeepgramVoiceIdAurora, nil
+	case "callista":
+		return DeepgramVoiceIdCallista, nil
+	case "cora":
+		return DeepgramVoiceIdCora, nil
+	case "cordelia":
+		return DeepgramVoiceIdCordelia, nil
+	case "delia":
+		return DeepgramVoiceIdDelia, nil
+	case "draco":
+		return DeepgramVoiceIdDraco, nil
+	case "electra":
+		return DeepgramVoiceIdElectra, nil
+	case "harmonia":
+		return DeepgramVoiceIdHarmonia, nil
+	case "hermes":
+		return DeepgramVoiceIdHermes, nil
+	case "hyperion":
+		return DeepgramVoiceIdHyperion, nil
+	case "iris":
+		return DeepgramVoiceIdIris, nil
+	case "janus":
+		return DeepgramVoiceIdJanus, nil
+	case "juno":
+		return DeepgramVoiceIdJuno, nil
+	case "jupiter":
+		return DeepgramVoiceIdJupiter, nil
+	case "mars":
+		return DeepgramVoiceIdMars, nil
+	case "minerva":
+		return DeepgramVoiceIdMinerva, nil
+	case "neptune":
+		return DeepgramVoiceIdNeptune, nil
+	case "odysseus":
+		return DeepgramVoiceIdOdysseus, nil
+	case "ophelia":
+		return DeepgramVoiceIdOphelia, nil
+	case "pandora":
+		return DeepgramVoiceIdPandora, nil
+	case "phoebe":
+		return DeepgramVoiceIdPhoebe, nil
+	case "pluto":
+		return DeepgramVoiceIdPluto, nil
+	case "saturn":
+		return DeepgramVoiceIdSaturn, nil
+	case "selene":
+		return DeepgramVoiceIdSelene, nil
+	case "theia":
+		return DeepgramVoiceIdTheia, nil
+	case "vesta":
+		return DeepgramVoiceIdVesta, nil
 	}
-	var t DeepgramVoiceIdEnum
+	var t DeepgramVoiceId
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
 }
 
-func (d DeepgramVoiceIdEnum) Ptr() *DeepgramVoiceIdEnum {
+func (d DeepgramVoiceId) Ptr() *DeepgramVoiceId {
+	return &d
+}
+
+// This is the model that will be used. Defaults to 'aura-2' when not specified.
+type DeepgramVoiceModel string
+
+const (
+	DeepgramVoiceModelAura  DeepgramVoiceModel = "aura"
+	DeepgramVoiceModelAura2 DeepgramVoiceModel = "aura-2"
+)
+
+func NewDeepgramVoiceModelFromString(s string) (DeepgramVoiceModel, error) {
+	switch s {
+	case "aura":
+		return DeepgramVoiceModelAura, nil
+	case "aura-2":
+		return DeepgramVoiceModelAura2, nil
+	}
+	var t DeepgramVoiceModel
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (d DeepgramVoiceModel) Ptr() *DeepgramVoiceModel {
 	return &d
 }
 
@@ -28180,6 +28289,12 @@ type ExactReplacement struct {
 	// - Replace a specific name: { type: 'exact', key: 'John Doe', value: 'Jane Smith' }
 	// - Replace an acronym: { type: 'exact', key: 'AI', value: 'Artificial Intelligence' }
 	// - Replace a company name with its phonetic pronunciation: { type: 'exact', key: 'Vapi', value: 'Vappy' }
+	// This option let's you control whether to replace all instances of the key or only the first one. By default, it only replaces the first instance.
+	// Examples:
+	// - For { type: 'exact', key: 'hello', value: 'hi', replaceAllEnabled: false }. Before: "hello world, hello universe" | After: "hi world, hello universe"
+	// - For { type: 'exact', key: 'hello', value: 'hi', replaceAllEnabled: true }. Before: "hello world, hello universe" | After: "hi world, hi universe"
+	// @default false
+	ReplaceAllEnabled *bool `json:"replaceAllEnabled,omitempty" url:"replaceAllEnabled,omitempty"`
 	// This is the key to replace.
 	Key string `json:"key" url:"key"`
 	// This is the value that will replace the match.
@@ -28188,6 +28303,13 @@ type ExactReplacement struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (e *ExactReplacement) GetReplaceAllEnabled() *bool {
+	if e == nil {
+		return nil
+	}
+	return e.ReplaceAllEnabled
 }
 
 func (e *ExactReplacement) GetKey() string {
@@ -29963,6 +30085,9 @@ func (f FallbackDeepgramTranscriberLanguage) Ptr() *FallbackDeepgramTranscriberL
 type FallbackDeepgramTranscriberModel string
 
 const (
+	FallbackDeepgramTranscriberModelNova3                 FallbackDeepgramTranscriberModel = "nova-3"
+	FallbackDeepgramTranscriberModelNova3General          FallbackDeepgramTranscriberModel = "nova-3-general"
+	FallbackDeepgramTranscriberModelNova3Medical          FallbackDeepgramTranscriberModel = "nova-3-medical"
 	FallbackDeepgramTranscriberModelNova2                 FallbackDeepgramTranscriberModel = "nova-2"
 	FallbackDeepgramTranscriberModelNova2General          FallbackDeepgramTranscriberModel = "nova-2-general"
 	FallbackDeepgramTranscriberModelNova2Meeting          FallbackDeepgramTranscriberModel = "nova-2-meeting"
@@ -29995,6 +30120,12 @@ const (
 
 func NewFallbackDeepgramTranscriberModelFromString(s string) (FallbackDeepgramTranscriberModel, error) {
 	switch s {
+	case "nova-3":
+		return FallbackDeepgramTranscriberModelNova3, nil
+	case "nova-3-general":
+		return FallbackDeepgramTranscriberModelNova3General, nil
+	case "nova-3-medical":
+		return FallbackDeepgramTranscriberModelNova3Medical, nil
 	case "nova-2":
 		return FallbackDeepgramTranscriberModelNova2, nil
 	case "nova-2-general":
@@ -30063,7 +30194,9 @@ func (f FallbackDeepgramTranscriberModel) Ptr() *FallbackDeepgramTranscriberMode
 type FallbackDeepgramVoice struct {
 	// This is the voice provider that will be used.
 	// This is the provider-specific ID that will be used.
-	VoiceId *FallbackDeepgramVoiceId `json:"voiceId,omitempty" url:"voiceId,omitempty"`
+	VoiceId FallbackDeepgramVoiceId `json:"voiceId" url:"voiceId"`
+	// This is the model that will be used. Defaults to 'aura-2' when not specified.
+	Model *FallbackDeepgramVoiceModel `json:"model,omitempty" url:"model,omitempty"`
 	// If set to true, this will add mip_opt_out=true as a query parameter of all API requests. See https://developers.deepgram.com/docs/the-deepgram-model-improvement-partnership-program#want-to-opt-out
 	//
 	// This will only be used if you are using your own Deepgram API key.
@@ -30078,11 +30211,18 @@ type FallbackDeepgramVoice struct {
 	rawJSON         json.RawMessage
 }
 
-func (f *FallbackDeepgramVoice) GetVoiceId() *FallbackDeepgramVoiceId {
+func (f *FallbackDeepgramVoice) GetVoiceId() FallbackDeepgramVoiceId {
+	if f == nil {
+		return ""
+	}
+	return f.VoiceId
+}
+
+func (f *FallbackDeepgramVoice) GetModel() *FallbackDeepgramVoiceModel {
 	if f == nil {
 		return nil
 	}
-	return f.VoiceId
+	return f.Model
 }
 
 func (f *FallbackDeepgramVoice) GetMipOptOut() *bool {
@@ -30157,117 +30297,177 @@ func (f *FallbackDeepgramVoice) String() string {
 }
 
 // This is the provider-specific ID that will be used.
-type FallbackDeepgramVoiceId struct {
-	FallbackDeepgramVoiceIdEnum FallbackDeepgramVoiceIdEnum
-	String                      string
-
-	typ string
-}
-
-func (f *FallbackDeepgramVoiceId) GetFallbackDeepgramVoiceIdEnum() FallbackDeepgramVoiceIdEnum {
-	if f == nil {
-		return ""
-	}
-	return f.FallbackDeepgramVoiceIdEnum
-}
-
-func (f *FallbackDeepgramVoiceId) GetString() string {
-	if f == nil {
-		return ""
-	}
-	return f.String
-}
-
-func (f *FallbackDeepgramVoiceId) UnmarshalJSON(data []byte) error {
-	var valueFallbackDeepgramVoiceIdEnum FallbackDeepgramVoiceIdEnum
-	if err := json.Unmarshal(data, &valueFallbackDeepgramVoiceIdEnum); err == nil {
-		f.typ = "FallbackDeepgramVoiceIdEnum"
-		f.FallbackDeepgramVoiceIdEnum = valueFallbackDeepgramVoiceIdEnum
-		return nil
-	}
-	var valueString string
-	if err := json.Unmarshal(data, &valueString); err == nil {
-		f.typ = "String"
-		f.String = valueString
-		return nil
-	}
-	return fmt.Errorf("%s cannot be deserialized as a %T", data, f)
-}
-
-func (f FallbackDeepgramVoiceId) MarshalJSON() ([]byte, error) {
-	if f.typ == "FallbackDeepgramVoiceIdEnum" || f.FallbackDeepgramVoiceIdEnum != "" {
-		return json.Marshal(f.FallbackDeepgramVoiceIdEnum)
-	}
-	if f.typ == "String" || f.String != "" {
-		return json.Marshal(f.String)
-	}
-	return nil, fmt.Errorf("type %T does not include a non-empty union type", f)
-}
-
-type FallbackDeepgramVoiceIdVisitor interface {
-	VisitFallbackDeepgramVoiceIdEnum(FallbackDeepgramVoiceIdEnum) error
-	VisitString(string) error
-}
-
-func (f *FallbackDeepgramVoiceId) Accept(visitor FallbackDeepgramVoiceIdVisitor) error {
-	if f.typ == "FallbackDeepgramVoiceIdEnum" || f.FallbackDeepgramVoiceIdEnum != "" {
-		return visitor.VisitFallbackDeepgramVoiceIdEnum(f.FallbackDeepgramVoiceIdEnum)
-	}
-	if f.typ == "String" || f.String != "" {
-		return visitor.VisitString(f.String)
-	}
-	return fmt.Errorf("type %T does not include a non-empty union type", f)
-}
-
-type FallbackDeepgramVoiceIdEnum string
+type FallbackDeepgramVoiceId string
 
 const (
-	FallbackDeepgramVoiceIdEnumAsteria FallbackDeepgramVoiceIdEnum = "asteria"
-	FallbackDeepgramVoiceIdEnumLuna    FallbackDeepgramVoiceIdEnum = "luna"
-	FallbackDeepgramVoiceIdEnumStella  FallbackDeepgramVoiceIdEnum = "stella"
-	FallbackDeepgramVoiceIdEnumAthena  FallbackDeepgramVoiceIdEnum = "athena"
-	FallbackDeepgramVoiceIdEnumHera    FallbackDeepgramVoiceIdEnum = "hera"
-	FallbackDeepgramVoiceIdEnumOrion   FallbackDeepgramVoiceIdEnum = "orion"
-	FallbackDeepgramVoiceIdEnumArcas   FallbackDeepgramVoiceIdEnum = "arcas"
-	FallbackDeepgramVoiceIdEnumPerseus FallbackDeepgramVoiceIdEnum = "perseus"
-	FallbackDeepgramVoiceIdEnumAngus   FallbackDeepgramVoiceIdEnum = "angus"
-	FallbackDeepgramVoiceIdEnumOrpheus FallbackDeepgramVoiceIdEnum = "orpheus"
-	FallbackDeepgramVoiceIdEnumHelios  FallbackDeepgramVoiceIdEnum = "helios"
-	FallbackDeepgramVoiceIdEnumZeus    FallbackDeepgramVoiceIdEnum = "zeus"
+	FallbackDeepgramVoiceIdAsteria   FallbackDeepgramVoiceId = "asteria"
+	FallbackDeepgramVoiceIdLuna      FallbackDeepgramVoiceId = "luna"
+	FallbackDeepgramVoiceIdStella    FallbackDeepgramVoiceId = "stella"
+	FallbackDeepgramVoiceIdAthena    FallbackDeepgramVoiceId = "athena"
+	FallbackDeepgramVoiceIdHera      FallbackDeepgramVoiceId = "hera"
+	FallbackDeepgramVoiceIdOrion     FallbackDeepgramVoiceId = "orion"
+	FallbackDeepgramVoiceIdArcas     FallbackDeepgramVoiceId = "arcas"
+	FallbackDeepgramVoiceIdPerseus   FallbackDeepgramVoiceId = "perseus"
+	FallbackDeepgramVoiceIdAngus     FallbackDeepgramVoiceId = "angus"
+	FallbackDeepgramVoiceIdOrpheus   FallbackDeepgramVoiceId = "orpheus"
+	FallbackDeepgramVoiceIdHelios    FallbackDeepgramVoiceId = "helios"
+	FallbackDeepgramVoiceIdZeus      FallbackDeepgramVoiceId = "zeus"
+	FallbackDeepgramVoiceIdThalia    FallbackDeepgramVoiceId = "thalia"
+	FallbackDeepgramVoiceIdAndromeda FallbackDeepgramVoiceId = "andromeda"
+	FallbackDeepgramVoiceIdHelena    FallbackDeepgramVoiceId = "helena"
+	FallbackDeepgramVoiceIdApollo    FallbackDeepgramVoiceId = "apollo"
+	FallbackDeepgramVoiceIdAries     FallbackDeepgramVoiceId = "aries"
+	FallbackDeepgramVoiceIdAmalthea  FallbackDeepgramVoiceId = "amalthea"
+	FallbackDeepgramVoiceIdAtlas     FallbackDeepgramVoiceId = "atlas"
+	FallbackDeepgramVoiceIdAurora    FallbackDeepgramVoiceId = "aurora"
+	FallbackDeepgramVoiceIdCallista  FallbackDeepgramVoiceId = "callista"
+	FallbackDeepgramVoiceIdCora      FallbackDeepgramVoiceId = "cora"
+	FallbackDeepgramVoiceIdCordelia  FallbackDeepgramVoiceId = "cordelia"
+	FallbackDeepgramVoiceIdDelia     FallbackDeepgramVoiceId = "delia"
+	FallbackDeepgramVoiceIdDraco     FallbackDeepgramVoiceId = "draco"
+	FallbackDeepgramVoiceIdElectra   FallbackDeepgramVoiceId = "electra"
+	FallbackDeepgramVoiceIdHarmonia  FallbackDeepgramVoiceId = "harmonia"
+	FallbackDeepgramVoiceIdHermes    FallbackDeepgramVoiceId = "hermes"
+	FallbackDeepgramVoiceIdHyperion  FallbackDeepgramVoiceId = "hyperion"
+	FallbackDeepgramVoiceIdIris      FallbackDeepgramVoiceId = "iris"
+	FallbackDeepgramVoiceIdJanus     FallbackDeepgramVoiceId = "janus"
+	FallbackDeepgramVoiceIdJuno      FallbackDeepgramVoiceId = "juno"
+	FallbackDeepgramVoiceIdJupiter   FallbackDeepgramVoiceId = "jupiter"
+	FallbackDeepgramVoiceIdMars      FallbackDeepgramVoiceId = "mars"
+	FallbackDeepgramVoiceIdMinerva   FallbackDeepgramVoiceId = "minerva"
+	FallbackDeepgramVoiceIdNeptune   FallbackDeepgramVoiceId = "neptune"
+	FallbackDeepgramVoiceIdOdysseus  FallbackDeepgramVoiceId = "odysseus"
+	FallbackDeepgramVoiceIdOphelia   FallbackDeepgramVoiceId = "ophelia"
+	FallbackDeepgramVoiceIdPandora   FallbackDeepgramVoiceId = "pandora"
+	FallbackDeepgramVoiceIdPhoebe    FallbackDeepgramVoiceId = "phoebe"
+	FallbackDeepgramVoiceIdPluto     FallbackDeepgramVoiceId = "pluto"
+	FallbackDeepgramVoiceIdSaturn    FallbackDeepgramVoiceId = "saturn"
+	FallbackDeepgramVoiceIdSelene    FallbackDeepgramVoiceId = "selene"
+	FallbackDeepgramVoiceIdTheia     FallbackDeepgramVoiceId = "theia"
+	FallbackDeepgramVoiceIdVesta     FallbackDeepgramVoiceId = "vesta"
 )
 
-func NewFallbackDeepgramVoiceIdEnumFromString(s string) (FallbackDeepgramVoiceIdEnum, error) {
+func NewFallbackDeepgramVoiceIdFromString(s string) (FallbackDeepgramVoiceId, error) {
 	switch s {
 	case "asteria":
-		return FallbackDeepgramVoiceIdEnumAsteria, nil
+		return FallbackDeepgramVoiceIdAsteria, nil
 	case "luna":
-		return FallbackDeepgramVoiceIdEnumLuna, nil
+		return FallbackDeepgramVoiceIdLuna, nil
 	case "stella":
-		return FallbackDeepgramVoiceIdEnumStella, nil
+		return FallbackDeepgramVoiceIdStella, nil
 	case "athena":
-		return FallbackDeepgramVoiceIdEnumAthena, nil
+		return FallbackDeepgramVoiceIdAthena, nil
 	case "hera":
-		return FallbackDeepgramVoiceIdEnumHera, nil
+		return FallbackDeepgramVoiceIdHera, nil
 	case "orion":
-		return FallbackDeepgramVoiceIdEnumOrion, nil
+		return FallbackDeepgramVoiceIdOrion, nil
 	case "arcas":
-		return FallbackDeepgramVoiceIdEnumArcas, nil
+		return FallbackDeepgramVoiceIdArcas, nil
 	case "perseus":
-		return FallbackDeepgramVoiceIdEnumPerseus, nil
+		return FallbackDeepgramVoiceIdPerseus, nil
 	case "angus":
-		return FallbackDeepgramVoiceIdEnumAngus, nil
+		return FallbackDeepgramVoiceIdAngus, nil
 	case "orpheus":
-		return FallbackDeepgramVoiceIdEnumOrpheus, nil
+		return FallbackDeepgramVoiceIdOrpheus, nil
 	case "helios":
-		return FallbackDeepgramVoiceIdEnumHelios, nil
+		return FallbackDeepgramVoiceIdHelios, nil
 	case "zeus":
-		return FallbackDeepgramVoiceIdEnumZeus, nil
+		return FallbackDeepgramVoiceIdZeus, nil
+	case "thalia":
+		return FallbackDeepgramVoiceIdThalia, nil
+	case "andromeda":
+		return FallbackDeepgramVoiceIdAndromeda, nil
+	case "helena":
+		return FallbackDeepgramVoiceIdHelena, nil
+	case "apollo":
+		return FallbackDeepgramVoiceIdApollo, nil
+	case "aries":
+		return FallbackDeepgramVoiceIdAries, nil
+	case "amalthea":
+		return FallbackDeepgramVoiceIdAmalthea, nil
+	case "atlas":
+		return FallbackDeepgramVoiceIdAtlas, nil
+	case "aurora":
+		return FallbackDeepgramVoiceIdAurora, nil
+	case "callista":
+		return FallbackDeepgramVoiceIdCallista, nil
+	case "cora":
+		return FallbackDeepgramVoiceIdCora, nil
+	case "cordelia":
+		return FallbackDeepgramVoiceIdCordelia, nil
+	case "delia":
+		return FallbackDeepgramVoiceIdDelia, nil
+	case "draco":
+		return FallbackDeepgramVoiceIdDraco, nil
+	case "electra":
+		return FallbackDeepgramVoiceIdElectra, nil
+	case "harmonia":
+		return FallbackDeepgramVoiceIdHarmonia, nil
+	case "hermes":
+		return FallbackDeepgramVoiceIdHermes, nil
+	case "hyperion":
+		return FallbackDeepgramVoiceIdHyperion, nil
+	case "iris":
+		return FallbackDeepgramVoiceIdIris, nil
+	case "janus":
+		return FallbackDeepgramVoiceIdJanus, nil
+	case "juno":
+		return FallbackDeepgramVoiceIdJuno, nil
+	case "jupiter":
+		return FallbackDeepgramVoiceIdJupiter, nil
+	case "mars":
+		return FallbackDeepgramVoiceIdMars, nil
+	case "minerva":
+		return FallbackDeepgramVoiceIdMinerva, nil
+	case "neptune":
+		return FallbackDeepgramVoiceIdNeptune, nil
+	case "odysseus":
+		return FallbackDeepgramVoiceIdOdysseus, nil
+	case "ophelia":
+		return FallbackDeepgramVoiceIdOphelia, nil
+	case "pandora":
+		return FallbackDeepgramVoiceIdPandora, nil
+	case "phoebe":
+		return FallbackDeepgramVoiceIdPhoebe, nil
+	case "pluto":
+		return FallbackDeepgramVoiceIdPluto, nil
+	case "saturn":
+		return FallbackDeepgramVoiceIdSaturn, nil
+	case "selene":
+		return FallbackDeepgramVoiceIdSelene, nil
+	case "theia":
+		return FallbackDeepgramVoiceIdTheia, nil
+	case "vesta":
+		return FallbackDeepgramVoiceIdVesta, nil
 	}
-	var t FallbackDeepgramVoiceIdEnum
+	var t FallbackDeepgramVoiceId
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
 }
 
-func (f FallbackDeepgramVoiceIdEnum) Ptr() *FallbackDeepgramVoiceIdEnum {
+func (f FallbackDeepgramVoiceId) Ptr() *FallbackDeepgramVoiceId {
+	return &f
+}
+
+// This is the model that will be used. Defaults to 'aura-2' when not specified.
+type FallbackDeepgramVoiceModel string
+
+const (
+	FallbackDeepgramVoiceModelAura  FallbackDeepgramVoiceModel = "aura"
+	FallbackDeepgramVoiceModelAura2 FallbackDeepgramVoiceModel = "aura-2"
+)
+
+func NewFallbackDeepgramVoiceModelFromString(s string) (FallbackDeepgramVoiceModel, error) {
+	switch s {
+	case "aura":
+		return FallbackDeepgramVoiceModelAura, nil
+	case "aura-2":
+		return FallbackDeepgramVoiceModelAura2, nil
+	}
+	var t FallbackDeepgramVoiceModel
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (f FallbackDeepgramVoiceModel) Ptr() *FallbackDeepgramVoiceModel {
 	return &f
 }
 
@@ -41323,6 +41523,8 @@ type ImportVonagePhoneNumberDto struct {
 	//
 	// If this is not set and above conditions are met, the inbound call is hung up with an error message.
 	FallbackDestination *ImportVonagePhoneNumberDtoFallbackDestination `json:"fallbackDestination,omitempty" url:"fallbackDestination,omitempty"`
+	// This is the hooks that will be used for incoming calls to this phone number.
+	Hooks []*PhoneNumberHookCallRinging `json:"hooks,omitempty" url:"hooks,omitempty"`
 	// These are the digits of the phone number you own on your Vonage.
 	VonagePhoneNumber string `json:"vonagePhoneNumber" url:"vonagePhoneNumber"`
 	// This is the credential you added in dashboard.vapi.ai/keys. This is used to configure the number to send inbound calls to Vapi, make outbound calls and do live call updates like transfers and hangups.
@@ -41355,6 +41557,13 @@ func (i *ImportVonagePhoneNumberDto) GetFallbackDestination() *ImportVonagePhone
 		return nil
 	}
 	return i.FallbackDestination
+}
+
+func (i *ImportVonagePhoneNumberDto) GetHooks() []*PhoneNumberHookCallRinging {
+	if i == nil {
+		return nil
+	}
+	return i.Hooks
 }
 
 func (i *ImportVonagePhoneNumberDto) GetVonagePhoneNumber() string {
@@ -43984,6 +44193,10 @@ type MessagePlan struct {
 	//
 	// @default 3
 	IdleMessageMaxSpokenCount *float64 `json:"idleMessageMaxSpokenCount,omitempty" url:"idleMessageMaxSpokenCount,omitempty"`
+	// This determines whether the idle message count is reset whenever the user speaks.
+	//
+	// @default false
+	IdleMessageResetCountOnUserSpeechEnabled *bool `json:"idleMessageResetCountOnUserSpeechEnabled,omitempty" url:"idleMessageResetCountOnUserSpeechEnabled,omitempty"`
 	// This is the timeout in seconds before a message from `idleMessages` is spoken. The clock starts when the assistant finishes speaking and remains active until the user speaks.
 	//
 	// @default 10
@@ -44009,6 +44222,13 @@ func (m *MessagePlan) GetIdleMessageMaxSpokenCount() *float64 {
 		return nil
 	}
 	return m.IdleMessageMaxSpokenCount
+}
+
+func (m *MessagePlan) GetIdleMessageResetCountOnUserSpeechEnabled() *bool {
+	if m == nil {
+		return nil
+	}
+	return m.IdleMessageResetCountOnUserSpeechEnabled
 }
 
 func (m *MessagePlan) GetIdleTimeoutSeconds() *float64 {
@@ -48069,6 +48289,121 @@ func (p *PerplexityAiModelToolsItem) Accept(visitor PerplexityAiModelToolsItemVi
 	return fmt.Errorf("type %T does not include a non-empty union type", p)
 }
 
+type PhoneNumberHookCallRinging struct {
+	// This is the event to trigger the hook on
+	// This is the set of actions to perform when the hook triggers
+	Do []*PhoneNumberHookCallRingingDoItem `json:"do,omitempty" url:"do,omitempty"`
+	on string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PhoneNumberHookCallRinging) GetDo() []*PhoneNumberHookCallRingingDoItem {
+	if p == nil {
+		return nil
+	}
+	return p.Do
+}
+
+func (p *PhoneNumberHookCallRinging) On() string {
+	return p.on
+}
+
+func (p *PhoneNumberHookCallRinging) GetExtraProperties() map[string]interface{} {
+	return p.extraProperties
+}
+
+func (p *PhoneNumberHookCallRinging) UnmarshalJSON(data []byte) error {
+	type embed PhoneNumberHookCallRinging
+	var unmarshaler = struct {
+		embed
+		On string `json:"on"`
+	}{
+		embed: embed(*p),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*p = PhoneNumberHookCallRinging(unmarshaler.embed)
+	if unmarshaler.On != "call.ringing" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", p, "call.ringing", unmarshaler.On)
+	}
+	p.on = unmarshaler.On
+	extraProperties, err := internal.ExtractExtraProperties(data, *p, "on")
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PhoneNumberHookCallRinging) MarshalJSON() ([]byte, error) {
+	type embed PhoneNumberHookCallRinging
+	var marshaler = struct {
+		embed
+		On string `json:"on"`
+	}{
+		embed: embed(*p),
+		On:    "call.ringing",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (p *PhoneNumberHookCallRinging) String() string {
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+type PhoneNumberHookCallRingingDoItem struct {
+	Unknown interface{}
+
+	typ string
+}
+
+func (p *PhoneNumberHookCallRingingDoItem) GetUnknown() interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.Unknown
+}
+
+func (p *PhoneNumberHookCallRingingDoItem) UnmarshalJSON(data []byte) error {
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		p.typ = "Unknown"
+		p.Unknown = valueUnknown
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, p)
+}
+
+func (p PhoneNumberHookCallRingingDoItem) MarshalJSON() ([]byte, error) {
+	if p.typ == "Unknown" || p.Unknown != nil {
+		return json.Marshal(p.Unknown)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", p)
+}
+
+type PhoneNumberHookCallRingingDoItemVisitor interface {
+	VisitUnknown(interface{}) error
+}
+
+func (p *PhoneNumberHookCallRingingDoItem) Accept(visitor PhoneNumberHookCallRingingDoItemVisitor) error {
+	if p.typ == "Unknown" || p.Unknown != nil {
+		return visitor.VisitUnknown(p.Unknown)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", p)
+}
+
 type PhoneNumberPaginatedResponse struct {
 	// A list of phone numbers, which can be of any provider type.
 	Results []*PhoneNumberPaginatedResponseResultsItem `json:"results,omitempty" url:"results,omitempty"`
@@ -51914,6 +52249,8 @@ const (
 	ServerMessageEndOfCallReportEndedReasonPhoneCallProviderClosedWebsocket                                                                          ServerMessageEndOfCallReportEndedReason = "phone-call-provider-closed-websocket"
 	ServerMessageEndOfCallReportEndedReasonSilenceTimedOut                                                                                           ServerMessageEndOfCallReportEndedReason = "silence-timed-out"
 	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorSipTelephonyProviderFailedToConnectCall                                                ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-sip-telephony-provider-failed-to-connect-call"
+	ServerMessageEndOfCallReportEndedReasonCallRingingHookExecutedSay                                                                                ServerMessageEndOfCallReportEndedReason = "call.ringing.hook-executed-say"
+	ServerMessageEndOfCallReportEndedReasonCallRingingHookExecutedTransfer                                                                           ServerMessageEndOfCallReportEndedReason = "call.ringing.hook-executed-transfer"
 	ServerMessageEndOfCallReportEndedReasonTwilioFailedToConnectCall                                                                                 ServerMessageEndOfCallReportEndedReason = "twilio-failed-to-connect-call"
 	ServerMessageEndOfCallReportEndedReasonTwilioReportedCustomerMisdialed                                                                           ServerMessageEndOfCallReportEndedReason = "twilio-reported-customer-misdialed"
 	ServerMessageEndOfCallReportEndedReasonVonageRejected                                                                                            ServerMessageEndOfCallReportEndedReason = "vonage-rejected"
@@ -52878,6 +53215,10 @@ func NewServerMessageEndOfCallReportEndedReasonFromString(s string) (ServerMessa
 		return ServerMessageEndOfCallReportEndedReasonSilenceTimedOut, nil
 	case "call.in-progress.error-sip-telephony-provider-failed-to-connect-call":
 		return ServerMessageEndOfCallReportEndedReasonCallInProgressErrorSipTelephonyProviderFailedToConnectCall, nil
+	case "call.ringing.hook-executed-say":
+		return ServerMessageEndOfCallReportEndedReasonCallRingingHookExecutedSay, nil
+	case "call.ringing.hook-executed-transfer":
+		return ServerMessageEndOfCallReportEndedReasonCallRingingHookExecutedTransfer, nil
 	case "twilio-failed-to-connect-call":
 		return ServerMessageEndOfCallReportEndedReasonTwilioFailedToConnectCall, nil
 	case "twilio-reported-customer-misdialed":
@@ -56685,6 +57026,8 @@ const (
 	ServerMessageStatusUpdateEndedReasonPhoneCallProviderClosedWebsocket                                                                          ServerMessageStatusUpdateEndedReason = "phone-call-provider-closed-websocket"
 	ServerMessageStatusUpdateEndedReasonSilenceTimedOut                                                                                           ServerMessageStatusUpdateEndedReason = "silence-timed-out"
 	ServerMessageStatusUpdateEndedReasonCallInProgressErrorSipTelephonyProviderFailedToConnectCall                                                ServerMessageStatusUpdateEndedReason = "call.in-progress.error-sip-telephony-provider-failed-to-connect-call"
+	ServerMessageStatusUpdateEndedReasonCallRingingHookExecutedSay                                                                                ServerMessageStatusUpdateEndedReason = "call.ringing.hook-executed-say"
+	ServerMessageStatusUpdateEndedReasonCallRingingHookExecutedTransfer                                                                           ServerMessageStatusUpdateEndedReason = "call.ringing.hook-executed-transfer"
 	ServerMessageStatusUpdateEndedReasonTwilioFailedToConnectCall                                                                                 ServerMessageStatusUpdateEndedReason = "twilio-failed-to-connect-call"
 	ServerMessageStatusUpdateEndedReasonTwilioReportedCustomerMisdialed                                                                           ServerMessageStatusUpdateEndedReason = "twilio-reported-customer-misdialed"
 	ServerMessageStatusUpdateEndedReasonVonageRejected                                                                                            ServerMessageStatusUpdateEndedReason = "vonage-rejected"
@@ -57649,6 +57992,10 @@ func NewServerMessageStatusUpdateEndedReasonFromString(s string) (ServerMessageS
 		return ServerMessageStatusUpdateEndedReasonSilenceTimedOut, nil
 	case "call.in-progress.error-sip-telephony-provider-failed-to-connect-call":
 		return ServerMessageStatusUpdateEndedReasonCallInProgressErrorSipTelephonyProviderFailedToConnectCall, nil
+	case "call.ringing.hook-executed-say":
+		return ServerMessageStatusUpdateEndedReasonCallRingingHookExecutedSay, nil
+	case "call.ringing.hook-executed-transfer":
+		return ServerMessageStatusUpdateEndedReasonCallRingingHookExecutedTransfer, nil
 	case "twilio-failed-to-connect-call":
 		return ServerMessageStatusUpdateEndedReasonTwilioFailedToConnectCall, nil
 	case "twilio-reported-customer-misdialed":
