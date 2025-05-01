@@ -1561,23 +1561,23 @@ func (u *UpdateAssistantDtoModel) Accept(visitor UpdateAssistantDtoModelVisitor)
 type UpdateAssistantDtoServerMessagesItem string
 
 const (
-	UpdateAssistantDtoServerMessagesItemConversationUpdate            UpdateAssistantDtoServerMessagesItem = "conversation-update"
-	UpdateAssistantDtoServerMessagesItemEndOfCallReport               UpdateAssistantDtoServerMessagesItem = "end-of-call-report"
-	UpdateAssistantDtoServerMessagesItemFunctionCall                  UpdateAssistantDtoServerMessagesItem = "function-call"
-	UpdateAssistantDtoServerMessagesItemHang                          UpdateAssistantDtoServerMessagesItem = "hang"
-	UpdateAssistantDtoServerMessagesItemLanguageChanged               UpdateAssistantDtoServerMessagesItem = "language-changed"
-	UpdateAssistantDtoServerMessagesItemLanguageChangeDetected        UpdateAssistantDtoServerMessagesItem = "language-change-detected"
-	UpdateAssistantDtoServerMessagesItemModelOutput                   UpdateAssistantDtoServerMessagesItem = "model-output"
-	UpdateAssistantDtoServerMessagesItemPhoneCallControl              UpdateAssistantDtoServerMessagesItem = "phone-call-control"
-	UpdateAssistantDtoServerMessagesItemSpeechUpdate                  UpdateAssistantDtoServerMessagesItem = "speech-update"
-	UpdateAssistantDtoServerMessagesItemStatusUpdate                  UpdateAssistantDtoServerMessagesItem = "status-update"
-	UpdateAssistantDtoServerMessagesItemTranscript                    UpdateAssistantDtoServerMessagesItem = "transcript"
-	UpdateAssistantDtoServerMessagesItemTranscriptTranscriptTypeFinal UpdateAssistantDtoServerMessagesItem = "transcript[transcriptType='final']"
-	UpdateAssistantDtoServerMessagesItemToolCalls                     UpdateAssistantDtoServerMessagesItem = "tool-calls"
-	UpdateAssistantDtoServerMessagesItemTransferDestinationRequest    UpdateAssistantDtoServerMessagesItem = "transfer-destination-request"
-	UpdateAssistantDtoServerMessagesItemTransferUpdate                UpdateAssistantDtoServerMessagesItem = "transfer-update"
-	UpdateAssistantDtoServerMessagesItemUserInterrupted               UpdateAssistantDtoServerMessagesItem = "user-interrupted"
-	UpdateAssistantDtoServerMessagesItemVoiceInput                    UpdateAssistantDtoServerMessagesItem = "voice-input"
+	UpdateAssistantDtoServerMessagesItemConversationUpdate         UpdateAssistantDtoServerMessagesItem = "conversation-update"
+	UpdateAssistantDtoServerMessagesItemEndOfCallReport            UpdateAssistantDtoServerMessagesItem = "end-of-call-report"
+	UpdateAssistantDtoServerMessagesItemFunctionCall               UpdateAssistantDtoServerMessagesItem = "function-call"
+	UpdateAssistantDtoServerMessagesItemHang                       UpdateAssistantDtoServerMessagesItem = "hang"
+	UpdateAssistantDtoServerMessagesItemLanguageChanged            UpdateAssistantDtoServerMessagesItem = "language-changed"
+	UpdateAssistantDtoServerMessagesItemLanguageChangeDetected     UpdateAssistantDtoServerMessagesItem = "language-change-detected"
+	UpdateAssistantDtoServerMessagesItemModelOutput                UpdateAssistantDtoServerMessagesItem = "model-output"
+	UpdateAssistantDtoServerMessagesItemPhoneCallControl           UpdateAssistantDtoServerMessagesItem = "phone-call-control"
+	UpdateAssistantDtoServerMessagesItemSpeechUpdate               UpdateAssistantDtoServerMessagesItem = "speech-update"
+	UpdateAssistantDtoServerMessagesItemStatusUpdate               UpdateAssistantDtoServerMessagesItem = "status-update"
+	UpdateAssistantDtoServerMessagesItemTranscript                 UpdateAssistantDtoServerMessagesItem = "transcript"
+	UpdateAssistantDtoServerMessagesItemFinalTranscript            UpdateAssistantDtoServerMessagesItem = "transcript[transcriptType='final']"
+	UpdateAssistantDtoServerMessagesItemToolCalls                  UpdateAssistantDtoServerMessagesItem = "tool-calls"
+	UpdateAssistantDtoServerMessagesItemTransferDestinationRequest UpdateAssistantDtoServerMessagesItem = "transfer-destination-request"
+	UpdateAssistantDtoServerMessagesItemTransferUpdate             UpdateAssistantDtoServerMessagesItem = "transfer-update"
+	UpdateAssistantDtoServerMessagesItemUserInterrupted            UpdateAssistantDtoServerMessagesItem = "user-interrupted"
+	UpdateAssistantDtoServerMessagesItemVoiceInput                 UpdateAssistantDtoServerMessagesItem = "voice-input"
 )
 
 func NewUpdateAssistantDtoServerMessagesItemFromString(s string) (UpdateAssistantDtoServerMessagesItem, error) {
@@ -1605,7 +1605,7 @@ func NewUpdateAssistantDtoServerMessagesItemFromString(s string) (UpdateAssistan
 	case "transcript":
 		return UpdateAssistantDtoServerMessagesItemTranscript, nil
 	case "transcript[transcriptType='final']":
-		return UpdateAssistantDtoServerMessagesItemTranscriptTranscriptTypeFinal, nil
+		return UpdateAssistantDtoServerMessagesItemFinalTranscript, nil
 	case "tool-calls":
 		return UpdateAssistantDtoServerMessagesItemToolCalls, nil
 	case "transfer-destination-request":

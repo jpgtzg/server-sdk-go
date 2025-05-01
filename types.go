@@ -2327,8 +2327,8 @@ type Assistant struct {
 	AssistantId string `json:"assistantId" url:"assistantId"`
 	Name        string `json:"name" url:"name"`
 	// This is for metadata you want to store on the task.
-	Metadata       map[string]interface{}   `json:"metadata,omitempty" url:"metadata,omitempty"`
-	ServerMessages *AssistantServerMessages `json:"serverMessages,omitempty" url:"serverMessages,omitempty"`
+	Metadata       map[string]interface{} `json:"metadata,omitempty" url:"metadata,omitempty"`
+	ServerMessages interface{}            `json:"serverMessages,omitempty" url:"serverMessages,omitempty"`
 	type_          string
 
 	extraProperties map[string]interface{}
@@ -2356,7 +2356,7 @@ func (a *Assistant) GetMetadata() map[string]interface{} {
 	return a.Metadata
 }
 
-func (a *Assistant) GetServerMessages() *AssistantServerMessages {
+func (a *Assistant) GetServerMessages() interface{} {
 	if a == nil {
 		return nil
 	}
@@ -4699,23 +4699,23 @@ func (a *AssistantOverridesModel) Accept(visitor AssistantOverridesModelVisitor)
 type AssistantOverridesServerMessagesItem string
 
 const (
-	AssistantOverridesServerMessagesItemConversationUpdate            AssistantOverridesServerMessagesItem = "conversation-update"
-	AssistantOverridesServerMessagesItemEndOfCallReport               AssistantOverridesServerMessagesItem = "end-of-call-report"
-	AssistantOverridesServerMessagesItemFunctionCall                  AssistantOverridesServerMessagesItem = "function-call"
-	AssistantOverridesServerMessagesItemHang                          AssistantOverridesServerMessagesItem = "hang"
-	AssistantOverridesServerMessagesItemLanguageChanged               AssistantOverridesServerMessagesItem = "language-changed"
-	AssistantOverridesServerMessagesItemLanguageChangeDetected        AssistantOverridesServerMessagesItem = "language-change-detected"
-	AssistantOverridesServerMessagesItemModelOutput                   AssistantOverridesServerMessagesItem = "model-output"
-	AssistantOverridesServerMessagesItemPhoneCallControl              AssistantOverridesServerMessagesItem = "phone-call-control"
-	AssistantOverridesServerMessagesItemSpeechUpdate                  AssistantOverridesServerMessagesItem = "speech-update"
-	AssistantOverridesServerMessagesItemStatusUpdate                  AssistantOverridesServerMessagesItem = "status-update"
-	AssistantOverridesServerMessagesItemTranscript                    AssistantOverridesServerMessagesItem = "transcript"
-	AssistantOverridesServerMessagesItemTranscriptTranscriptTypeFinal AssistantOverridesServerMessagesItem = "transcript[transcriptType='final']"
-	AssistantOverridesServerMessagesItemToolCalls                     AssistantOverridesServerMessagesItem = "tool-calls"
-	AssistantOverridesServerMessagesItemTransferDestinationRequest    AssistantOverridesServerMessagesItem = "transfer-destination-request"
-	AssistantOverridesServerMessagesItemTransferUpdate                AssistantOverridesServerMessagesItem = "transfer-update"
-	AssistantOverridesServerMessagesItemUserInterrupted               AssistantOverridesServerMessagesItem = "user-interrupted"
-	AssistantOverridesServerMessagesItemVoiceInput                    AssistantOverridesServerMessagesItem = "voice-input"
+	AssistantOverridesServerMessagesItemConversationUpdate         AssistantOverridesServerMessagesItem = "conversation-update"
+	AssistantOverridesServerMessagesItemEndOfCallReport            AssistantOverridesServerMessagesItem = "end-of-call-report"
+	AssistantOverridesServerMessagesItemFunctionCall               AssistantOverridesServerMessagesItem = "function-call"
+	AssistantOverridesServerMessagesItemHang                       AssistantOverridesServerMessagesItem = "hang"
+	AssistantOverridesServerMessagesItemLanguageChanged            AssistantOverridesServerMessagesItem = "language-changed"
+	AssistantOverridesServerMessagesItemLanguageChangeDetected     AssistantOverridesServerMessagesItem = "language-change-detected"
+	AssistantOverridesServerMessagesItemModelOutput                AssistantOverridesServerMessagesItem = "model-output"
+	AssistantOverridesServerMessagesItemPhoneCallControl           AssistantOverridesServerMessagesItem = "phone-call-control"
+	AssistantOverridesServerMessagesItemSpeechUpdate               AssistantOverridesServerMessagesItem = "speech-update"
+	AssistantOverridesServerMessagesItemStatusUpdate               AssistantOverridesServerMessagesItem = "status-update"
+	AssistantOverridesServerMessagesItemTranscript                 AssistantOverridesServerMessagesItem = "transcript"
+	AssistantOverridesServerMessagesItemFinalTranscript            AssistantOverridesServerMessagesItem = "transcript[transcriptType='final']"
+	AssistantOverridesServerMessagesItemToolCalls                  AssistantOverridesServerMessagesItem = "tool-calls"
+	AssistantOverridesServerMessagesItemTransferDestinationRequest AssistantOverridesServerMessagesItem = "transfer-destination-request"
+	AssistantOverridesServerMessagesItemTransferUpdate             AssistantOverridesServerMessagesItem = "transfer-update"
+	AssistantOverridesServerMessagesItemUserInterrupted            AssistantOverridesServerMessagesItem = "user-interrupted"
+	AssistantOverridesServerMessagesItemVoiceInput                 AssistantOverridesServerMessagesItem = "voice-input"
 )
 
 func NewAssistantOverridesServerMessagesItemFromString(s string) (AssistantOverridesServerMessagesItem, error) {
@@ -4743,7 +4743,7 @@ func NewAssistantOverridesServerMessagesItemFromString(s string) (AssistantOverr
 	case "transcript":
 		return AssistantOverridesServerMessagesItemTranscript, nil
 	case "transcript[transcriptType='final']":
-		return AssistantOverridesServerMessagesItemTranscriptTranscriptTypeFinal, nil
+		return AssistantOverridesServerMessagesItemFinalTranscript, nil
 	case "tool-calls":
 		return AssistantOverridesServerMessagesItemToolCalls, nil
 	case "transfer-destination-request":
@@ -5468,73 +5468,6 @@ func (a *AssistantPaginatedResponse) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", a)
-}
-
-type AssistantServerMessages string
-
-const (
-	AssistantServerMessagesConversationUpdate            AssistantServerMessages = "conversation-update"
-	AssistantServerMessagesEndOfCallReport               AssistantServerMessages = "end-of-call-report"
-	AssistantServerMessagesFunctionCall                  AssistantServerMessages = "function-call"
-	AssistantServerMessagesHang                          AssistantServerMessages = "hang"
-	AssistantServerMessagesLanguageChanged               AssistantServerMessages = "language-changed"
-	AssistantServerMessagesLanguageChangeDetected        AssistantServerMessages = "language-change-detected"
-	AssistantServerMessagesModelOutput                   AssistantServerMessages = "model-output"
-	AssistantServerMessagesPhoneCallControl              AssistantServerMessages = "phone-call-control"
-	AssistantServerMessagesSpeechUpdate                  AssistantServerMessages = "speech-update"
-	AssistantServerMessagesStatusUpdate                  AssistantServerMessages = "status-update"
-	AssistantServerMessagesTranscript                    AssistantServerMessages = "transcript"
-	AssistantServerMessagesTranscriptTranscriptTypeFinal AssistantServerMessages = "transcript[transcriptType='final']"
-	AssistantServerMessagesToolCalls                     AssistantServerMessages = "tool-calls"
-	AssistantServerMessagesTransferDestinationRequest    AssistantServerMessages = "transfer-destination-request"
-	AssistantServerMessagesTransferUpdate                AssistantServerMessages = "transfer-update"
-	AssistantServerMessagesUserInterrupted               AssistantServerMessages = "user-interrupted"
-	AssistantServerMessagesVoiceInput                    AssistantServerMessages = "voice-input"
-)
-
-func NewAssistantServerMessagesFromString(s string) (AssistantServerMessages, error) {
-	switch s {
-	case "conversation-update":
-		return AssistantServerMessagesConversationUpdate, nil
-	case "end-of-call-report":
-		return AssistantServerMessagesEndOfCallReport, nil
-	case "function-call":
-		return AssistantServerMessagesFunctionCall, nil
-	case "hang":
-		return AssistantServerMessagesHang, nil
-	case "language-changed":
-		return AssistantServerMessagesLanguageChanged, nil
-	case "language-change-detected":
-		return AssistantServerMessagesLanguageChangeDetected, nil
-	case "model-output":
-		return AssistantServerMessagesModelOutput, nil
-	case "phone-call-control":
-		return AssistantServerMessagesPhoneCallControl, nil
-	case "speech-update":
-		return AssistantServerMessagesSpeechUpdate, nil
-	case "status-update":
-		return AssistantServerMessagesStatusUpdate, nil
-	case "transcript":
-		return AssistantServerMessagesTranscript, nil
-	case "transcript[transcriptType='final']":
-		return AssistantServerMessagesTranscriptTranscriptTypeFinal, nil
-	case "tool-calls":
-		return AssistantServerMessagesToolCalls, nil
-	case "transfer-destination-request":
-		return AssistantServerMessagesTransferDestinationRequest, nil
-	case "transfer-update":
-		return AssistantServerMessagesTransferUpdate, nil
-	case "user-interrupted":
-		return AssistantServerMessagesUserInterrupted, nil
-	case "voice-input":
-		return AssistantServerMessagesVoiceInput, nil
-	}
-	var t AssistantServerMessages
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (a AssistantServerMessages) Ptr() *AssistantServerMessages {
-	return &a
 }
 
 type AssistantVersionPaginatedResponse struct {
@@ -14948,23 +14881,23 @@ func (c *CreateAssistantDtoModel) Accept(visitor CreateAssistantDtoModelVisitor)
 type CreateAssistantDtoServerMessagesItem string
 
 const (
-	CreateAssistantDtoServerMessagesItemConversationUpdate            CreateAssistantDtoServerMessagesItem = "conversation-update"
-	CreateAssistantDtoServerMessagesItemEndOfCallReport               CreateAssistantDtoServerMessagesItem = "end-of-call-report"
-	CreateAssistantDtoServerMessagesItemFunctionCall                  CreateAssistantDtoServerMessagesItem = "function-call"
-	CreateAssistantDtoServerMessagesItemHang                          CreateAssistantDtoServerMessagesItem = "hang"
-	CreateAssistantDtoServerMessagesItemLanguageChanged               CreateAssistantDtoServerMessagesItem = "language-changed"
-	CreateAssistantDtoServerMessagesItemLanguageChangeDetected        CreateAssistantDtoServerMessagesItem = "language-change-detected"
-	CreateAssistantDtoServerMessagesItemModelOutput                   CreateAssistantDtoServerMessagesItem = "model-output"
-	CreateAssistantDtoServerMessagesItemPhoneCallControl              CreateAssistantDtoServerMessagesItem = "phone-call-control"
-	CreateAssistantDtoServerMessagesItemSpeechUpdate                  CreateAssistantDtoServerMessagesItem = "speech-update"
-	CreateAssistantDtoServerMessagesItemStatusUpdate                  CreateAssistantDtoServerMessagesItem = "status-update"
-	CreateAssistantDtoServerMessagesItemTranscript                    CreateAssistantDtoServerMessagesItem = "transcript"
-	CreateAssistantDtoServerMessagesItemTranscriptTranscriptTypeFinal CreateAssistantDtoServerMessagesItem = "transcript[transcriptType='final']"
-	CreateAssistantDtoServerMessagesItemToolCalls                     CreateAssistantDtoServerMessagesItem = "tool-calls"
-	CreateAssistantDtoServerMessagesItemTransferDestinationRequest    CreateAssistantDtoServerMessagesItem = "transfer-destination-request"
-	CreateAssistantDtoServerMessagesItemTransferUpdate                CreateAssistantDtoServerMessagesItem = "transfer-update"
-	CreateAssistantDtoServerMessagesItemUserInterrupted               CreateAssistantDtoServerMessagesItem = "user-interrupted"
-	CreateAssistantDtoServerMessagesItemVoiceInput                    CreateAssistantDtoServerMessagesItem = "voice-input"
+	CreateAssistantDtoServerMessagesItemConversationUpdate         CreateAssistantDtoServerMessagesItem = "conversation-update"
+	CreateAssistantDtoServerMessagesItemEndOfCallReport            CreateAssistantDtoServerMessagesItem = "end-of-call-report"
+	CreateAssistantDtoServerMessagesItemFunctionCall               CreateAssistantDtoServerMessagesItem = "function-call"
+	CreateAssistantDtoServerMessagesItemHang                       CreateAssistantDtoServerMessagesItem = "hang"
+	CreateAssistantDtoServerMessagesItemLanguageChanged            CreateAssistantDtoServerMessagesItem = "language-changed"
+	CreateAssistantDtoServerMessagesItemLanguageChangeDetected     CreateAssistantDtoServerMessagesItem = "language-change-detected"
+	CreateAssistantDtoServerMessagesItemModelOutput                CreateAssistantDtoServerMessagesItem = "model-output"
+	CreateAssistantDtoServerMessagesItemPhoneCallControl           CreateAssistantDtoServerMessagesItem = "phone-call-control"
+	CreateAssistantDtoServerMessagesItemSpeechUpdate               CreateAssistantDtoServerMessagesItem = "speech-update"
+	CreateAssistantDtoServerMessagesItemStatusUpdate               CreateAssistantDtoServerMessagesItem = "status-update"
+	CreateAssistantDtoServerMessagesItemTranscript                 CreateAssistantDtoServerMessagesItem = "transcript"
+	CreateAssistantDtoServerMessagesItemFinalTranscript            CreateAssistantDtoServerMessagesItem = "transcript[transcriptType='final']"
+	CreateAssistantDtoServerMessagesItemToolCalls                  CreateAssistantDtoServerMessagesItem = "tool-calls"
+	CreateAssistantDtoServerMessagesItemTransferDestinationRequest CreateAssistantDtoServerMessagesItem = "transfer-destination-request"
+	CreateAssistantDtoServerMessagesItemTransferUpdate             CreateAssistantDtoServerMessagesItem = "transfer-update"
+	CreateAssistantDtoServerMessagesItemUserInterrupted            CreateAssistantDtoServerMessagesItem = "user-interrupted"
+	CreateAssistantDtoServerMessagesItemVoiceInput                 CreateAssistantDtoServerMessagesItem = "voice-input"
 )
 
 func NewCreateAssistantDtoServerMessagesItemFromString(s string) (CreateAssistantDtoServerMessagesItem, error) {
@@ -14992,7 +14925,7 @@ func NewCreateAssistantDtoServerMessagesItemFromString(s string) (CreateAssistan
 	case "transcript":
 		return CreateAssistantDtoServerMessagesItemTranscript, nil
 	case "transcript[transcriptType='final']":
-		return CreateAssistantDtoServerMessagesItemTranscriptTranscriptTypeFinal, nil
+		return CreateAssistantDtoServerMessagesItemFinalTranscript, nil
 	case "tool-calls":
 		return CreateAssistantDtoServerMessagesItemToolCalls, nil
 	case "transfer-destination-request":
