@@ -403,6 +403,8 @@ func (c *CreateWorkflowDtoModel) Accept(visitor CreateWorkflowDtoModelVisitor) e
 }
 
 type CreateWorkflowDtoNodesItem struct {
+	Start      *Start
+	Assistant  *Assistant
 	Say        *Say
 	Gather     *Gather
 	ApiRequest *ApiRequest
@@ -410,6 +412,20 @@ type CreateWorkflowDtoNodesItem struct {
 	Transfer   *Transfer
 
 	typ string
+}
+
+func (c *CreateWorkflowDtoNodesItem) GetStart() *Start {
+	if c == nil {
+		return nil
+	}
+	return c.Start
+}
+
+func (c *CreateWorkflowDtoNodesItem) GetAssistant() *Assistant {
+	if c == nil {
+		return nil
+	}
+	return c.Assistant
 }
 
 func (c *CreateWorkflowDtoNodesItem) GetSay() *Say {
@@ -448,6 +464,18 @@ func (c *CreateWorkflowDtoNodesItem) GetTransfer() *Transfer {
 }
 
 func (c *CreateWorkflowDtoNodesItem) UnmarshalJSON(data []byte) error {
+	valueStart := new(Start)
+	if err := json.Unmarshal(data, &valueStart); err == nil {
+		c.typ = "Start"
+		c.Start = valueStart
+		return nil
+	}
+	valueAssistant := new(Assistant)
+	if err := json.Unmarshal(data, &valueAssistant); err == nil {
+		c.typ = "Assistant"
+		c.Assistant = valueAssistant
+		return nil
+	}
 	valueSay := new(Say)
 	if err := json.Unmarshal(data, &valueSay); err == nil {
 		c.typ = "Say"
@@ -482,6 +510,12 @@ func (c *CreateWorkflowDtoNodesItem) UnmarshalJSON(data []byte) error {
 }
 
 func (c CreateWorkflowDtoNodesItem) MarshalJSON() ([]byte, error) {
+	if c.typ == "Start" || c.Start != nil {
+		return json.Marshal(c.Start)
+	}
+	if c.typ == "Assistant" || c.Assistant != nil {
+		return json.Marshal(c.Assistant)
+	}
 	if c.typ == "Say" || c.Say != nil {
 		return json.Marshal(c.Say)
 	}
@@ -501,6 +535,8 @@ func (c CreateWorkflowDtoNodesItem) MarshalJSON() ([]byte, error) {
 }
 
 type CreateWorkflowDtoNodesItemVisitor interface {
+	VisitStart(*Start) error
+	VisitAssistant(*Assistant) error
 	VisitSay(*Say) error
 	VisitGather(*Gather) error
 	VisitApiRequest(*ApiRequest) error
@@ -509,6 +545,12 @@ type CreateWorkflowDtoNodesItemVisitor interface {
 }
 
 func (c *CreateWorkflowDtoNodesItem) Accept(visitor CreateWorkflowDtoNodesItemVisitor) error {
+	if c.typ == "Start" || c.Start != nil {
+		return visitor.VisitStart(c.Start)
+	}
+	if c.typ == "Assistant" || c.Assistant != nil {
+		return visitor.VisitAssistant(c.Assistant)
+	}
 	if c.typ == "Say" || c.Say != nil {
 		return visitor.VisitSay(c.Say)
 	}
@@ -843,6 +885,8 @@ func (u *UpdateWorkflowDtoModel) Accept(visitor UpdateWorkflowDtoModelVisitor) e
 }
 
 type UpdateWorkflowDtoNodesItem struct {
+	Start      *Start
+	Assistant  *Assistant
 	Say        *Say
 	Gather     *Gather
 	ApiRequest *ApiRequest
@@ -850,6 +894,20 @@ type UpdateWorkflowDtoNodesItem struct {
 	Transfer   *Transfer
 
 	typ string
+}
+
+func (u *UpdateWorkflowDtoNodesItem) GetStart() *Start {
+	if u == nil {
+		return nil
+	}
+	return u.Start
+}
+
+func (u *UpdateWorkflowDtoNodesItem) GetAssistant() *Assistant {
+	if u == nil {
+		return nil
+	}
+	return u.Assistant
 }
 
 func (u *UpdateWorkflowDtoNodesItem) GetSay() *Say {
@@ -888,6 +946,18 @@ func (u *UpdateWorkflowDtoNodesItem) GetTransfer() *Transfer {
 }
 
 func (u *UpdateWorkflowDtoNodesItem) UnmarshalJSON(data []byte) error {
+	valueStart := new(Start)
+	if err := json.Unmarshal(data, &valueStart); err == nil {
+		u.typ = "Start"
+		u.Start = valueStart
+		return nil
+	}
+	valueAssistant := new(Assistant)
+	if err := json.Unmarshal(data, &valueAssistant); err == nil {
+		u.typ = "Assistant"
+		u.Assistant = valueAssistant
+		return nil
+	}
 	valueSay := new(Say)
 	if err := json.Unmarshal(data, &valueSay); err == nil {
 		u.typ = "Say"
@@ -922,6 +992,12 @@ func (u *UpdateWorkflowDtoNodesItem) UnmarshalJSON(data []byte) error {
 }
 
 func (u UpdateWorkflowDtoNodesItem) MarshalJSON() ([]byte, error) {
+	if u.typ == "Start" || u.Start != nil {
+		return json.Marshal(u.Start)
+	}
+	if u.typ == "Assistant" || u.Assistant != nil {
+		return json.Marshal(u.Assistant)
+	}
 	if u.typ == "Say" || u.Say != nil {
 		return json.Marshal(u.Say)
 	}
@@ -941,6 +1017,8 @@ func (u UpdateWorkflowDtoNodesItem) MarshalJSON() ([]byte, error) {
 }
 
 type UpdateWorkflowDtoNodesItemVisitor interface {
+	VisitStart(*Start) error
+	VisitAssistant(*Assistant) error
 	VisitSay(*Say) error
 	VisitGather(*Gather) error
 	VisitApiRequest(*ApiRequest) error
@@ -949,6 +1027,12 @@ type UpdateWorkflowDtoNodesItemVisitor interface {
 }
 
 func (u *UpdateWorkflowDtoNodesItem) Accept(visitor UpdateWorkflowDtoNodesItemVisitor) error {
+	if u.typ == "Start" || u.Start != nil {
+		return visitor.VisitStart(u.Start)
+	}
+	if u.typ == "Assistant" || u.Assistant != nil {
+		return visitor.VisitAssistant(u.Assistant)
+	}
 	if u.typ == "Say" || u.Say != nil {
 		return visitor.VisitSay(u.Say)
 	}

@@ -1682,6 +1682,8 @@ type Artifact struct {
 	VideoRecordingUrl *string `json:"videoRecordingUrl,omitempty" url:"videoRecordingUrl,omitempty"`
 	// This is video recording start delay in ms. To enable, set `assistant.artifactPlan.videoRecordingEnabled`. This can be used to align the playback of the recording with artifact.messages timestamps.
 	VideoRecordingStartDelaySeconds *float64 `json:"videoRecordingStartDelaySeconds,omitempty" url:"videoRecordingStartDelaySeconds,omitempty"`
+	// This is the recording url for the call. To enable, set `assistant.artifactPlan.recordingEnabled`.
+	Recording *Recording `json:"recording,omitempty" url:"recording,omitempty"`
 	// This is the transcript of the call. This is derived from `artifact.messages` but provided for convenience.
 	Transcript *string `json:"transcript,omitempty" url:"transcript,omitempty"`
 	// This is the packet capture url for the call. This is only available for `phone` type calls where phone number's provider is `vapi` or `byo-phone-number`.
@@ -1731,6 +1733,13 @@ func (a *Artifact) GetVideoRecordingStartDelaySeconds() *float64 {
 		return nil
 	}
 	return a.VideoRecordingStartDelaySeconds
+}
+
+func (a *Artifact) GetRecording() *Recording {
+	if a == nil {
+		return nil
+	}
+	return a.Recording
 }
 
 func (a *Artifact) GetTranscript() *string {
@@ -2314,6 +2323,103 @@ func (a *AssemblyAiTranscriber) String() string {
 	return fmt.Sprintf("%#v", a)
 }
 
+type Assistant struct {
+	AssistantId string `json:"assistantId" url:"assistantId"`
+	Name        string `json:"name" url:"name"`
+	// This is for metadata you want to store on the task.
+	Metadata       map[string]interface{}   `json:"metadata,omitempty" url:"metadata,omitempty"`
+	ServerMessages *AssistantServerMessages `json:"serverMessages,omitempty" url:"serverMessages,omitempty"`
+	type_          string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (a *Assistant) GetAssistantId() string {
+	if a == nil {
+		return ""
+	}
+	return a.AssistantId
+}
+
+func (a *Assistant) GetName() string {
+	if a == nil {
+		return ""
+	}
+	return a.Name
+}
+
+func (a *Assistant) GetMetadata() map[string]interface{} {
+	if a == nil {
+		return nil
+	}
+	return a.Metadata
+}
+
+func (a *Assistant) GetServerMessages() *AssistantServerMessages {
+	if a == nil {
+		return nil
+	}
+	return a.ServerMessages
+}
+
+func (a *Assistant) Type() string {
+	return a.type_
+}
+
+func (a *Assistant) GetExtraProperties() map[string]interface{} {
+	return a.extraProperties
+}
+
+func (a *Assistant) UnmarshalJSON(data []byte) error {
+	type embed Assistant
+	var unmarshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*a),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*a = Assistant(unmarshaler.embed)
+	if unmarshaler.Type != "assistant" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", a, "assistant", unmarshaler.Type)
+	}
+	a.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *a, "type")
+	if err != nil {
+		return err
+	}
+	a.extraProperties = extraProperties
+	a.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (a *Assistant) MarshalJSON() ([]byte, error) {
+	type embed Assistant
+	var marshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*a),
+		Type:  "assistant",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (a *Assistant) String() string {
+	if len(a.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(a); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", a)
+}
+
 type AssistantCustomEndpointingRule struct {
 	// This endpointing rule is based on the last assistant message before customer started speaking.
 	//
@@ -2426,23 +2532,57 @@ func (a *AssistantCustomEndpointingRule) String() string {
 	return fmt.Sprintf("%#v", a)
 }
 
-type AssistantHookActionBase struct {
+type AssistantHookCallEnding struct {
+	// This is the event that triggers this hook
+	// This is the set of actions to perform when the hook triggers
+	Do []*AssistantHookCallEndingDoItem `json:"do,omitempty" url:"do,omitempty"`
+	// This is the set of filters that must match for the hook to trigger
+	Filters []*AssistantHookFilter `json:"filters,omitempty" url:"filters,omitempty"`
+	on      string
+
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
 }
 
-func (a *AssistantHookActionBase) GetExtraProperties() map[string]interface{} {
+func (a *AssistantHookCallEnding) GetDo() []*AssistantHookCallEndingDoItem {
+	if a == nil {
+		return nil
+	}
+	return a.Do
+}
+
+func (a *AssistantHookCallEnding) GetFilters() []*AssistantHookFilter {
+	if a == nil {
+		return nil
+	}
+	return a.Filters
+}
+
+func (a *AssistantHookCallEnding) On() string {
+	return a.on
+}
+
+func (a *AssistantHookCallEnding) GetExtraProperties() map[string]interface{} {
 	return a.extraProperties
 }
 
-func (a *AssistantHookActionBase) UnmarshalJSON(data []byte) error {
-	type unmarshaler AssistantHookActionBase
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
+func (a *AssistantHookCallEnding) UnmarshalJSON(data []byte) error {
+	type embed AssistantHookCallEnding
+	var unmarshaler = struct {
+		embed
+		On string `json:"on"`
+	}{
+		embed: embed(*a),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
 		return err
 	}
-	*a = AssistantHookActionBase(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *a)
+	*a = AssistantHookCallEnding(unmarshaler.embed)
+	if unmarshaler.On != "call.ending" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", a, "call.ending", unmarshaler.On)
+	}
+	a.on = unmarshaler.On
+	extraProperties, err := internal.ExtractExtraProperties(data, *a, "on")
 	if err != nil {
 		return err
 	}
@@ -2451,7 +2591,19 @@ func (a *AssistantHookActionBase) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (a *AssistantHookActionBase) String() string {
+func (a *AssistantHookCallEnding) MarshalJSON() ([]byte, error) {
+	type embed AssistantHookCallEnding
+	var marshaler = struct {
+		embed
+		On string `json:"on"`
+	}{
+		embed: embed(*a),
+		On:    "call.ending",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (a *AssistantHookCallEnding) String() string {
 	if len(a.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
 			return value
@@ -2461,6 +2613,68 @@ func (a *AssistantHookActionBase) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", a)
+}
+
+type AssistantHookCallEndingDoItem struct {
+	TransferAssistantHookAction     *TransferAssistantHookAction
+	FunctionCallAssistantHookAction *FunctionCallAssistantHookAction
+
+	typ string
+}
+
+func (a *AssistantHookCallEndingDoItem) GetTransferAssistantHookAction() *TransferAssistantHookAction {
+	if a == nil {
+		return nil
+	}
+	return a.TransferAssistantHookAction
+}
+
+func (a *AssistantHookCallEndingDoItem) GetFunctionCallAssistantHookAction() *FunctionCallAssistantHookAction {
+	if a == nil {
+		return nil
+	}
+	return a.FunctionCallAssistantHookAction
+}
+
+func (a *AssistantHookCallEndingDoItem) UnmarshalJSON(data []byte) error {
+	valueTransferAssistantHookAction := new(TransferAssistantHookAction)
+	if err := json.Unmarshal(data, &valueTransferAssistantHookAction); err == nil {
+		a.typ = "TransferAssistantHookAction"
+		a.TransferAssistantHookAction = valueTransferAssistantHookAction
+		return nil
+	}
+	valueFunctionCallAssistantHookAction := new(FunctionCallAssistantHookAction)
+	if err := json.Unmarshal(data, &valueFunctionCallAssistantHookAction); err == nil {
+		a.typ = "FunctionCallAssistantHookAction"
+		a.FunctionCallAssistantHookAction = valueFunctionCallAssistantHookAction
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, a)
+}
+
+func (a AssistantHookCallEndingDoItem) MarshalJSON() ([]byte, error) {
+	if a.typ == "TransferAssistantHookAction" || a.TransferAssistantHookAction != nil {
+		return json.Marshal(a.TransferAssistantHookAction)
+	}
+	if a.typ == "FunctionCallAssistantHookAction" || a.FunctionCallAssistantHookAction != nil {
+		return json.Marshal(a.FunctionCallAssistantHookAction)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
+type AssistantHookCallEndingDoItemVisitor interface {
+	VisitTransferAssistantHookAction(*TransferAssistantHookAction) error
+	VisitFunctionCallAssistantHookAction(*FunctionCallAssistantHookAction) error
+}
+
+func (a *AssistantHookCallEndingDoItem) Accept(visitor AssistantHookCallEndingDoItemVisitor) error {
+	if a.typ == "TransferAssistantHookAction" || a.TransferAssistantHookAction != nil {
+		return visitor.VisitTransferAssistantHookAction(a.TransferAssistantHookAction)
+	}
+	if a.typ == "FunctionCallAssistantHookAction" || a.FunctionCallAssistantHookAction != nil {
+		return visitor.VisitFunctionCallAssistantHookAction(a.FunctionCallAssistantHookAction)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", a)
 }
 
 type AssistantHookFilter struct {
@@ -2546,89 +2760,6 @@ func (a *AssistantHookFilter) String() string {
 	return fmt.Sprintf("%#v", a)
 }
 
-type AssistantHooks struct {
-	// This is the event that triggers this hook
-	// This is the set of filters that must match for the hook to trigger
-	Filters []*AssistantHookFilter `json:"filters,omitempty" url:"filters,omitempty"`
-	// This is the set of actions to perform when the hook triggers
-	Do []*AssistantHookActionBase `json:"do,omitempty" url:"do,omitempty"`
-	on string
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (a *AssistantHooks) GetFilters() []*AssistantHookFilter {
-	if a == nil {
-		return nil
-	}
-	return a.Filters
-}
-
-func (a *AssistantHooks) GetDo() []*AssistantHookActionBase {
-	if a == nil {
-		return nil
-	}
-	return a.Do
-}
-
-func (a *AssistantHooks) On() string {
-	return a.on
-}
-
-func (a *AssistantHooks) GetExtraProperties() map[string]interface{} {
-	return a.extraProperties
-}
-
-func (a *AssistantHooks) UnmarshalJSON(data []byte) error {
-	type embed AssistantHooks
-	var unmarshaler = struct {
-		embed
-		On string `json:"on"`
-	}{
-		embed: embed(*a),
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
-		return err
-	}
-	*a = AssistantHooks(unmarshaler.embed)
-	if unmarshaler.On != "call.ending" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", a, "call.ending", unmarshaler.On)
-	}
-	a.on = unmarshaler.On
-	extraProperties, err := internal.ExtractExtraProperties(data, *a, "on")
-	if err != nil {
-		return err
-	}
-	a.extraProperties = extraProperties
-	a.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (a *AssistantHooks) MarshalJSON() ([]byte, error) {
-	type embed AssistantHooks
-	var marshaler = struct {
-		embed
-		On string `json:"on"`
-	}{
-		embed: embed(*a),
-		On:    "call.ending",
-	}
-	return json.Marshal(marshaler)
-}
-
-func (a *AssistantHooks) String() string {
-	if len(a.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(a); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", a)
-}
-
 type AssistantOverrides struct {
 	// These are the options for the assistant's transcriber.
 	Transcriber *AssistantOverridesTranscriber `json:"transcriber,omitempty" url:"transcriber,omitempty"`
@@ -2688,6 +2819,8 @@ type AssistantOverrides struct {
 	ObservabilityPlan *LangfuseObservabilityPlan `json:"observabilityPlan,omitempty" url:"observabilityPlan,omitempty"`
 	// These are dynamic credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials.
 	Credentials []*AssistantOverridesCredentialsItem `json:"credentials,omitempty" url:"credentials,omitempty"`
+	// This is a set of actions that will be performed on certain events.
+	Hooks []*AssistantHookCallEnding `json:"hooks,omitempty" url:"hooks,omitempty"`
 	// These are values that will be used to replace the template variables in the assistant messages and other text-based fields.
 	// This uses LiquidJS syntax. https://liquidjs.com/tutorials/intro-to-liquid.html
 	//
@@ -2757,10 +2890,8 @@ type AssistantOverrides struct {
 	// 1. assistant.server.url
 	// 2. phoneNumber.serverUrl
 	// 3. org.serverUrl
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	// This is a set of actions that will be performed on certain events.
-	Hooks           []*AssistantHooks `json:"hooks,omitempty" url:"hooks,omitempty"`
-	KeypadInputPlan *KeypadInputPlan  `json:"keypadInputPlan,omitempty" url:"keypadInputPlan,omitempty"`
+	Server          *Server          `json:"server,omitempty" url:"server,omitempty"`
+	KeypadInputPlan *KeypadInputPlan `json:"keypadInputPlan,omitempty" url:"keypadInputPlan,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -2885,6 +3016,13 @@ func (a *AssistantOverrides) GetCredentials() []*AssistantOverridesCredentialsIt
 	return a.Credentials
 }
 
+func (a *AssistantOverrides) GetHooks() []*AssistantHookCallEnding {
+	if a == nil {
+		return nil
+	}
+	return a.Hooks
+}
+
 func (a *AssistantOverrides) GetVariableValues() map[string]interface{} {
 	if a == nil {
 		return nil
@@ -2988,13 +3126,6 @@ func (a *AssistantOverrides) GetServer() *Server {
 		return nil
 	}
 	return a.Server
-}
-
-func (a *AssistantOverrides) GetHooks() []*AssistantHooks {
-	if a == nil {
-		return nil
-	}
-	return a.Hooks
 }
 
 func (a *AssistantOverrides) GetKeypadInputPlan() *KeypadInputPlan {
@@ -3137,6 +3268,7 @@ const (
 	AssistantOverridesClientMessagesItemTranscript          AssistantOverridesClientMessagesItem = "transcript"
 	AssistantOverridesClientMessagesItemToolCalls           AssistantOverridesClientMessagesItem = "tool-calls"
 	AssistantOverridesClientMessagesItemToolCallsResult     AssistantOverridesClientMessagesItem = "tool-calls-result"
+	AssistantOverridesClientMessagesItemToolCompleted       AssistantOverridesClientMessagesItem = "tool.completed"
 	AssistantOverridesClientMessagesItemTransferUpdate      AssistantOverridesClientMessagesItem = "transfer-update"
 	AssistantOverridesClientMessagesItemUserInterrupted     AssistantOverridesClientMessagesItem = "user-interrupted"
 	AssistantOverridesClientMessagesItemVoiceInput          AssistantOverridesClientMessagesItem = "voice-input"
@@ -3169,6 +3301,8 @@ func NewAssistantOverridesClientMessagesItemFromString(s string) (AssistantOverr
 		return AssistantOverridesClientMessagesItemToolCalls, nil
 	case "tool-calls-result":
 		return AssistantOverridesClientMessagesItemToolCallsResult, nil
+	case "tool.completed":
+		return AssistantOverridesClientMessagesItemToolCompleted, nil
 	case "transfer-update":
 		return AssistantOverridesClientMessagesItemTransferUpdate, nil
 	case "user-interrupted":
@@ -5182,6 +5316,7 @@ type AssistantOverridesVoicemailDetection struct {
 	GoogleVoicemailDetectionPlan *GoogleVoicemailDetectionPlan
 	OpenAiVoicemailDetectionPlan *OpenAiVoicemailDetectionPlan
 	TwilioVoicemailDetectionPlan *TwilioVoicemailDetectionPlan
+	VapiVoicemailDetectionPlan   *VapiVoicemailDetectionPlan
 
 	typ string
 }
@@ -5207,6 +5342,13 @@ func (a *AssistantOverridesVoicemailDetection) GetTwilioVoicemailDetectionPlan()
 	return a.TwilioVoicemailDetectionPlan
 }
 
+func (a *AssistantOverridesVoicemailDetection) GetVapiVoicemailDetectionPlan() *VapiVoicemailDetectionPlan {
+	if a == nil {
+		return nil
+	}
+	return a.VapiVoicemailDetectionPlan
+}
+
 func (a *AssistantOverridesVoicemailDetection) UnmarshalJSON(data []byte) error {
 	valueGoogleVoicemailDetectionPlan := new(GoogleVoicemailDetectionPlan)
 	if err := json.Unmarshal(data, &valueGoogleVoicemailDetectionPlan); err == nil {
@@ -5226,6 +5368,12 @@ func (a *AssistantOverridesVoicemailDetection) UnmarshalJSON(data []byte) error 
 		a.TwilioVoicemailDetectionPlan = valueTwilioVoicemailDetectionPlan
 		return nil
 	}
+	valueVapiVoicemailDetectionPlan := new(VapiVoicemailDetectionPlan)
+	if err := json.Unmarshal(data, &valueVapiVoicemailDetectionPlan); err == nil {
+		a.typ = "VapiVoicemailDetectionPlan"
+		a.VapiVoicemailDetectionPlan = valueVapiVoicemailDetectionPlan
+		return nil
+	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, a)
 }
 
@@ -5239,6 +5387,9 @@ func (a AssistantOverridesVoicemailDetection) MarshalJSON() ([]byte, error) {
 	if a.typ == "TwilioVoicemailDetectionPlan" || a.TwilioVoicemailDetectionPlan != nil {
 		return json.Marshal(a.TwilioVoicemailDetectionPlan)
 	}
+	if a.typ == "VapiVoicemailDetectionPlan" || a.VapiVoicemailDetectionPlan != nil {
+		return json.Marshal(a.VapiVoicemailDetectionPlan)
+	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", a)
 }
 
@@ -5246,6 +5397,7 @@ type AssistantOverridesVoicemailDetectionVisitor interface {
 	VisitGoogleVoicemailDetectionPlan(*GoogleVoicemailDetectionPlan) error
 	VisitOpenAiVoicemailDetectionPlan(*OpenAiVoicemailDetectionPlan) error
 	VisitTwilioVoicemailDetectionPlan(*TwilioVoicemailDetectionPlan) error
+	VisitVapiVoicemailDetectionPlan(*VapiVoicemailDetectionPlan) error
 }
 
 func (a *AssistantOverridesVoicemailDetection) Accept(visitor AssistantOverridesVoicemailDetectionVisitor) error {
@@ -5257,6 +5409,9 @@ func (a *AssistantOverridesVoicemailDetection) Accept(visitor AssistantOverrides
 	}
 	if a.typ == "TwilioVoicemailDetectionPlan" || a.TwilioVoicemailDetectionPlan != nil {
 		return visitor.VisitTwilioVoicemailDetectionPlan(a.TwilioVoicemailDetectionPlan)
+	}
+	if a.typ == "VapiVoicemailDetectionPlan" || a.VapiVoicemailDetectionPlan != nil {
+		return visitor.VisitVapiVoicemailDetectionPlan(a.VapiVoicemailDetectionPlan)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", a)
 }
@@ -5304,6 +5459,135 @@ func (a *AssistantPaginatedResponse) UnmarshalJSON(data []byte) error {
 }
 
 func (a *AssistantPaginatedResponse) String() string {
+	if len(a.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(a); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", a)
+}
+
+type AssistantServerMessages string
+
+const (
+	AssistantServerMessagesConversationUpdate            AssistantServerMessages = "conversation-update"
+	AssistantServerMessagesEndOfCallReport               AssistantServerMessages = "end-of-call-report"
+	AssistantServerMessagesFunctionCall                  AssistantServerMessages = "function-call"
+	AssistantServerMessagesHang                          AssistantServerMessages = "hang"
+	AssistantServerMessagesLanguageChanged               AssistantServerMessages = "language-changed"
+	AssistantServerMessagesLanguageChangeDetected        AssistantServerMessages = "language-change-detected"
+	AssistantServerMessagesModelOutput                   AssistantServerMessages = "model-output"
+	AssistantServerMessagesPhoneCallControl              AssistantServerMessages = "phone-call-control"
+	AssistantServerMessagesSpeechUpdate                  AssistantServerMessages = "speech-update"
+	AssistantServerMessagesStatusUpdate                  AssistantServerMessages = "status-update"
+	AssistantServerMessagesTranscript                    AssistantServerMessages = "transcript"
+	AssistantServerMessagesTranscriptTranscriptTypeFinal AssistantServerMessages = "transcript[transcriptType='final']"
+	AssistantServerMessagesToolCalls                     AssistantServerMessages = "tool-calls"
+	AssistantServerMessagesTransferDestinationRequest    AssistantServerMessages = "transfer-destination-request"
+	AssistantServerMessagesTransferUpdate                AssistantServerMessages = "transfer-update"
+	AssistantServerMessagesUserInterrupted               AssistantServerMessages = "user-interrupted"
+	AssistantServerMessagesVoiceInput                    AssistantServerMessages = "voice-input"
+)
+
+func NewAssistantServerMessagesFromString(s string) (AssistantServerMessages, error) {
+	switch s {
+	case "conversation-update":
+		return AssistantServerMessagesConversationUpdate, nil
+	case "end-of-call-report":
+		return AssistantServerMessagesEndOfCallReport, nil
+	case "function-call":
+		return AssistantServerMessagesFunctionCall, nil
+	case "hang":
+		return AssistantServerMessagesHang, nil
+	case "language-changed":
+		return AssistantServerMessagesLanguageChanged, nil
+	case "language-change-detected":
+		return AssistantServerMessagesLanguageChangeDetected, nil
+	case "model-output":
+		return AssistantServerMessagesModelOutput, nil
+	case "phone-call-control":
+		return AssistantServerMessagesPhoneCallControl, nil
+	case "speech-update":
+		return AssistantServerMessagesSpeechUpdate, nil
+	case "status-update":
+		return AssistantServerMessagesStatusUpdate, nil
+	case "transcript":
+		return AssistantServerMessagesTranscript, nil
+	case "transcript[transcriptType='final']":
+		return AssistantServerMessagesTranscriptTranscriptTypeFinal, nil
+	case "tool-calls":
+		return AssistantServerMessagesToolCalls, nil
+	case "transfer-destination-request":
+		return AssistantServerMessagesTransferDestinationRequest, nil
+	case "transfer-update":
+		return AssistantServerMessagesTransferUpdate, nil
+	case "user-interrupted":
+		return AssistantServerMessagesUserInterrupted, nil
+	case "voice-input":
+		return AssistantServerMessagesVoiceInput, nil
+	}
+	var t AssistantServerMessages
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (a AssistantServerMessages) Ptr() *AssistantServerMessages {
+	return &a
+}
+
+type AssistantVersionPaginatedResponse struct {
+	Results       []interface{}   `json:"results,omitempty" url:"results,omitempty"`
+	Metadata      *PaginationMeta `json:"metadata,omitempty" url:"metadata,omitempty"`
+	NextPageState *string         `json:"nextPageState,omitempty" url:"nextPageState,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (a *AssistantVersionPaginatedResponse) GetResults() []interface{} {
+	if a == nil {
+		return nil
+	}
+	return a.Results
+}
+
+func (a *AssistantVersionPaginatedResponse) GetMetadata() *PaginationMeta {
+	if a == nil {
+		return nil
+	}
+	return a.Metadata
+}
+
+func (a *AssistantVersionPaginatedResponse) GetNextPageState() *string {
+	if a == nil {
+		return nil
+	}
+	return a.NextPageState
+}
+
+func (a *AssistantVersionPaginatedResponse) GetExtraProperties() map[string]interface{} {
+	return a.extraProperties
+}
+
+func (a *AssistantVersionPaginatedResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler AssistantVersionPaginatedResponse
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*a = AssistantVersionPaginatedResponse(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *a)
+	if err != nil {
+		return err
+	}
+	a.extraProperties = extraProperties
+	a.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (a *AssistantVersionPaginatedResponse) String() string {
 	if len(a.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
 			return value
@@ -6494,6 +6778,8 @@ func (a AzureSpeechTranscriberLanguage) Ptr() *AzureSpeechTranscriberLanguage {
 }
 
 type AzureVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used.
 	// This is the provider-specific ID that will be used.
 	VoiceId *AzureVoiceId `json:"voiceId,omitempty" url:"voiceId,omitempty"`
@@ -6507,6 +6793,13 @@ type AzureVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (a *AzureVoice) GetCachingEnabled() *bool {
+	if a == nil {
+		return nil
+	}
+	return a.CachingEnabled
 }
 
 func (a *AzureVoice) GetVoiceId() *AzureVoiceId {
@@ -8097,6 +8390,8 @@ func (c *CartesiaSpeedControl) Accept(visitor CartesiaSpeedControlVisitor) error
 }
 
 type CartesiaVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used.
 	// The ID of the particular voice you want to use.
 	VoiceId string `json:"voiceId" url:"voiceId"`
@@ -8114,6 +8409,13 @@ type CartesiaVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (c *CartesiaVoice) GetCachingEnabled() *bool {
+	if c == nil {
+		return nil
+	}
+	return c.CachingEnabled
 }
 
 func (c *CartesiaVoice) GetVoiceId() string {
@@ -12383,7 +12685,7 @@ type Condition struct {
 	// This is the name of the parameter that you want to check.
 	Param string `json:"param" url:"param"`
 	// This is the value you want to compare against the parameter.
-	Value map[string]interface{} `json:"value,omitempty" url:"value,omitempty"`
+	Value string `json:"value" url:"value"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -12403,9 +12705,9 @@ func (c *Condition) GetParam() string {
 	return c.Param
 }
 
-func (c *Condition) GetValue() map[string]interface{} {
+func (c *Condition) GetValue() string {
 	if c == nil {
-		return nil
+		return ""
 	}
 	return c.Value
 }
@@ -12782,6 +13084,8 @@ type CreateAssistantDto struct {
 	ObservabilityPlan *LangfuseObservabilityPlan `json:"observabilityPlan,omitempty" url:"observabilityPlan,omitempty"`
 	// These are dynamic credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials.
 	Credentials []*CreateAssistantDtoCredentialsItem `json:"credentials,omitempty" url:"credentials,omitempty"`
+	// This is a set of actions that will be performed on certain events.
+	Hooks []*AssistantHookCallEnding `json:"hooks,omitempty" url:"hooks,omitempty"`
 	// This is the name of the assistant.
 	//
 	// This is required when you want to transfer between assistants in a call.
@@ -12842,10 +13146,8 @@ type CreateAssistantDto struct {
 	// 1. assistant.server.url
 	// 2. phoneNumber.serverUrl
 	// 3. org.serverUrl
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	// This is a set of actions that will be performed on certain events.
-	Hooks           []*AssistantHooks `json:"hooks,omitempty" url:"hooks,omitempty"`
-	KeypadInputPlan *KeypadInputPlan  `json:"keypadInputPlan,omitempty" url:"keypadInputPlan,omitempty"`
+	Server          *Server          `json:"server,omitempty" url:"server,omitempty"`
+	KeypadInputPlan *KeypadInputPlan `json:"keypadInputPlan,omitempty" url:"keypadInputPlan,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -12970,6 +13272,13 @@ func (c *CreateAssistantDto) GetCredentials() []*CreateAssistantDtoCredentialsIt
 	return c.Credentials
 }
 
+func (c *CreateAssistantDto) GetHooks() []*AssistantHookCallEnding {
+	if c == nil {
+		return nil
+	}
+	return c.Hooks
+}
+
 func (c *CreateAssistantDto) GetName() *string {
 	if c == nil {
 		return nil
@@ -13066,13 +13375,6 @@ func (c *CreateAssistantDto) GetServer() *Server {
 		return nil
 	}
 	return c.Server
-}
-
-func (c *CreateAssistantDto) GetHooks() []*AssistantHooks {
-	if c == nil {
-		return nil
-	}
-	return c.Hooks
 }
 
 func (c *CreateAssistantDto) GetKeypadInputPlan() *KeypadInputPlan {
@@ -13215,6 +13517,7 @@ const (
 	CreateAssistantDtoClientMessagesItemTranscript          CreateAssistantDtoClientMessagesItem = "transcript"
 	CreateAssistantDtoClientMessagesItemToolCalls           CreateAssistantDtoClientMessagesItem = "tool-calls"
 	CreateAssistantDtoClientMessagesItemToolCallsResult     CreateAssistantDtoClientMessagesItem = "tool-calls-result"
+	CreateAssistantDtoClientMessagesItemToolCompleted       CreateAssistantDtoClientMessagesItem = "tool.completed"
 	CreateAssistantDtoClientMessagesItemTransferUpdate      CreateAssistantDtoClientMessagesItem = "transfer-update"
 	CreateAssistantDtoClientMessagesItemUserInterrupted     CreateAssistantDtoClientMessagesItem = "user-interrupted"
 	CreateAssistantDtoClientMessagesItemVoiceInput          CreateAssistantDtoClientMessagesItem = "voice-input"
@@ -13247,6 +13550,8 @@ func NewCreateAssistantDtoClientMessagesItemFromString(s string) (CreateAssistan
 		return CreateAssistantDtoClientMessagesItemToolCalls, nil
 	case "tool-calls-result":
 		return CreateAssistantDtoClientMessagesItemToolCallsResult, nil
+	case "tool.completed":
+		return CreateAssistantDtoClientMessagesItemToolCompleted, nil
 	case "transfer-update":
 		return CreateAssistantDtoClientMessagesItemTransferUpdate, nil
 	case "user-interrupted":
@@ -15260,6 +15565,7 @@ type CreateAssistantDtoVoicemailDetection struct {
 	GoogleVoicemailDetectionPlan *GoogleVoicemailDetectionPlan
 	OpenAiVoicemailDetectionPlan *OpenAiVoicemailDetectionPlan
 	TwilioVoicemailDetectionPlan *TwilioVoicemailDetectionPlan
+	VapiVoicemailDetectionPlan   *VapiVoicemailDetectionPlan
 
 	typ string
 }
@@ -15285,6 +15591,13 @@ func (c *CreateAssistantDtoVoicemailDetection) GetTwilioVoicemailDetectionPlan()
 	return c.TwilioVoicemailDetectionPlan
 }
 
+func (c *CreateAssistantDtoVoicemailDetection) GetVapiVoicemailDetectionPlan() *VapiVoicemailDetectionPlan {
+	if c == nil {
+		return nil
+	}
+	return c.VapiVoicemailDetectionPlan
+}
+
 func (c *CreateAssistantDtoVoicemailDetection) UnmarshalJSON(data []byte) error {
 	valueGoogleVoicemailDetectionPlan := new(GoogleVoicemailDetectionPlan)
 	if err := json.Unmarshal(data, &valueGoogleVoicemailDetectionPlan); err == nil {
@@ -15304,6 +15617,12 @@ func (c *CreateAssistantDtoVoicemailDetection) UnmarshalJSON(data []byte) error 
 		c.TwilioVoicemailDetectionPlan = valueTwilioVoicemailDetectionPlan
 		return nil
 	}
+	valueVapiVoicemailDetectionPlan := new(VapiVoicemailDetectionPlan)
+	if err := json.Unmarshal(data, &valueVapiVoicemailDetectionPlan); err == nil {
+		c.typ = "VapiVoicemailDetectionPlan"
+		c.VapiVoicemailDetectionPlan = valueVapiVoicemailDetectionPlan
+		return nil
+	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
 }
 
@@ -15317,6 +15636,9 @@ func (c CreateAssistantDtoVoicemailDetection) MarshalJSON() ([]byte, error) {
 	if c.typ == "TwilioVoicemailDetectionPlan" || c.TwilioVoicemailDetectionPlan != nil {
 		return json.Marshal(c.TwilioVoicemailDetectionPlan)
 	}
+	if c.typ == "VapiVoicemailDetectionPlan" || c.VapiVoicemailDetectionPlan != nil {
+		return json.Marshal(c.VapiVoicemailDetectionPlan)
+	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
 }
 
@@ -15324,6 +15646,7 @@ type CreateAssistantDtoVoicemailDetectionVisitor interface {
 	VisitGoogleVoicemailDetectionPlan(*GoogleVoicemailDetectionPlan) error
 	VisitOpenAiVoicemailDetectionPlan(*OpenAiVoicemailDetectionPlan) error
 	VisitTwilioVoicemailDetectionPlan(*TwilioVoicemailDetectionPlan) error
+	VisitVapiVoicemailDetectionPlan(*VapiVoicemailDetectionPlan) error
 }
 
 func (c *CreateAssistantDtoVoicemailDetection) Accept(visitor CreateAssistantDtoVoicemailDetectionVisitor) error {
@@ -15335,6 +15658,9 @@ func (c *CreateAssistantDtoVoicemailDetection) Accept(visitor CreateAssistantDto
 	}
 	if c.typ == "TwilioVoicemailDetectionPlan" || c.TwilioVoicemailDetectionPlan != nil {
 		return visitor.VisitTwilioVoicemailDetectionPlan(c.TwilioVoicemailDetectionPlan)
+	}
+	if c.typ == "VapiVoicemailDetectionPlan" || c.VapiVoicemailDetectionPlan != nil {
+		return visitor.VisitVapiVoicemailDetectionPlan(c.VapiVoicemailDetectionPlan)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", c)
 }
@@ -20921,6 +21247,62 @@ func (c *CreateS3CredentialDto) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
+type CreateSesameVoiceDto struct {
+	// The name of the voice.
+	VoiceName *string `json:"voiceName,omitempty" url:"voiceName,omitempty"`
+	// The transcript of the utterance.
+	Transcription *string `json:"transcription,omitempty" url:"transcription,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CreateSesameVoiceDto) GetVoiceName() *string {
+	if c == nil {
+		return nil
+	}
+	return c.VoiceName
+}
+
+func (c *CreateSesameVoiceDto) GetTranscription() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Transcription
+}
+
+func (c *CreateSesameVoiceDto) GetExtraProperties() map[string]interface{} {
+	return c.extraProperties
+}
+
+func (c *CreateSesameVoiceDto) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateSesameVoiceDto
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CreateSesameVoiceDto(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CreateSesameVoiceDto) String() string {
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
 type CreateSlackOAuth2AuthorizationCredentialDto struct {
 	// The authorization ID for the OAuth2 authorization
 	AuthorizationId string `json:"authorizationId" url:"authorizationId"`
@@ -22700,8 +23082,12 @@ func (c *CreateTrieveCredentialDto) String() string {
 
 type CreateTwilioCredentialDto struct {
 	// This is not returned in the API.
-	AuthToken  string `json:"authToken" url:"authToken"`
-	AccountSid string `json:"accountSid" url:"accountSid"`
+	AuthToken *string `json:"authToken,omitempty" url:"authToken,omitempty"`
+	// This is not returned in the API.
+	ApiKey *string `json:"apiKey,omitempty" url:"apiKey,omitempty"`
+	// This is not returned in the API.
+	ApiSecret  *string `json:"apiSecret,omitempty" url:"apiSecret,omitempty"`
+	AccountSid string  `json:"accountSid" url:"accountSid"`
 	// This is the name of credential. This is just for your reference.
 	Name     *string `json:"name,omitempty" url:"name,omitempty"`
 	provider string
@@ -22710,11 +23096,25 @@ type CreateTwilioCredentialDto struct {
 	rawJSON         json.RawMessage
 }
 
-func (c *CreateTwilioCredentialDto) GetAuthToken() string {
+func (c *CreateTwilioCredentialDto) GetAuthToken() *string {
 	if c == nil {
-		return ""
+		return nil
 	}
 	return c.AuthToken
+}
+
+func (c *CreateTwilioCredentialDto) GetApiKey() *string {
+	if c == nil {
+		return nil
+	}
+	return c.ApiKey
+}
+
+func (c *CreateTwilioCredentialDto) GetApiSecret() *string {
+	if c == nil {
+		return nil
+	}
+	return c.ApiSecret
 }
 
 func (c *CreateTwilioCredentialDto) GetAccountSid() string {
@@ -24699,6 +25099,8 @@ func (c *CustomTranscriber) String() string {
 }
 
 type CustomVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used. Use `custom-voice` for providers that are not natively supported.
 	// This is the plan for chunking the model output before it is sent to the voice provider.
 	ChunkPlan *ChunkPlan `json:"chunkPlan,omitempty" url:"chunkPlan,omitempty"`
@@ -24733,6 +25135,13 @@ type CustomVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (c *CustomVoice) GetCachingEnabled() *bool {
+	if c == nil {
+		return nil
+	}
+	return c.CachingEnabled
 }
 
 func (c *CustomVoice) GetChunkPlan() *ChunkPlan {
@@ -26714,6 +27123,8 @@ func (d DeepgramTranscriberModel) Ptr() *DeepgramTranscriberModel {
 }
 
 type DeepgramVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used.
 	// This is the provider-specific ID that will be used.
 	VoiceId DeepgramVoiceId `json:"voiceId" url:"voiceId"`
@@ -26733,6 +27144,13 @@ type DeepgramVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (d *DeepgramVoice) GetCachingEnabled() *bool {
+	if d == nil {
+		return nil
+	}
+	return d.CachingEnabled
 }
 
 func (d *DeepgramVoice) GetVoiceId() DeepgramVoiceId {
@@ -27938,6 +28356,8 @@ func (e ElevenLabsTranscriberLanguage) Ptr() *ElevenLabsTranscriberLanguage {
 }
 
 type ElevenLabsVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used.
 	// This is the provider-specific ID that will be used. Ensure the Voice is present in your 11Labs Voice Library.
 	VoiceId *ElevenLabsVoiceId `json:"voiceId,omitempty" url:"voiceId,omitempty"`
@@ -27971,6 +28391,13 @@ type ElevenLabsVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (e *ElevenLabsVoice) GetCachingEnabled() *bool {
+	if e == nil {
+		return nil
+	}
+	return e.CachingEnabled
 }
 
 func (e *ElevenLabsVoice) GetVoiceId() *ElevenLabsVoiceId {
@@ -29083,6 +29510,8 @@ func (f FallbackAzureSpeechTranscriberLanguage) Ptr() *FallbackAzureSpeechTransc
 }
 
 type FallbackAzureVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used.
 	// This is the provider-specific ID that will be used.
 	VoiceId *FallbackAzureVoiceId `json:"voiceId,omitempty" url:"voiceId,omitempty"`
@@ -29095,6 +29524,13 @@ type FallbackAzureVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (f *FallbackAzureVoice) GetCachingEnabled() *bool {
+	if f == nil {
+		return nil
+	}
+	return f.CachingEnabled
 }
 
 func (f *FallbackAzureVoice) GetVoiceId() *FallbackAzureVoiceId {
@@ -29271,6 +29707,8 @@ func (f FallbackAzureVoiceVoiceId) Ptr() *FallbackAzureVoiceVoiceId {
 }
 
 type FallbackCartesiaVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used.
 	// The ID of the particular voice you want to use.
 	VoiceId string `json:"voiceId" url:"voiceId"`
@@ -29286,6 +29724,13 @@ type FallbackCartesiaVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (f *FallbackCartesiaVoice) GetCachingEnabled() *bool {
+	if f == nil {
+		return nil
+	}
+	return f.CachingEnabled
 }
 
 func (f *FallbackCartesiaVoice) GetVoiceId() string {
@@ -29592,6 +30037,8 @@ func (f *FallbackCustomTranscriber) String() string {
 }
 
 type FallbackCustomVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used. Use `custom-voice` for providers that are not natively supported.
 	// This is where the voice request will be sent.
 	//
@@ -29624,6 +30071,13 @@ type FallbackCustomVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (f *FallbackCustomVoice) GetCachingEnabled() *bool {
+	if f == nil {
+		return nil
+	}
+	return f.CachingEnabled
 }
 
 func (f *FallbackCustomVoice) GetServer() *Server {
@@ -30192,6 +30646,8 @@ func (f FallbackDeepgramTranscriberModel) Ptr() *FallbackDeepgramTranscriberMode
 }
 
 type FallbackDeepgramVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used.
 	// This is the provider-specific ID that will be used.
 	VoiceId FallbackDeepgramVoiceId `json:"voiceId" url:"voiceId"`
@@ -30209,6 +30665,13 @@ type FallbackDeepgramVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (f *FallbackDeepgramVoice) GetCachingEnabled() *bool {
+	if f == nil {
+		return nil
+	}
+	return f.CachingEnabled
 }
 
 func (f *FallbackDeepgramVoice) GetVoiceId() FallbackDeepgramVoiceId {
@@ -31118,6 +31581,8 @@ func (f FallbackElevenLabsTranscriberLanguage) Ptr() *FallbackElevenLabsTranscri
 }
 
 type FallbackElevenLabsVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used.
 	// This is the provider-specific ID that will be used. Ensure the Voice is present in your 11Labs Voice Library.
 	VoiceId *FallbackElevenLabsVoiceId `json:"voiceId,omitempty" url:"voiceId,omitempty"`
@@ -31149,6 +31614,13 @@ type FallbackElevenLabsVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (f *FallbackElevenLabsVoice) GetCachingEnabled() *bool {
+	if f == nil {
+		return nil
+	}
+	return f.CachingEnabled
 }
 
 func (f *FallbackElevenLabsVoice) GetVoiceId() *FallbackElevenLabsVoiceId {
@@ -32162,6 +32634,7 @@ func (f FallbackGoogleTranscriberLanguage) Ptr() *FallbackGoogleTranscriberLangu
 type FallbackGoogleTranscriberModel string
 
 const (
+	FallbackGoogleTranscriberModelGemini25FlashPreview0417     FallbackGoogleTranscriberModel = "gemini-2.5-flash-preview-04-17"
 	FallbackGoogleTranscriberModelGemini20FlashThinkingExp     FallbackGoogleTranscriberModel = "gemini-2.0-flash-thinking-exp"
 	FallbackGoogleTranscriberModelGemini20ProExp0205           FallbackGoogleTranscriberModel = "gemini-2.0-pro-exp-02-05"
 	FallbackGoogleTranscriberModelGemini20Flash                FallbackGoogleTranscriberModel = "gemini-2.0-flash"
@@ -32178,6 +32651,8 @@ const (
 
 func NewFallbackGoogleTranscriberModelFromString(s string) (FallbackGoogleTranscriberModel, error) {
 	switch s {
+	case "gemini-2.5-flash-preview-04-17":
+		return FallbackGoogleTranscriberModelGemini25FlashPreview0417, nil
 	case "gemini-2.0-flash-thinking-exp":
 		return FallbackGoogleTranscriberModelGemini20FlashThinkingExp, nil
 	case "gemini-2.0-pro-exp-02-05":
@@ -32212,6 +32687,8 @@ func (f FallbackGoogleTranscriberModel) Ptr() *FallbackGoogleTranscriberModel {
 }
 
 type FallbackHumeVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used.
 	// This is the model that will be used.
 	Model *string `json:"model,omitempty" url:"model,omitempty"`
@@ -32230,6 +32707,13 @@ type FallbackHumeVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (f *FallbackHumeVoice) GetCachingEnabled() *bool {
+	if f == nil {
+		return nil
+	}
+	return f.CachingEnabled
 }
 
 func (f *FallbackHumeVoice) GetVoiceId() string {
@@ -32403,6 +32887,8 @@ func (f FallbackLmntVoiceIdEnum) Ptr() *FallbackLmntVoiceIdEnum {
 }
 
 type FallbackLmntVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used.
 	// This is the provider-specific ID that will be used.
 	VoiceId *FallbackLmntVoiceId `json:"voiceId,omitempty" url:"voiceId,omitempty"`
@@ -32414,6 +32900,13 @@ type FallbackLmntVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (f *FallbackLmntVoice) GetCachingEnabled() *bool {
+	if f == nil {
+		return nil
+	}
+	return f.CachingEnabled
 }
 
 func (f *FallbackLmntVoice) GetVoiceId() *FallbackLmntVoiceId {
@@ -32541,6 +33034,8 @@ func (f *FallbackNeetsVoice) String() string {
 }
 
 type FallbackNeuphonicVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used.
 	// This is the provider-specific ID that will be used.
 	VoiceId string `json:"voiceId" url:"voiceId"`
@@ -32556,6 +33051,13 @@ type FallbackNeuphonicVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (f *FallbackNeuphonicVoice) GetCachingEnabled() *bool {
+	if f == nil {
+		return nil
+	}
+	return f.CachingEnabled
 }
 
 func (f *FallbackNeuphonicVoice) GetVoiceId() string {
@@ -33066,6 +33568,8 @@ func (f FallbackOpenAiTranscriberModel) Ptr() *FallbackOpenAiTranscriberModel {
 }
 
 type FallbackOpenAiVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used.
 	// This is the provider-specific ID that will be used.
 	// Please note that ash, ballad, coral, sage, and verse may only be used with realtime models.
@@ -33083,6 +33587,13 @@ type FallbackOpenAiVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (f *FallbackOpenAiVoice) GetCachingEnabled() *bool {
+	if f == nil {
+		return nil
+	}
+	return f.CachingEnabled
 }
 
 func (f *FallbackOpenAiVoice) GetVoiceId() *FallbackOpenAiVoiceId {
@@ -33653,6 +34164,8 @@ func (f FallbackPlayHtVoiceIdEnum) Ptr() *FallbackPlayHtVoiceIdEnum {
 }
 
 type FallbackPlayHtVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used.
 	// This is the provider-specific ID that will be used.
 	VoiceId *FallbackPlayHtVoiceId `json:"voiceId,omitempty" url:"voiceId,omitempty"`
@@ -33678,6 +34191,13 @@ type FallbackPlayHtVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (f *FallbackPlayHtVoice) GetCachingEnabled() *bool {
+	if f == nil {
+		return nil
+	}
+	return f.CachingEnabled
 }
 
 func (f *FallbackPlayHtVoice) GetVoiceId() *FallbackPlayHtVoiceId {
@@ -34346,6 +34866,8 @@ func (f FallbackRimeAiVoiceIdEnum) Ptr() *FallbackRimeAiVoiceIdEnum {
 }
 
 type FallbackRimeAiVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used.
 	// This is the provider-specific ID that will be used.
 	VoiceId *FallbackRimeAiVoiceId `json:"voiceId,omitempty" url:"voiceId,omitempty"`
@@ -34367,6 +34889,13 @@ type FallbackRimeAiVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (f *FallbackRimeAiVoice) GetCachingEnabled() *bool {
+	if f == nil {
+		return nil
+	}
+	return f.CachingEnabled
 }
 
 func (f *FallbackRimeAiVoice) GetVoiceId() *FallbackRimeAiVoiceId {
@@ -34663,6 +35192,8 @@ func (f FallbackSmallestAiVoiceIdEnum) Ptr() *FallbackSmallestAiVoiceIdEnum {
 }
 
 type FallbackSmallestAiVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used.
 	// This is the provider-specific ID that will be used.
 	VoiceId *FallbackSmallestAiVoiceId `json:"voiceId,omitempty" url:"voiceId,omitempty"`
@@ -34676,6 +35207,13 @@ type FallbackSmallestAiVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (f *FallbackSmallestAiVoice) GetCachingEnabled() *bool {
+	if f == nil {
+		return nil
+	}
+	return f.CachingEnabled
 }
 
 func (f *FallbackSmallestAiVoice) GetVoiceId() *FallbackSmallestAiVoiceId {
@@ -35409,6 +35947,8 @@ func (f FallbackTalkscriberTranscriberLanguage) Ptr() *FallbackTalkscriberTransc
 }
 
 type FallbackTavusVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used.
 	// This is the provider-specific ID that will be used.
 	VoiceId *FallbackTavusVoiceVoiceId `json:"voiceId,omitempty" url:"voiceId,omitempty"`
@@ -35430,6 +35970,13 @@ type FallbackTavusVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (f *FallbackTavusVoice) GetCachingEnabled() *bool {
+	if f == nil {
+		return nil
+	}
+	return f.CachingEnabled
 }
 
 func (f *FallbackTavusVoice) GetVoiceId() *FallbackTavusVoiceVoiceId {
@@ -35885,6 +36432,8 @@ func (f *FallbackTranscriberPlanTranscribersItem) Accept(visitor FallbackTranscr
 }
 
 type FallbackVapiVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used.
 	// The voices provided by Vapi
 	VoiceId FallbackVapiVoiceVoiceId `json:"voiceId" url:"voiceId"`
@@ -35902,6 +36451,13 @@ type FallbackVapiVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (f *FallbackVapiVoice) GetCachingEnabled() *bool {
+	if f == nil {
+		return nil
+	}
+	return f.CachingEnabled
 }
 
 func (f *FallbackVapiVoice) GetVoiceId() FallbackVapiVoiceVoiceId {
@@ -36393,6 +36949,227 @@ func (f *FormatPlanReplacementsItem) Accept(visitor FormatPlanReplacementsItemVi
 	}
 	if f.typ == "RegexReplacement" || f.RegexReplacement != nil {
 		return visitor.VisitRegexReplacement(f.RegexReplacement)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", f)
+}
+
+type FunctionCallAssistantHookAction struct {
+	// This determines if the tool is async.
+	//
+	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+	//
+	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+	//
+	// Defaults to synchronous (`false`).
+	Async *bool `json:"async,omitempty" url:"async,omitempty"`
+	// These are the messages that will be spoken to the user as the tool is running.
+	//
+	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+	Messages []*FunctionCallAssistantHookActionMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
+	// The type of tool. "function" for Function tool.
+	// This is the function definition of the tool.
+	//
+	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+	//
+	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
+	// This is the server that will be hit when this tool is requested by the model.
+	//
+	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+	//
+	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
+	type_  string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FunctionCallAssistantHookAction) GetAsync() *bool {
+	if f == nil {
+		return nil
+	}
+	return f.Async
+}
+
+func (f *FunctionCallAssistantHookAction) GetMessages() []*FunctionCallAssistantHookActionMessagesItem {
+	if f == nil {
+		return nil
+	}
+	return f.Messages
+}
+
+func (f *FunctionCallAssistantHookAction) GetFunction() *OpenAiFunction {
+	if f == nil {
+		return nil
+	}
+	return f.Function
+}
+
+func (f *FunctionCallAssistantHookAction) GetServer() *Server {
+	if f == nil {
+		return nil
+	}
+	return f.Server
+}
+
+func (f *FunctionCallAssistantHookAction) Type() string {
+	return f.type_
+}
+
+func (f *FunctionCallAssistantHookAction) GetExtraProperties() map[string]interface{} {
+	return f.extraProperties
+}
+
+func (f *FunctionCallAssistantHookAction) UnmarshalJSON(data []byte) error {
+	type embed FunctionCallAssistantHookAction
+	var unmarshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*f),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*f = FunctionCallAssistantHookAction(unmarshaler.embed)
+	if unmarshaler.Type != "function" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", f, "function", unmarshaler.Type)
+	}
+	f.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *f, "type")
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FunctionCallAssistantHookAction) MarshalJSON() ([]byte, error) {
+	type embed FunctionCallAssistantHookAction
+	var marshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*f),
+		Type:  "function",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (f *FunctionCallAssistantHookAction) String() string {
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+type FunctionCallAssistantHookActionMessagesItem struct {
+	ToolMessageStart    *ToolMessageStart
+	ToolMessageComplete *ToolMessageComplete
+	ToolMessageFailed   *ToolMessageFailed
+	ToolMessageDelayed  *ToolMessageDelayed
+
+	typ string
+}
+
+func (f *FunctionCallAssistantHookActionMessagesItem) GetToolMessageStart() *ToolMessageStart {
+	if f == nil {
+		return nil
+	}
+	return f.ToolMessageStart
+}
+
+func (f *FunctionCallAssistantHookActionMessagesItem) GetToolMessageComplete() *ToolMessageComplete {
+	if f == nil {
+		return nil
+	}
+	return f.ToolMessageComplete
+}
+
+func (f *FunctionCallAssistantHookActionMessagesItem) GetToolMessageFailed() *ToolMessageFailed {
+	if f == nil {
+		return nil
+	}
+	return f.ToolMessageFailed
+}
+
+func (f *FunctionCallAssistantHookActionMessagesItem) GetToolMessageDelayed() *ToolMessageDelayed {
+	if f == nil {
+		return nil
+	}
+	return f.ToolMessageDelayed
+}
+
+func (f *FunctionCallAssistantHookActionMessagesItem) UnmarshalJSON(data []byte) error {
+	valueToolMessageStart := new(ToolMessageStart)
+	if err := json.Unmarshal(data, &valueToolMessageStart); err == nil {
+		f.typ = "ToolMessageStart"
+		f.ToolMessageStart = valueToolMessageStart
+		return nil
+	}
+	valueToolMessageComplete := new(ToolMessageComplete)
+	if err := json.Unmarshal(data, &valueToolMessageComplete); err == nil {
+		f.typ = "ToolMessageComplete"
+		f.ToolMessageComplete = valueToolMessageComplete
+		return nil
+	}
+	valueToolMessageFailed := new(ToolMessageFailed)
+	if err := json.Unmarshal(data, &valueToolMessageFailed); err == nil {
+		f.typ = "ToolMessageFailed"
+		f.ToolMessageFailed = valueToolMessageFailed
+		return nil
+	}
+	valueToolMessageDelayed := new(ToolMessageDelayed)
+	if err := json.Unmarshal(data, &valueToolMessageDelayed); err == nil {
+		f.typ = "ToolMessageDelayed"
+		f.ToolMessageDelayed = valueToolMessageDelayed
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, f)
+}
+
+func (f FunctionCallAssistantHookActionMessagesItem) MarshalJSON() ([]byte, error) {
+	if f.typ == "ToolMessageStart" || f.ToolMessageStart != nil {
+		return json.Marshal(f.ToolMessageStart)
+	}
+	if f.typ == "ToolMessageComplete" || f.ToolMessageComplete != nil {
+		return json.Marshal(f.ToolMessageComplete)
+	}
+	if f.typ == "ToolMessageFailed" || f.ToolMessageFailed != nil {
+		return json.Marshal(f.ToolMessageFailed)
+	}
+	if f.typ == "ToolMessageDelayed" || f.ToolMessageDelayed != nil {
+		return json.Marshal(f.ToolMessageDelayed)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", f)
+}
+
+type FunctionCallAssistantHookActionMessagesItemVisitor interface {
+	VisitToolMessageStart(*ToolMessageStart) error
+	VisitToolMessageComplete(*ToolMessageComplete) error
+	VisitToolMessageFailed(*ToolMessageFailed) error
+	VisitToolMessageDelayed(*ToolMessageDelayed) error
+}
+
+func (f *FunctionCallAssistantHookActionMessagesItem) Accept(visitor FunctionCallAssistantHookActionMessagesItemVisitor) error {
+	if f.typ == "ToolMessageStart" || f.ToolMessageStart != nil {
+		return visitor.VisitToolMessageStart(f.ToolMessageStart)
+	}
+	if f.typ == "ToolMessageComplete" || f.ToolMessageComplete != nil {
+		return visitor.VisitToolMessageComplete(f.ToolMessageComplete)
+	}
+	if f.typ == "ToolMessageFailed" || f.ToolMessageFailed != nil {
+		return visitor.VisitToolMessageFailed(f.ToolMessageFailed)
+	}
+	if f.typ == "ToolMessageDelayed" || f.ToolMessageDelayed != nil {
+		return visitor.VisitToolMessageDelayed(f.ToolMessageDelayed)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", f)
 }
@@ -39305,6 +40082,7 @@ func (g *GoogleModel) String() string {
 type GoogleModelModel string
 
 const (
+	GoogleModelModelGemini25FlashPreview0417     GoogleModelModel = "gemini-2.5-flash-preview-04-17"
 	GoogleModelModelGemini20FlashThinkingExp     GoogleModelModel = "gemini-2.0-flash-thinking-exp"
 	GoogleModelModelGemini20ProExp0205           GoogleModelModel = "gemini-2.0-pro-exp-02-05"
 	GoogleModelModelGemini20Flash                GoogleModelModel = "gemini-2.0-flash"
@@ -39321,6 +40099,8 @@ const (
 
 func NewGoogleModelModelFromString(s string) (GoogleModelModel, error) {
 	switch s {
+	case "gemini-2.5-flash-preview-04-17":
+		return GoogleModelModelGemini25FlashPreview0417, nil
 	case "gemini-2.0-flash-thinking-exp":
 		return GoogleModelModelGemini20FlashThinkingExp, nil
 	case "gemini-2.0-pro-exp-02-05":
@@ -40381,6 +41161,7 @@ func (g GoogleTranscriberLanguage) Ptr() *GoogleTranscriberLanguage {
 type GoogleTranscriberModel string
 
 const (
+	GoogleTranscriberModelGemini25FlashPreview0417     GoogleTranscriberModel = "gemini-2.5-flash-preview-04-17"
 	GoogleTranscriberModelGemini20FlashThinkingExp     GoogleTranscriberModel = "gemini-2.0-flash-thinking-exp"
 	GoogleTranscriberModelGemini20ProExp0205           GoogleTranscriberModel = "gemini-2.0-pro-exp-02-05"
 	GoogleTranscriberModelGemini20Flash                GoogleTranscriberModel = "gemini-2.0-flash"
@@ -40397,6 +41178,8 @@ const (
 
 func NewGoogleTranscriberModelFromString(s string) (GoogleTranscriberModel, error) {
 	switch s {
+	case "gemini-2.5-flash-preview-04-17":
+		return GoogleTranscriberModelGemini25FlashPreview0417, nil
 	case "gemini-2.0-flash-thinking-exp":
 		return GoogleTranscriberModelGemini20FlashThinkingExp, nil
 	case "gemini-2.0-pro-exp-02-05":
@@ -40431,22 +41214,37 @@ func (g GoogleTranscriberModel) Ptr() *GoogleTranscriberModel {
 }
 
 type GoogleVoicemailDetectionPlan struct {
-	// This is the provider to use for voicemail detection.
-	// This is how long should we listen in order to determine if we were sent to voicemail or not?
+	// This is the maximum duration from the start of the call that we will wait for a voicemail beep, before speaking our message
 	//
-	// @default 15
-	VoicemailExpectedDurationSeconds float64 `json:"voicemailExpectedDurationSeconds" url:"voicemailExpectedDurationSeconds"`
-	provider                         string
+	// - If we detect a voicemail beep before this, we will speak the message at that point.
+	//
+	// - Setting too low a value means that the bot will start speaking its voicemail message too early. If it does so before the actual beep, it will get cut off. You should definitely tune this to your use case.
+	//
+	// @default 30
+	// @min 0
+	// @max 60
+	BeepMaxAwaitSeconds *float64 `json:"beepMaxAwaitSeconds,omitempty" url:"beepMaxAwaitSeconds,omitempty"`
+	// This is the provider to use for voicemail detection.
+	// This is the backoff plan for the voicemail detection.
+	BackoffPlan *VoicemailDetectionBackoffPlan `json:"backoffPlan,omitempty" url:"backoffPlan,omitempty"`
+	provider    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
 }
 
-func (g *GoogleVoicemailDetectionPlan) GetVoicemailExpectedDurationSeconds() float64 {
+func (g *GoogleVoicemailDetectionPlan) GetBeepMaxAwaitSeconds() *float64 {
 	if g == nil {
-		return 0
+		return nil
 	}
-	return g.VoicemailExpectedDurationSeconds
+	return g.BeepMaxAwaitSeconds
+}
+
+func (g *GoogleVoicemailDetectionPlan) GetBackoffPlan() *VoicemailDetectionBackoffPlan {
+	if g == nil {
+		return nil
+	}
+	return g.BackoffPlan
 }
 
 func (g *GoogleVoicemailDetectionPlan) Provider() string {
@@ -41401,6 +42199,8 @@ func (h *HumeCredential) String() string {
 }
 
 type HumeVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used.
 	// This is the model that will be used.
 	Model *string `json:"model,omitempty" url:"model,omitempty"`
@@ -41421,6 +42221,13 @@ type HumeVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (h *HumeVoice) GetCachingEnabled() *bool {
+	if h == nil {
+		return nil
+	}
+	return h.CachingEnabled
 }
 
 func (h *HumeVoice) GetVoiceId() string {
@@ -42614,6 +43421,60 @@ func (j JsonSchemaType) Ptr() *JsonSchemaType {
 	return &j
 }
 
+type JwtResponse struct {
+	AccessToken string                 `json:"accessToken" url:"accessToken"`
+	Aud         map[string]interface{} `json:"aud,omitempty" url:"aud,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (j *JwtResponse) GetAccessToken() string {
+	if j == nil {
+		return ""
+	}
+	return j.AccessToken
+}
+
+func (j *JwtResponse) GetAud() map[string]interface{} {
+	if j == nil {
+		return nil
+	}
+	return j.Aud
+}
+
+func (j *JwtResponse) GetExtraProperties() map[string]interface{} {
+	return j.extraProperties
+}
+
+func (j *JwtResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler JwtResponse
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*j = JwtResponse(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *j)
+	if err != nil {
+		return err
+	}
+	j.extraProperties = extraProperties
+	j.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (j *JwtResponse) String() string {
+	if len(j.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(j.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(j); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", j)
+}
+
 type KeypadInputPlan struct {
 	// This keeps track of whether the user has enabled keypad input.
 	// By default, it is off.
@@ -42819,6 +43680,7 @@ func (k *KnowledgeBase) String() string {
 type KnowledgeBaseModel string
 
 const (
+	KnowledgeBaseModelGemini25FlashPreview0417     KnowledgeBaseModel = "gemini-2.5-flash-preview-04-17"
 	KnowledgeBaseModelGemini20FlashThinkingExp     KnowledgeBaseModel = "gemini-2.0-flash-thinking-exp"
 	KnowledgeBaseModelGemini20ProExp0205           KnowledgeBaseModel = "gemini-2.0-pro-exp-02-05"
 	KnowledgeBaseModelGemini20Flash                KnowledgeBaseModel = "gemini-2.0-flash"
@@ -42835,6 +43697,8 @@ const (
 
 func NewKnowledgeBaseModelFromString(s string) (KnowledgeBaseModel, error) {
 	switch s {
+	case "gemini-2.5-flash-preview-04-17":
+		return KnowledgeBaseModelGemini25FlashPreview0417, nil
 	case "gemini-2.0-flash-thinking-exp":
 		return KnowledgeBaseModelGemini20FlashThinkingExp, nil
 	case "gemini-2.0-pro-exp-02-05":
@@ -43459,6 +44323,8 @@ func (l *LmntCredential) String() string {
 }
 
 type LmntVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used.
 	// This is the provider-specific ID that will be used.
 	VoiceId *LmntVoiceId `json:"voiceId,omitempty" url:"voiceId,omitempty"`
@@ -43472,6 +44338,13 @@ type LmntVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (l *LmntVoice) GetCachingEnabled() *bool {
+	if l == nil {
+		return nil
+	}
+	return l.CachingEnabled
 }
 
 func (l *LmntVoice) GetVoiceId() *LmntVoiceId {
@@ -44619,6 +45492,71 @@ func (m *MonitorPlan) String() string {
 	return fmt.Sprintf("%#v", m)
 }
 
+type Mono struct {
+	// This is the combined recording url for the call. To enable, set `assistant.artifactPlan.recordingEnabled`.
+	CombinedUrl *string `json:"combinedUrl,omitempty" url:"combinedUrl,omitempty"`
+	// This is the mono recording url for the assistant. To enable, set `assistant.artifactPlan.recordingEnabled`.
+	AssistantUrl *string `json:"assistantUrl,omitempty" url:"assistantUrl,omitempty"`
+	// This is the mono recording url for the customer. To enable, set `assistant.artifactPlan.recordingEnabled`.
+	CustomerUrl *string `json:"customerUrl,omitempty" url:"customerUrl,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (m *Mono) GetCombinedUrl() *string {
+	if m == nil {
+		return nil
+	}
+	return m.CombinedUrl
+}
+
+func (m *Mono) GetAssistantUrl() *string {
+	if m == nil {
+		return nil
+	}
+	return m.AssistantUrl
+}
+
+func (m *Mono) GetCustomerUrl() *string {
+	if m == nil {
+		return nil
+	}
+	return m.CustomerUrl
+}
+
+func (m *Mono) GetExtraProperties() map[string]interface{} {
+	return m.extraProperties
+}
+
+func (m *Mono) UnmarshalJSON(data []byte) error {
+	type unmarshaler Mono
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*m = Mono(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *m)
+	if err != nil {
+		return err
+	}
+	m.extraProperties = extraProperties
+	m.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (m *Mono) String() string {
+	if len(m.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(m); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", m)
+}
+
 type NeetsVoice struct {
 	VoiceId interface{} `json:"voiceId,omitempty" url:"voiceId,omitempty"`
 
@@ -44792,6 +45730,8 @@ func (n *NeuphonicCredential) String() string {
 }
 
 type NeuphonicVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used.
 	// This is the provider-specific ID that will be used.
 	VoiceId string `json:"voiceId" url:"voiceId"`
@@ -44809,6 +45749,13 @@ type NeuphonicVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (n *NeuphonicVoice) GetCachingEnabled() *bool {
+	if n == nil {
+		return nil
+	}
+	return n.CachingEnabled
 }
 
 func (n *NeuphonicVoice) GetVoiceId() string {
@@ -44934,6 +45881,7 @@ func (n NeuphonicVoiceModel) Ptr() *NeuphonicVoiceModel {
 }
 
 type OAuth2AuthenticationPlan struct {
+	Type OAuth2AuthenticationPlanType `json:"type" url:"type"`
 	// This is the OAuth2 URL.
 	Url string `json:"url" url:"url"`
 	// This is the OAuth2 client ID.
@@ -44942,10 +45890,16 @@ type OAuth2AuthenticationPlan struct {
 	ClientSecret string `json:"clientSecret" url:"clientSecret"`
 	// This is the scope of the OAuth2 token.
 	Scope *string `json:"scope,omitempty" url:"scope,omitempty"`
-	type_ string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (o *OAuth2AuthenticationPlan) GetType() OAuth2AuthenticationPlanType {
+	if o == nil {
+		return ""
+	}
+	return o.Type
 }
 
 func (o *OAuth2AuthenticationPlan) GetUrl() string {
@@ -44976,49 +45930,24 @@ func (o *OAuth2AuthenticationPlan) GetScope() *string {
 	return o.Scope
 }
 
-func (o *OAuth2AuthenticationPlan) Type() string {
-	return o.type_
-}
-
 func (o *OAuth2AuthenticationPlan) GetExtraProperties() map[string]interface{} {
 	return o.extraProperties
 }
 
 func (o *OAuth2AuthenticationPlan) UnmarshalJSON(data []byte) error {
-	type embed OAuth2AuthenticationPlan
-	var unmarshaler = struct {
-		embed
-		Type string `json:"type"`
-	}{
-		embed: embed(*o),
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+	type unmarshaler OAuth2AuthenticationPlan
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*o = OAuth2AuthenticationPlan(unmarshaler.embed)
-	if unmarshaler.Type != "oauth2" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", o, "oauth2", unmarshaler.Type)
-	}
-	o.type_ = unmarshaler.Type
-	extraProperties, err := internal.ExtractExtraProperties(data, *o, "type")
+	*o = OAuth2AuthenticationPlan(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *o)
 	if err != nil {
 		return err
 	}
 	o.extraProperties = extraProperties
 	o.rawJSON = json.RawMessage(data)
 	return nil
-}
-
-func (o *OAuth2AuthenticationPlan) MarshalJSON() ([]byte, error) {
-	type embed OAuth2AuthenticationPlan
-	var marshaler = struct {
-		embed
-		Type string `json:"type"`
-	}{
-		embed: embed(*o),
-		Type:  "oauth2",
-	}
-	return json.Marshal(marshaler)
 }
 
 func (o *OAuth2AuthenticationPlan) String() string {
@@ -45031,6 +45960,28 @@ func (o *OAuth2AuthenticationPlan) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", o)
+}
+
+type OAuth2AuthenticationPlanType string
+
+const (
+	OAuth2AuthenticationPlanTypeOauth2 OAuth2AuthenticationPlanType = "oauth2"
+	OAuth2AuthenticationPlanTypeAwsSts OAuth2AuthenticationPlanType = "aws-sts"
+)
+
+func NewOAuth2AuthenticationPlanTypeFromString(s string) (OAuth2AuthenticationPlanType, error) {
+	switch s {
+	case "oauth2":
+		return OAuth2AuthenticationPlanTypeOauth2, nil
+	case "aws-sts":
+		return OAuth2AuthenticationPlanTypeAwsSts, nil
+	}
+	var t OAuth2AuthenticationPlanType
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (o OAuth2AuthenticationPlanType) Ptr() *OAuth2AuthenticationPlanType {
+	return &o
 }
 
 type Oauth2AuthenticationSession struct {
@@ -45767,7 +46718,9 @@ const (
 	OpenAiModelFallbackModelsItemGpt41Nano                        OpenAiModelFallbackModelsItem = "gpt-4.1-nano"
 	OpenAiModelFallbackModelsItemGpt45Preview                     OpenAiModelFallbackModelsItem = "gpt-4.5-preview"
 	OpenAiModelFallbackModelsItemChatgpt4OLatest                  OpenAiModelFallbackModelsItem = "chatgpt-4o-latest"
+	OpenAiModelFallbackModelsItemO3                               OpenAiModelFallbackModelsItem = "o3"
 	OpenAiModelFallbackModelsItemO3Mini                           OpenAiModelFallbackModelsItem = "o3-mini"
+	OpenAiModelFallbackModelsItemO4Mini                           OpenAiModelFallbackModelsItem = "o4-mini"
 	OpenAiModelFallbackModelsItemO1Preview                        OpenAiModelFallbackModelsItem = "o1-preview"
 	OpenAiModelFallbackModelsItemO1Preview20240912                OpenAiModelFallbackModelsItem = "o1-preview-2024-09-12"
 	OpenAiModelFallbackModelsItemO1Mini                           OpenAiModelFallbackModelsItem = "o1-mini"
@@ -45807,8 +46760,12 @@ func NewOpenAiModelFallbackModelsItemFromString(s string) (OpenAiModelFallbackMo
 		return OpenAiModelFallbackModelsItemGpt45Preview, nil
 	case "chatgpt-4o-latest":
 		return OpenAiModelFallbackModelsItemChatgpt4OLatest, nil
+	case "o3":
+		return OpenAiModelFallbackModelsItemO3, nil
 	case "o3-mini":
 		return OpenAiModelFallbackModelsItemO3Mini, nil
+	case "o4-mini":
+		return OpenAiModelFallbackModelsItemO4Mini, nil
 	case "o1-preview":
 		return OpenAiModelFallbackModelsItemO1Preview, nil
 	case "o1-preview-2024-09-12":
@@ -45877,7 +46834,9 @@ const (
 	OpenAiModelModelGpt41Nano                        OpenAiModelModel = "gpt-4.1-nano"
 	OpenAiModelModelGpt45Preview                     OpenAiModelModel = "gpt-4.5-preview"
 	OpenAiModelModelChatgpt4OLatest                  OpenAiModelModel = "chatgpt-4o-latest"
+	OpenAiModelModelO3                               OpenAiModelModel = "o3"
 	OpenAiModelModelO3Mini                           OpenAiModelModel = "o3-mini"
+	OpenAiModelModelO4Mini                           OpenAiModelModel = "o4-mini"
 	OpenAiModelModelO1Preview                        OpenAiModelModel = "o1-preview"
 	OpenAiModelModelO1Preview20240912                OpenAiModelModel = "o1-preview-2024-09-12"
 	OpenAiModelModelO1Mini                           OpenAiModelModel = "o1-mini"
@@ -45917,8 +46876,12 @@ func NewOpenAiModelModelFromString(s string) (OpenAiModelModel, error) {
 		return OpenAiModelModelGpt45Preview, nil
 	case "chatgpt-4o-latest":
 		return OpenAiModelModelChatgpt4OLatest, nil
+	case "o3":
+		return OpenAiModelModelO3, nil
 	case "o3-mini":
 		return OpenAiModelModelO3Mini, nil
+	case "o4-mini":
+		return OpenAiModelModelO4Mini, nil
 	case "o1-preview":
 		return OpenAiModelModelO1Preview, nil
 	case "o1-preview-2024-09-12":
@@ -46554,6 +47517,8 @@ func (o OpenAiTranscriberModel) Ptr() *OpenAiTranscriberModel {
 }
 
 type OpenAiVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used.
 	// This is the provider-specific ID that will be used.
 	// Please note that ash, ballad, coral, sage, and verse may only be used with realtime models.
@@ -46573,6 +47538,13 @@ type OpenAiVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (o *OpenAiVoice) GetCachingEnabled() *bool {
+	if o == nil {
+		return nil
+	}
+	return o.CachingEnabled
 }
 
 func (o *OpenAiVoice) GetVoiceId() *OpenAiVoiceId {
@@ -46701,22 +47673,37 @@ func (o OpenAiVoiceModel) Ptr() *OpenAiVoiceModel {
 }
 
 type OpenAiVoicemailDetectionPlan struct {
-	// This is the provider to use for voicemail detection.
-	// This is how long should we listen in order to determine if we were sent to voicemail or not?
+	// This is the maximum duration from the start of the call that we will wait for a voicemail beep, before speaking our message
 	//
-	// @default 15
-	VoicemailExpectedDurationSeconds float64 `json:"voicemailExpectedDurationSeconds" url:"voicemailExpectedDurationSeconds"`
-	provider                         string
+	// - If we detect a voicemail beep before this, we will speak the message at that point.
+	//
+	// - Setting too low a value means that the bot will start speaking its voicemail message too early. If it does so before the actual beep, it will get cut off. You should definitely tune this to your use case.
+	//
+	// @default 30
+	// @min 0
+	// @max 60
+	BeepMaxAwaitSeconds *float64 `json:"beepMaxAwaitSeconds,omitempty" url:"beepMaxAwaitSeconds,omitempty"`
+	// This is the provider to use for voicemail detection.
+	// This is the backoff plan for the voicemail detection.
+	BackoffPlan *VoicemailDetectionBackoffPlan `json:"backoffPlan,omitempty" url:"backoffPlan,omitempty"`
+	provider    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
 }
 
-func (o *OpenAiVoicemailDetectionPlan) GetVoicemailExpectedDurationSeconds() float64 {
+func (o *OpenAiVoicemailDetectionPlan) GetBeepMaxAwaitSeconds() *float64 {
 	if o == nil {
-		return 0
+		return nil
 	}
-	return o.VoicemailExpectedDurationSeconds
+	return o.BeepMaxAwaitSeconds
+}
+
+func (o *OpenAiVoicemailDetectionPlan) GetBackoffPlan() *VoicemailDetectionBackoffPlan {
+	if o == nil {
+		return nil
+	}
+	return o.BackoffPlan
 }
 
 func (o *OpenAiVoicemailDetectionPlan) Provider() string {
@@ -47366,6 +48353,8 @@ type Org struct {
 	StripeSubscriptionStatus *string `json:"stripeSubscriptionStatus,omitempty" url:"stripeSubscriptionStatus,omitempty"`
 	// This is the plan for the org.
 	Plan *OrgPlan `json:"plan,omitempty" url:"plan,omitempty"`
+	// This is the secret key used for signing JWT tokens for the org.
+	JwtSecret *string `json:"jwtSecret,omitempty" url:"jwtSecret,omitempty"`
 	// This is the name of the org. This is just for your own reference.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the channel of the org. There is the cluster the API traffic for the org will be directed.
@@ -47476,6 +48465,13 @@ func (o *Org) GetPlan() *OrgPlan {
 		return nil
 	}
 	return o.Plan
+}
+
+func (o *Org) GetJwtSecret() *string {
+	if o == nil {
+		return nil
+	}
+	return o.JwtSecret
 }
 
 func (o *Org) GetName() *string {
@@ -48364,42 +49360,63 @@ func (p *PhoneNumberHookCallRinging) String() string {
 }
 
 type PhoneNumberHookCallRingingDoItem struct {
-	Unknown interface{}
+	TransferPhoneNumberHookAction *TransferPhoneNumberHookAction
+	SayPhoneNumberHookAction      *SayPhoneNumberHookAction
 
 	typ string
 }
 
-func (p *PhoneNumberHookCallRingingDoItem) GetUnknown() interface{} {
+func (p *PhoneNumberHookCallRingingDoItem) GetTransferPhoneNumberHookAction() *TransferPhoneNumberHookAction {
 	if p == nil {
 		return nil
 	}
-	return p.Unknown
+	return p.TransferPhoneNumberHookAction
+}
+
+func (p *PhoneNumberHookCallRingingDoItem) GetSayPhoneNumberHookAction() *SayPhoneNumberHookAction {
+	if p == nil {
+		return nil
+	}
+	return p.SayPhoneNumberHookAction
 }
 
 func (p *PhoneNumberHookCallRingingDoItem) UnmarshalJSON(data []byte) error {
-	var valueUnknown interface{}
-	if err := json.Unmarshal(data, &valueUnknown); err == nil {
-		p.typ = "Unknown"
-		p.Unknown = valueUnknown
+	valueTransferPhoneNumberHookAction := new(TransferPhoneNumberHookAction)
+	if err := json.Unmarshal(data, &valueTransferPhoneNumberHookAction); err == nil {
+		p.typ = "TransferPhoneNumberHookAction"
+		p.TransferPhoneNumberHookAction = valueTransferPhoneNumberHookAction
+		return nil
+	}
+	valueSayPhoneNumberHookAction := new(SayPhoneNumberHookAction)
+	if err := json.Unmarshal(data, &valueSayPhoneNumberHookAction); err == nil {
+		p.typ = "SayPhoneNumberHookAction"
+		p.SayPhoneNumberHookAction = valueSayPhoneNumberHookAction
 		return nil
 	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, p)
 }
 
 func (p PhoneNumberHookCallRingingDoItem) MarshalJSON() ([]byte, error) {
-	if p.typ == "Unknown" || p.Unknown != nil {
-		return json.Marshal(p.Unknown)
+	if p.typ == "TransferPhoneNumberHookAction" || p.TransferPhoneNumberHookAction != nil {
+		return json.Marshal(p.TransferPhoneNumberHookAction)
+	}
+	if p.typ == "SayPhoneNumberHookAction" || p.SayPhoneNumberHookAction != nil {
+		return json.Marshal(p.SayPhoneNumberHookAction)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", p)
 }
 
 type PhoneNumberHookCallRingingDoItemVisitor interface {
-	VisitUnknown(interface{}) error
+	VisitTransferPhoneNumberHookAction(*TransferPhoneNumberHookAction) error
+	VisitSayPhoneNumberHookAction(*SayPhoneNumberHookAction) error
 }
 
 func (p *PhoneNumberHookCallRingingDoItem) Accept(visitor PhoneNumberHookCallRingingDoItemVisitor) error {
-	if p.typ == "Unknown" || p.Unknown != nil {
-		return visitor.VisitUnknown(p.Unknown)
+	if p.typ == "TransferPhoneNumberHookAction" || p.TransferPhoneNumberHookAction != nil {
+		return visitor.VisitTransferPhoneNumberHookAction(p.TransferPhoneNumberHookAction)
+	}
+	if p.typ == "SayPhoneNumberHookAction" || p.SayPhoneNumberHookAction != nil {
+		return visitor.VisitSayPhoneNumberHookAction(p.SayPhoneNumberHookAction)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", p)
 }
@@ -48829,6 +49846,8 @@ func (p *PlayHtCredential) String() string {
 }
 
 type PlayHtVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used.
 	// This is the provider-specific ID that will be used.
 	VoiceId *PlayHtVoiceId `json:"voiceId,omitempty" url:"voiceId,omitempty"`
@@ -48856,6 +49875,13 @@ type PlayHtVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (p *PlayHtVoice) GetCachingEnabled() *bool {
+	if p == nil {
+		return nil
+	}
+	return p.CachingEnabled
 }
 
 func (p *PlayHtVoice) GetVoiceId() *PlayHtVoiceId {
@@ -49276,6 +50302,80 @@ func NewPunctuationBoundaryFromString(s string) (PunctuationBoundary, error) {
 
 func (p PunctuationBoundary) Ptr() *PunctuationBoundary {
 	return &p
+}
+
+type Recording struct {
+	// This is the stereo recording url for the call. To enable, set `assistant.artifactPlan.recordingEnabled`.
+	StereoUrl *string `json:"stereoUrl,omitempty" url:"stereoUrl,omitempty"`
+	// This is the video recording url for the call. To enable, set `assistant.artifactPlan.videoRecordingEnabled`.
+	VideoUrl *string `json:"videoUrl,omitempty" url:"videoUrl,omitempty"`
+	// This is video recording start delay in ms. To enable, set `assistant.artifactPlan.videoRecordingEnabled`. This can be used to align the playback of the recording with artifact.messages timestamps.
+	VideoRecordingStartDelaySeconds *float64 `json:"videoRecordingStartDelaySeconds,omitempty" url:"videoRecordingStartDelaySeconds,omitempty"`
+	// This is the mono recording url for the call. To enable, set `assistant.artifactPlan.recordingEnabled`.
+	Mono *Mono `json:"mono,omitempty" url:"mono,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *Recording) GetStereoUrl() *string {
+	if r == nil {
+		return nil
+	}
+	return r.StereoUrl
+}
+
+func (r *Recording) GetVideoUrl() *string {
+	if r == nil {
+		return nil
+	}
+	return r.VideoUrl
+}
+
+func (r *Recording) GetVideoRecordingStartDelaySeconds() *float64 {
+	if r == nil {
+		return nil
+	}
+	return r.VideoRecordingStartDelaySeconds
+}
+
+func (r *Recording) GetMono() *Mono {
+	if r == nil {
+		return nil
+	}
+	return r.Mono
+}
+
+func (r *Recording) GetExtraProperties() map[string]interface{} {
+	return r.extraProperties
+}
+
+func (r *Recording) UnmarshalJSON(data []byte) error {
+	type unmarshaler Recording
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = Recording(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *Recording) String() string {
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
 }
 
 type RegexOption struct {
@@ -49930,6 +51030,8 @@ func (r *RimeAiCredential) String() string {
 }
 
 type RimeAiVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used.
 	// This is the provider-specific ID that will be used.
 	VoiceId *RimeAiVoiceId `json:"voiceId,omitempty" url:"voiceId,omitempty"`
@@ -49953,6 +51055,13 @@ type RimeAiVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (r *RimeAiVoice) GetCachingEnabled() *bool {
+	if r == nil {
+		return nil
+	}
+	return r.CachingEnabled
 }
 
 func (r *RimeAiVoice) GetVoiceId() *RimeAiVoiceId {
@@ -50565,6 +51674,80 @@ func (s *SayHook) MarshalJSON() ([]byte, error) {
 }
 
 func (s *SayHook) String() string {
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SayPhoneNumberHookAction struct {
+	// This is the type of action - must be "say"
+	// This is the message to say
+	Exact string `json:"exact" url:"exact"`
+	type_ string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SayPhoneNumberHookAction) GetExact() string {
+	if s == nil {
+		return ""
+	}
+	return s.Exact
+}
+
+func (s *SayPhoneNumberHookAction) Type() string {
+	return s.type_
+}
+
+func (s *SayPhoneNumberHookAction) GetExtraProperties() map[string]interface{} {
+	return s.extraProperties
+}
+
+func (s *SayPhoneNumberHookAction) UnmarshalJSON(data []byte) error {
+	type embed SayPhoneNumberHookAction
+	var unmarshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*s),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*s = SayPhoneNumberHookAction(unmarshaler.embed)
+	if unmarshaler.Type != "say" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", s, "say", unmarshaler.Type)
+	}
+	s.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *s, "type")
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SayPhoneNumberHookAction) MarshalJSON() ([]byte, error) {
+	type embed SayPhoneNumberHookAction
+	var marshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*s),
+		Type:  "say",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (s *SayPhoneNumberHookAction) String() string {
 	if len(s.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
 			return value
@@ -51859,6 +53042,8 @@ const (
 	ServerMessageEndOfCallReportEndedReasonVonageFailedToConnectCall                                                                                 ServerMessageEndOfCallReportEndedReason = "vonage-failed-to-connect-call"
 	ServerMessageEndOfCallReportEndedReasonVonageCompleted                                                                                           ServerMessageEndOfCallReportEndedReason = "vonage-completed"
 	ServerMessageEndOfCallReportEndedReasonPhoneCallProviderBypassEnabledButNoCallReceived                                                           ServerMessageEndOfCallReportEndedReason = "phone-call-provider-bypass-enabled-but-no-call-received"
+	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorProviderfaultTransportNeverConnected                                                   ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-providerfault-transport-never-connected"
+	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultWorkerNotAvailable                                                            ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-vapifault-worker-not-available"
 	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultTransportNeverConnected                                                       ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-vapifault-transport-never-connected"
 	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultTransportConnectedButCallNotActive                                            ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-vapifault-transport-connected-but-call-not-active"
 	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultCallStartedButConnectionToTransportMissing                                    ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-vapifault-call-started-but-connection-to-transport-missing"
@@ -52247,6 +53432,7 @@ const (
 	ServerMessageEndOfCallReportEndedReasonExceededMaxDuration                                                                                       ServerMessageEndOfCallReportEndedReason = "exceeded-max-duration"
 	ServerMessageEndOfCallReportEndedReasonManuallyCanceled                                                                                          ServerMessageEndOfCallReportEndedReason = "manually-canceled"
 	ServerMessageEndOfCallReportEndedReasonPhoneCallProviderClosedWebsocket                                                                          ServerMessageEndOfCallReportEndedReason = "phone-call-provider-closed-websocket"
+	ServerMessageEndOfCallReportEndedReasonCallForwardingOperatorBusy                                                                                ServerMessageEndOfCallReportEndedReason = "call.forwarding.operator-busy"
 	ServerMessageEndOfCallReportEndedReasonSilenceTimedOut                                                                                           ServerMessageEndOfCallReportEndedReason = "silence-timed-out"
 	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorSipTelephonyProviderFailedToConnectCall                                                ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-sip-telephony-provider-failed-to-connect-call"
 	ServerMessageEndOfCallReportEndedReasonCallRingingHookExecutedSay                                                                                ServerMessageEndOfCallReportEndedReason = "call.ringing.hook-executed-say"
@@ -52435,6 +53621,10 @@ func NewServerMessageEndOfCallReportEndedReasonFromString(s string) (ServerMessa
 		return ServerMessageEndOfCallReportEndedReasonVonageCompleted, nil
 	case "phone-call-provider-bypass-enabled-but-no-call-received":
 		return ServerMessageEndOfCallReportEndedReasonPhoneCallProviderBypassEnabledButNoCallReceived, nil
+	case "call.in-progress.error-providerfault-transport-never-connected":
+		return ServerMessageEndOfCallReportEndedReasonCallInProgressErrorProviderfaultTransportNeverConnected, nil
+	case "call.in-progress.error-vapifault-worker-not-available":
+		return ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultWorkerNotAvailable, nil
 	case "call.in-progress.error-vapifault-transport-never-connected":
 		return ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultTransportNeverConnected, nil
 	case "call.in-progress.error-vapifault-transport-connected-but-call-not-active":
@@ -53211,6 +54401,8 @@ func NewServerMessageEndOfCallReportEndedReasonFromString(s string) (ServerMessa
 		return ServerMessageEndOfCallReportEndedReasonManuallyCanceled, nil
 	case "phone-call-provider-closed-websocket":
 		return ServerMessageEndOfCallReportEndedReasonPhoneCallProviderClosedWebsocket, nil
+	case "call.forwarding.operator-busy":
+		return ServerMessageEndOfCallReportEndedReasonCallForwardingOperatorBusy, nil
 	case "silence-timed-out":
 		return ServerMessageEndOfCallReportEndedReasonSilenceTimedOut, nil
 	case "call.in-progress.error-sip-telephony-provider-failed-to-connect-call":
@@ -56636,6 +57828,8 @@ const (
 	ServerMessageStatusUpdateEndedReasonVonageFailedToConnectCall                                                                                 ServerMessageStatusUpdateEndedReason = "vonage-failed-to-connect-call"
 	ServerMessageStatusUpdateEndedReasonVonageCompleted                                                                                           ServerMessageStatusUpdateEndedReason = "vonage-completed"
 	ServerMessageStatusUpdateEndedReasonPhoneCallProviderBypassEnabledButNoCallReceived                                                           ServerMessageStatusUpdateEndedReason = "phone-call-provider-bypass-enabled-but-no-call-received"
+	ServerMessageStatusUpdateEndedReasonCallInProgressErrorProviderfaultTransportNeverConnected                                                   ServerMessageStatusUpdateEndedReason = "call.in-progress.error-providerfault-transport-never-connected"
+	ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultWorkerNotAvailable                                                            ServerMessageStatusUpdateEndedReason = "call.in-progress.error-vapifault-worker-not-available"
 	ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultTransportNeverConnected                                                       ServerMessageStatusUpdateEndedReason = "call.in-progress.error-vapifault-transport-never-connected"
 	ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultTransportConnectedButCallNotActive                                            ServerMessageStatusUpdateEndedReason = "call.in-progress.error-vapifault-transport-connected-but-call-not-active"
 	ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultCallStartedButConnectionToTransportMissing                                    ServerMessageStatusUpdateEndedReason = "call.in-progress.error-vapifault-call-started-but-connection-to-transport-missing"
@@ -57024,6 +58218,7 @@ const (
 	ServerMessageStatusUpdateEndedReasonExceededMaxDuration                                                                                       ServerMessageStatusUpdateEndedReason = "exceeded-max-duration"
 	ServerMessageStatusUpdateEndedReasonManuallyCanceled                                                                                          ServerMessageStatusUpdateEndedReason = "manually-canceled"
 	ServerMessageStatusUpdateEndedReasonPhoneCallProviderClosedWebsocket                                                                          ServerMessageStatusUpdateEndedReason = "phone-call-provider-closed-websocket"
+	ServerMessageStatusUpdateEndedReasonCallForwardingOperatorBusy                                                                                ServerMessageStatusUpdateEndedReason = "call.forwarding.operator-busy"
 	ServerMessageStatusUpdateEndedReasonSilenceTimedOut                                                                                           ServerMessageStatusUpdateEndedReason = "silence-timed-out"
 	ServerMessageStatusUpdateEndedReasonCallInProgressErrorSipTelephonyProviderFailedToConnectCall                                                ServerMessageStatusUpdateEndedReason = "call.in-progress.error-sip-telephony-provider-failed-to-connect-call"
 	ServerMessageStatusUpdateEndedReasonCallRingingHookExecutedSay                                                                                ServerMessageStatusUpdateEndedReason = "call.ringing.hook-executed-say"
@@ -57212,6 +58407,10 @@ func NewServerMessageStatusUpdateEndedReasonFromString(s string) (ServerMessageS
 		return ServerMessageStatusUpdateEndedReasonVonageCompleted, nil
 	case "phone-call-provider-bypass-enabled-but-no-call-received":
 		return ServerMessageStatusUpdateEndedReasonPhoneCallProviderBypassEnabledButNoCallReceived, nil
+	case "call.in-progress.error-providerfault-transport-never-connected":
+		return ServerMessageStatusUpdateEndedReasonCallInProgressErrorProviderfaultTransportNeverConnected, nil
+	case "call.in-progress.error-vapifault-worker-not-available":
+		return ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultWorkerNotAvailable, nil
 	case "call.in-progress.error-vapifault-transport-never-connected":
 		return ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultTransportNeverConnected, nil
 	case "call.in-progress.error-vapifault-transport-connected-but-call-not-active":
@@ -57988,6 +59187,8 @@ func NewServerMessageStatusUpdateEndedReasonFromString(s string) (ServerMessageS
 		return ServerMessageStatusUpdateEndedReasonManuallyCanceled, nil
 	case "phone-call-provider-closed-websocket":
 		return ServerMessageStatusUpdateEndedReasonPhoneCallProviderClosedWebsocket, nil
+	case "call.forwarding.operator-busy":
+		return ServerMessageStatusUpdateEndedReasonCallForwardingOperatorBusy, nil
 	case "silence-timed-out":
 		return ServerMessageStatusUpdateEndedReasonSilenceTimedOut, nil
 	case "call.in-progress.error-sip-telephony-provider-failed-to-connect-call":
@@ -61151,6 +62352,8 @@ func (s *SmallestAiCredential) String() string {
 }
 
 type SmallestAiVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used.
 	// This is the provider-specific ID that will be used.
 	VoiceId *SmallestAiVoiceId `json:"voiceId,omitempty" url:"voiceId,omitempty"`
@@ -61166,6 +62369,13 @@ type SmallestAiVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (s *SmallestAiVoice) GetCachingEnabled() *bool {
+	if s == nil {
+		return nil
+	}
+	return s.CachingEnabled
 }
 
 func (s *SmallestAiVoice) GetVoiceId() *SmallestAiVoiceId {
@@ -61723,6 +62933,87 @@ func (s *SquadMemberDto) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
+type Start struct {
+	Name string `json:"name" url:"name"`
+	// This is for metadata you want to store on the task.
+	Metadata map[string]interface{} `json:"metadata,omitempty" url:"metadata,omitempty"`
+	type_    string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *Start) GetName() string {
+	if s == nil {
+		return ""
+	}
+	return s.Name
+}
+
+func (s *Start) GetMetadata() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.Metadata
+}
+
+func (s *Start) Type() string {
+	return s.type_
+}
+
+func (s *Start) GetExtraProperties() map[string]interface{} {
+	return s.extraProperties
+}
+
+func (s *Start) UnmarshalJSON(data []byte) error {
+	type embed Start
+	var unmarshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*s),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*s = Start(unmarshaler.embed)
+	if unmarshaler.Type != "start" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", s, "start", unmarshaler.Type)
+	}
+	s.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *s, "type")
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *Start) MarshalJSON() ([]byte, error) {
+	type embed Start
+	var marshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*s),
+		Type:  "start",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (s *Start) String() string {
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
 type StartSpeakingPlan struct {
 	// This is how long assistant waits before speaking. Defaults to 0.4.
 	//
@@ -61736,8 +63027,8 @@ type StartSpeakingPlan struct {
 	// - If the assistant is accidentally jumping in too much, set this to a higher value.
 	//
 	// @default 0.4
-	WaitSeconds             *float64               `json:"waitSeconds,omitempty" url:"waitSeconds,omitempty"`
-	SmartEndpointingEnabled map[string]interface{} `json:"smartEndpointingEnabled,omitempty" url:"smartEndpointingEnabled,omitempty"`
+	WaitSeconds             *float64                                  `json:"waitSeconds,omitempty" url:"waitSeconds,omitempty"`
+	SmartEndpointingEnabled *StartSpeakingPlanSmartEndpointingEnabled `json:"smartEndpointingEnabled,omitempty" url:"smartEndpointingEnabled,omitempty"`
 	// This is the plan for smart endpointing. Pick between Vapi smart endpointing or LiveKit smart endpointing (or nothing). We strongly recommend using livekit endpointing when working in English. LiveKit endpointing is not supported in other languages, yet.
 	//
 	// If this is set, it will override and take precedence over `transcriptionEndpointingPlan`.
@@ -61780,7 +63071,7 @@ func (s *StartSpeakingPlan) GetWaitSeconds() *float64 {
 	return s.WaitSeconds
 }
 
-func (s *StartSpeakingPlan) GetSmartEndpointingEnabled() map[string]interface{} {
+func (s *StartSpeakingPlan) GetSmartEndpointingEnabled() *StartSpeakingPlanSmartEndpointingEnabled {
 	if s == nil {
 		return nil
 	}
@@ -61919,6 +63210,68 @@ func (s *StartSpeakingPlanCustomEndpointingRulesItem) Accept(visitor StartSpeaki
 	}
 	if s.typ == "BothCustomEndpointingRule" || s.BothCustomEndpointingRule != nil {
 		return visitor.VisitBothCustomEndpointingRule(s.BothCustomEndpointingRule)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", s)
+}
+
+type StartSpeakingPlanSmartEndpointingEnabled struct {
+	Boolean              bool
+	LivekitStringLiteral string
+
+	typ string
+}
+
+func NewStartSpeakingPlanSmartEndpointingEnabledWithLivekitStringLiteral() *StartSpeakingPlanSmartEndpointingEnabled {
+	return &StartSpeakingPlanSmartEndpointingEnabled{typ: "LivekitStringLiteral", LivekitStringLiteral: "livekit"}
+}
+
+func (s *StartSpeakingPlanSmartEndpointingEnabled) GetBoolean() bool {
+	if s == nil {
+		return false
+	}
+	return s.Boolean
+}
+
+func (s *StartSpeakingPlanSmartEndpointingEnabled) UnmarshalJSON(data []byte) error {
+	var valueBoolean bool
+	if err := json.Unmarshal(data, &valueBoolean); err == nil {
+		s.typ = "Boolean"
+		s.Boolean = valueBoolean
+		return nil
+	}
+	var valueLivekitStringLiteral string
+	if err := json.Unmarshal(data, &valueLivekitStringLiteral); err == nil {
+		s.typ = "LivekitStringLiteral"
+		s.LivekitStringLiteral = valueLivekitStringLiteral
+		if s.LivekitStringLiteral != "livekit" {
+			return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", s, "livekit", valueLivekitStringLiteral)
+		}
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
+}
+
+func (s StartSpeakingPlanSmartEndpointingEnabled) MarshalJSON() ([]byte, error) {
+	if s.typ == "Boolean" || s.Boolean != false {
+		return json.Marshal(s.Boolean)
+	}
+	if s.typ == "LivekitStringLiteral" || s.LivekitStringLiteral != "" {
+		return json.Marshal("livekit")
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
+}
+
+type StartSpeakingPlanSmartEndpointingEnabledVisitor interface {
+	VisitBoolean(bool) error
+	VisitLivekitStringLiteral(string) error
+}
+
+func (s *StartSpeakingPlanSmartEndpointingEnabled) Accept(visitor StartSpeakingPlanSmartEndpointingEnabledVisitor) error {
+	if s.typ == "Boolean" || s.Boolean != false {
+		return visitor.VisitBoolean(s.Boolean)
+	}
+	if s.typ == "LivekitStringLiteral" || s.LivekitStringLiteral != "" {
+		return visitor.VisitLivekitStringLiteral(s.LivekitStringLiteral)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
@@ -64117,6 +65470,8 @@ func (t *TavusCredential) String() string {
 }
 
 type TavusVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used.
 	// This is the provider-specific ID that will be used.
 	VoiceId *TavusVoiceVoiceId `json:"voiceId,omitempty" url:"voiceId,omitempty"`
@@ -64140,6 +65495,13 @@ type TavusVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (t *TavusVoice) GetCachingEnabled() *bool {
+	if t == nil {
+		return nil
+	}
+	return t.CachingEnabled
 }
 
 func (t *TavusVoice) GetVoiceId() *TavusVoiceVoiceId {
@@ -67044,6 +68406,8 @@ type ToolCallResult struct {
 	// 2. a `request-failed` message from `tool.messages`, if it exists
 	// 3. a response generated by the model, if neither exist
 	Error *string `json:"error,omitempty" url:"error,omitempty"`
+	// This is optional metadata for the tool call result to be sent to the client.
+	Metadata map[string]interface{} `json:"metadata,omitempty" url:"metadata,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -67082,6 +68446,13 @@ func (t *ToolCallResult) GetError() *string {
 		return nil
 	}
 	return t.Error
+}
+
+func (t *ToolCallResult) GetMetadata() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.Metadata
 }
 
 func (t *ToolCallResult) GetExtraProperties() map[string]interface{} {
@@ -67129,6 +68500,8 @@ type ToolCallResultMessage struct {
 	Time float64 `json:"time" url:"time"`
 	// The number of seconds from the start of the conversation.
 	SecondsFromStart float64 `json:"secondsFromStart" url:"secondsFromStart"`
+	// The metadata for the tool call result.
+	Metadata map[string]interface{} `json:"metadata,omitempty" url:"metadata,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -67174,6 +68547,13 @@ func (t *ToolCallResultMessage) GetSecondsFromStart() float64 {
 		return 0
 	}
 	return t.SecondsFromStart
+}
+
+func (t *ToolCallResultMessage) GetMetadata() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.Metadata
 }
 
 func (t *ToolCallResultMessage) GetExtraProperties() map[string]interface{} {
@@ -69177,6 +70557,143 @@ func (t TransferMode) Ptr() *TransferMode {
 	return &t
 }
 
+type TransferPhoneNumberHookAction struct {
+	// This is the type of action - must be "transfer"
+	// This is the destination details for the transfer - can be a phone number or SIP URI
+	Destination *TransferPhoneNumberHookActionDestination `json:"destination,omitempty" url:"destination,omitempty"`
+	type_       string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TransferPhoneNumberHookAction) GetDestination() *TransferPhoneNumberHookActionDestination {
+	if t == nil {
+		return nil
+	}
+	return t.Destination
+}
+
+func (t *TransferPhoneNumberHookAction) Type() string {
+	return t.type_
+}
+
+func (t *TransferPhoneNumberHookAction) GetExtraProperties() map[string]interface{} {
+	return t.extraProperties
+}
+
+func (t *TransferPhoneNumberHookAction) UnmarshalJSON(data []byte) error {
+	type embed TransferPhoneNumberHookAction
+	var unmarshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*t),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*t = TransferPhoneNumberHookAction(unmarshaler.embed)
+	if unmarshaler.Type != "transfer" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", t, "transfer", unmarshaler.Type)
+	}
+	t.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *t, "type")
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TransferPhoneNumberHookAction) MarshalJSON() ([]byte, error) {
+	type embed TransferPhoneNumberHookAction
+	var marshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*t),
+		Type:  "transfer",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (t *TransferPhoneNumberHookAction) String() string {
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+// This is the destination details for the transfer - can be a phone number or SIP URI
+type TransferPhoneNumberHookActionDestination struct {
+	TransferDestinationNumber *TransferDestinationNumber
+	TransferDestinationSip    *TransferDestinationSip
+
+	typ string
+}
+
+func (t *TransferPhoneNumberHookActionDestination) GetTransferDestinationNumber() *TransferDestinationNumber {
+	if t == nil {
+		return nil
+	}
+	return t.TransferDestinationNumber
+}
+
+func (t *TransferPhoneNumberHookActionDestination) GetTransferDestinationSip() *TransferDestinationSip {
+	if t == nil {
+		return nil
+	}
+	return t.TransferDestinationSip
+}
+
+func (t *TransferPhoneNumberHookActionDestination) UnmarshalJSON(data []byte) error {
+	valueTransferDestinationNumber := new(TransferDestinationNumber)
+	if err := json.Unmarshal(data, &valueTransferDestinationNumber); err == nil {
+		t.typ = "TransferDestinationNumber"
+		t.TransferDestinationNumber = valueTransferDestinationNumber
+		return nil
+	}
+	valueTransferDestinationSip := new(TransferDestinationSip)
+	if err := json.Unmarshal(data, &valueTransferDestinationSip); err == nil {
+		t.typ = "TransferDestinationSip"
+		t.TransferDestinationSip = valueTransferDestinationSip
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, t)
+}
+
+func (t TransferPhoneNumberHookActionDestination) MarshalJSON() ([]byte, error) {
+	if t.typ == "TransferDestinationNumber" || t.TransferDestinationNumber != nil {
+		return json.Marshal(t.TransferDestinationNumber)
+	}
+	if t.typ == "TransferDestinationSip" || t.TransferDestinationSip != nil {
+		return json.Marshal(t.TransferDestinationSip)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", t)
+}
+
+type TransferPhoneNumberHookActionDestinationVisitor interface {
+	VisitTransferDestinationNumber(*TransferDestinationNumber) error
+	VisitTransferDestinationSip(*TransferDestinationSip) error
+}
+
+func (t *TransferPhoneNumberHookActionDestination) Accept(visitor TransferPhoneNumberHookActionDestinationVisitor) error {
+	if t.typ == "TransferDestinationNumber" || t.TransferDestinationNumber != nil {
+		return visitor.VisitTransferDestinationNumber(t.TransferDestinationNumber)
+	}
+	if t.typ == "TransferDestinationSip" || t.TransferDestinationSip != nil {
+		return visitor.VisitTransferDestinationSip(t.TransferDestinationSip)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", t)
+}
+
 type TransferPlan struct {
 	// This configures how transfer is executed and the experience of the destination party receiving the call.
 	//
@@ -69220,6 +70737,10 @@ type TransferPlan struct {
 	// Usage:
 	// - Used only when `mode` is `blind-transfer-add-summary-to-sip-header` or `warm-transfer-say-summary` or `warm-transfer-wait-for-operator-to-speak-first-and-then-say-summary`.
 	SummaryPlan *SummaryPlan `json:"summaryPlan,omitempty" url:"summaryPlan,omitempty"`
+	// This flag includes the sipHeaders from above in the refer to sip uri as url encoded query params.
+	//
+	// @default false
+	SipHeadersInReferToEnabled *bool `json:"sipHeadersInReferToEnabled,omitempty" url:"sipHeadersInReferToEnabled,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -69258,6 +70779,13 @@ func (t *TransferPlan) GetSummaryPlan() *SummaryPlan {
 		return nil
 	}
 	return t.SummaryPlan
+}
+
+func (t *TransferPlan) GetSipHeadersInReferToEnabled() *bool {
+	if t == nil {
+		return nil
+	}
+	return t.SipHeadersInReferToEnabled
 }
 
 func (t *TransferPlan) GetExtraProperties() map[string]interface{} {
@@ -69830,7 +71358,11 @@ func (t *TrieveKnowledgeBaseCreate) String() string {
 
 type TwilioCredential struct {
 	// This is not returned in the API.
-	AuthToken string `json:"authToken" url:"authToken"`
+	AuthToken *string `json:"authToken,omitempty" url:"authToken,omitempty"`
+	// This is not returned in the API.
+	ApiKey *string `json:"apiKey,omitempty" url:"apiKey,omitempty"`
+	// This is not returned in the API.
+	ApiSecret *string `json:"apiSecret,omitempty" url:"apiSecret,omitempty"`
 	// This is the unique identifier for the credential.
 	Id string `json:"id" url:"id"`
 	// This is the unique identifier for the org that this credential belongs to.
@@ -69848,11 +71380,25 @@ type TwilioCredential struct {
 	rawJSON         json.RawMessage
 }
 
-func (t *TwilioCredential) GetAuthToken() string {
+func (t *TwilioCredential) GetAuthToken() *string {
 	if t == nil {
-		return ""
+		return nil
 	}
 	return t.AuthToken
+}
+
+func (t *TwilioCredential) GetApiKey() *string {
+	if t == nil {
+		return nil
+	}
+	return t.ApiKey
+}
+
+func (t *TwilioCredential) GetApiSecret() *string {
+	if t == nil {
+		return nil
+	}
+	return t.ApiSecret
 }
 
 func (t *TwilioCredential) GetId() string {
@@ -73742,6 +75288,10 @@ func (u *UpdateTrieveCredentialDto) String() string {
 type UpdateTwilioCredentialDto struct {
 	// This is not returned in the API.
 	AuthToken *string `json:"authToken,omitempty" url:"authToken,omitempty"`
+	// This is not returned in the API.
+	ApiKey *string `json:"apiKey,omitempty" url:"apiKey,omitempty"`
+	// This is not returned in the API.
+	ApiSecret *string `json:"apiSecret,omitempty" url:"apiSecret,omitempty"`
 	// This is the name of credential. This is just for your reference.
 	Name       *string `json:"name,omitempty" url:"name,omitempty"`
 	AccountSid *string `json:"accountSid,omitempty" url:"accountSid,omitempty"`
@@ -73755,6 +75305,20 @@ func (u *UpdateTwilioCredentialDto) GetAuthToken() *string {
 		return nil
 	}
 	return u.AuthToken
+}
+
+func (u *UpdateTwilioCredentialDto) GetApiKey() *string {
+	if u == nil {
+		return nil
+	}
+	return u.ApiKey
+}
+
+func (u *UpdateTwilioCredentialDto) GetApiSecret() *string {
+	if u == nil {
+		return nil
+	}
+	return u.ApiSecret
 }
 
 func (u *UpdateTwilioCredentialDto) GetName() *string {
@@ -74782,6 +76346,8 @@ func (v VapiSmartEndpointingPlanProvider) Ptr() *VapiSmartEndpointingPlanProvide
 }
 
 type VapiVoice struct {
+	// This is the flag to toggle voice caching for the assistant.
+	CachingEnabled *bool `json:"cachingEnabled,omitempty" url:"cachingEnabled,omitempty"`
 	// This is the voice provider that will be used.
 	// The voices provided by Vapi
 	VoiceId VapiVoiceVoiceId `json:"voiceId" url:"voiceId"`
@@ -74801,6 +76367,13 @@ type VapiVoice struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (v *VapiVoice) GetCachingEnabled() *bool {
+	if v == nil {
+		return nil
+	}
+	return v.CachingEnabled
 }
 
 func (v *VapiVoice) GetVoiceId() VapiVoiceVoiceId {
@@ -75076,6 +76649,97 @@ func NewVapiVoiceVoiceIdFromString(s string) (VapiVoiceVoiceId, error) {
 
 func (v VapiVoiceVoiceId) Ptr() *VapiVoiceVoiceId {
 	return &v
+}
+
+type VapiVoicemailDetectionPlan struct {
+	// This is the maximum duration from the start of the call that we will wait for a voicemail beep, before speaking our message
+	//
+	// - If we detect a voicemail beep before this, we will speak the message at that point.
+	//
+	// - Setting too low a value means that the bot will start speaking its voicemail message too early. If it does so before the actual beep, it will get cut off. You should definitely tune this to your use case.
+	//
+	// @default 30
+	// @min 0
+	// @max 60
+	BeepMaxAwaitSeconds *float64 `json:"beepMaxAwaitSeconds,omitempty" url:"beepMaxAwaitSeconds,omitempty"`
+	// This is the provider to use for voicemail detection.
+	// This is the backoff plan for the voicemail detection.
+	BackoffPlan *VoicemailDetectionBackoffPlan `json:"backoffPlan,omitempty" url:"backoffPlan,omitempty"`
+	provider    string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (v *VapiVoicemailDetectionPlan) GetBeepMaxAwaitSeconds() *float64 {
+	if v == nil {
+		return nil
+	}
+	return v.BeepMaxAwaitSeconds
+}
+
+func (v *VapiVoicemailDetectionPlan) GetBackoffPlan() *VoicemailDetectionBackoffPlan {
+	if v == nil {
+		return nil
+	}
+	return v.BackoffPlan
+}
+
+func (v *VapiVoicemailDetectionPlan) Provider() string {
+	return v.provider
+}
+
+func (v *VapiVoicemailDetectionPlan) GetExtraProperties() map[string]interface{} {
+	return v.extraProperties
+}
+
+func (v *VapiVoicemailDetectionPlan) UnmarshalJSON(data []byte) error {
+	type embed VapiVoicemailDetectionPlan
+	var unmarshaler = struct {
+		embed
+		Provider string `json:"provider"`
+	}{
+		embed: embed(*v),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*v = VapiVoicemailDetectionPlan(unmarshaler.embed)
+	if unmarshaler.Provider != "vapi" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", v, "vapi", unmarshaler.Provider)
+	}
+	v.provider = unmarshaler.Provider
+	extraProperties, err := internal.ExtractExtraProperties(data, *v, "provider")
+	if err != nil {
+		return err
+	}
+	v.extraProperties = extraProperties
+	v.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (v *VapiVoicemailDetectionPlan) MarshalJSON() ([]byte, error) {
+	type embed VapiVoicemailDetectionPlan
+	var marshaler = struct {
+		embed
+		Provider string `json:"provider"`
+	}{
+		embed:    embed(*v),
+		Provider: "vapi",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (v *VapiVoicemailDetectionPlan) String() string {
+	if len(v.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(v.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(v); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", v)
 }
 
 type VoiceLibrary struct {
@@ -75415,6 +77079,71 @@ func (v *VoiceLibraryVoiceResponse) UnmarshalJSON(data []byte) error {
 }
 
 func (v *VoiceLibraryVoiceResponse) String() string {
+	if len(v.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(v.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(v); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", v)
+}
+
+type VoicemailDetectionBackoffPlan struct {
+	// This is the number of seconds to wait before starting the first retry attempt.
+	StartAtSeconds *float64 `json:"startAtSeconds,omitempty" url:"startAtSeconds,omitempty"`
+	// This is the interval in seconds between retry attempts.
+	FrequencySeconds *float64 `json:"frequencySeconds,omitempty" url:"frequencySeconds,omitempty"`
+	// This is the maximum number of retry attempts before giving up.
+	MaxRetries *float64 `json:"maxRetries,omitempty" url:"maxRetries,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (v *VoicemailDetectionBackoffPlan) GetStartAtSeconds() *float64 {
+	if v == nil {
+		return nil
+	}
+	return v.StartAtSeconds
+}
+
+func (v *VoicemailDetectionBackoffPlan) GetFrequencySeconds() *float64 {
+	if v == nil {
+		return nil
+	}
+	return v.FrequencySeconds
+}
+
+func (v *VoicemailDetectionBackoffPlan) GetMaxRetries() *float64 {
+	if v == nil {
+		return nil
+	}
+	return v.MaxRetries
+}
+
+func (v *VoicemailDetectionBackoffPlan) GetExtraProperties() map[string]interface{} {
+	return v.extraProperties
+}
+
+func (v *VoicemailDetectionBackoffPlan) UnmarshalJSON(data []byte) error {
+	type unmarshaler VoicemailDetectionBackoffPlan
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*v = VoicemailDetectionBackoffPlan(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *v)
+	if err != nil {
+		return err
+	}
+	v.extraProperties = extraProperties
+	v.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (v *VoicemailDetectionBackoffPlan) String() string {
 	if len(v.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(v.rawJSON); err == nil {
 			return value
@@ -76156,6 +77885,8 @@ func (w *WorkflowModel) Accept(visitor WorkflowModelVisitor) error {
 }
 
 type WorkflowNodesItem struct {
+	Start      *Start
+	Assistant  *Assistant
 	Say        *Say
 	Gather     *Gather
 	ApiRequest *ApiRequest
@@ -76163,6 +77894,20 @@ type WorkflowNodesItem struct {
 	Transfer   *Transfer
 
 	typ string
+}
+
+func (w *WorkflowNodesItem) GetStart() *Start {
+	if w == nil {
+		return nil
+	}
+	return w.Start
+}
+
+func (w *WorkflowNodesItem) GetAssistant() *Assistant {
+	if w == nil {
+		return nil
+	}
+	return w.Assistant
 }
 
 func (w *WorkflowNodesItem) GetSay() *Say {
@@ -76201,6 +77946,18 @@ func (w *WorkflowNodesItem) GetTransfer() *Transfer {
 }
 
 func (w *WorkflowNodesItem) UnmarshalJSON(data []byte) error {
+	valueStart := new(Start)
+	if err := json.Unmarshal(data, &valueStart); err == nil {
+		w.typ = "Start"
+		w.Start = valueStart
+		return nil
+	}
+	valueAssistant := new(Assistant)
+	if err := json.Unmarshal(data, &valueAssistant); err == nil {
+		w.typ = "Assistant"
+		w.Assistant = valueAssistant
+		return nil
+	}
 	valueSay := new(Say)
 	if err := json.Unmarshal(data, &valueSay); err == nil {
 		w.typ = "Say"
@@ -76235,6 +77992,12 @@ func (w *WorkflowNodesItem) UnmarshalJSON(data []byte) error {
 }
 
 func (w WorkflowNodesItem) MarshalJSON() ([]byte, error) {
+	if w.typ == "Start" || w.Start != nil {
+		return json.Marshal(w.Start)
+	}
+	if w.typ == "Assistant" || w.Assistant != nil {
+		return json.Marshal(w.Assistant)
+	}
 	if w.typ == "Say" || w.Say != nil {
 		return json.Marshal(w.Say)
 	}
@@ -76254,6 +78017,8 @@ func (w WorkflowNodesItem) MarshalJSON() ([]byte, error) {
 }
 
 type WorkflowNodesItemVisitor interface {
+	VisitStart(*Start) error
+	VisitAssistant(*Assistant) error
 	VisitSay(*Say) error
 	VisitGather(*Gather) error
 	VisitApiRequest(*ApiRequest) error
@@ -76262,6 +78027,12 @@ type WorkflowNodesItemVisitor interface {
 }
 
 func (w *WorkflowNodesItem) Accept(visitor WorkflowNodesItemVisitor) error {
+	if w.typ == "Start" || w.Start != nil {
+		return visitor.VisitStart(w.Start)
+	}
+	if w.typ == "Assistant" || w.Assistant != nil {
+		return visitor.VisitAssistant(w.Assistant)
+	}
 	if w.typ == "Say" || w.Say != nil {
 		return visitor.VisitSay(w.Say)
 	}

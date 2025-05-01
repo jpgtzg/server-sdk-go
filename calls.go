@@ -902,6 +902,7 @@ type CallCostsItem struct {
 	VapiCost               *VapiCost
 	VoicemailDetectionCost *VoicemailDetectionCost
 	AnalysisCost           *AnalysisCost
+	KnowledgeBaseCost      *KnowledgeBaseCost
 
 	typ string
 }
@@ -955,6 +956,13 @@ func (c *CallCostsItem) GetAnalysisCost() *AnalysisCost {
 	return c.AnalysisCost
 }
 
+func (c *CallCostsItem) GetKnowledgeBaseCost() *KnowledgeBaseCost {
+	if c == nil {
+		return nil
+	}
+	return c.KnowledgeBaseCost
+}
+
 func (c *CallCostsItem) UnmarshalJSON(data []byte) error {
 	valueTransportCost := new(TransportCost)
 	if err := json.Unmarshal(data, &valueTransportCost); err == nil {
@@ -998,6 +1006,12 @@ func (c *CallCostsItem) UnmarshalJSON(data []byte) error {
 		c.AnalysisCost = valueAnalysisCost
 		return nil
 	}
+	valueKnowledgeBaseCost := new(KnowledgeBaseCost)
+	if err := json.Unmarshal(data, &valueKnowledgeBaseCost); err == nil {
+		c.typ = "KnowledgeBaseCost"
+		c.KnowledgeBaseCost = valueKnowledgeBaseCost
+		return nil
+	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
 }
 
@@ -1023,6 +1037,9 @@ func (c CallCostsItem) MarshalJSON() ([]byte, error) {
 	if c.typ == "AnalysisCost" || c.AnalysisCost != nil {
 		return json.Marshal(c.AnalysisCost)
 	}
+	if c.typ == "KnowledgeBaseCost" || c.KnowledgeBaseCost != nil {
+		return json.Marshal(c.KnowledgeBaseCost)
+	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
 }
 
@@ -1034,6 +1051,7 @@ type CallCostsItemVisitor interface {
 	VisitVapiCost(*VapiCost) error
 	VisitVoicemailDetectionCost(*VoicemailDetectionCost) error
 	VisitAnalysisCost(*AnalysisCost) error
+	VisitKnowledgeBaseCost(*KnowledgeBaseCost) error
 }
 
 func (c *CallCostsItem) Accept(visitor CallCostsItemVisitor) error {
@@ -1057,6 +1075,9 @@ func (c *CallCostsItem) Accept(visitor CallCostsItemVisitor) error {
 	}
 	if c.typ == "AnalysisCost" || c.AnalysisCost != nil {
 		return visitor.VisitAnalysisCost(c.AnalysisCost)
+	}
+	if c.typ == "KnowledgeBaseCost" || c.KnowledgeBaseCost != nil {
+		return visitor.VisitKnowledgeBaseCost(c.KnowledgeBaseCost)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", c)
 }
@@ -1216,6 +1237,8 @@ const (
 	CallEndedReasonVonageFailedToConnectCall                                                                                 CallEndedReason = "vonage-failed-to-connect-call"
 	CallEndedReasonVonageCompleted                                                                                           CallEndedReason = "vonage-completed"
 	CallEndedReasonPhoneCallProviderBypassEnabledButNoCallReceived                                                           CallEndedReason = "phone-call-provider-bypass-enabled-but-no-call-received"
+	CallEndedReasonCallInProgressErrorProviderfaultTransportNeverConnected                                                   CallEndedReason = "call.in-progress.error-providerfault-transport-never-connected"
+	CallEndedReasonCallInProgressErrorVapifaultWorkerNotAvailable                                                            CallEndedReason = "call.in-progress.error-vapifault-worker-not-available"
 	CallEndedReasonCallInProgressErrorVapifaultTransportNeverConnected                                                       CallEndedReason = "call.in-progress.error-vapifault-transport-never-connected"
 	CallEndedReasonCallInProgressErrorVapifaultTransportConnectedButCallNotActive                                            CallEndedReason = "call.in-progress.error-vapifault-transport-connected-but-call-not-active"
 	CallEndedReasonCallInProgressErrorVapifaultCallStartedButConnectionToTransportMissing                                    CallEndedReason = "call.in-progress.error-vapifault-call-started-but-connection-to-transport-missing"
@@ -1604,6 +1627,7 @@ const (
 	CallEndedReasonExceededMaxDuration                                                                                       CallEndedReason = "exceeded-max-duration"
 	CallEndedReasonManuallyCanceled                                                                                          CallEndedReason = "manually-canceled"
 	CallEndedReasonPhoneCallProviderClosedWebsocket                                                                          CallEndedReason = "phone-call-provider-closed-websocket"
+	CallEndedReasonCallForwardingOperatorBusy                                                                                CallEndedReason = "call.forwarding.operator-busy"
 	CallEndedReasonSilenceTimedOut                                                                                           CallEndedReason = "silence-timed-out"
 	CallEndedReasonCallInProgressErrorSipTelephonyProviderFailedToConnectCall                                                CallEndedReason = "call.in-progress.error-sip-telephony-provider-failed-to-connect-call"
 	CallEndedReasonCallRingingHookExecutedSay                                                                                CallEndedReason = "call.ringing.hook-executed-say"
@@ -1792,6 +1816,10 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonVonageCompleted, nil
 	case "phone-call-provider-bypass-enabled-but-no-call-received":
 		return CallEndedReasonPhoneCallProviderBypassEnabledButNoCallReceived, nil
+	case "call.in-progress.error-providerfault-transport-never-connected":
+		return CallEndedReasonCallInProgressErrorProviderfaultTransportNeverConnected, nil
+	case "call.in-progress.error-vapifault-worker-not-available":
+		return CallEndedReasonCallInProgressErrorVapifaultWorkerNotAvailable, nil
 	case "call.in-progress.error-vapifault-transport-never-connected":
 		return CallEndedReasonCallInProgressErrorVapifaultTransportNeverConnected, nil
 	case "call.in-progress.error-vapifault-transport-connected-but-call-not-active":
@@ -2568,6 +2596,8 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonManuallyCanceled, nil
 	case "phone-call-provider-closed-websocket":
 		return CallEndedReasonPhoneCallProviderClosedWebsocket, nil
+	case "call.forwarding.operator-busy":
+		return CallEndedReasonCallForwardingOperatorBusy, nil
 	case "silence-timed-out":
 		return CallEndedReasonSilenceTimedOut, nil
 	case "call.in-progress.error-sip-telephony-provider-failed-to-connect-call":
@@ -3079,12 +3109,23 @@ type ImportTwilioPhoneNumberDto struct {
 	FallbackDestination *ImportTwilioPhoneNumberDtoFallbackDestination `json:"fallbackDestination,omitempty" url:"fallbackDestination,omitempty"`
 	// This is the hooks that will be used for incoming calls to this phone number.
 	Hooks []*PhoneNumberHookCallRinging `json:"hooks,omitempty" url:"hooks,omitempty"`
+	// Controls whether Vapi sets the messaging webhook URL on the Twilio number during import.
+	//
+	// If set to `false`, Vapi will not update the Twilio messaging URL, leaving it as is.
+	// If `true` or omitted (default), Vapi will configure both the voice and messaging URLs.
+	//
+	// @default true
+	SmsEnabled *bool `json:"smsEnabled,omitempty" url:"smsEnabled,omitempty"`
 	// These are the digits of the phone number you own on your Twilio.
 	TwilioPhoneNumber string `json:"twilioPhoneNumber" url:"twilioPhoneNumber"`
 	// This is your Twilio Account SID that will be used to handle this phone number.
 	TwilioAccountSid string `json:"twilioAccountSid" url:"twilioAccountSid"`
 	// This is the Twilio Auth Token that will be used to handle this phone number.
-	TwilioAuthToken string `json:"twilioAuthToken" url:"twilioAuthToken"`
+	TwilioAuthToken *string `json:"twilioAuthToken,omitempty" url:"twilioAuthToken,omitempty"`
+	// This is the Twilio API Key that will be used to handle this phone number. If AuthToken is provided, this will be ignored.
+	TwilioApiKey *string `json:"twilioApiKey,omitempty" url:"twilioApiKey,omitempty"`
+	// This is the Twilio API Secret that will be used to handle this phone number. If AuthToken is provided, this will be ignored.
+	TwilioApiSecret *string `json:"twilioApiSecret,omitempty" url:"twilioApiSecret,omitempty"`
 	// This is the name of the phone number. This is just for your own reference.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
@@ -3122,6 +3163,13 @@ func (i *ImportTwilioPhoneNumberDto) GetHooks() []*PhoneNumberHookCallRinging {
 	return i.Hooks
 }
 
+func (i *ImportTwilioPhoneNumberDto) GetSmsEnabled() *bool {
+	if i == nil {
+		return nil
+	}
+	return i.SmsEnabled
+}
+
 func (i *ImportTwilioPhoneNumberDto) GetTwilioPhoneNumber() string {
 	if i == nil {
 		return ""
@@ -3136,11 +3184,25 @@ func (i *ImportTwilioPhoneNumberDto) GetTwilioAccountSid() string {
 	return i.TwilioAccountSid
 }
 
-func (i *ImportTwilioPhoneNumberDto) GetTwilioAuthToken() string {
+func (i *ImportTwilioPhoneNumberDto) GetTwilioAuthToken() *string {
 	if i == nil {
-		return ""
+		return nil
 	}
 	return i.TwilioAuthToken
+}
+
+func (i *ImportTwilioPhoneNumberDto) GetTwilioApiKey() *string {
+	if i == nil {
+		return nil
+	}
+	return i.TwilioApiKey
+}
+
+func (i *ImportTwilioPhoneNumberDto) GetTwilioApiSecret() *string {
+	if i == nil {
+		return nil
+	}
+	return i.TwilioApiSecret
 }
 
 func (i *ImportTwilioPhoneNumberDto) GetName() *string {
@@ -3269,6 +3331,107 @@ func (i *ImportTwilioPhoneNumberDtoFallbackDestination) Accept(visitor ImportTwi
 		return visitor.VisitTransferDestinationSip(i.TransferDestinationSip)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", i)
+}
+
+type KnowledgeBaseCost struct {
+	// This is the type of cost, always 'knowledge-base' for this class.
+	// This is the model that was used for processing the knowledge base.
+	Model map[string]interface{} `json:"model,omitempty" url:"model,omitempty"`
+	// This is the number of prompt tokens used in the knowledge base query.
+	PromptTokens float64 `json:"promptTokens" url:"promptTokens"`
+	// This is the number of completion tokens generated in the knowledge base query.
+	CompletionTokens float64 `json:"completionTokens" url:"completionTokens"`
+	// This is the cost of the component in USD.
+	Cost  float64 `json:"cost" url:"cost"`
+	type_ string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (k *KnowledgeBaseCost) GetModel() map[string]interface{} {
+	if k == nil {
+		return nil
+	}
+	return k.Model
+}
+
+func (k *KnowledgeBaseCost) GetPromptTokens() float64 {
+	if k == nil {
+		return 0
+	}
+	return k.PromptTokens
+}
+
+func (k *KnowledgeBaseCost) GetCompletionTokens() float64 {
+	if k == nil {
+		return 0
+	}
+	return k.CompletionTokens
+}
+
+func (k *KnowledgeBaseCost) GetCost() float64 {
+	if k == nil {
+		return 0
+	}
+	return k.Cost
+}
+
+func (k *KnowledgeBaseCost) Type() string {
+	return k.type_
+}
+
+func (k *KnowledgeBaseCost) GetExtraProperties() map[string]interface{} {
+	return k.extraProperties
+}
+
+func (k *KnowledgeBaseCost) UnmarshalJSON(data []byte) error {
+	type embed KnowledgeBaseCost
+	var unmarshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*k),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*k = KnowledgeBaseCost(unmarshaler.embed)
+	if unmarshaler.Type != "knowledge-base" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", k, "knowledge-base", unmarshaler.Type)
+	}
+	k.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *k, "type")
+	if err != nil {
+		return err
+	}
+	k.extraProperties = extraProperties
+	k.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (k *KnowledgeBaseCost) MarshalJSON() ([]byte, error) {
+	type embed KnowledgeBaseCost
+	var marshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*k),
+		Type:  "knowledge-base",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (k *KnowledgeBaseCost) String() string {
+	if len(k.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(k.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(k); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", k)
 }
 
 type ModelCost struct {
@@ -4080,6 +4243,7 @@ const (
 	VoicemailDetectionCostProviderTwilio VoicemailDetectionCostProvider = "twilio"
 	VoicemailDetectionCostProviderGoogle VoicemailDetectionCostProvider = "google"
 	VoicemailDetectionCostProviderOpenai VoicemailDetectionCostProvider = "openai"
+	VoicemailDetectionCostProviderVapi   VoicemailDetectionCostProvider = "vapi"
 )
 
 func NewVoicemailDetectionCostProviderFromString(s string) (VoicemailDetectionCostProvider, error) {
@@ -4090,6 +4254,8 @@ func NewVoicemailDetectionCostProviderFromString(s string) (VoicemailDetectionCo
 		return VoicemailDetectionCostProviderGoogle, nil
 	case "openai":
 		return VoicemailDetectionCostProviderOpenai, nil
+	case "vapi":
+		return VoicemailDetectionCostProviderVapi, nil
 	}
 	var t VoicemailDetectionCostProvider
 	return "", fmt.Errorf("%s is not a valid %T", s, t)

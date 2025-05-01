@@ -814,12 +814,23 @@ type CreateTwilioPhoneNumberDto struct {
 	FallbackDestination *CreateTwilioPhoneNumberDtoFallbackDestination `json:"fallbackDestination,omitempty" url:"fallbackDestination,omitempty"`
 	// This is the hooks that will be used for incoming calls to this phone number.
 	Hooks []*PhoneNumberHookCallRinging `json:"hooks,omitempty" url:"hooks,omitempty"`
+	// Controls whether Vapi sets the messaging webhook URL on the Twilio number during import.
+	//
+	// If set to `false`, Vapi will not update the Twilio messaging URL, leaving it as is.
+	// If `true` or omitted (default), Vapi will configure both the voice and messaging URLs.
+	//
+	// @default true
+	SmsEnabled *bool `json:"smsEnabled,omitempty" url:"smsEnabled,omitempty"`
 	// These are the digits of the phone number you own on your Twilio.
 	Number string `json:"number" url:"number"`
 	// This is the Twilio Account SID for the phone number.
 	TwilioAccountSid string `json:"twilioAccountSid" url:"twilioAccountSid"`
 	// This is the Twilio Auth Token for the phone number.
-	TwilioAuthToken string `json:"twilioAuthToken" url:"twilioAuthToken"`
+	TwilioAuthToken *string `json:"twilioAuthToken,omitempty" url:"twilioAuthToken,omitempty"`
+	// This is the Twilio API Key for the phone number.
+	TwilioApiKey *string `json:"twilioApiKey,omitempty" url:"twilioApiKey,omitempty"`
+	// This is the Twilio API Secret for the phone number.
+	TwilioApiSecret *string `json:"twilioApiSecret,omitempty" url:"twilioApiSecret,omitempty"`
 	// This is the name of the phone number. This is just for your own reference.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
@@ -858,6 +869,13 @@ func (c *CreateTwilioPhoneNumberDto) GetHooks() []*PhoneNumberHookCallRinging {
 	return c.Hooks
 }
 
+func (c *CreateTwilioPhoneNumberDto) GetSmsEnabled() *bool {
+	if c == nil {
+		return nil
+	}
+	return c.SmsEnabled
+}
+
 func (c *CreateTwilioPhoneNumberDto) GetNumber() string {
 	if c == nil {
 		return ""
@@ -872,11 +890,25 @@ func (c *CreateTwilioPhoneNumberDto) GetTwilioAccountSid() string {
 	return c.TwilioAccountSid
 }
 
-func (c *CreateTwilioPhoneNumberDto) GetTwilioAuthToken() string {
+func (c *CreateTwilioPhoneNumberDto) GetTwilioAuthToken() *string {
 	if c == nil {
-		return ""
+		return nil
 	}
 	return c.TwilioAuthToken
+}
+
+func (c *CreateTwilioPhoneNumberDto) GetTwilioApiKey() *string {
+	if c == nil {
+		return nil
+	}
+	return c.TwilioApiKey
+}
+
+func (c *CreateTwilioPhoneNumberDto) GetTwilioApiSecret() *string {
+	if c == nil {
+		return nil
+	}
+	return c.TwilioApiSecret
 }
 
 func (c *CreateTwilioPhoneNumberDto) GetName() *string {
@@ -1856,6 +1888,13 @@ type TwilioPhoneNumber struct {
 	FallbackDestination *TwilioPhoneNumberFallbackDestination `json:"fallbackDestination,omitempty" url:"fallbackDestination,omitempty"`
 	// This is the hooks that will be used for incoming calls to this phone number.
 	Hooks []*PhoneNumberHookCallRinging `json:"hooks,omitempty" url:"hooks,omitempty"`
+	// Controls whether Vapi sets the messaging webhook URL on the Twilio number during import.
+	//
+	// If set to `false`, Vapi will not update the Twilio messaging URL, leaving it as is.
+	// If `true` or omitted (default), Vapi will configure both the voice and messaging URLs.
+	//
+	// @default true
+	SmsEnabled *bool `json:"smsEnabled,omitempty" url:"smsEnabled,omitempty"`
 	// This is the unique identifier for the phone number.
 	Id string `json:"id" url:"id"`
 	// This is the unique identifier for the org that this phone number belongs to.
@@ -1866,6 +1905,12 @@ type TwilioPhoneNumber struct {
 	UpdatedAt time.Time `json:"updatedAt" url:"updatedAt"`
 	// This is the status of the phone number.
 	Status *TwilioPhoneNumberStatus `json:"status,omitempty" url:"status,omitempty"`
+	// This is the Twilio Auth Token for the phone number.
+	TwilioAuthToken *string `json:"twilioAuthToken,omitempty" url:"twilioAuthToken,omitempty"`
+	// This is the Twilio API Key for the phone number.
+	TwilioApiKey *string `json:"twilioApiKey,omitempty" url:"twilioApiKey,omitempty"`
+	// This is the Twilio API Secret for the phone number.
+	TwilioApiSecret *string `json:"twilioApiSecret,omitempty" url:"twilioApiSecret,omitempty"`
 	// This is the name of the phone number. This is just for your own reference.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
@@ -1888,9 +1933,7 @@ type TwilioPhoneNumber struct {
 	Number string `json:"number" url:"number"`
 	// This is the Twilio Account SID for the phone number.
 	TwilioAccountSid string `json:"twilioAccountSid" url:"twilioAccountSid"`
-	// This is the Twilio Auth Token for the phone number.
-	TwilioAuthToken string `json:"twilioAuthToken" url:"twilioAuthToken"`
-	provider        string
+	provider         string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -1908,6 +1951,13 @@ func (t *TwilioPhoneNumber) GetHooks() []*PhoneNumberHookCallRinging {
 		return nil
 	}
 	return t.Hooks
+}
+
+func (t *TwilioPhoneNumber) GetSmsEnabled() *bool {
+	if t == nil {
+		return nil
+	}
+	return t.SmsEnabled
 }
 
 func (t *TwilioPhoneNumber) GetId() string {
@@ -1943,6 +1993,27 @@ func (t *TwilioPhoneNumber) GetStatus() *TwilioPhoneNumberStatus {
 		return nil
 	}
 	return t.Status
+}
+
+func (t *TwilioPhoneNumber) GetTwilioAuthToken() *string {
+	if t == nil {
+		return nil
+	}
+	return t.TwilioAuthToken
+}
+
+func (t *TwilioPhoneNumber) GetTwilioApiKey() *string {
+	if t == nil {
+		return nil
+	}
+	return t.TwilioApiKey
+}
+
+func (t *TwilioPhoneNumber) GetTwilioApiSecret() *string {
+	if t == nil {
+		return nil
+	}
+	return t.TwilioApiSecret
 }
 
 func (t *TwilioPhoneNumber) GetName() *string {
@@ -1985,13 +2056,6 @@ func (t *TwilioPhoneNumber) GetTwilioAccountSid() string {
 		return ""
 	}
 	return t.TwilioAccountSid
-}
-
-func (t *TwilioPhoneNumber) GetTwilioAuthToken() string {
-	if t == nil {
-		return ""
-	}
-	return t.TwilioAuthToken
 }
 
 func (t *TwilioPhoneNumber) Provider() string {
@@ -2568,6 +2632,13 @@ type UpdateTwilioPhoneNumberDto struct {
 	FallbackDestination *UpdateTwilioPhoneNumberDtoFallbackDestination `json:"fallbackDestination,omitempty" url:"fallbackDestination,omitempty"`
 	// This is the hooks that will be used for incoming calls to this phone number.
 	Hooks []*PhoneNumberHookCallRinging `json:"hooks,omitempty" url:"hooks,omitempty"`
+	// Controls whether Vapi sets the messaging webhook URL on the Twilio number during import.
+	//
+	// If set to `false`, Vapi will not update the Twilio messaging URL, leaving it as is.
+	// If `true` or omitted (default), Vapi will configure both the voice and messaging URLs.
+	//
+	// @default true
+	SmsEnabled *bool `json:"smsEnabled,omitempty" url:"smsEnabled,omitempty"`
 	// This is the name of the phone number. This is just for your own reference.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
@@ -2592,6 +2663,10 @@ type UpdateTwilioPhoneNumberDto struct {
 	TwilioAccountSid *string `json:"twilioAccountSid,omitempty" url:"twilioAccountSid,omitempty"`
 	// This is the Twilio Auth Token for the phone number.
 	TwilioAuthToken *string `json:"twilioAuthToken,omitempty" url:"twilioAuthToken,omitempty"`
+	// This is the Twilio API Key for the phone number.
+	TwilioApiKey *string `json:"twilioApiKey,omitempty" url:"twilioApiKey,omitempty"`
+	// This is the Twilio API Secret for the phone number.
+	TwilioApiSecret *string `json:"twilioApiSecret,omitempty" url:"twilioApiSecret,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -2609,6 +2684,13 @@ func (u *UpdateTwilioPhoneNumberDto) GetHooks() []*PhoneNumberHookCallRinging {
 		return nil
 	}
 	return u.Hooks
+}
+
+func (u *UpdateTwilioPhoneNumberDto) GetSmsEnabled() *bool {
+	if u == nil {
+		return nil
+	}
+	return u.SmsEnabled
 }
 
 func (u *UpdateTwilioPhoneNumberDto) GetName() *string {
@@ -2658,6 +2740,20 @@ func (u *UpdateTwilioPhoneNumberDto) GetTwilioAuthToken() *string {
 		return nil
 	}
 	return u.TwilioAuthToken
+}
+
+func (u *UpdateTwilioPhoneNumberDto) GetTwilioApiKey() *string {
+	if u == nil {
+		return nil
+	}
+	return u.TwilioApiKey
+}
+
+func (u *UpdateTwilioPhoneNumberDto) GetTwilioApiSecret() *string {
+	if u == nil {
+		return nil
+	}
+	return u.TwilioApiSecret
 }
 
 func (u *UpdateTwilioPhoneNumberDto) GetExtraProperties() map[string]interface{} {
