@@ -2787,8 +2787,7 @@ type AssistantOverrides struct {
 	VoicemailDetection *AssistantOverridesVoicemailDetection `json:"voicemailDetection,omitempty" url:"voicemailDetection,omitempty"`
 	// These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
 	ClientMessages []AssistantOverridesClientMessagesItem `json:"clientMessages,omitempty" url:"clientMessages,omitempty"`
-	// These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
-	ServerMessages []AssistantOverridesServerMessagesItem `json:"serverMessages,omitempty" url:"serverMessages,omitempty"`
+	ServerMessages [][]map[string]interface{}             `json:"serverMessages,omitempty" url:"serverMessages,omitempty"`
 	// How many seconds of silence to wait before ending the call. Defaults to 30.
 	//
 	// @default 30
@@ -2953,7 +2952,7 @@ func (a *AssistantOverrides) GetClientMessages() []AssistantOverridesClientMessa
 	return a.ClientMessages
 }
 
-func (a *AssistantOverrides) GetServerMessages() []AssistantOverridesServerMessagesItem {
+func (a *AssistantOverrides) GetServerMessages() [][]map[string]interface{} {
 	if a == nil {
 		return nil
 	}
@@ -4694,73 +4693,6 @@ func (a *AssistantOverridesModel) Accept(visitor AssistantOverridesModelVisitor)
 		return visitor.VisitXaiModel(a.XaiModel)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", a)
-}
-
-type AssistantOverridesServerMessagesItem string
-
-const (
-	AssistantOverridesServerMessagesItemConversationUpdate         AssistantOverridesServerMessagesItem = "conversation-update"
-	AssistantOverridesServerMessagesItemEndOfCallReport            AssistantOverridesServerMessagesItem = "end-of-call-report"
-	AssistantOverridesServerMessagesItemFunctionCall               AssistantOverridesServerMessagesItem = "function-call"
-	AssistantOverridesServerMessagesItemHang                       AssistantOverridesServerMessagesItem = "hang"
-	AssistantOverridesServerMessagesItemLanguageChanged            AssistantOverridesServerMessagesItem = "language-changed"
-	AssistantOverridesServerMessagesItemLanguageChangeDetected     AssistantOverridesServerMessagesItem = "language-change-detected"
-	AssistantOverridesServerMessagesItemModelOutput                AssistantOverridesServerMessagesItem = "model-output"
-	AssistantOverridesServerMessagesItemPhoneCallControl           AssistantOverridesServerMessagesItem = "phone-call-control"
-	AssistantOverridesServerMessagesItemSpeechUpdate               AssistantOverridesServerMessagesItem = "speech-update"
-	AssistantOverridesServerMessagesItemStatusUpdate               AssistantOverridesServerMessagesItem = "status-update"
-	AssistantOverridesServerMessagesItemTranscript                 AssistantOverridesServerMessagesItem = "transcript"
-	AssistantOverridesServerMessagesItemFinalTranscript            AssistantOverridesServerMessagesItem = "transcript[transcriptType='final']"
-	AssistantOverridesServerMessagesItemToolCalls                  AssistantOverridesServerMessagesItem = "tool-calls"
-	AssistantOverridesServerMessagesItemTransferDestinationRequest AssistantOverridesServerMessagesItem = "transfer-destination-request"
-	AssistantOverridesServerMessagesItemTransferUpdate             AssistantOverridesServerMessagesItem = "transfer-update"
-	AssistantOverridesServerMessagesItemUserInterrupted            AssistantOverridesServerMessagesItem = "user-interrupted"
-	AssistantOverridesServerMessagesItemVoiceInput                 AssistantOverridesServerMessagesItem = "voice-input"
-)
-
-func NewAssistantOverridesServerMessagesItemFromString(s string) (AssistantOverridesServerMessagesItem, error) {
-	switch s {
-	case "conversation-update":
-		return AssistantOverridesServerMessagesItemConversationUpdate, nil
-	case "end-of-call-report":
-		return AssistantOverridesServerMessagesItemEndOfCallReport, nil
-	case "function-call":
-		return AssistantOverridesServerMessagesItemFunctionCall, nil
-	case "hang":
-		return AssistantOverridesServerMessagesItemHang, nil
-	case "language-changed":
-		return AssistantOverridesServerMessagesItemLanguageChanged, nil
-	case "language-change-detected":
-		return AssistantOverridesServerMessagesItemLanguageChangeDetected, nil
-	case "model-output":
-		return AssistantOverridesServerMessagesItemModelOutput, nil
-	case "phone-call-control":
-		return AssistantOverridesServerMessagesItemPhoneCallControl, nil
-	case "speech-update":
-		return AssistantOverridesServerMessagesItemSpeechUpdate, nil
-	case "status-update":
-		return AssistantOverridesServerMessagesItemStatusUpdate, nil
-	case "transcript":
-		return AssistantOverridesServerMessagesItemTranscript, nil
-	case "transcript[transcriptType='final']":
-		return AssistantOverridesServerMessagesItemFinalTranscript, nil
-	case "tool-calls":
-		return AssistantOverridesServerMessagesItemToolCalls, nil
-	case "transfer-destination-request":
-		return AssistantOverridesServerMessagesItemTransferDestinationRequest, nil
-	case "transfer-update":
-		return AssistantOverridesServerMessagesItemTransferUpdate, nil
-	case "user-interrupted":
-		return AssistantOverridesServerMessagesItemUserInterrupted, nil
-	case "voice-input":
-		return AssistantOverridesServerMessagesItemVoiceInput, nil
-	}
-	var t AssistantOverridesServerMessagesItem
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (a AssistantOverridesServerMessagesItem) Ptr() *AssistantOverridesServerMessagesItem {
-	return &a
 }
 
 // These are the options for the assistant's transcriber.
@@ -12985,8 +12917,7 @@ type CreateAssistantDto struct {
 	VoicemailDetection *CreateAssistantDtoVoicemailDetection `json:"voicemailDetection,omitempty" url:"voicemailDetection,omitempty"`
 	// These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
 	ClientMessages []CreateAssistantDtoClientMessagesItem `json:"clientMessages,omitempty" url:"clientMessages,omitempty"`
-	// These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
-	ServerMessages []CreateAssistantDtoServerMessagesItem `json:"serverMessages,omitempty" url:"serverMessages,omitempty"`
+	ServerMessages [][]map[string]interface{}             `json:"serverMessages,omitempty" url:"serverMessages,omitempty"`
 	// How many seconds of silence to wait before ending the call. Defaults to 30.
 	//
 	// @default 30
@@ -13142,7 +13073,7 @@ func (c *CreateAssistantDto) GetClientMessages() []CreateAssistantDtoClientMessa
 	return c.ClientMessages
 }
 
-func (c *CreateAssistantDto) GetServerMessages() []CreateAssistantDtoServerMessagesItem {
+func (c *CreateAssistantDto) GetServerMessages() [][]map[string]interface{} {
 	if c == nil {
 		return nil
 	}
@@ -14876,73 +14807,6 @@ func (c *CreateAssistantDtoModel) Accept(visitor CreateAssistantDtoModelVisitor)
 		return visitor.VisitXaiModel(c.XaiModel)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", c)
-}
-
-type CreateAssistantDtoServerMessagesItem string
-
-const (
-	CreateAssistantDtoServerMessagesItemConversationUpdate         CreateAssistantDtoServerMessagesItem = "conversation-update"
-	CreateAssistantDtoServerMessagesItemEndOfCallReport            CreateAssistantDtoServerMessagesItem = "end-of-call-report"
-	CreateAssistantDtoServerMessagesItemFunctionCall               CreateAssistantDtoServerMessagesItem = "function-call"
-	CreateAssistantDtoServerMessagesItemHang                       CreateAssistantDtoServerMessagesItem = "hang"
-	CreateAssistantDtoServerMessagesItemLanguageChanged            CreateAssistantDtoServerMessagesItem = "language-changed"
-	CreateAssistantDtoServerMessagesItemLanguageChangeDetected     CreateAssistantDtoServerMessagesItem = "language-change-detected"
-	CreateAssistantDtoServerMessagesItemModelOutput                CreateAssistantDtoServerMessagesItem = "model-output"
-	CreateAssistantDtoServerMessagesItemPhoneCallControl           CreateAssistantDtoServerMessagesItem = "phone-call-control"
-	CreateAssistantDtoServerMessagesItemSpeechUpdate               CreateAssistantDtoServerMessagesItem = "speech-update"
-	CreateAssistantDtoServerMessagesItemStatusUpdate               CreateAssistantDtoServerMessagesItem = "status-update"
-	CreateAssistantDtoServerMessagesItemTranscript                 CreateAssistantDtoServerMessagesItem = "transcript"
-	CreateAssistantDtoServerMessagesItemFinalTranscript            CreateAssistantDtoServerMessagesItem = "transcript[transcriptType='final']"
-	CreateAssistantDtoServerMessagesItemToolCalls                  CreateAssistantDtoServerMessagesItem = "tool-calls"
-	CreateAssistantDtoServerMessagesItemTransferDestinationRequest CreateAssistantDtoServerMessagesItem = "transfer-destination-request"
-	CreateAssistantDtoServerMessagesItemTransferUpdate             CreateAssistantDtoServerMessagesItem = "transfer-update"
-	CreateAssistantDtoServerMessagesItemUserInterrupted            CreateAssistantDtoServerMessagesItem = "user-interrupted"
-	CreateAssistantDtoServerMessagesItemVoiceInput                 CreateAssistantDtoServerMessagesItem = "voice-input"
-)
-
-func NewCreateAssistantDtoServerMessagesItemFromString(s string) (CreateAssistantDtoServerMessagesItem, error) {
-	switch s {
-	case "conversation-update":
-		return CreateAssistantDtoServerMessagesItemConversationUpdate, nil
-	case "end-of-call-report":
-		return CreateAssistantDtoServerMessagesItemEndOfCallReport, nil
-	case "function-call":
-		return CreateAssistantDtoServerMessagesItemFunctionCall, nil
-	case "hang":
-		return CreateAssistantDtoServerMessagesItemHang, nil
-	case "language-changed":
-		return CreateAssistantDtoServerMessagesItemLanguageChanged, nil
-	case "language-change-detected":
-		return CreateAssistantDtoServerMessagesItemLanguageChangeDetected, nil
-	case "model-output":
-		return CreateAssistantDtoServerMessagesItemModelOutput, nil
-	case "phone-call-control":
-		return CreateAssistantDtoServerMessagesItemPhoneCallControl, nil
-	case "speech-update":
-		return CreateAssistantDtoServerMessagesItemSpeechUpdate, nil
-	case "status-update":
-		return CreateAssistantDtoServerMessagesItemStatusUpdate, nil
-	case "transcript":
-		return CreateAssistantDtoServerMessagesItemTranscript, nil
-	case "transcript[transcriptType='final']":
-		return CreateAssistantDtoServerMessagesItemFinalTranscript, nil
-	case "tool-calls":
-		return CreateAssistantDtoServerMessagesItemToolCalls, nil
-	case "transfer-destination-request":
-		return CreateAssistantDtoServerMessagesItemTransferDestinationRequest, nil
-	case "transfer-update":
-		return CreateAssistantDtoServerMessagesItemTransferUpdate, nil
-	case "user-interrupted":
-		return CreateAssistantDtoServerMessagesItemUserInterrupted, nil
-	case "voice-input":
-		return CreateAssistantDtoServerMessagesItemVoiceInput, nil
-	}
-	var t CreateAssistantDtoServerMessagesItem
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (c CreateAssistantDtoServerMessagesItem) Ptr() *CreateAssistantDtoServerMessagesItem {
-	return &c
 }
 
 // These are the options for the assistant's transcriber.

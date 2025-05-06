@@ -1558,73 +1558,6 @@ func (u *UpdateAssistantDtoModel) Accept(visitor UpdateAssistantDtoModelVisitor)
 	return fmt.Errorf("type %T does not include a non-empty union type", u)
 }
 
-type UpdateAssistantDtoServerMessagesItem string
-
-const (
-	UpdateAssistantDtoServerMessagesItemConversationUpdate         UpdateAssistantDtoServerMessagesItem = "conversation-update"
-	UpdateAssistantDtoServerMessagesItemEndOfCallReport            UpdateAssistantDtoServerMessagesItem = "end-of-call-report"
-	UpdateAssistantDtoServerMessagesItemFunctionCall               UpdateAssistantDtoServerMessagesItem = "function-call"
-	UpdateAssistantDtoServerMessagesItemHang                       UpdateAssistantDtoServerMessagesItem = "hang"
-	UpdateAssistantDtoServerMessagesItemLanguageChanged            UpdateAssistantDtoServerMessagesItem = "language-changed"
-	UpdateAssistantDtoServerMessagesItemLanguageChangeDetected     UpdateAssistantDtoServerMessagesItem = "language-change-detected"
-	UpdateAssistantDtoServerMessagesItemModelOutput                UpdateAssistantDtoServerMessagesItem = "model-output"
-	UpdateAssistantDtoServerMessagesItemPhoneCallControl           UpdateAssistantDtoServerMessagesItem = "phone-call-control"
-	UpdateAssistantDtoServerMessagesItemSpeechUpdate               UpdateAssistantDtoServerMessagesItem = "speech-update"
-	UpdateAssistantDtoServerMessagesItemStatusUpdate               UpdateAssistantDtoServerMessagesItem = "status-update"
-	UpdateAssistantDtoServerMessagesItemTranscript                 UpdateAssistantDtoServerMessagesItem = "transcript"
-	UpdateAssistantDtoServerMessagesItemFinalTranscript            UpdateAssistantDtoServerMessagesItem = "transcript[transcriptType='final']"
-	UpdateAssistantDtoServerMessagesItemToolCalls                  UpdateAssistantDtoServerMessagesItem = "tool-calls"
-	UpdateAssistantDtoServerMessagesItemTransferDestinationRequest UpdateAssistantDtoServerMessagesItem = "transfer-destination-request"
-	UpdateAssistantDtoServerMessagesItemTransferUpdate             UpdateAssistantDtoServerMessagesItem = "transfer-update"
-	UpdateAssistantDtoServerMessagesItemUserInterrupted            UpdateAssistantDtoServerMessagesItem = "user-interrupted"
-	UpdateAssistantDtoServerMessagesItemVoiceInput                 UpdateAssistantDtoServerMessagesItem = "voice-input"
-)
-
-func NewUpdateAssistantDtoServerMessagesItemFromString(s string) (UpdateAssistantDtoServerMessagesItem, error) {
-	switch s {
-	case "conversation-update":
-		return UpdateAssistantDtoServerMessagesItemConversationUpdate, nil
-	case "end-of-call-report":
-		return UpdateAssistantDtoServerMessagesItemEndOfCallReport, nil
-	case "function-call":
-		return UpdateAssistantDtoServerMessagesItemFunctionCall, nil
-	case "hang":
-		return UpdateAssistantDtoServerMessagesItemHang, nil
-	case "language-changed":
-		return UpdateAssistantDtoServerMessagesItemLanguageChanged, nil
-	case "language-change-detected":
-		return UpdateAssistantDtoServerMessagesItemLanguageChangeDetected, nil
-	case "model-output":
-		return UpdateAssistantDtoServerMessagesItemModelOutput, nil
-	case "phone-call-control":
-		return UpdateAssistantDtoServerMessagesItemPhoneCallControl, nil
-	case "speech-update":
-		return UpdateAssistantDtoServerMessagesItemSpeechUpdate, nil
-	case "status-update":
-		return UpdateAssistantDtoServerMessagesItemStatusUpdate, nil
-	case "transcript":
-		return UpdateAssistantDtoServerMessagesItemTranscript, nil
-	case "transcript[transcriptType='final']":
-		return UpdateAssistantDtoServerMessagesItemFinalTranscript, nil
-	case "tool-calls":
-		return UpdateAssistantDtoServerMessagesItemToolCalls, nil
-	case "transfer-destination-request":
-		return UpdateAssistantDtoServerMessagesItemTransferDestinationRequest, nil
-	case "transfer-update":
-		return UpdateAssistantDtoServerMessagesItemTransferUpdate, nil
-	case "user-interrupted":
-		return UpdateAssistantDtoServerMessagesItemUserInterrupted, nil
-	case "voice-input":
-		return UpdateAssistantDtoServerMessagesItemVoiceInput, nil
-	}
-	var t UpdateAssistantDtoServerMessagesItem
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (u UpdateAssistantDtoServerMessagesItem) Ptr() *UpdateAssistantDtoServerMessagesItem {
-	return &u
-}
-
 // These are the options for the assistant's transcriber.
 type UpdateAssistantDtoTranscriber struct {
 	AssemblyAiTranscriber   *AssemblyAiTranscriber
@@ -2305,8 +2238,7 @@ type UpdateAssistantDto struct {
 	VoicemailDetection *UpdateAssistantDtoVoicemailDetection `json:"voicemailDetection,omitempty" url:"-"`
 	// These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
 	ClientMessages []UpdateAssistantDtoClientMessagesItem `json:"clientMessages,omitempty" url:"-"`
-	// These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
-	ServerMessages []UpdateAssistantDtoServerMessagesItem `json:"serverMessages,omitempty" url:"-"`
+	ServerMessages [][]map[string]interface{}             `json:"serverMessages,omitempty" url:"-"`
 	// How many seconds of silence to wait before ending the call. Defaults to 30.
 	//
 	// @default 30
