@@ -21,15 +21,49 @@ type CreateCallDto struct {
 	// This is the transport of the call.
 	Transport map[string]interface{} `json:"transport,omitempty" url:"-"`
 	// This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead.
+	// Usage:
+	//
+	//	To start the call with Assistant as entrypoint, use assistant or assistantId
+	//	To start the call with Squad as entrypoint, use squad or squadId
+	//	To start the call with Workflow as entrypoint, use workflow or workflowId
 	AssistantId *string `json:"assistantId,omitempty" url:"-"`
 	// This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead.
+	// Usage:
+	//
+	//	To start the call with Assistant as entrypoint, use assistant or assistantId
+	//	To start the call with Squad as entrypoint, use squad or squadId
+	//	To start the call with Workflow as entrypoint, use workflow or workflowId
 	Assistant *CreateAssistantDto `json:"assistant,omitempty" url:"-"`
 	// These are the overrides for the `assistant` or `assistantId`'s settings and template variables.
 	AssistantOverrides *AssistantOverrides `json:"assistantOverrides,omitempty" url:"-"`
 	// This is the squad that will be used for the call. To use a transient squad, use `squad` instead.
+	// Usage:
+	//
+	//	To start the call with Assistant as entrypoint, use assistant or assistantId
+	//	To start the call with Squad as entrypoint, use squad or squadId
+	//	To start the call with Workflow as entrypoint, use workflow or workflowId
 	SquadId *string `json:"squadId,omitempty" url:"-"`
 	// This is a squad that will be used for the call. To use an existing squad, use `squadId` instead.
+	// Usage:
+	//
+	//	To start the call with Assistant as entrypoint, use assistant or assistantId
+	//	To start the call with Squad as entrypoint, use squad or squadId
+	//	To start the call with Workflow as entrypoint, use workflow or workflowId
 	Squad *CreateSquadDto `json:"squad,omitempty" url:"-"`
+	// This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
+	// Usage:
+	//
+	//	To start the call with Assistant as entrypoint, use assistant or assistantId
+	//	To start the call with Squad as entrypoint, use squad or squadId
+	//	To start the call with Workflow as entrypoint, use workflow or workflowId
+	WorkflowId *string `json:"workflowId,omitempty" url:"-"`
+	// This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
+	// Usage:
+	//
+	//	To start the call with Assistant as entrypoint, use assistant or assistantId
+	//	To start the call with Squad as entrypoint, use squad or squadId
+	//	To start the call with Workflow as entrypoint, use workflow or workflowId
+	Workflow *CreateWorkflowDto `json:"workflow,omitempty" url:"-"`
 	// This is the phone number that will be used for the call. To use a transient number, use `phoneNumber` instead.
 	//
 	// Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
@@ -455,15 +489,49 @@ type Call struct {
 	// Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
 	PhoneCallProviderId *string `json:"phoneCallProviderId,omitempty" url:"phoneCallProviderId,omitempty"`
 	// This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead.
+	// Usage:
+	//
+	//	To start the call with Assistant as entrypoint, use assistant or assistantId
+	//	To start the call with Squad as entrypoint, use squad or squadId
+	//	To start the call with Workflow as entrypoint, use workflow or workflowId
 	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
 	// This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead.
+	// Usage:
+	//
+	//	To start the call with Assistant as entrypoint, use assistant or assistantId
+	//	To start the call with Squad as entrypoint, use squad or squadId
+	//	To start the call with Workflow as entrypoint, use workflow or workflowId
 	Assistant *CreateAssistantDto `json:"assistant,omitempty" url:"assistant,omitempty"`
 	// These are the overrides for the `assistant` or `assistantId`'s settings and template variables.
 	AssistantOverrides *AssistantOverrides `json:"assistantOverrides,omitempty" url:"assistantOverrides,omitempty"`
 	// This is the squad that will be used for the call. To use a transient squad, use `squad` instead.
+	// Usage:
+	//
+	//	To start the call with Assistant as entrypoint, use assistant or assistantId
+	//	To start the call with Squad as entrypoint, use squad or squadId
+	//	To start the call with Workflow as entrypoint, use workflow or workflowId
 	SquadId *string `json:"squadId,omitempty" url:"squadId,omitempty"`
 	// This is a squad that will be used for the call. To use an existing squad, use `squadId` instead.
+	// Usage:
+	//
+	//	To start the call with Assistant as entrypoint, use assistant or assistantId
+	//	To start the call with Squad as entrypoint, use squad or squadId
+	//	To start the call with Workflow as entrypoint, use workflow or workflowId
 	Squad *CreateSquadDto `json:"squad,omitempty" url:"squad,omitempty"`
+	// This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
+	// Usage:
+	//
+	//	To start the call with Assistant as entrypoint, use assistant or assistantId
+	//	To start the call with Squad as entrypoint, use squad or squadId
+	//	To start the call with Workflow as entrypoint, use workflow or workflowId
+	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
+	// This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
+	// Usage:
+	//
+	//	To start the call with Assistant as entrypoint, use assistant or assistantId
+	//	To start the call with Squad as entrypoint, use squad or squadId
+	//	To start the call with Workflow as entrypoint, use workflow or workflowId
+	Workflow *CreateWorkflowDto `json:"workflow,omitempty" url:"workflow,omitempty"`
 	// This is the phone number that will be used for the call. To use a transient number, use `phoneNumber` instead.
 	//
 	// Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
@@ -671,6 +739,20 @@ func (c *Call) GetSquad() *CreateSquadDto {
 		return nil
 	}
 	return c.Squad
+}
+
+func (c *Call) GetWorkflowId() *string {
+	if c == nil {
+		return nil
+	}
+	return c.WorkflowId
+}
+
+func (c *Call) GetWorkflow() *CreateWorkflowDto {
+	if c == nil {
+		return nil
+	}
+	return c.Workflow
 }
 
 func (c *Call) GetPhoneNumberId() *string {
@@ -3130,11 +3212,15 @@ type ImportTwilioPhoneNumberDto struct {
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
+	// This is the workflow that will be used for incoming calls to this phone number.
+	//
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
 	// This is the squad that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	SquadId *string `json:"squadId,omitempty" url:"squadId,omitempty"`
 	// This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
 	//
@@ -3217,6 +3303,13 @@ func (i *ImportTwilioPhoneNumberDto) GetAssistantId() *string {
 		return nil
 	}
 	return i.AssistantId
+}
+
+func (i *ImportTwilioPhoneNumberDto) GetWorkflowId() *string {
+	if i == nil {
+		return nil
+	}
+	return i.WorkflowId
 }
 
 func (i *ImportTwilioPhoneNumberDto) GetSquadId() *string {

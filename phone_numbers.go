@@ -64,11 +64,15 @@ type ByoPhoneNumber struct {
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
+	// This is the workflow that will be used for incoming calls to this phone number.
+	//
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
 	// This is the squad that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	SquadId *string `json:"squadId,omitempty" url:"squadId,omitempty"`
 	// This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
 	//
@@ -158,6 +162,13 @@ func (b *ByoPhoneNumber) GetAssistantId() *string {
 		return nil
 	}
 	return b.AssistantId
+}
+
+func (b *ByoPhoneNumber) GetWorkflowId() *string {
+	if b == nil {
+		return nil
+	}
+	return b.WorkflowId
 }
 
 func (b *ByoPhoneNumber) GetSquadId() *string {
@@ -377,11 +388,15 @@ type CreateByoPhoneNumberDto struct {
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
+	// This is the workflow that will be used for incoming calls to this phone number.
+	//
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
 	// This is the squad that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	SquadId *string `json:"squadId,omitempty" url:"squadId,omitempty"`
 	// This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
 	//
@@ -444,6 +459,13 @@ func (c *CreateByoPhoneNumberDto) GetAssistantId() *string {
 		return nil
 	}
 	return c.AssistantId
+}
+
+func (c *CreateByoPhoneNumberDto) GetWorkflowId() *string {
+	if c == nil {
+		return nil
+	}
+	return c.WorkflowId
 }
 
 func (c *CreateByoPhoneNumberDto) GetSquadId() *string {
@@ -603,11 +625,15 @@ type CreateTelnyxPhoneNumberDto struct {
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
+	// This is the workflow that will be used for incoming calls to this phone number.
+	//
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
 	// This is the squad that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	SquadId *string `json:"squadId,omitempty" url:"squadId,omitempty"`
 	// This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
 	//
@@ -663,6 +689,13 @@ func (c *CreateTelnyxPhoneNumberDto) GetAssistantId() *string {
 		return nil
 	}
 	return c.AssistantId
+}
+
+func (c *CreateTelnyxPhoneNumberDto) GetWorkflowId() *string {
+	if c == nil {
+		return nil
+	}
+	return c.WorkflowId
 }
 
 func (c *CreateTelnyxPhoneNumberDto) GetSquadId() *string {
@@ -835,11 +868,15 @@ type CreateTwilioPhoneNumberDto struct {
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
+	// This is the workflow that will be used for incoming calls to this phone number.
+	//
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
 	// This is the squad that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	SquadId *string `json:"squadId,omitempty" url:"squadId,omitempty"`
 	// This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
 	//
@@ -923,6 +960,13 @@ func (c *CreateTwilioPhoneNumberDto) GetAssistantId() *string {
 		return nil
 	}
 	return c.AssistantId
+}
+
+func (c *CreateTwilioPhoneNumberDto) GetWorkflowId() *string {
+	if c == nil {
+		return nil
+	}
+	return c.WorkflowId
 }
 
 func (c *CreateTwilioPhoneNumberDto) GetSquadId() *string {
@@ -1088,11 +1132,15 @@ type CreateVapiPhoneNumberDto struct {
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
+	// This is the workflow that will be used for incoming calls to this phone number.
+	//
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
 	// This is the squad that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	SquadId *string `json:"squadId,omitempty" url:"squadId,omitempty"`
 	// This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
 	//
@@ -1155,6 +1203,13 @@ func (c *CreateVapiPhoneNumberDto) GetAssistantId() *string {
 		return nil
 	}
 	return c.AssistantId
+}
+
+func (c *CreateVapiPhoneNumberDto) GetWorkflowId() *string {
+	if c == nil {
+		return nil
+	}
+	return c.WorkflowId
 }
 
 func (c *CreateVapiPhoneNumberDto) GetSquadId() *string {
@@ -1314,11 +1369,15 @@ type CreateVonagePhoneNumberDto struct {
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
+	// This is the workflow that will be used for incoming calls to this phone number.
+	//
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
 	// This is the squad that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	SquadId *string `json:"squadId,omitempty" url:"squadId,omitempty"`
 	// This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
 	//
@@ -1374,6 +1433,13 @@ func (c *CreateVonagePhoneNumberDto) GetAssistantId() *string {
 		return nil
 	}
 	return c.AssistantId
+}
+
+func (c *CreateVonagePhoneNumberDto) GetWorkflowId() *string {
+	if c == nil {
+		return nil
+	}
+	return c.WorkflowId
 }
 
 func (c *CreateVonagePhoneNumberDto) GetSquadId() *string {
@@ -1604,11 +1670,15 @@ type TelnyxPhoneNumber struct {
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
+	// This is the workflow that will be used for incoming calls to this phone number.
+	//
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
 	// This is the squad that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	SquadId *string `json:"squadId,omitempty" url:"squadId,omitempty"`
 	// This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
 	//
@@ -1689,6 +1759,13 @@ func (t *TelnyxPhoneNumber) GetAssistantId() *string {
 		return nil
 	}
 	return t.AssistantId
+}
+
+func (t *TelnyxPhoneNumber) GetWorkflowId() *string {
+	if t == nil {
+		return nil
+	}
+	return t.WorkflowId
 }
 
 func (t *TelnyxPhoneNumber) GetSquadId() *string {
@@ -1915,11 +1992,15 @@ type TwilioPhoneNumber struct {
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
+	// This is the workflow that will be used for incoming calls to this phone number.
+	//
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
 	// This is the squad that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	SquadId *string `json:"squadId,omitempty" url:"squadId,omitempty"`
 	// This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
 	//
@@ -2028,6 +2109,13 @@ func (t *TwilioPhoneNumber) GetAssistantId() *string {
 		return nil
 	}
 	return t.AssistantId
+}
+
+func (t *TwilioPhoneNumber) GetWorkflowId() *string {
+	if t == nil {
+		return nil
+	}
+	return t.WorkflowId
 }
 
 func (t *TwilioPhoneNumber) GetSquadId() *string {
@@ -2241,11 +2329,15 @@ type UpdateByoPhoneNumberDto struct {
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
+	// This is the workflow that will be used for incoming calls to this phone number.
+	//
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
 	// This is the squad that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	SquadId *string `json:"squadId,omitempty" url:"squadId,omitempty"`
 	// This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
 	//
@@ -2299,6 +2391,13 @@ func (u *UpdateByoPhoneNumberDto) GetAssistantId() *string {
 		return nil
 	}
 	return u.AssistantId
+}
+
+func (u *UpdateByoPhoneNumberDto) GetWorkflowId() *string {
+	if u == nil {
+		return nil
+	}
+	return u.WorkflowId
 }
 
 func (u *UpdateByoPhoneNumberDto) GetSquadId() *string {
@@ -2443,11 +2542,15 @@ type UpdateTelnyxPhoneNumberDto struct {
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
+	// This is the workflow that will be used for incoming calls to this phone number.
+	//
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
 	// This is the squad that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	SquadId *string `json:"squadId,omitempty" url:"squadId,omitempty"`
 	// This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
 	//
@@ -2492,6 +2595,13 @@ func (u *UpdateTelnyxPhoneNumberDto) GetAssistantId() *string {
 		return nil
 	}
 	return u.AssistantId
+}
+
+func (u *UpdateTelnyxPhoneNumberDto) GetWorkflowId() *string {
+	if u == nil {
+		return nil
+	}
+	return u.WorkflowId
 }
 
 func (u *UpdateTelnyxPhoneNumberDto) GetSquadId() *string {
@@ -2643,11 +2753,15 @@ type UpdateTwilioPhoneNumberDto struct {
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
+	// This is the workflow that will be used for incoming calls to this phone number.
+	//
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
 	// This is the squad that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	SquadId *string `json:"squadId,omitempty" url:"squadId,omitempty"`
 	// This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
 	//
@@ -2705,6 +2819,13 @@ func (u *UpdateTwilioPhoneNumberDto) GetAssistantId() *string {
 		return nil
 	}
 	return u.AssistantId
+}
+
+func (u *UpdateTwilioPhoneNumberDto) GetWorkflowId() *string {
+	if u == nil {
+		return nil
+	}
+	return u.WorkflowId
 }
 
 func (u *UpdateTwilioPhoneNumberDto) GetSquadId() *string {
@@ -2870,11 +2991,15 @@ type UpdateVapiPhoneNumberDto struct {
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
+	// This is the workflow that will be used for incoming calls to this phone number.
+	//
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
 	// This is the squad that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	SquadId *string `json:"squadId,omitempty" url:"squadId,omitempty"`
 	// This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
 	//
@@ -2923,6 +3048,13 @@ func (u *UpdateVapiPhoneNumberDto) GetAssistantId() *string {
 		return nil
 	}
 	return u.AssistantId
+}
+
+func (u *UpdateVapiPhoneNumberDto) GetWorkflowId() *string {
+	if u == nil {
+		return nil
+	}
+	return u.WorkflowId
 }
 
 func (u *UpdateVapiPhoneNumberDto) GetSquadId() *string {
@@ -3067,11 +3199,15 @@ type UpdateVonagePhoneNumberDto struct {
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
+	// This is the workflow that will be used for incoming calls to this phone number.
+	//
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
 	// This is the squad that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	SquadId *string `json:"squadId,omitempty" url:"squadId,omitempty"`
 	// This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
 	//
@@ -3116,6 +3252,13 @@ func (u *UpdateVonagePhoneNumberDto) GetAssistantId() *string {
 		return nil
 	}
 	return u.AssistantId
+}
+
+func (u *UpdateVonagePhoneNumberDto) GetWorkflowId() *string {
+	if u == nil {
+		return nil
+	}
+	return u.WorkflowId
 }
 
 func (u *UpdateVonagePhoneNumberDto) GetSquadId() *string {
@@ -3272,11 +3415,15 @@ type VapiPhoneNumber struct {
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
+	// This is the workflow that will be used for incoming calls to this phone number.
+	//
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
 	// This is the squad that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	SquadId *string `json:"squadId,omitempty" url:"squadId,omitempty"`
 	// This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
 	//
@@ -3370,6 +3517,13 @@ func (v *VapiPhoneNumber) GetAssistantId() *string {
 		return nil
 	}
 	return v.AssistantId
+}
+
+func (v *VapiPhoneNumber) GetWorkflowId() *string {
+	if v == nil {
+		return nil
+	}
+	return v.WorkflowId
 }
 
 func (v *VapiPhoneNumber) GetSquadId() *string {
@@ -3590,11 +3744,15 @@ type VonagePhoneNumber struct {
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
+	// This is the workflow that will be used for incoming calls to this phone number.
+	//
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
 	// This is the squad that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	SquadId *string `json:"squadId,omitempty" url:"squadId,omitempty"`
 	// This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
 	//
@@ -3675,6 +3833,13 @@ func (v *VonagePhoneNumber) GetAssistantId() *string {
 		return nil
 	}
 	return v.AssistantId
+}
+
+func (v *VonagePhoneNumber) GetWorkflowId() *string {
+	if v == nil {
+		return nil
+	}
+	return v.WorkflowId
 }
 
 func (v *VonagePhoneNumber) GetSquadId() *string {

@@ -2532,6 +2532,163 @@ func (a *AssistantCustomEndpointingRule) String() string {
 	return fmt.Sprintf("%#v", a)
 }
 
+type AssistantHookAssistantSpeechInterrupted struct {
+	// This is the event that triggers this hook
+	// This is the set of actions to perform when the hook triggers
+	Do []*AssistantHookAssistantSpeechInterruptedDoItem `json:"do,omitempty" url:"do,omitempty"`
+	on string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (a *AssistantHookAssistantSpeechInterrupted) GetDo() []*AssistantHookAssistantSpeechInterruptedDoItem {
+	if a == nil {
+		return nil
+	}
+	return a.Do
+}
+
+func (a *AssistantHookAssistantSpeechInterrupted) On() string {
+	return a.on
+}
+
+func (a *AssistantHookAssistantSpeechInterrupted) GetExtraProperties() map[string]interface{} {
+	return a.extraProperties
+}
+
+func (a *AssistantHookAssistantSpeechInterrupted) UnmarshalJSON(data []byte) error {
+	type embed AssistantHookAssistantSpeechInterrupted
+	var unmarshaler = struct {
+		embed
+		On string `json:"on"`
+	}{
+		embed: embed(*a),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*a = AssistantHookAssistantSpeechInterrupted(unmarshaler.embed)
+	if unmarshaler.On != "assistant.speech.interrupted" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", a, "assistant.speech.interrupted", unmarshaler.On)
+	}
+	a.on = unmarshaler.On
+	extraProperties, err := internal.ExtractExtraProperties(data, *a, "on")
+	if err != nil {
+		return err
+	}
+	a.extraProperties = extraProperties
+	a.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (a *AssistantHookAssistantSpeechInterrupted) MarshalJSON() ([]byte, error) {
+	type embed AssistantHookAssistantSpeechInterrupted
+	var marshaler = struct {
+		embed
+		On string `json:"on"`
+	}{
+		embed: embed(*a),
+		On:    "assistant.speech.interrupted",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (a *AssistantHookAssistantSpeechInterrupted) String() string {
+	if len(a.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(a); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", a)
+}
+
+type AssistantHookAssistantSpeechInterruptedDoItem struct {
+	TransferAssistantHookAction     *TransferAssistantHookAction
+	FunctionCallAssistantHookAction *FunctionCallAssistantHookAction
+	Unknown                         interface{}
+
+	typ string
+}
+
+func (a *AssistantHookAssistantSpeechInterruptedDoItem) GetTransferAssistantHookAction() *TransferAssistantHookAction {
+	if a == nil {
+		return nil
+	}
+	return a.TransferAssistantHookAction
+}
+
+func (a *AssistantHookAssistantSpeechInterruptedDoItem) GetFunctionCallAssistantHookAction() *FunctionCallAssistantHookAction {
+	if a == nil {
+		return nil
+	}
+	return a.FunctionCallAssistantHookAction
+}
+
+func (a *AssistantHookAssistantSpeechInterruptedDoItem) GetUnknown() interface{} {
+	if a == nil {
+		return nil
+	}
+	return a.Unknown
+}
+
+func (a *AssistantHookAssistantSpeechInterruptedDoItem) UnmarshalJSON(data []byte) error {
+	valueTransferAssistantHookAction := new(TransferAssistantHookAction)
+	if err := json.Unmarshal(data, &valueTransferAssistantHookAction); err == nil {
+		a.typ = "TransferAssistantHookAction"
+		a.TransferAssistantHookAction = valueTransferAssistantHookAction
+		return nil
+	}
+	valueFunctionCallAssistantHookAction := new(FunctionCallAssistantHookAction)
+	if err := json.Unmarshal(data, &valueFunctionCallAssistantHookAction); err == nil {
+		a.typ = "FunctionCallAssistantHookAction"
+		a.FunctionCallAssistantHookAction = valueFunctionCallAssistantHookAction
+		return nil
+	}
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		a.typ = "Unknown"
+		a.Unknown = valueUnknown
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, a)
+}
+
+func (a AssistantHookAssistantSpeechInterruptedDoItem) MarshalJSON() ([]byte, error) {
+	if a.typ == "TransferAssistantHookAction" || a.TransferAssistantHookAction != nil {
+		return json.Marshal(a.TransferAssistantHookAction)
+	}
+	if a.typ == "FunctionCallAssistantHookAction" || a.FunctionCallAssistantHookAction != nil {
+		return json.Marshal(a.FunctionCallAssistantHookAction)
+	}
+	if a.typ == "Unknown" || a.Unknown != nil {
+		return json.Marshal(a.Unknown)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
+type AssistantHookAssistantSpeechInterruptedDoItemVisitor interface {
+	VisitTransferAssistantHookAction(*TransferAssistantHookAction) error
+	VisitFunctionCallAssistantHookAction(*FunctionCallAssistantHookAction) error
+	VisitUnknown(interface{}) error
+}
+
+func (a *AssistantHookAssistantSpeechInterruptedDoItem) Accept(visitor AssistantHookAssistantSpeechInterruptedDoItemVisitor) error {
+	if a.typ == "TransferAssistantHookAction" || a.TransferAssistantHookAction != nil {
+		return visitor.VisitTransferAssistantHookAction(a.TransferAssistantHookAction)
+	}
+	if a.typ == "FunctionCallAssistantHookAction" || a.FunctionCallAssistantHookAction != nil {
+		return visitor.VisitFunctionCallAssistantHookAction(a.FunctionCallAssistantHookAction)
+	}
+	if a.typ == "Unknown" || a.Unknown != nil {
+		return visitor.VisitUnknown(a.Unknown)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
 type AssistantHookCallEnding struct {
 	// This is the event that triggers this hook
 	// This is the set of actions to perform when the hook triggers
@@ -2677,6 +2834,163 @@ func (a *AssistantHookCallEndingDoItem) Accept(visitor AssistantHookCallEndingDo
 	return fmt.Errorf("type %T does not include a non-empty union type", a)
 }
 
+type AssistantHookCustomerSpeechInterrupted struct {
+	// This is the event that triggers this hook
+	// This is the set of actions to perform when the hook triggers
+	Do []*AssistantHookCustomerSpeechInterruptedDoItem `json:"do,omitempty" url:"do,omitempty"`
+	on string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (a *AssistantHookCustomerSpeechInterrupted) GetDo() []*AssistantHookCustomerSpeechInterruptedDoItem {
+	if a == nil {
+		return nil
+	}
+	return a.Do
+}
+
+func (a *AssistantHookCustomerSpeechInterrupted) On() string {
+	return a.on
+}
+
+func (a *AssistantHookCustomerSpeechInterrupted) GetExtraProperties() map[string]interface{} {
+	return a.extraProperties
+}
+
+func (a *AssistantHookCustomerSpeechInterrupted) UnmarshalJSON(data []byte) error {
+	type embed AssistantHookCustomerSpeechInterrupted
+	var unmarshaler = struct {
+		embed
+		On string `json:"on"`
+	}{
+		embed: embed(*a),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*a = AssistantHookCustomerSpeechInterrupted(unmarshaler.embed)
+	if unmarshaler.On != "customer.speech.interrupted" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", a, "customer.speech.interrupted", unmarshaler.On)
+	}
+	a.on = unmarshaler.On
+	extraProperties, err := internal.ExtractExtraProperties(data, *a, "on")
+	if err != nil {
+		return err
+	}
+	a.extraProperties = extraProperties
+	a.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (a *AssistantHookCustomerSpeechInterrupted) MarshalJSON() ([]byte, error) {
+	type embed AssistantHookCustomerSpeechInterrupted
+	var marshaler = struct {
+		embed
+		On string `json:"on"`
+	}{
+		embed: embed(*a),
+		On:    "customer.speech.interrupted",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (a *AssistantHookCustomerSpeechInterrupted) String() string {
+	if len(a.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(a); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", a)
+}
+
+type AssistantHookCustomerSpeechInterruptedDoItem struct {
+	TransferAssistantHookAction     *TransferAssistantHookAction
+	FunctionCallAssistantHookAction *FunctionCallAssistantHookAction
+	Unknown                         interface{}
+
+	typ string
+}
+
+func (a *AssistantHookCustomerSpeechInterruptedDoItem) GetTransferAssistantHookAction() *TransferAssistantHookAction {
+	if a == nil {
+		return nil
+	}
+	return a.TransferAssistantHookAction
+}
+
+func (a *AssistantHookCustomerSpeechInterruptedDoItem) GetFunctionCallAssistantHookAction() *FunctionCallAssistantHookAction {
+	if a == nil {
+		return nil
+	}
+	return a.FunctionCallAssistantHookAction
+}
+
+func (a *AssistantHookCustomerSpeechInterruptedDoItem) GetUnknown() interface{} {
+	if a == nil {
+		return nil
+	}
+	return a.Unknown
+}
+
+func (a *AssistantHookCustomerSpeechInterruptedDoItem) UnmarshalJSON(data []byte) error {
+	valueTransferAssistantHookAction := new(TransferAssistantHookAction)
+	if err := json.Unmarshal(data, &valueTransferAssistantHookAction); err == nil {
+		a.typ = "TransferAssistantHookAction"
+		a.TransferAssistantHookAction = valueTransferAssistantHookAction
+		return nil
+	}
+	valueFunctionCallAssistantHookAction := new(FunctionCallAssistantHookAction)
+	if err := json.Unmarshal(data, &valueFunctionCallAssistantHookAction); err == nil {
+		a.typ = "FunctionCallAssistantHookAction"
+		a.FunctionCallAssistantHookAction = valueFunctionCallAssistantHookAction
+		return nil
+	}
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		a.typ = "Unknown"
+		a.Unknown = valueUnknown
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, a)
+}
+
+func (a AssistantHookCustomerSpeechInterruptedDoItem) MarshalJSON() ([]byte, error) {
+	if a.typ == "TransferAssistantHookAction" || a.TransferAssistantHookAction != nil {
+		return json.Marshal(a.TransferAssistantHookAction)
+	}
+	if a.typ == "FunctionCallAssistantHookAction" || a.FunctionCallAssistantHookAction != nil {
+		return json.Marshal(a.FunctionCallAssistantHookAction)
+	}
+	if a.typ == "Unknown" || a.Unknown != nil {
+		return json.Marshal(a.Unknown)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
+type AssistantHookCustomerSpeechInterruptedDoItemVisitor interface {
+	VisitTransferAssistantHookAction(*TransferAssistantHookAction) error
+	VisitFunctionCallAssistantHookAction(*FunctionCallAssistantHookAction) error
+	VisitUnknown(interface{}) error
+}
+
+func (a *AssistantHookCustomerSpeechInterruptedDoItem) Accept(visitor AssistantHookCustomerSpeechInterruptedDoItemVisitor) error {
+	if a.typ == "TransferAssistantHookAction" || a.TransferAssistantHookAction != nil {
+		return visitor.VisitTransferAssistantHookAction(a.TransferAssistantHookAction)
+	}
+	if a.typ == "FunctionCallAssistantHookAction" || a.FunctionCallAssistantHookAction != nil {
+		return visitor.VisitFunctionCallAssistantHookAction(a.FunctionCallAssistantHookAction)
+	}
+	if a.typ == "Unknown" || a.Unknown != nil {
+		return visitor.VisitUnknown(a.Unknown)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
 type AssistantHookFilter struct {
 	// This is the type of filter - currently only "oneOf" is supported
 	// This is the key to filter on (e.g. "call.endedReason")
@@ -2785,9 +3099,8 @@ type AssistantOverrides struct {
 	// This uses Twilio's built-in detection while the VoicemailTool relies on the model to detect if a voicemail was reached.
 	// You can use neither of them, one of them, or both of them. By default, Twilio built-in detection is enabled while VoicemailTool is not.
 	VoicemailDetection *AssistantOverridesVoicemailDetection `json:"voicemailDetection,omitempty" url:"voicemailDetection,omitempty"`
-	// These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
-	ClientMessages []AssistantOverridesClientMessagesItem `json:"clientMessages,omitempty" url:"clientMessages,omitempty"`
-	ServerMessages [][]map[string]interface{}             `json:"serverMessages,omitempty" url:"serverMessages,omitempty"`
+	ClientMessages     [][]map[string]interface{}            `json:"clientMessages,omitempty" url:"clientMessages,omitempty"`
+	ServerMessages     [][]map[string]interface{}            `json:"serverMessages,omitempty" url:"serverMessages,omitempty"`
 	// How many seconds of silence to wait before ending the call. Defaults to 30.
 	//
 	// @default 30
@@ -2819,7 +3132,7 @@ type AssistantOverrides struct {
 	// These are dynamic credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials.
 	Credentials []*AssistantOverridesCredentialsItem `json:"credentials,omitempty" url:"credentials,omitempty"`
 	// This is a set of actions that will be performed on certain events.
-	Hooks []*AssistantHookCallEnding `json:"hooks,omitempty" url:"hooks,omitempty"`
+	Hooks []*AssistantOverridesHooksItem `json:"hooks,omitempty" url:"hooks,omitempty"`
 	// These are values that will be used to replace the template variables in the assistant messages and other text-based fields.
 	// This uses LiquidJS syntax. https://liquidjs.com/tutorials/intro-to-liquid.html
 	//
@@ -2945,7 +3258,7 @@ func (a *AssistantOverrides) GetVoicemailDetection() *AssistantOverridesVoicemai
 	return a.VoicemailDetection
 }
 
-func (a *AssistantOverrides) GetClientMessages() []AssistantOverridesClientMessagesItem {
+func (a *AssistantOverrides) GetClientMessages() [][]map[string]interface{} {
 	if a == nil {
 		return nil
 	}
@@ -3015,7 +3328,7 @@ func (a *AssistantOverrides) GetCredentials() []*AssistantOverridesCredentialsIt
 	return a.Credentials
 }
 
-func (a *AssistantOverrides) GetHooks() []*AssistantHookCallEnding {
+func (a *AssistantOverrides) GetHooks() []*AssistantOverridesHooksItem {
 	if a == nil {
 		return nil
 	}
@@ -3249,73 +3562,6 @@ func NewAssistantOverridesBackgroundSoundZeroFromString(s string) (AssistantOver
 }
 
 func (a AssistantOverridesBackgroundSoundZero) Ptr() *AssistantOverridesBackgroundSoundZero {
-	return &a
-}
-
-type AssistantOverridesClientMessagesItem string
-
-const (
-	AssistantOverridesClientMessagesItemConversationUpdate  AssistantOverridesClientMessagesItem = "conversation-update"
-	AssistantOverridesClientMessagesItemFunctionCall        AssistantOverridesClientMessagesItem = "function-call"
-	AssistantOverridesClientMessagesItemFunctionCallResult  AssistantOverridesClientMessagesItem = "function-call-result"
-	AssistantOverridesClientMessagesItemHang                AssistantOverridesClientMessagesItem = "hang"
-	AssistantOverridesClientMessagesItemLanguageChanged     AssistantOverridesClientMessagesItem = "language-changed"
-	AssistantOverridesClientMessagesItemMetadata            AssistantOverridesClientMessagesItem = "metadata"
-	AssistantOverridesClientMessagesItemModelOutput         AssistantOverridesClientMessagesItem = "model-output"
-	AssistantOverridesClientMessagesItemSpeechUpdate        AssistantOverridesClientMessagesItem = "speech-update"
-	AssistantOverridesClientMessagesItemStatusUpdate        AssistantOverridesClientMessagesItem = "status-update"
-	AssistantOverridesClientMessagesItemTranscript          AssistantOverridesClientMessagesItem = "transcript"
-	AssistantOverridesClientMessagesItemToolCalls           AssistantOverridesClientMessagesItem = "tool-calls"
-	AssistantOverridesClientMessagesItemToolCallsResult     AssistantOverridesClientMessagesItem = "tool-calls-result"
-	AssistantOverridesClientMessagesItemToolCompleted       AssistantOverridesClientMessagesItem = "tool.completed"
-	AssistantOverridesClientMessagesItemTransferUpdate      AssistantOverridesClientMessagesItem = "transfer-update"
-	AssistantOverridesClientMessagesItemUserInterrupted     AssistantOverridesClientMessagesItem = "user-interrupted"
-	AssistantOverridesClientMessagesItemVoiceInput          AssistantOverridesClientMessagesItem = "voice-input"
-	AssistantOverridesClientMessagesItemWorkflowNodeStarted AssistantOverridesClientMessagesItem = "workflow.node.started"
-)
-
-func NewAssistantOverridesClientMessagesItemFromString(s string) (AssistantOverridesClientMessagesItem, error) {
-	switch s {
-	case "conversation-update":
-		return AssistantOverridesClientMessagesItemConversationUpdate, nil
-	case "function-call":
-		return AssistantOverridesClientMessagesItemFunctionCall, nil
-	case "function-call-result":
-		return AssistantOverridesClientMessagesItemFunctionCallResult, nil
-	case "hang":
-		return AssistantOverridesClientMessagesItemHang, nil
-	case "language-changed":
-		return AssistantOverridesClientMessagesItemLanguageChanged, nil
-	case "metadata":
-		return AssistantOverridesClientMessagesItemMetadata, nil
-	case "model-output":
-		return AssistantOverridesClientMessagesItemModelOutput, nil
-	case "speech-update":
-		return AssistantOverridesClientMessagesItemSpeechUpdate, nil
-	case "status-update":
-		return AssistantOverridesClientMessagesItemStatusUpdate, nil
-	case "transcript":
-		return AssistantOverridesClientMessagesItemTranscript, nil
-	case "tool-calls":
-		return AssistantOverridesClientMessagesItemToolCalls, nil
-	case "tool-calls-result":
-		return AssistantOverridesClientMessagesItemToolCallsResult, nil
-	case "tool.completed":
-		return AssistantOverridesClientMessagesItemToolCompleted, nil
-	case "transfer-update":
-		return AssistantOverridesClientMessagesItemTransferUpdate, nil
-	case "user-interrupted":
-		return AssistantOverridesClientMessagesItemUserInterrupted, nil
-	case "voice-input":
-		return AssistantOverridesClientMessagesItemVoiceInput, nil
-	case "workflow.node.started":
-		return AssistantOverridesClientMessagesItemWorkflowNodeStarted, nil
-	}
-	var t AssistantOverridesClientMessagesItem
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (a AssistantOverridesClientMessagesItem) Ptr() *AssistantOverridesClientMessagesItem {
 	return &a
 }
 
@@ -4359,6 +4605,89 @@ func (a AssistantOverridesFirstMessageMode) Ptr() *AssistantOverridesFirstMessag
 	return &a
 }
 
+type AssistantOverridesHooksItem struct {
+	AssistantHookCallEnding                 *AssistantHookCallEnding
+	AssistantHookAssistantSpeechInterrupted *AssistantHookAssistantSpeechInterrupted
+	AssistantHookCustomerSpeechInterrupted  *AssistantHookCustomerSpeechInterrupted
+
+	typ string
+}
+
+func (a *AssistantOverridesHooksItem) GetAssistantHookCallEnding() *AssistantHookCallEnding {
+	if a == nil {
+		return nil
+	}
+	return a.AssistantHookCallEnding
+}
+
+func (a *AssistantOverridesHooksItem) GetAssistantHookAssistantSpeechInterrupted() *AssistantHookAssistantSpeechInterrupted {
+	if a == nil {
+		return nil
+	}
+	return a.AssistantHookAssistantSpeechInterrupted
+}
+
+func (a *AssistantOverridesHooksItem) GetAssistantHookCustomerSpeechInterrupted() *AssistantHookCustomerSpeechInterrupted {
+	if a == nil {
+		return nil
+	}
+	return a.AssistantHookCustomerSpeechInterrupted
+}
+
+func (a *AssistantOverridesHooksItem) UnmarshalJSON(data []byte) error {
+	valueAssistantHookCallEnding := new(AssistantHookCallEnding)
+	if err := json.Unmarshal(data, &valueAssistantHookCallEnding); err == nil {
+		a.typ = "AssistantHookCallEnding"
+		a.AssistantHookCallEnding = valueAssistantHookCallEnding
+		return nil
+	}
+	valueAssistantHookAssistantSpeechInterrupted := new(AssistantHookAssistantSpeechInterrupted)
+	if err := json.Unmarshal(data, &valueAssistantHookAssistantSpeechInterrupted); err == nil {
+		a.typ = "AssistantHookAssistantSpeechInterrupted"
+		a.AssistantHookAssistantSpeechInterrupted = valueAssistantHookAssistantSpeechInterrupted
+		return nil
+	}
+	valueAssistantHookCustomerSpeechInterrupted := new(AssistantHookCustomerSpeechInterrupted)
+	if err := json.Unmarshal(data, &valueAssistantHookCustomerSpeechInterrupted); err == nil {
+		a.typ = "AssistantHookCustomerSpeechInterrupted"
+		a.AssistantHookCustomerSpeechInterrupted = valueAssistantHookCustomerSpeechInterrupted
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, a)
+}
+
+func (a AssistantOverridesHooksItem) MarshalJSON() ([]byte, error) {
+	if a.typ == "AssistantHookCallEnding" || a.AssistantHookCallEnding != nil {
+		return json.Marshal(a.AssistantHookCallEnding)
+	}
+	if a.typ == "AssistantHookAssistantSpeechInterrupted" || a.AssistantHookAssistantSpeechInterrupted != nil {
+		return json.Marshal(a.AssistantHookAssistantSpeechInterrupted)
+	}
+	if a.typ == "AssistantHookCustomerSpeechInterrupted" || a.AssistantHookCustomerSpeechInterrupted != nil {
+		return json.Marshal(a.AssistantHookCustomerSpeechInterrupted)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
+type AssistantOverridesHooksItemVisitor interface {
+	VisitAssistantHookCallEnding(*AssistantHookCallEnding) error
+	VisitAssistantHookAssistantSpeechInterrupted(*AssistantHookAssistantSpeechInterrupted) error
+	VisitAssistantHookCustomerSpeechInterrupted(*AssistantHookCustomerSpeechInterrupted) error
+}
+
+func (a *AssistantOverridesHooksItem) Accept(visitor AssistantOverridesHooksItemVisitor) error {
+	if a.typ == "AssistantHookCallEnding" || a.AssistantHookCallEnding != nil {
+		return visitor.VisitAssistantHookCallEnding(a.AssistantHookCallEnding)
+	}
+	if a.typ == "AssistantHookAssistantSpeechInterrupted" || a.AssistantHookAssistantSpeechInterrupted != nil {
+		return visitor.VisitAssistantHookAssistantSpeechInterrupted(a.AssistantHookAssistantSpeechInterrupted)
+	}
+	if a.typ == "AssistantHookCustomerSpeechInterrupted" || a.AssistantHookCustomerSpeechInterrupted != nil {
+		return visitor.VisitAssistantHookCustomerSpeechInterrupted(a.AssistantHookCustomerSpeechInterrupted)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
 // These are the options for the assistant's LLM.
 type AssistantOverridesModel struct {
 	AnyscaleModel     *AnyscaleModel
@@ -5400,6 +5729,2593 @@ func (a *AssistantPaginatedResponse) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", a)
+}
+
+type AssistantUserEditable struct {
+	// These are the options for the assistant's transcriber.
+	Transcriber *AssistantUserEditableTranscriber `json:"transcriber,omitempty" url:"transcriber,omitempty"`
+	// These are the options for the assistant's LLM.
+	Model *AssistantUserEditableModel `json:"model,omitempty" url:"model,omitempty"`
+	// These are the options for the assistant's voice.
+	Voice *AssistantUserEditableVoice `json:"voice,omitempty" url:"voice,omitempty"`
+	// This is the first message that the assistant will say. This can also be a URL to a containerized audio file (mp3, wav, etc.).
+	//
+	// If unspecified, assistant will wait for user to speak and use the model to respond once they speak.
+	FirstMessage                     *string `json:"firstMessage,omitempty" url:"firstMessage,omitempty"`
+	FirstMessageInterruptionsEnabled *bool   `json:"firstMessageInterruptionsEnabled,omitempty" url:"firstMessageInterruptionsEnabled,omitempty"`
+	// This is the mode for the first message. Default is 'assistant-speaks-first'.
+	//
+	// Use:
+	// - 'assistant-speaks-first' to have the assistant speak first.
+	// - 'assistant-waits-for-user' to have the assistant wait for the user to speak first.
+	// - 'assistant-speaks-first-with-model-generated-message' to have the assistant speak first with a message generated by the model based on the conversation state. (`assistant.model.messages` at call start, `call.messages` at squad transfer points).
+	//
+	// @default 'assistant-speaks-first'
+	FirstMessageMode *AssistantUserEditableFirstMessageMode `json:"firstMessageMode,omitempty" url:"firstMessageMode,omitempty"`
+	// These are the settings to configure or disable voicemail detection. Alternatively, voicemail detection can be configured using the model.tools=[VoicemailTool].
+	// This uses Twilio's built-in detection while the VoicemailTool relies on the model to detect if a voicemail was reached.
+	// You can use neither of them, one of them, or both of them. By default, Twilio built-in detection is enabled while VoicemailTool is not.
+	VoicemailDetection *AssistantUserEditableVoicemailDetection `json:"voicemailDetection,omitempty" url:"voicemailDetection,omitempty"`
+	ClientMessages     [][]map[string]interface{}               `json:"clientMessages,omitempty" url:"clientMessages,omitempty"`
+	ServerMessages     [][]map[string]interface{}               `json:"serverMessages,omitempty" url:"serverMessages,omitempty"`
+	// How many seconds of silence to wait before ending the call. Defaults to 30.
+	//
+	// @default 30
+	SilenceTimeoutSeconds *float64 `json:"silenceTimeoutSeconds,omitempty" url:"silenceTimeoutSeconds,omitempty"`
+	// This is the maximum number of seconds that the call will last. When the call reaches this duration, it will be ended.
+	//
+	// @default 600 (10 minutes)
+	MaxDurationSeconds *float64 `json:"maxDurationSeconds,omitempty" url:"maxDurationSeconds,omitempty"`
+	// This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
+	// You can also provide a custom sound by providing a URL to an audio file.
+	BackgroundSound *AssistantUserEditableBackgroundSound `json:"backgroundSound,omitempty" url:"backgroundSound,omitempty"`
+	// This enables filtering of noise and background speech while the user is talking.
+	//
+	// Default `false` while in beta.
+	//
+	// @default false
+	BackgroundDenoisingEnabled *bool `json:"backgroundDenoisingEnabled,omitempty" url:"backgroundDenoisingEnabled,omitempty"`
+	// This determines whether the model's output is used in conversation history rather than the transcription of assistant's speech.
+	//
+	// Default `false` while in beta.
+	//
+	// @default false
+	ModelOutputInMessagesEnabled *bool `json:"modelOutputInMessagesEnabled,omitempty" url:"modelOutputInMessagesEnabled,omitempty"`
+	// These are the configurations to be passed to the transport providers of assistant's calls, like Twilio. You can store multiple configurations for different transport providers. For a call, only the configuration matching the call transport provider is used.
+	TransportConfigurations []*TransportConfigurationTwilio `json:"transportConfigurations,omitempty" url:"transportConfigurations,omitempty"`
+	// This is the plan for observability configuration of assistant's calls.
+	// Currently supports Langfuse for tracing and monitoring.
+	ObservabilityPlan *LangfuseObservabilityPlan `json:"observabilityPlan,omitempty" url:"observabilityPlan,omitempty"`
+	// These are dynamic credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials.
+	Credentials []*AssistantUserEditableCredentialsItem `json:"credentials,omitempty" url:"credentials,omitempty"`
+	// This is a set of actions that will be performed on certain events.
+	Hooks []*AssistantUserEditableHooksItem `json:"hooks,omitempty" url:"hooks,omitempty"`
+	// This is the name of the assistant.
+	//
+	// This is required when you want to transfer between assistants in a call.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// This is the message that the assistant will say if the call is forwarded to voicemail.
+	//
+	// If unspecified, it will hang up.
+	VoicemailMessage *string `json:"voicemailMessage,omitempty" url:"voicemailMessage,omitempty"`
+	// This is the message that the assistant will say if it ends the call.
+	//
+	// If unspecified, it will hang up without saying anything.
+	EndCallMessage *string `json:"endCallMessage,omitempty" url:"endCallMessage,omitempty"`
+	// This list contains phrases that, if spoken by the assistant, will trigger the call to be hung up. Case insensitive.
+	EndCallPhrases []string        `json:"endCallPhrases,omitempty" url:"endCallPhrases,omitempty"`
+	CompliancePlan *CompliancePlan `json:"compliancePlan,omitempty" url:"compliancePlan,omitempty"`
+	// This is for metadata you want to store on the assistant.
+	Metadata map[string]interface{} `json:"metadata,omitempty" url:"metadata,omitempty"`
+	// This is the plan for analysis of assistant's calls. Stored in `call.analysis`.
+	AnalysisPlan *AnalysisPlan `json:"analysisPlan,omitempty" url:"analysisPlan,omitempty"`
+	// This is the plan for artifacts generated during assistant's calls. Stored in `call.artifact`.
+	//
+	// Note: `recordingEnabled` is currently at the root level. It will be moved to `artifactPlan` in the future, but will remain backwards compatible.
+	ArtifactPlan *ArtifactPlan `json:"artifactPlan,omitempty" url:"artifactPlan,omitempty"`
+	// This is the plan for static predefined messages that can be spoken by the assistant during the call, like `idleMessages`.
+	//
+	// Note: `firstMessage`, `voicemailMessage`, and `endCallMessage` are currently at the root level. They will be moved to `messagePlan` in the future, but will remain backwards compatible.
+	MessagePlan *MessagePlan `json:"messagePlan,omitempty" url:"messagePlan,omitempty"`
+	// This is the plan for when the assistant should start talking.
+	//
+	// You should configure this if you're running into these issues:
+	// - The assistant is too slow to start talking after the customer is done speaking.
+	// - The assistant is too fast to start talking after the customer is done speaking.
+	// - The assistant is so fast that it's actually interrupting the customer.
+	StartSpeakingPlan *StartSpeakingPlan `json:"startSpeakingPlan,omitempty" url:"startSpeakingPlan,omitempty"`
+	// This is the plan for when assistant should stop talking on customer interruption.
+	//
+	// You should configure this if you're running into these issues:
+	// - The assistant is too slow to recognize customer's interruption.
+	// - The assistant is too fast to recognize customer's interruption.
+	// - The assistant is getting interrupted by phrases that are just acknowledgments.
+	// - The assistant is getting interrupted by background noises.
+	// - The assistant is not properly stopping -- it starts talking right after getting interrupted.
+	StopSpeakingPlan *StopSpeakingPlan `json:"stopSpeakingPlan,omitempty" url:"stopSpeakingPlan,omitempty"`
+	// This is the plan for real-time monitoring of the assistant's calls.
+	//
+	// Usage:
+	// - To enable live listening of the assistant's calls, set `monitorPlan.listenEnabled` to `true`.
+	// - To enable live control of the assistant's calls, set `monitorPlan.controlEnabled` to `true`.
+	//
+	// Note, `serverMessages`, `clientMessages`, `serverUrl` and `serverUrlSecret` are currently at the root level but will be moved to `monitorPlan` in the future. Will remain backwards compatible
+	MonitorPlan *MonitorPlan `json:"monitorPlan,omitempty" url:"monitorPlan,omitempty"`
+	// These are the credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can provide a subset using this.
+	CredentialIds []string `json:"credentialIds,omitempty" url:"credentialIds,omitempty"`
+	// This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
+	//
+	// The order of precedence is:
+	//
+	// 1. assistant.server.url
+	// 2. phoneNumber.serverUrl
+	// 3. org.serverUrl
+	Server          *Server          `json:"server,omitempty" url:"server,omitempty"`
+	KeypadInputPlan *KeypadInputPlan `json:"keypadInputPlan,omitempty" url:"keypadInputPlan,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (a *AssistantUserEditable) GetTranscriber() *AssistantUserEditableTranscriber {
+	if a == nil {
+		return nil
+	}
+	return a.Transcriber
+}
+
+func (a *AssistantUserEditable) GetModel() *AssistantUserEditableModel {
+	if a == nil {
+		return nil
+	}
+	return a.Model
+}
+
+func (a *AssistantUserEditable) GetVoice() *AssistantUserEditableVoice {
+	if a == nil {
+		return nil
+	}
+	return a.Voice
+}
+
+func (a *AssistantUserEditable) GetFirstMessage() *string {
+	if a == nil {
+		return nil
+	}
+	return a.FirstMessage
+}
+
+func (a *AssistantUserEditable) GetFirstMessageInterruptionsEnabled() *bool {
+	if a == nil {
+		return nil
+	}
+	return a.FirstMessageInterruptionsEnabled
+}
+
+func (a *AssistantUserEditable) GetFirstMessageMode() *AssistantUserEditableFirstMessageMode {
+	if a == nil {
+		return nil
+	}
+	return a.FirstMessageMode
+}
+
+func (a *AssistantUserEditable) GetVoicemailDetection() *AssistantUserEditableVoicemailDetection {
+	if a == nil {
+		return nil
+	}
+	return a.VoicemailDetection
+}
+
+func (a *AssistantUserEditable) GetClientMessages() [][]map[string]interface{} {
+	if a == nil {
+		return nil
+	}
+	return a.ClientMessages
+}
+
+func (a *AssistantUserEditable) GetServerMessages() [][]map[string]interface{} {
+	if a == nil {
+		return nil
+	}
+	return a.ServerMessages
+}
+
+func (a *AssistantUserEditable) GetSilenceTimeoutSeconds() *float64 {
+	if a == nil {
+		return nil
+	}
+	return a.SilenceTimeoutSeconds
+}
+
+func (a *AssistantUserEditable) GetMaxDurationSeconds() *float64 {
+	if a == nil {
+		return nil
+	}
+	return a.MaxDurationSeconds
+}
+
+func (a *AssistantUserEditable) GetBackgroundSound() *AssistantUserEditableBackgroundSound {
+	if a == nil {
+		return nil
+	}
+	return a.BackgroundSound
+}
+
+func (a *AssistantUserEditable) GetBackgroundDenoisingEnabled() *bool {
+	if a == nil {
+		return nil
+	}
+	return a.BackgroundDenoisingEnabled
+}
+
+func (a *AssistantUserEditable) GetModelOutputInMessagesEnabled() *bool {
+	if a == nil {
+		return nil
+	}
+	return a.ModelOutputInMessagesEnabled
+}
+
+func (a *AssistantUserEditable) GetTransportConfigurations() []*TransportConfigurationTwilio {
+	if a == nil {
+		return nil
+	}
+	return a.TransportConfigurations
+}
+
+func (a *AssistantUserEditable) GetObservabilityPlan() *LangfuseObservabilityPlan {
+	if a == nil {
+		return nil
+	}
+	return a.ObservabilityPlan
+}
+
+func (a *AssistantUserEditable) GetCredentials() []*AssistantUserEditableCredentialsItem {
+	if a == nil {
+		return nil
+	}
+	return a.Credentials
+}
+
+func (a *AssistantUserEditable) GetHooks() []*AssistantUserEditableHooksItem {
+	if a == nil {
+		return nil
+	}
+	return a.Hooks
+}
+
+func (a *AssistantUserEditable) GetName() *string {
+	if a == nil {
+		return nil
+	}
+	return a.Name
+}
+
+func (a *AssistantUserEditable) GetVoicemailMessage() *string {
+	if a == nil {
+		return nil
+	}
+	return a.VoicemailMessage
+}
+
+func (a *AssistantUserEditable) GetEndCallMessage() *string {
+	if a == nil {
+		return nil
+	}
+	return a.EndCallMessage
+}
+
+func (a *AssistantUserEditable) GetEndCallPhrases() []string {
+	if a == nil {
+		return nil
+	}
+	return a.EndCallPhrases
+}
+
+func (a *AssistantUserEditable) GetCompliancePlan() *CompliancePlan {
+	if a == nil {
+		return nil
+	}
+	return a.CompliancePlan
+}
+
+func (a *AssistantUserEditable) GetMetadata() map[string]interface{} {
+	if a == nil {
+		return nil
+	}
+	return a.Metadata
+}
+
+func (a *AssistantUserEditable) GetAnalysisPlan() *AnalysisPlan {
+	if a == nil {
+		return nil
+	}
+	return a.AnalysisPlan
+}
+
+func (a *AssistantUserEditable) GetArtifactPlan() *ArtifactPlan {
+	if a == nil {
+		return nil
+	}
+	return a.ArtifactPlan
+}
+
+func (a *AssistantUserEditable) GetMessagePlan() *MessagePlan {
+	if a == nil {
+		return nil
+	}
+	return a.MessagePlan
+}
+
+func (a *AssistantUserEditable) GetStartSpeakingPlan() *StartSpeakingPlan {
+	if a == nil {
+		return nil
+	}
+	return a.StartSpeakingPlan
+}
+
+func (a *AssistantUserEditable) GetStopSpeakingPlan() *StopSpeakingPlan {
+	if a == nil {
+		return nil
+	}
+	return a.StopSpeakingPlan
+}
+
+func (a *AssistantUserEditable) GetMonitorPlan() *MonitorPlan {
+	if a == nil {
+		return nil
+	}
+	return a.MonitorPlan
+}
+
+func (a *AssistantUserEditable) GetCredentialIds() []string {
+	if a == nil {
+		return nil
+	}
+	return a.CredentialIds
+}
+
+func (a *AssistantUserEditable) GetServer() *Server {
+	if a == nil {
+		return nil
+	}
+	return a.Server
+}
+
+func (a *AssistantUserEditable) GetKeypadInputPlan() *KeypadInputPlan {
+	if a == nil {
+		return nil
+	}
+	return a.KeypadInputPlan
+}
+
+func (a *AssistantUserEditable) GetExtraProperties() map[string]interface{} {
+	return a.extraProperties
+}
+
+func (a *AssistantUserEditable) UnmarshalJSON(data []byte) error {
+	type unmarshaler AssistantUserEditable
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*a = AssistantUserEditable(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *a)
+	if err != nil {
+		return err
+	}
+	a.extraProperties = extraProperties
+	a.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (a *AssistantUserEditable) String() string {
+	if len(a.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(a); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", a)
+}
+
+// This is the background sound in the call. Default for phone calls is 'office' and default for web calls is 'off'.
+// You can also provide a custom sound by providing a URL to an audio file.
+type AssistantUserEditableBackgroundSound struct {
+	AssistantUserEditableBackgroundSoundZero AssistantUserEditableBackgroundSoundZero
+	String                                   string
+
+	typ string
+}
+
+func (a *AssistantUserEditableBackgroundSound) GetAssistantUserEditableBackgroundSoundZero() AssistantUserEditableBackgroundSoundZero {
+	if a == nil {
+		return ""
+	}
+	return a.AssistantUserEditableBackgroundSoundZero
+}
+
+func (a *AssistantUserEditableBackgroundSound) GetString() string {
+	if a == nil {
+		return ""
+	}
+	return a.String
+}
+
+func (a *AssistantUserEditableBackgroundSound) UnmarshalJSON(data []byte) error {
+	var valueAssistantUserEditableBackgroundSoundZero AssistantUserEditableBackgroundSoundZero
+	if err := json.Unmarshal(data, &valueAssistantUserEditableBackgroundSoundZero); err == nil {
+		a.typ = "AssistantUserEditableBackgroundSoundZero"
+		a.AssistantUserEditableBackgroundSoundZero = valueAssistantUserEditableBackgroundSoundZero
+		return nil
+	}
+	var valueString string
+	if err := json.Unmarshal(data, &valueString); err == nil {
+		a.typ = "String"
+		a.String = valueString
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, a)
+}
+
+func (a AssistantUserEditableBackgroundSound) MarshalJSON() ([]byte, error) {
+	if a.typ == "AssistantUserEditableBackgroundSoundZero" || a.AssistantUserEditableBackgroundSoundZero != "" {
+		return json.Marshal(a.AssistantUserEditableBackgroundSoundZero)
+	}
+	if a.typ == "String" || a.String != "" {
+		return json.Marshal(a.String)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
+type AssistantUserEditableBackgroundSoundVisitor interface {
+	VisitAssistantUserEditableBackgroundSoundZero(AssistantUserEditableBackgroundSoundZero) error
+	VisitString(string) error
+}
+
+func (a *AssistantUserEditableBackgroundSound) Accept(visitor AssistantUserEditableBackgroundSoundVisitor) error {
+	if a.typ == "AssistantUserEditableBackgroundSoundZero" || a.AssistantUserEditableBackgroundSoundZero != "" {
+		return visitor.VisitAssistantUserEditableBackgroundSoundZero(a.AssistantUserEditableBackgroundSoundZero)
+	}
+	if a.typ == "String" || a.String != "" {
+		return visitor.VisitString(a.String)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
+type AssistantUserEditableBackgroundSoundZero string
+
+const (
+	AssistantUserEditableBackgroundSoundZeroOff    AssistantUserEditableBackgroundSoundZero = "off"
+	AssistantUserEditableBackgroundSoundZeroOffice AssistantUserEditableBackgroundSoundZero = "office"
+)
+
+func NewAssistantUserEditableBackgroundSoundZeroFromString(s string) (AssistantUserEditableBackgroundSoundZero, error) {
+	switch s {
+	case "off":
+		return AssistantUserEditableBackgroundSoundZeroOff, nil
+	case "office":
+		return AssistantUserEditableBackgroundSoundZeroOffice, nil
+	}
+	var t AssistantUserEditableBackgroundSoundZero
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (a AssistantUserEditableBackgroundSoundZero) Ptr() *AssistantUserEditableBackgroundSoundZero {
+	return &a
+}
+
+type AssistantUserEditableCredentialsItem struct {
+	CreateElevenLabsCredentialDto                        *CreateElevenLabsCredentialDto
+	CreateAnthropicCredentialDto                         *CreateAnthropicCredentialDto
+	CreateAnyscaleCredentialDto                          *CreateAnyscaleCredentialDto
+	CreateAssemblyAiCredentialDto                        *CreateAssemblyAiCredentialDto
+	CreateAzureOpenAiCredentialDto                       *CreateAzureOpenAiCredentialDto
+	CreateAzureCredentialDto                             *CreateAzureCredentialDto
+	CreateByoSipTrunkCredentialDto                       *CreateByoSipTrunkCredentialDto
+	CreateCartesiaCredentialDto                          *CreateCartesiaCredentialDto
+	CreateCerebrasCredentialDto                          *CreateCerebrasCredentialDto
+	CreateCloudflareCredentialDto                        *CreateCloudflareCredentialDto
+	CreateCustomLlmCredentialDto                         *CreateCustomLlmCredentialDto
+	CreateDeepgramCredentialDto                          *CreateDeepgramCredentialDto
+	CreateDeepInfraCredentialDto                         *CreateDeepInfraCredentialDto
+	CreateDeepSeekCredentialDto                          *CreateDeepSeekCredentialDto
+	CreateGcpCredentialDto                               *CreateGcpCredentialDto
+	CreateGladiaCredentialDto                            *CreateGladiaCredentialDto
+	CreateGoHighLevelCredentialDto                       *CreateGoHighLevelCredentialDto
+	CreateGoogleCredentialDto                            *CreateGoogleCredentialDto
+	CreateGroqCredentialDto                              *CreateGroqCredentialDto
+	CreateInflectionAiCredentialDto                      *CreateInflectionAiCredentialDto
+	CreateLangfuseCredentialDto                          *CreateLangfuseCredentialDto
+	CreateLmntCredentialDto                              *CreateLmntCredentialDto
+	CreateMakeCredentialDto                              *CreateMakeCredentialDto
+	CreateOpenAiCredentialDto                            *CreateOpenAiCredentialDto
+	CreateOpenRouterCredentialDto                        *CreateOpenRouterCredentialDto
+	CreatePerplexityAiCredentialDto                      *CreatePerplexityAiCredentialDto
+	CreatePlayHtCredentialDto                            *CreatePlayHtCredentialDto
+	CreateRimeAiCredentialDto                            *CreateRimeAiCredentialDto
+	CreateRunpodCredentialDto                            *CreateRunpodCredentialDto
+	CreateS3CredentialDto                                *CreateS3CredentialDto
+	CreateSupabaseCredentialDto                          *CreateSupabaseCredentialDto
+	CreateSmallestAiCredentialDto                        *CreateSmallestAiCredentialDto
+	CreateTavusCredentialDto                             *CreateTavusCredentialDto
+	CreateTogetherAiCredentialDto                        *CreateTogetherAiCredentialDto
+	CreateTwilioCredentialDto                            *CreateTwilioCredentialDto
+	CreateVonageCredentialDto                            *CreateVonageCredentialDto
+	CreateWebhookCredentialDto                           *CreateWebhookCredentialDto
+	CreateXAiCredentialDto                               *CreateXAiCredentialDto
+	CreateNeuphonicCredentialDto                         *CreateNeuphonicCredentialDto
+	CreateHumeCredentialDto                              *CreateHumeCredentialDto
+	CreateMistralCredentialDto                           *CreateMistralCredentialDto
+	CreateSpeechmaticsCredentialDto                      *CreateSpeechmaticsCredentialDto
+	CreateTrieveCredentialDto                            *CreateTrieveCredentialDto
+	CreateGoogleCalendarOAuth2ClientCredentialDto        *CreateGoogleCalendarOAuth2ClientCredentialDto
+	CreateGoogleCalendarOAuth2AuthorizationCredentialDto *CreateGoogleCalendarOAuth2AuthorizationCredentialDto
+	CreateGoogleSheetsOAuth2AuthorizationCredentialDto   *CreateGoogleSheetsOAuth2AuthorizationCredentialDto
+	CreateSlackOAuth2AuthorizationCredentialDto          *CreateSlackOAuth2AuthorizationCredentialDto
+
+	typ string
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateElevenLabsCredentialDto() *CreateElevenLabsCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateElevenLabsCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateAnthropicCredentialDto() *CreateAnthropicCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateAnthropicCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateAnyscaleCredentialDto() *CreateAnyscaleCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateAnyscaleCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateAssemblyAiCredentialDto() *CreateAssemblyAiCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateAssemblyAiCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateAzureOpenAiCredentialDto() *CreateAzureOpenAiCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateAzureOpenAiCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateAzureCredentialDto() *CreateAzureCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateAzureCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateByoSipTrunkCredentialDto() *CreateByoSipTrunkCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateByoSipTrunkCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateCartesiaCredentialDto() *CreateCartesiaCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateCartesiaCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateCerebrasCredentialDto() *CreateCerebrasCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateCerebrasCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateCloudflareCredentialDto() *CreateCloudflareCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateCloudflareCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateCustomLlmCredentialDto() *CreateCustomLlmCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateCustomLlmCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateDeepgramCredentialDto() *CreateDeepgramCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateDeepgramCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateDeepInfraCredentialDto() *CreateDeepInfraCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateDeepInfraCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateDeepSeekCredentialDto() *CreateDeepSeekCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateDeepSeekCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateGcpCredentialDto() *CreateGcpCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateGcpCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateGladiaCredentialDto() *CreateGladiaCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateGladiaCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateGoHighLevelCredentialDto() *CreateGoHighLevelCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateGoHighLevelCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateGoogleCredentialDto() *CreateGoogleCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateGoogleCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateGroqCredentialDto() *CreateGroqCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateGroqCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateInflectionAiCredentialDto() *CreateInflectionAiCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateInflectionAiCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateLangfuseCredentialDto() *CreateLangfuseCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateLangfuseCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateLmntCredentialDto() *CreateLmntCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateLmntCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateMakeCredentialDto() *CreateMakeCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateMakeCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateOpenAiCredentialDto() *CreateOpenAiCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateOpenAiCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateOpenRouterCredentialDto() *CreateOpenRouterCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateOpenRouterCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreatePerplexityAiCredentialDto() *CreatePerplexityAiCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreatePerplexityAiCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreatePlayHtCredentialDto() *CreatePlayHtCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreatePlayHtCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateRimeAiCredentialDto() *CreateRimeAiCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateRimeAiCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateRunpodCredentialDto() *CreateRunpodCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateRunpodCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateS3CredentialDto() *CreateS3CredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateS3CredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateSupabaseCredentialDto() *CreateSupabaseCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateSupabaseCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateSmallestAiCredentialDto() *CreateSmallestAiCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateSmallestAiCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateTavusCredentialDto() *CreateTavusCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateTavusCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateTogetherAiCredentialDto() *CreateTogetherAiCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateTogetherAiCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateTwilioCredentialDto() *CreateTwilioCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateTwilioCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateVonageCredentialDto() *CreateVonageCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateVonageCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateWebhookCredentialDto() *CreateWebhookCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateWebhookCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateXAiCredentialDto() *CreateXAiCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateXAiCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateNeuphonicCredentialDto() *CreateNeuphonicCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateNeuphonicCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateHumeCredentialDto() *CreateHumeCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateHumeCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateMistralCredentialDto() *CreateMistralCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateMistralCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateSpeechmaticsCredentialDto() *CreateSpeechmaticsCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateSpeechmaticsCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateTrieveCredentialDto() *CreateTrieveCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateTrieveCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateGoogleCalendarOAuth2ClientCredentialDto() *CreateGoogleCalendarOAuth2ClientCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateGoogleCalendarOAuth2ClientCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateGoogleCalendarOAuth2AuthorizationCredentialDto() *CreateGoogleCalendarOAuth2AuthorizationCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateGoogleCalendarOAuth2AuthorizationCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateGoogleSheetsOAuth2AuthorizationCredentialDto() *CreateGoogleSheetsOAuth2AuthorizationCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateGoogleSheetsOAuth2AuthorizationCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) GetCreateSlackOAuth2AuthorizationCredentialDto() *CreateSlackOAuth2AuthorizationCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateSlackOAuth2AuthorizationCredentialDto
+}
+
+func (a *AssistantUserEditableCredentialsItem) UnmarshalJSON(data []byte) error {
+	valueCreateElevenLabsCredentialDto := new(CreateElevenLabsCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateElevenLabsCredentialDto); err == nil {
+		a.typ = "CreateElevenLabsCredentialDto"
+		a.CreateElevenLabsCredentialDto = valueCreateElevenLabsCredentialDto
+		return nil
+	}
+	valueCreateAnthropicCredentialDto := new(CreateAnthropicCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateAnthropicCredentialDto); err == nil {
+		a.typ = "CreateAnthropicCredentialDto"
+		a.CreateAnthropicCredentialDto = valueCreateAnthropicCredentialDto
+		return nil
+	}
+	valueCreateAnyscaleCredentialDto := new(CreateAnyscaleCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateAnyscaleCredentialDto); err == nil {
+		a.typ = "CreateAnyscaleCredentialDto"
+		a.CreateAnyscaleCredentialDto = valueCreateAnyscaleCredentialDto
+		return nil
+	}
+	valueCreateAssemblyAiCredentialDto := new(CreateAssemblyAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateAssemblyAiCredentialDto); err == nil {
+		a.typ = "CreateAssemblyAiCredentialDto"
+		a.CreateAssemblyAiCredentialDto = valueCreateAssemblyAiCredentialDto
+		return nil
+	}
+	valueCreateAzureOpenAiCredentialDto := new(CreateAzureOpenAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateAzureOpenAiCredentialDto); err == nil {
+		a.typ = "CreateAzureOpenAiCredentialDto"
+		a.CreateAzureOpenAiCredentialDto = valueCreateAzureOpenAiCredentialDto
+		return nil
+	}
+	valueCreateAzureCredentialDto := new(CreateAzureCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateAzureCredentialDto); err == nil {
+		a.typ = "CreateAzureCredentialDto"
+		a.CreateAzureCredentialDto = valueCreateAzureCredentialDto
+		return nil
+	}
+	valueCreateByoSipTrunkCredentialDto := new(CreateByoSipTrunkCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateByoSipTrunkCredentialDto); err == nil {
+		a.typ = "CreateByoSipTrunkCredentialDto"
+		a.CreateByoSipTrunkCredentialDto = valueCreateByoSipTrunkCredentialDto
+		return nil
+	}
+	valueCreateCartesiaCredentialDto := new(CreateCartesiaCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateCartesiaCredentialDto); err == nil {
+		a.typ = "CreateCartesiaCredentialDto"
+		a.CreateCartesiaCredentialDto = valueCreateCartesiaCredentialDto
+		return nil
+	}
+	valueCreateCerebrasCredentialDto := new(CreateCerebrasCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateCerebrasCredentialDto); err == nil {
+		a.typ = "CreateCerebrasCredentialDto"
+		a.CreateCerebrasCredentialDto = valueCreateCerebrasCredentialDto
+		return nil
+	}
+	valueCreateCloudflareCredentialDto := new(CreateCloudflareCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateCloudflareCredentialDto); err == nil {
+		a.typ = "CreateCloudflareCredentialDto"
+		a.CreateCloudflareCredentialDto = valueCreateCloudflareCredentialDto
+		return nil
+	}
+	valueCreateCustomLlmCredentialDto := new(CreateCustomLlmCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateCustomLlmCredentialDto); err == nil {
+		a.typ = "CreateCustomLlmCredentialDto"
+		a.CreateCustomLlmCredentialDto = valueCreateCustomLlmCredentialDto
+		return nil
+	}
+	valueCreateDeepgramCredentialDto := new(CreateDeepgramCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateDeepgramCredentialDto); err == nil {
+		a.typ = "CreateDeepgramCredentialDto"
+		a.CreateDeepgramCredentialDto = valueCreateDeepgramCredentialDto
+		return nil
+	}
+	valueCreateDeepInfraCredentialDto := new(CreateDeepInfraCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateDeepInfraCredentialDto); err == nil {
+		a.typ = "CreateDeepInfraCredentialDto"
+		a.CreateDeepInfraCredentialDto = valueCreateDeepInfraCredentialDto
+		return nil
+	}
+	valueCreateDeepSeekCredentialDto := new(CreateDeepSeekCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateDeepSeekCredentialDto); err == nil {
+		a.typ = "CreateDeepSeekCredentialDto"
+		a.CreateDeepSeekCredentialDto = valueCreateDeepSeekCredentialDto
+		return nil
+	}
+	valueCreateGcpCredentialDto := new(CreateGcpCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGcpCredentialDto); err == nil {
+		a.typ = "CreateGcpCredentialDto"
+		a.CreateGcpCredentialDto = valueCreateGcpCredentialDto
+		return nil
+	}
+	valueCreateGladiaCredentialDto := new(CreateGladiaCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGladiaCredentialDto); err == nil {
+		a.typ = "CreateGladiaCredentialDto"
+		a.CreateGladiaCredentialDto = valueCreateGladiaCredentialDto
+		return nil
+	}
+	valueCreateGoHighLevelCredentialDto := new(CreateGoHighLevelCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoHighLevelCredentialDto); err == nil {
+		a.typ = "CreateGoHighLevelCredentialDto"
+		a.CreateGoHighLevelCredentialDto = valueCreateGoHighLevelCredentialDto
+		return nil
+	}
+	valueCreateGoogleCredentialDto := new(CreateGoogleCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoogleCredentialDto); err == nil {
+		a.typ = "CreateGoogleCredentialDto"
+		a.CreateGoogleCredentialDto = valueCreateGoogleCredentialDto
+		return nil
+	}
+	valueCreateGroqCredentialDto := new(CreateGroqCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGroqCredentialDto); err == nil {
+		a.typ = "CreateGroqCredentialDto"
+		a.CreateGroqCredentialDto = valueCreateGroqCredentialDto
+		return nil
+	}
+	valueCreateInflectionAiCredentialDto := new(CreateInflectionAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateInflectionAiCredentialDto); err == nil {
+		a.typ = "CreateInflectionAiCredentialDto"
+		a.CreateInflectionAiCredentialDto = valueCreateInflectionAiCredentialDto
+		return nil
+	}
+	valueCreateLangfuseCredentialDto := new(CreateLangfuseCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateLangfuseCredentialDto); err == nil {
+		a.typ = "CreateLangfuseCredentialDto"
+		a.CreateLangfuseCredentialDto = valueCreateLangfuseCredentialDto
+		return nil
+	}
+	valueCreateLmntCredentialDto := new(CreateLmntCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateLmntCredentialDto); err == nil {
+		a.typ = "CreateLmntCredentialDto"
+		a.CreateLmntCredentialDto = valueCreateLmntCredentialDto
+		return nil
+	}
+	valueCreateMakeCredentialDto := new(CreateMakeCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateMakeCredentialDto); err == nil {
+		a.typ = "CreateMakeCredentialDto"
+		a.CreateMakeCredentialDto = valueCreateMakeCredentialDto
+		return nil
+	}
+	valueCreateOpenAiCredentialDto := new(CreateOpenAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateOpenAiCredentialDto); err == nil {
+		a.typ = "CreateOpenAiCredentialDto"
+		a.CreateOpenAiCredentialDto = valueCreateOpenAiCredentialDto
+		return nil
+	}
+	valueCreateOpenRouterCredentialDto := new(CreateOpenRouterCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateOpenRouterCredentialDto); err == nil {
+		a.typ = "CreateOpenRouterCredentialDto"
+		a.CreateOpenRouterCredentialDto = valueCreateOpenRouterCredentialDto
+		return nil
+	}
+	valueCreatePerplexityAiCredentialDto := new(CreatePerplexityAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreatePerplexityAiCredentialDto); err == nil {
+		a.typ = "CreatePerplexityAiCredentialDto"
+		a.CreatePerplexityAiCredentialDto = valueCreatePerplexityAiCredentialDto
+		return nil
+	}
+	valueCreatePlayHtCredentialDto := new(CreatePlayHtCredentialDto)
+	if err := json.Unmarshal(data, &valueCreatePlayHtCredentialDto); err == nil {
+		a.typ = "CreatePlayHtCredentialDto"
+		a.CreatePlayHtCredentialDto = valueCreatePlayHtCredentialDto
+		return nil
+	}
+	valueCreateRimeAiCredentialDto := new(CreateRimeAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateRimeAiCredentialDto); err == nil {
+		a.typ = "CreateRimeAiCredentialDto"
+		a.CreateRimeAiCredentialDto = valueCreateRimeAiCredentialDto
+		return nil
+	}
+	valueCreateRunpodCredentialDto := new(CreateRunpodCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateRunpodCredentialDto); err == nil {
+		a.typ = "CreateRunpodCredentialDto"
+		a.CreateRunpodCredentialDto = valueCreateRunpodCredentialDto
+		return nil
+	}
+	valueCreateS3CredentialDto := new(CreateS3CredentialDto)
+	if err := json.Unmarshal(data, &valueCreateS3CredentialDto); err == nil {
+		a.typ = "CreateS3CredentialDto"
+		a.CreateS3CredentialDto = valueCreateS3CredentialDto
+		return nil
+	}
+	valueCreateSupabaseCredentialDto := new(CreateSupabaseCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateSupabaseCredentialDto); err == nil {
+		a.typ = "CreateSupabaseCredentialDto"
+		a.CreateSupabaseCredentialDto = valueCreateSupabaseCredentialDto
+		return nil
+	}
+	valueCreateSmallestAiCredentialDto := new(CreateSmallestAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateSmallestAiCredentialDto); err == nil {
+		a.typ = "CreateSmallestAiCredentialDto"
+		a.CreateSmallestAiCredentialDto = valueCreateSmallestAiCredentialDto
+		return nil
+	}
+	valueCreateTavusCredentialDto := new(CreateTavusCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateTavusCredentialDto); err == nil {
+		a.typ = "CreateTavusCredentialDto"
+		a.CreateTavusCredentialDto = valueCreateTavusCredentialDto
+		return nil
+	}
+	valueCreateTogetherAiCredentialDto := new(CreateTogetherAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateTogetherAiCredentialDto); err == nil {
+		a.typ = "CreateTogetherAiCredentialDto"
+		a.CreateTogetherAiCredentialDto = valueCreateTogetherAiCredentialDto
+		return nil
+	}
+	valueCreateTwilioCredentialDto := new(CreateTwilioCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateTwilioCredentialDto); err == nil {
+		a.typ = "CreateTwilioCredentialDto"
+		a.CreateTwilioCredentialDto = valueCreateTwilioCredentialDto
+		return nil
+	}
+	valueCreateVonageCredentialDto := new(CreateVonageCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateVonageCredentialDto); err == nil {
+		a.typ = "CreateVonageCredentialDto"
+		a.CreateVonageCredentialDto = valueCreateVonageCredentialDto
+		return nil
+	}
+	valueCreateWebhookCredentialDto := new(CreateWebhookCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateWebhookCredentialDto); err == nil {
+		a.typ = "CreateWebhookCredentialDto"
+		a.CreateWebhookCredentialDto = valueCreateWebhookCredentialDto
+		return nil
+	}
+	valueCreateXAiCredentialDto := new(CreateXAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateXAiCredentialDto); err == nil {
+		a.typ = "CreateXAiCredentialDto"
+		a.CreateXAiCredentialDto = valueCreateXAiCredentialDto
+		return nil
+	}
+	valueCreateNeuphonicCredentialDto := new(CreateNeuphonicCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateNeuphonicCredentialDto); err == nil {
+		a.typ = "CreateNeuphonicCredentialDto"
+		a.CreateNeuphonicCredentialDto = valueCreateNeuphonicCredentialDto
+		return nil
+	}
+	valueCreateHumeCredentialDto := new(CreateHumeCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateHumeCredentialDto); err == nil {
+		a.typ = "CreateHumeCredentialDto"
+		a.CreateHumeCredentialDto = valueCreateHumeCredentialDto
+		return nil
+	}
+	valueCreateMistralCredentialDto := new(CreateMistralCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateMistralCredentialDto); err == nil {
+		a.typ = "CreateMistralCredentialDto"
+		a.CreateMistralCredentialDto = valueCreateMistralCredentialDto
+		return nil
+	}
+	valueCreateSpeechmaticsCredentialDto := new(CreateSpeechmaticsCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateSpeechmaticsCredentialDto); err == nil {
+		a.typ = "CreateSpeechmaticsCredentialDto"
+		a.CreateSpeechmaticsCredentialDto = valueCreateSpeechmaticsCredentialDto
+		return nil
+	}
+	valueCreateTrieveCredentialDto := new(CreateTrieveCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateTrieveCredentialDto); err == nil {
+		a.typ = "CreateTrieveCredentialDto"
+		a.CreateTrieveCredentialDto = valueCreateTrieveCredentialDto
+		return nil
+	}
+	valueCreateGoogleCalendarOAuth2ClientCredentialDto := new(CreateGoogleCalendarOAuth2ClientCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoogleCalendarOAuth2ClientCredentialDto); err == nil {
+		a.typ = "CreateGoogleCalendarOAuth2ClientCredentialDto"
+		a.CreateGoogleCalendarOAuth2ClientCredentialDto = valueCreateGoogleCalendarOAuth2ClientCredentialDto
+		return nil
+	}
+	valueCreateGoogleCalendarOAuth2AuthorizationCredentialDto := new(CreateGoogleCalendarOAuth2AuthorizationCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoogleCalendarOAuth2AuthorizationCredentialDto); err == nil {
+		a.typ = "CreateGoogleCalendarOAuth2AuthorizationCredentialDto"
+		a.CreateGoogleCalendarOAuth2AuthorizationCredentialDto = valueCreateGoogleCalendarOAuth2AuthorizationCredentialDto
+		return nil
+	}
+	valueCreateGoogleSheetsOAuth2AuthorizationCredentialDto := new(CreateGoogleSheetsOAuth2AuthorizationCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoogleSheetsOAuth2AuthorizationCredentialDto); err == nil {
+		a.typ = "CreateGoogleSheetsOAuth2AuthorizationCredentialDto"
+		a.CreateGoogleSheetsOAuth2AuthorizationCredentialDto = valueCreateGoogleSheetsOAuth2AuthorizationCredentialDto
+		return nil
+	}
+	valueCreateSlackOAuth2AuthorizationCredentialDto := new(CreateSlackOAuth2AuthorizationCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateSlackOAuth2AuthorizationCredentialDto); err == nil {
+		a.typ = "CreateSlackOAuth2AuthorizationCredentialDto"
+		a.CreateSlackOAuth2AuthorizationCredentialDto = valueCreateSlackOAuth2AuthorizationCredentialDto
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, a)
+}
+
+func (a AssistantUserEditableCredentialsItem) MarshalJSON() ([]byte, error) {
+	if a.typ == "CreateElevenLabsCredentialDto" || a.CreateElevenLabsCredentialDto != nil {
+		return json.Marshal(a.CreateElevenLabsCredentialDto)
+	}
+	if a.typ == "CreateAnthropicCredentialDto" || a.CreateAnthropicCredentialDto != nil {
+		return json.Marshal(a.CreateAnthropicCredentialDto)
+	}
+	if a.typ == "CreateAnyscaleCredentialDto" || a.CreateAnyscaleCredentialDto != nil {
+		return json.Marshal(a.CreateAnyscaleCredentialDto)
+	}
+	if a.typ == "CreateAssemblyAiCredentialDto" || a.CreateAssemblyAiCredentialDto != nil {
+		return json.Marshal(a.CreateAssemblyAiCredentialDto)
+	}
+	if a.typ == "CreateAzureOpenAiCredentialDto" || a.CreateAzureOpenAiCredentialDto != nil {
+		return json.Marshal(a.CreateAzureOpenAiCredentialDto)
+	}
+	if a.typ == "CreateAzureCredentialDto" || a.CreateAzureCredentialDto != nil {
+		return json.Marshal(a.CreateAzureCredentialDto)
+	}
+	if a.typ == "CreateByoSipTrunkCredentialDto" || a.CreateByoSipTrunkCredentialDto != nil {
+		return json.Marshal(a.CreateByoSipTrunkCredentialDto)
+	}
+	if a.typ == "CreateCartesiaCredentialDto" || a.CreateCartesiaCredentialDto != nil {
+		return json.Marshal(a.CreateCartesiaCredentialDto)
+	}
+	if a.typ == "CreateCerebrasCredentialDto" || a.CreateCerebrasCredentialDto != nil {
+		return json.Marshal(a.CreateCerebrasCredentialDto)
+	}
+	if a.typ == "CreateCloudflareCredentialDto" || a.CreateCloudflareCredentialDto != nil {
+		return json.Marshal(a.CreateCloudflareCredentialDto)
+	}
+	if a.typ == "CreateCustomLlmCredentialDto" || a.CreateCustomLlmCredentialDto != nil {
+		return json.Marshal(a.CreateCustomLlmCredentialDto)
+	}
+	if a.typ == "CreateDeepgramCredentialDto" || a.CreateDeepgramCredentialDto != nil {
+		return json.Marshal(a.CreateDeepgramCredentialDto)
+	}
+	if a.typ == "CreateDeepInfraCredentialDto" || a.CreateDeepInfraCredentialDto != nil {
+		return json.Marshal(a.CreateDeepInfraCredentialDto)
+	}
+	if a.typ == "CreateDeepSeekCredentialDto" || a.CreateDeepSeekCredentialDto != nil {
+		return json.Marshal(a.CreateDeepSeekCredentialDto)
+	}
+	if a.typ == "CreateGcpCredentialDto" || a.CreateGcpCredentialDto != nil {
+		return json.Marshal(a.CreateGcpCredentialDto)
+	}
+	if a.typ == "CreateGladiaCredentialDto" || a.CreateGladiaCredentialDto != nil {
+		return json.Marshal(a.CreateGladiaCredentialDto)
+	}
+	if a.typ == "CreateGoHighLevelCredentialDto" || a.CreateGoHighLevelCredentialDto != nil {
+		return json.Marshal(a.CreateGoHighLevelCredentialDto)
+	}
+	if a.typ == "CreateGoogleCredentialDto" || a.CreateGoogleCredentialDto != nil {
+		return json.Marshal(a.CreateGoogleCredentialDto)
+	}
+	if a.typ == "CreateGroqCredentialDto" || a.CreateGroqCredentialDto != nil {
+		return json.Marshal(a.CreateGroqCredentialDto)
+	}
+	if a.typ == "CreateInflectionAiCredentialDto" || a.CreateInflectionAiCredentialDto != nil {
+		return json.Marshal(a.CreateInflectionAiCredentialDto)
+	}
+	if a.typ == "CreateLangfuseCredentialDto" || a.CreateLangfuseCredentialDto != nil {
+		return json.Marshal(a.CreateLangfuseCredentialDto)
+	}
+	if a.typ == "CreateLmntCredentialDto" || a.CreateLmntCredentialDto != nil {
+		return json.Marshal(a.CreateLmntCredentialDto)
+	}
+	if a.typ == "CreateMakeCredentialDto" || a.CreateMakeCredentialDto != nil {
+		return json.Marshal(a.CreateMakeCredentialDto)
+	}
+	if a.typ == "CreateOpenAiCredentialDto" || a.CreateOpenAiCredentialDto != nil {
+		return json.Marshal(a.CreateOpenAiCredentialDto)
+	}
+	if a.typ == "CreateOpenRouterCredentialDto" || a.CreateOpenRouterCredentialDto != nil {
+		return json.Marshal(a.CreateOpenRouterCredentialDto)
+	}
+	if a.typ == "CreatePerplexityAiCredentialDto" || a.CreatePerplexityAiCredentialDto != nil {
+		return json.Marshal(a.CreatePerplexityAiCredentialDto)
+	}
+	if a.typ == "CreatePlayHtCredentialDto" || a.CreatePlayHtCredentialDto != nil {
+		return json.Marshal(a.CreatePlayHtCredentialDto)
+	}
+	if a.typ == "CreateRimeAiCredentialDto" || a.CreateRimeAiCredentialDto != nil {
+		return json.Marshal(a.CreateRimeAiCredentialDto)
+	}
+	if a.typ == "CreateRunpodCredentialDto" || a.CreateRunpodCredentialDto != nil {
+		return json.Marshal(a.CreateRunpodCredentialDto)
+	}
+	if a.typ == "CreateS3CredentialDto" || a.CreateS3CredentialDto != nil {
+		return json.Marshal(a.CreateS3CredentialDto)
+	}
+	if a.typ == "CreateSupabaseCredentialDto" || a.CreateSupabaseCredentialDto != nil {
+		return json.Marshal(a.CreateSupabaseCredentialDto)
+	}
+	if a.typ == "CreateSmallestAiCredentialDto" || a.CreateSmallestAiCredentialDto != nil {
+		return json.Marshal(a.CreateSmallestAiCredentialDto)
+	}
+	if a.typ == "CreateTavusCredentialDto" || a.CreateTavusCredentialDto != nil {
+		return json.Marshal(a.CreateTavusCredentialDto)
+	}
+	if a.typ == "CreateTogetherAiCredentialDto" || a.CreateTogetherAiCredentialDto != nil {
+		return json.Marshal(a.CreateTogetherAiCredentialDto)
+	}
+	if a.typ == "CreateTwilioCredentialDto" || a.CreateTwilioCredentialDto != nil {
+		return json.Marshal(a.CreateTwilioCredentialDto)
+	}
+	if a.typ == "CreateVonageCredentialDto" || a.CreateVonageCredentialDto != nil {
+		return json.Marshal(a.CreateVonageCredentialDto)
+	}
+	if a.typ == "CreateWebhookCredentialDto" || a.CreateWebhookCredentialDto != nil {
+		return json.Marshal(a.CreateWebhookCredentialDto)
+	}
+	if a.typ == "CreateXAiCredentialDto" || a.CreateXAiCredentialDto != nil {
+		return json.Marshal(a.CreateXAiCredentialDto)
+	}
+	if a.typ == "CreateNeuphonicCredentialDto" || a.CreateNeuphonicCredentialDto != nil {
+		return json.Marshal(a.CreateNeuphonicCredentialDto)
+	}
+	if a.typ == "CreateHumeCredentialDto" || a.CreateHumeCredentialDto != nil {
+		return json.Marshal(a.CreateHumeCredentialDto)
+	}
+	if a.typ == "CreateMistralCredentialDto" || a.CreateMistralCredentialDto != nil {
+		return json.Marshal(a.CreateMistralCredentialDto)
+	}
+	if a.typ == "CreateSpeechmaticsCredentialDto" || a.CreateSpeechmaticsCredentialDto != nil {
+		return json.Marshal(a.CreateSpeechmaticsCredentialDto)
+	}
+	if a.typ == "CreateTrieveCredentialDto" || a.CreateTrieveCredentialDto != nil {
+		return json.Marshal(a.CreateTrieveCredentialDto)
+	}
+	if a.typ == "CreateGoogleCalendarOAuth2ClientCredentialDto" || a.CreateGoogleCalendarOAuth2ClientCredentialDto != nil {
+		return json.Marshal(a.CreateGoogleCalendarOAuth2ClientCredentialDto)
+	}
+	if a.typ == "CreateGoogleCalendarOAuth2AuthorizationCredentialDto" || a.CreateGoogleCalendarOAuth2AuthorizationCredentialDto != nil {
+		return json.Marshal(a.CreateGoogleCalendarOAuth2AuthorizationCredentialDto)
+	}
+	if a.typ == "CreateGoogleSheetsOAuth2AuthorizationCredentialDto" || a.CreateGoogleSheetsOAuth2AuthorizationCredentialDto != nil {
+		return json.Marshal(a.CreateGoogleSheetsOAuth2AuthorizationCredentialDto)
+	}
+	if a.typ == "CreateSlackOAuth2AuthorizationCredentialDto" || a.CreateSlackOAuth2AuthorizationCredentialDto != nil {
+		return json.Marshal(a.CreateSlackOAuth2AuthorizationCredentialDto)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
+type AssistantUserEditableCredentialsItemVisitor interface {
+	VisitCreateElevenLabsCredentialDto(*CreateElevenLabsCredentialDto) error
+	VisitCreateAnthropicCredentialDto(*CreateAnthropicCredentialDto) error
+	VisitCreateAnyscaleCredentialDto(*CreateAnyscaleCredentialDto) error
+	VisitCreateAssemblyAiCredentialDto(*CreateAssemblyAiCredentialDto) error
+	VisitCreateAzureOpenAiCredentialDto(*CreateAzureOpenAiCredentialDto) error
+	VisitCreateAzureCredentialDto(*CreateAzureCredentialDto) error
+	VisitCreateByoSipTrunkCredentialDto(*CreateByoSipTrunkCredentialDto) error
+	VisitCreateCartesiaCredentialDto(*CreateCartesiaCredentialDto) error
+	VisitCreateCerebrasCredentialDto(*CreateCerebrasCredentialDto) error
+	VisitCreateCloudflareCredentialDto(*CreateCloudflareCredentialDto) error
+	VisitCreateCustomLlmCredentialDto(*CreateCustomLlmCredentialDto) error
+	VisitCreateDeepgramCredentialDto(*CreateDeepgramCredentialDto) error
+	VisitCreateDeepInfraCredentialDto(*CreateDeepInfraCredentialDto) error
+	VisitCreateDeepSeekCredentialDto(*CreateDeepSeekCredentialDto) error
+	VisitCreateGcpCredentialDto(*CreateGcpCredentialDto) error
+	VisitCreateGladiaCredentialDto(*CreateGladiaCredentialDto) error
+	VisitCreateGoHighLevelCredentialDto(*CreateGoHighLevelCredentialDto) error
+	VisitCreateGoogleCredentialDto(*CreateGoogleCredentialDto) error
+	VisitCreateGroqCredentialDto(*CreateGroqCredentialDto) error
+	VisitCreateInflectionAiCredentialDto(*CreateInflectionAiCredentialDto) error
+	VisitCreateLangfuseCredentialDto(*CreateLangfuseCredentialDto) error
+	VisitCreateLmntCredentialDto(*CreateLmntCredentialDto) error
+	VisitCreateMakeCredentialDto(*CreateMakeCredentialDto) error
+	VisitCreateOpenAiCredentialDto(*CreateOpenAiCredentialDto) error
+	VisitCreateOpenRouterCredentialDto(*CreateOpenRouterCredentialDto) error
+	VisitCreatePerplexityAiCredentialDto(*CreatePerplexityAiCredentialDto) error
+	VisitCreatePlayHtCredentialDto(*CreatePlayHtCredentialDto) error
+	VisitCreateRimeAiCredentialDto(*CreateRimeAiCredentialDto) error
+	VisitCreateRunpodCredentialDto(*CreateRunpodCredentialDto) error
+	VisitCreateS3CredentialDto(*CreateS3CredentialDto) error
+	VisitCreateSupabaseCredentialDto(*CreateSupabaseCredentialDto) error
+	VisitCreateSmallestAiCredentialDto(*CreateSmallestAiCredentialDto) error
+	VisitCreateTavusCredentialDto(*CreateTavusCredentialDto) error
+	VisitCreateTogetherAiCredentialDto(*CreateTogetherAiCredentialDto) error
+	VisitCreateTwilioCredentialDto(*CreateTwilioCredentialDto) error
+	VisitCreateVonageCredentialDto(*CreateVonageCredentialDto) error
+	VisitCreateWebhookCredentialDto(*CreateWebhookCredentialDto) error
+	VisitCreateXAiCredentialDto(*CreateXAiCredentialDto) error
+	VisitCreateNeuphonicCredentialDto(*CreateNeuphonicCredentialDto) error
+	VisitCreateHumeCredentialDto(*CreateHumeCredentialDto) error
+	VisitCreateMistralCredentialDto(*CreateMistralCredentialDto) error
+	VisitCreateSpeechmaticsCredentialDto(*CreateSpeechmaticsCredentialDto) error
+	VisitCreateTrieveCredentialDto(*CreateTrieveCredentialDto) error
+	VisitCreateGoogleCalendarOAuth2ClientCredentialDto(*CreateGoogleCalendarOAuth2ClientCredentialDto) error
+	VisitCreateGoogleCalendarOAuth2AuthorizationCredentialDto(*CreateGoogleCalendarOAuth2AuthorizationCredentialDto) error
+	VisitCreateGoogleSheetsOAuth2AuthorizationCredentialDto(*CreateGoogleSheetsOAuth2AuthorizationCredentialDto) error
+	VisitCreateSlackOAuth2AuthorizationCredentialDto(*CreateSlackOAuth2AuthorizationCredentialDto) error
+}
+
+func (a *AssistantUserEditableCredentialsItem) Accept(visitor AssistantUserEditableCredentialsItemVisitor) error {
+	if a.typ == "CreateElevenLabsCredentialDto" || a.CreateElevenLabsCredentialDto != nil {
+		return visitor.VisitCreateElevenLabsCredentialDto(a.CreateElevenLabsCredentialDto)
+	}
+	if a.typ == "CreateAnthropicCredentialDto" || a.CreateAnthropicCredentialDto != nil {
+		return visitor.VisitCreateAnthropicCredentialDto(a.CreateAnthropicCredentialDto)
+	}
+	if a.typ == "CreateAnyscaleCredentialDto" || a.CreateAnyscaleCredentialDto != nil {
+		return visitor.VisitCreateAnyscaleCredentialDto(a.CreateAnyscaleCredentialDto)
+	}
+	if a.typ == "CreateAssemblyAiCredentialDto" || a.CreateAssemblyAiCredentialDto != nil {
+		return visitor.VisitCreateAssemblyAiCredentialDto(a.CreateAssemblyAiCredentialDto)
+	}
+	if a.typ == "CreateAzureOpenAiCredentialDto" || a.CreateAzureOpenAiCredentialDto != nil {
+		return visitor.VisitCreateAzureOpenAiCredentialDto(a.CreateAzureOpenAiCredentialDto)
+	}
+	if a.typ == "CreateAzureCredentialDto" || a.CreateAzureCredentialDto != nil {
+		return visitor.VisitCreateAzureCredentialDto(a.CreateAzureCredentialDto)
+	}
+	if a.typ == "CreateByoSipTrunkCredentialDto" || a.CreateByoSipTrunkCredentialDto != nil {
+		return visitor.VisitCreateByoSipTrunkCredentialDto(a.CreateByoSipTrunkCredentialDto)
+	}
+	if a.typ == "CreateCartesiaCredentialDto" || a.CreateCartesiaCredentialDto != nil {
+		return visitor.VisitCreateCartesiaCredentialDto(a.CreateCartesiaCredentialDto)
+	}
+	if a.typ == "CreateCerebrasCredentialDto" || a.CreateCerebrasCredentialDto != nil {
+		return visitor.VisitCreateCerebrasCredentialDto(a.CreateCerebrasCredentialDto)
+	}
+	if a.typ == "CreateCloudflareCredentialDto" || a.CreateCloudflareCredentialDto != nil {
+		return visitor.VisitCreateCloudflareCredentialDto(a.CreateCloudflareCredentialDto)
+	}
+	if a.typ == "CreateCustomLlmCredentialDto" || a.CreateCustomLlmCredentialDto != nil {
+		return visitor.VisitCreateCustomLlmCredentialDto(a.CreateCustomLlmCredentialDto)
+	}
+	if a.typ == "CreateDeepgramCredentialDto" || a.CreateDeepgramCredentialDto != nil {
+		return visitor.VisitCreateDeepgramCredentialDto(a.CreateDeepgramCredentialDto)
+	}
+	if a.typ == "CreateDeepInfraCredentialDto" || a.CreateDeepInfraCredentialDto != nil {
+		return visitor.VisitCreateDeepInfraCredentialDto(a.CreateDeepInfraCredentialDto)
+	}
+	if a.typ == "CreateDeepSeekCredentialDto" || a.CreateDeepSeekCredentialDto != nil {
+		return visitor.VisitCreateDeepSeekCredentialDto(a.CreateDeepSeekCredentialDto)
+	}
+	if a.typ == "CreateGcpCredentialDto" || a.CreateGcpCredentialDto != nil {
+		return visitor.VisitCreateGcpCredentialDto(a.CreateGcpCredentialDto)
+	}
+	if a.typ == "CreateGladiaCredentialDto" || a.CreateGladiaCredentialDto != nil {
+		return visitor.VisitCreateGladiaCredentialDto(a.CreateGladiaCredentialDto)
+	}
+	if a.typ == "CreateGoHighLevelCredentialDto" || a.CreateGoHighLevelCredentialDto != nil {
+		return visitor.VisitCreateGoHighLevelCredentialDto(a.CreateGoHighLevelCredentialDto)
+	}
+	if a.typ == "CreateGoogleCredentialDto" || a.CreateGoogleCredentialDto != nil {
+		return visitor.VisitCreateGoogleCredentialDto(a.CreateGoogleCredentialDto)
+	}
+	if a.typ == "CreateGroqCredentialDto" || a.CreateGroqCredentialDto != nil {
+		return visitor.VisitCreateGroqCredentialDto(a.CreateGroqCredentialDto)
+	}
+	if a.typ == "CreateInflectionAiCredentialDto" || a.CreateInflectionAiCredentialDto != nil {
+		return visitor.VisitCreateInflectionAiCredentialDto(a.CreateInflectionAiCredentialDto)
+	}
+	if a.typ == "CreateLangfuseCredentialDto" || a.CreateLangfuseCredentialDto != nil {
+		return visitor.VisitCreateLangfuseCredentialDto(a.CreateLangfuseCredentialDto)
+	}
+	if a.typ == "CreateLmntCredentialDto" || a.CreateLmntCredentialDto != nil {
+		return visitor.VisitCreateLmntCredentialDto(a.CreateLmntCredentialDto)
+	}
+	if a.typ == "CreateMakeCredentialDto" || a.CreateMakeCredentialDto != nil {
+		return visitor.VisitCreateMakeCredentialDto(a.CreateMakeCredentialDto)
+	}
+	if a.typ == "CreateOpenAiCredentialDto" || a.CreateOpenAiCredentialDto != nil {
+		return visitor.VisitCreateOpenAiCredentialDto(a.CreateOpenAiCredentialDto)
+	}
+	if a.typ == "CreateOpenRouterCredentialDto" || a.CreateOpenRouterCredentialDto != nil {
+		return visitor.VisitCreateOpenRouterCredentialDto(a.CreateOpenRouterCredentialDto)
+	}
+	if a.typ == "CreatePerplexityAiCredentialDto" || a.CreatePerplexityAiCredentialDto != nil {
+		return visitor.VisitCreatePerplexityAiCredentialDto(a.CreatePerplexityAiCredentialDto)
+	}
+	if a.typ == "CreatePlayHtCredentialDto" || a.CreatePlayHtCredentialDto != nil {
+		return visitor.VisitCreatePlayHtCredentialDto(a.CreatePlayHtCredentialDto)
+	}
+	if a.typ == "CreateRimeAiCredentialDto" || a.CreateRimeAiCredentialDto != nil {
+		return visitor.VisitCreateRimeAiCredentialDto(a.CreateRimeAiCredentialDto)
+	}
+	if a.typ == "CreateRunpodCredentialDto" || a.CreateRunpodCredentialDto != nil {
+		return visitor.VisitCreateRunpodCredentialDto(a.CreateRunpodCredentialDto)
+	}
+	if a.typ == "CreateS3CredentialDto" || a.CreateS3CredentialDto != nil {
+		return visitor.VisitCreateS3CredentialDto(a.CreateS3CredentialDto)
+	}
+	if a.typ == "CreateSupabaseCredentialDto" || a.CreateSupabaseCredentialDto != nil {
+		return visitor.VisitCreateSupabaseCredentialDto(a.CreateSupabaseCredentialDto)
+	}
+	if a.typ == "CreateSmallestAiCredentialDto" || a.CreateSmallestAiCredentialDto != nil {
+		return visitor.VisitCreateSmallestAiCredentialDto(a.CreateSmallestAiCredentialDto)
+	}
+	if a.typ == "CreateTavusCredentialDto" || a.CreateTavusCredentialDto != nil {
+		return visitor.VisitCreateTavusCredentialDto(a.CreateTavusCredentialDto)
+	}
+	if a.typ == "CreateTogetherAiCredentialDto" || a.CreateTogetherAiCredentialDto != nil {
+		return visitor.VisitCreateTogetherAiCredentialDto(a.CreateTogetherAiCredentialDto)
+	}
+	if a.typ == "CreateTwilioCredentialDto" || a.CreateTwilioCredentialDto != nil {
+		return visitor.VisitCreateTwilioCredentialDto(a.CreateTwilioCredentialDto)
+	}
+	if a.typ == "CreateVonageCredentialDto" || a.CreateVonageCredentialDto != nil {
+		return visitor.VisitCreateVonageCredentialDto(a.CreateVonageCredentialDto)
+	}
+	if a.typ == "CreateWebhookCredentialDto" || a.CreateWebhookCredentialDto != nil {
+		return visitor.VisitCreateWebhookCredentialDto(a.CreateWebhookCredentialDto)
+	}
+	if a.typ == "CreateXAiCredentialDto" || a.CreateXAiCredentialDto != nil {
+		return visitor.VisitCreateXAiCredentialDto(a.CreateXAiCredentialDto)
+	}
+	if a.typ == "CreateNeuphonicCredentialDto" || a.CreateNeuphonicCredentialDto != nil {
+		return visitor.VisitCreateNeuphonicCredentialDto(a.CreateNeuphonicCredentialDto)
+	}
+	if a.typ == "CreateHumeCredentialDto" || a.CreateHumeCredentialDto != nil {
+		return visitor.VisitCreateHumeCredentialDto(a.CreateHumeCredentialDto)
+	}
+	if a.typ == "CreateMistralCredentialDto" || a.CreateMistralCredentialDto != nil {
+		return visitor.VisitCreateMistralCredentialDto(a.CreateMistralCredentialDto)
+	}
+	if a.typ == "CreateSpeechmaticsCredentialDto" || a.CreateSpeechmaticsCredentialDto != nil {
+		return visitor.VisitCreateSpeechmaticsCredentialDto(a.CreateSpeechmaticsCredentialDto)
+	}
+	if a.typ == "CreateTrieveCredentialDto" || a.CreateTrieveCredentialDto != nil {
+		return visitor.VisitCreateTrieveCredentialDto(a.CreateTrieveCredentialDto)
+	}
+	if a.typ == "CreateGoogleCalendarOAuth2ClientCredentialDto" || a.CreateGoogleCalendarOAuth2ClientCredentialDto != nil {
+		return visitor.VisitCreateGoogleCalendarOAuth2ClientCredentialDto(a.CreateGoogleCalendarOAuth2ClientCredentialDto)
+	}
+	if a.typ == "CreateGoogleCalendarOAuth2AuthorizationCredentialDto" || a.CreateGoogleCalendarOAuth2AuthorizationCredentialDto != nil {
+		return visitor.VisitCreateGoogleCalendarOAuth2AuthorizationCredentialDto(a.CreateGoogleCalendarOAuth2AuthorizationCredentialDto)
+	}
+	if a.typ == "CreateGoogleSheetsOAuth2AuthorizationCredentialDto" || a.CreateGoogleSheetsOAuth2AuthorizationCredentialDto != nil {
+		return visitor.VisitCreateGoogleSheetsOAuth2AuthorizationCredentialDto(a.CreateGoogleSheetsOAuth2AuthorizationCredentialDto)
+	}
+	if a.typ == "CreateSlackOAuth2AuthorizationCredentialDto" || a.CreateSlackOAuth2AuthorizationCredentialDto != nil {
+		return visitor.VisitCreateSlackOAuth2AuthorizationCredentialDto(a.CreateSlackOAuth2AuthorizationCredentialDto)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
+// This is the mode for the first message. Default is 'assistant-speaks-first'.
+//
+// Use:
+// - 'assistant-speaks-first' to have the assistant speak first.
+// - 'assistant-waits-for-user' to have the assistant wait for the user to speak first.
+// - 'assistant-speaks-first-with-model-generated-message' to have the assistant speak first with a message generated by the model based on the conversation state. (`assistant.model.messages` at call start, `call.messages` at squad transfer points).
+//
+// @default 'assistant-speaks-first'
+type AssistantUserEditableFirstMessageMode string
+
+const (
+	AssistantUserEditableFirstMessageModeAssistantSpeaksFirst                          AssistantUserEditableFirstMessageMode = "assistant-speaks-first"
+	AssistantUserEditableFirstMessageModeAssistantSpeaksFirstWithModelGeneratedMessage AssistantUserEditableFirstMessageMode = "assistant-speaks-first-with-model-generated-message"
+	AssistantUserEditableFirstMessageModeAssistantWaitsForUser                         AssistantUserEditableFirstMessageMode = "assistant-waits-for-user"
+)
+
+func NewAssistantUserEditableFirstMessageModeFromString(s string) (AssistantUserEditableFirstMessageMode, error) {
+	switch s {
+	case "assistant-speaks-first":
+		return AssistantUserEditableFirstMessageModeAssistantSpeaksFirst, nil
+	case "assistant-speaks-first-with-model-generated-message":
+		return AssistantUserEditableFirstMessageModeAssistantSpeaksFirstWithModelGeneratedMessage, nil
+	case "assistant-waits-for-user":
+		return AssistantUserEditableFirstMessageModeAssistantWaitsForUser, nil
+	}
+	var t AssistantUserEditableFirstMessageMode
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (a AssistantUserEditableFirstMessageMode) Ptr() *AssistantUserEditableFirstMessageMode {
+	return &a
+}
+
+type AssistantUserEditableHooksItem struct {
+	AssistantHookCallEnding                 *AssistantHookCallEnding
+	AssistantHookAssistantSpeechInterrupted *AssistantHookAssistantSpeechInterrupted
+	AssistantHookCustomerSpeechInterrupted  *AssistantHookCustomerSpeechInterrupted
+
+	typ string
+}
+
+func (a *AssistantUserEditableHooksItem) GetAssistantHookCallEnding() *AssistantHookCallEnding {
+	if a == nil {
+		return nil
+	}
+	return a.AssistantHookCallEnding
+}
+
+func (a *AssistantUserEditableHooksItem) GetAssistantHookAssistantSpeechInterrupted() *AssistantHookAssistantSpeechInterrupted {
+	if a == nil {
+		return nil
+	}
+	return a.AssistantHookAssistantSpeechInterrupted
+}
+
+func (a *AssistantUserEditableHooksItem) GetAssistantHookCustomerSpeechInterrupted() *AssistantHookCustomerSpeechInterrupted {
+	if a == nil {
+		return nil
+	}
+	return a.AssistantHookCustomerSpeechInterrupted
+}
+
+func (a *AssistantUserEditableHooksItem) UnmarshalJSON(data []byte) error {
+	valueAssistantHookCallEnding := new(AssistantHookCallEnding)
+	if err := json.Unmarshal(data, &valueAssistantHookCallEnding); err == nil {
+		a.typ = "AssistantHookCallEnding"
+		a.AssistantHookCallEnding = valueAssistantHookCallEnding
+		return nil
+	}
+	valueAssistantHookAssistantSpeechInterrupted := new(AssistantHookAssistantSpeechInterrupted)
+	if err := json.Unmarshal(data, &valueAssistantHookAssistantSpeechInterrupted); err == nil {
+		a.typ = "AssistantHookAssistantSpeechInterrupted"
+		a.AssistantHookAssistantSpeechInterrupted = valueAssistantHookAssistantSpeechInterrupted
+		return nil
+	}
+	valueAssistantHookCustomerSpeechInterrupted := new(AssistantHookCustomerSpeechInterrupted)
+	if err := json.Unmarshal(data, &valueAssistantHookCustomerSpeechInterrupted); err == nil {
+		a.typ = "AssistantHookCustomerSpeechInterrupted"
+		a.AssistantHookCustomerSpeechInterrupted = valueAssistantHookCustomerSpeechInterrupted
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, a)
+}
+
+func (a AssistantUserEditableHooksItem) MarshalJSON() ([]byte, error) {
+	if a.typ == "AssistantHookCallEnding" || a.AssistantHookCallEnding != nil {
+		return json.Marshal(a.AssistantHookCallEnding)
+	}
+	if a.typ == "AssistantHookAssistantSpeechInterrupted" || a.AssistantHookAssistantSpeechInterrupted != nil {
+		return json.Marshal(a.AssistantHookAssistantSpeechInterrupted)
+	}
+	if a.typ == "AssistantHookCustomerSpeechInterrupted" || a.AssistantHookCustomerSpeechInterrupted != nil {
+		return json.Marshal(a.AssistantHookCustomerSpeechInterrupted)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
+type AssistantUserEditableHooksItemVisitor interface {
+	VisitAssistantHookCallEnding(*AssistantHookCallEnding) error
+	VisitAssistantHookAssistantSpeechInterrupted(*AssistantHookAssistantSpeechInterrupted) error
+	VisitAssistantHookCustomerSpeechInterrupted(*AssistantHookCustomerSpeechInterrupted) error
+}
+
+func (a *AssistantUserEditableHooksItem) Accept(visitor AssistantUserEditableHooksItemVisitor) error {
+	if a.typ == "AssistantHookCallEnding" || a.AssistantHookCallEnding != nil {
+		return visitor.VisitAssistantHookCallEnding(a.AssistantHookCallEnding)
+	}
+	if a.typ == "AssistantHookAssistantSpeechInterrupted" || a.AssistantHookAssistantSpeechInterrupted != nil {
+		return visitor.VisitAssistantHookAssistantSpeechInterrupted(a.AssistantHookAssistantSpeechInterrupted)
+	}
+	if a.typ == "AssistantHookCustomerSpeechInterrupted" || a.AssistantHookCustomerSpeechInterrupted != nil {
+		return visitor.VisitAssistantHookCustomerSpeechInterrupted(a.AssistantHookCustomerSpeechInterrupted)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
+// These are the options for the assistant's LLM.
+type AssistantUserEditableModel struct {
+	AnyscaleModel     *AnyscaleModel
+	AnthropicModel    *AnthropicModel
+	CerebrasModel     *CerebrasModel
+	CustomLlmModel    *CustomLlmModel
+	DeepInfraModel    *DeepInfraModel
+	DeepSeekModel     *DeepSeekModel
+	GoogleModel       *GoogleModel
+	GroqModel         *GroqModel
+	InflectionAiModel *InflectionAiModel
+	OpenAiModel       *OpenAiModel
+	OpenRouterModel   *OpenRouterModel
+	PerplexityAiModel *PerplexityAiModel
+	TogetherAiModel   *TogetherAiModel
+	VapiModel         *VapiModel
+	XaiModel          *XaiModel
+
+	typ string
+}
+
+func (a *AssistantUserEditableModel) GetAnyscaleModel() *AnyscaleModel {
+	if a == nil {
+		return nil
+	}
+	return a.AnyscaleModel
+}
+
+func (a *AssistantUserEditableModel) GetAnthropicModel() *AnthropicModel {
+	if a == nil {
+		return nil
+	}
+	return a.AnthropicModel
+}
+
+func (a *AssistantUserEditableModel) GetCerebrasModel() *CerebrasModel {
+	if a == nil {
+		return nil
+	}
+	return a.CerebrasModel
+}
+
+func (a *AssistantUserEditableModel) GetCustomLlmModel() *CustomLlmModel {
+	if a == nil {
+		return nil
+	}
+	return a.CustomLlmModel
+}
+
+func (a *AssistantUserEditableModel) GetDeepInfraModel() *DeepInfraModel {
+	if a == nil {
+		return nil
+	}
+	return a.DeepInfraModel
+}
+
+func (a *AssistantUserEditableModel) GetDeepSeekModel() *DeepSeekModel {
+	if a == nil {
+		return nil
+	}
+	return a.DeepSeekModel
+}
+
+func (a *AssistantUserEditableModel) GetGoogleModel() *GoogleModel {
+	if a == nil {
+		return nil
+	}
+	return a.GoogleModel
+}
+
+func (a *AssistantUserEditableModel) GetGroqModel() *GroqModel {
+	if a == nil {
+		return nil
+	}
+	return a.GroqModel
+}
+
+func (a *AssistantUserEditableModel) GetInflectionAiModel() *InflectionAiModel {
+	if a == nil {
+		return nil
+	}
+	return a.InflectionAiModel
+}
+
+func (a *AssistantUserEditableModel) GetOpenAiModel() *OpenAiModel {
+	if a == nil {
+		return nil
+	}
+	return a.OpenAiModel
+}
+
+func (a *AssistantUserEditableModel) GetOpenRouterModel() *OpenRouterModel {
+	if a == nil {
+		return nil
+	}
+	return a.OpenRouterModel
+}
+
+func (a *AssistantUserEditableModel) GetPerplexityAiModel() *PerplexityAiModel {
+	if a == nil {
+		return nil
+	}
+	return a.PerplexityAiModel
+}
+
+func (a *AssistantUserEditableModel) GetTogetherAiModel() *TogetherAiModel {
+	if a == nil {
+		return nil
+	}
+	return a.TogetherAiModel
+}
+
+func (a *AssistantUserEditableModel) GetVapiModel() *VapiModel {
+	if a == nil {
+		return nil
+	}
+	return a.VapiModel
+}
+
+func (a *AssistantUserEditableModel) GetXaiModel() *XaiModel {
+	if a == nil {
+		return nil
+	}
+	return a.XaiModel
+}
+
+func (a *AssistantUserEditableModel) UnmarshalJSON(data []byte) error {
+	valueAnyscaleModel := new(AnyscaleModel)
+	if err := json.Unmarshal(data, &valueAnyscaleModel); err == nil {
+		a.typ = "AnyscaleModel"
+		a.AnyscaleModel = valueAnyscaleModel
+		return nil
+	}
+	valueAnthropicModel := new(AnthropicModel)
+	if err := json.Unmarshal(data, &valueAnthropicModel); err == nil {
+		a.typ = "AnthropicModel"
+		a.AnthropicModel = valueAnthropicModel
+		return nil
+	}
+	valueCerebrasModel := new(CerebrasModel)
+	if err := json.Unmarshal(data, &valueCerebrasModel); err == nil {
+		a.typ = "CerebrasModel"
+		a.CerebrasModel = valueCerebrasModel
+		return nil
+	}
+	valueCustomLlmModel := new(CustomLlmModel)
+	if err := json.Unmarshal(data, &valueCustomLlmModel); err == nil {
+		a.typ = "CustomLlmModel"
+		a.CustomLlmModel = valueCustomLlmModel
+		return nil
+	}
+	valueDeepInfraModel := new(DeepInfraModel)
+	if err := json.Unmarshal(data, &valueDeepInfraModel); err == nil {
+		a.typ = "DeepInfraModel"
+		a.DeepInfraModel = valueDeepInfraModel
+		return nil
+	}
+	valueDeepSeekModel := new(DeepSeekModel)
+	if err := json.Unmarshal(data, &valueDeepSeekModel); err == nil {
+		a.typ = "DeepSeekModel"
+		a.DeepSeekModel = valueDeepSeekModel
+		return nil
+	}
+	valueGoogleModel := new(GoogleModel)
+	if err := json.Unmarshal(data, &valueGoogleModel); err == nil {
+		a.typ = "GoogleModel"
+		a.GoogleModel = valueGoogleModel
+		return nil
+	}
+	valueGroqModel := new(GroqModel)
+	if err := json.Unmarshal(data, &valueGroqModel); err == nil {
+		a.typ = "GroqModel"
+		a.GroqModel = valueGroqModel
+		return nil
+	}
+	valueInflectionAiModel := new(InflectionAiModel)
+	if err := json.Unmarshal(data, &valueInflectionAiModel); err == nil {
+		a.typ = "InflectionAiModel"
+		a.InflectionAiModel = valueInflectionAiModel
+		return nil
+	}
+	valueOpenAiModel := new(OpenAiModel)
+	if err := json.Unmarshal(data, &valueOpenAiModel); err == nil {
+		a.typ = "OpenAiModel"
+		a.OpenAiModel = valueOpenAiModel
+		return nil
+	}
+	valueOpenRouterModel := new(OpenRouterModel)
+	if err := json.Unmarshal(data, &valueOpenRouterModel); err == nil {
+		a.typ = "OpenRouterModel"
+		a.OpenRouterModel = valueOpenRouterModel
+		return nil
+	}
+	valuePerplexityAiModel := new(PerplexityAiModel)
+	if err := json.Unmarshal(data, &valuePerplexityAiModel); err == nil {
+		a.typ = "PerplexityAiModel"
+		a.PerplexityAiModel = valuePerplexityAiModel
+		return nil
+	}
+	valueTogetherAiModel := new(TogetherAiModel)
+	if err := json.Unmarshal(data, &valueTogetherAiModel); err == nil {
+		a.typ = "TogetherAiModel"
+		a.TogetherAiModel = valueTogetherAiModel
+		return nil
+	}
+	valueVapiModel := new(VapiModel)
+	if err := json.Unmarshal(data, &valueVapiModel); err == nil {
+		a.typ = "VapiModel"
+		a.VapiModel = valueVapiModel
+		return nil
+	}
+	valueXaiModel := new(XaiModel)
+	if err := json.Unmarshal(data, &valueXaiModel); err == nil {
+		a.typ = "XaiModel"
+		a.XaiModel = valueXaiModel
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, a)
+}
+
+func (a AssistantUserEditableModel) MarshalJSON() ([]byte, error) {
+	if a.typ == "AnyscaleModel" || a.AnyscaleModel != nil {
+		return json.Marshal(a.AnyscaleModel)
+	}
+	if a.typ == "AnthropicModel" || a.AnthropicModel != nil {
+		return json.Marshal(a.AnthropicModel)
+	}
+	if a.typ == "CerebrasModel" || a.CerebrasModel != nil {
+		return json.Marshal(a.CerebrasModel)
+	}
+	if a.typ == "CustomLlmModel" || a.CustomLlmModel != nil {
+		return json.Marshal(a.CustomLlmModel)
+	}
+	if a.typ == "DeepInfraModel" || a.DeepInfraModel != nil {
+		return json.Marshal(a.DeepInfraModel)
+	}
+	if a.typ == "DeepSeekModel" || a.DeepSeekModel != nil {
+		return json.Marshal(a.DeepSeekModel)
+	}
+	if a.typ == "GoogleModel" || a.GoogleModel != nil {
+		return json.Marshal(a.GoogleModel)
+	}
+	if a.typ == "GroqModel" || a.GroqModel != nil {
+		return json.Marshal(a.GroqModel)
+	}
+	if a.typ == "InflectionAiModel" || a.InflectionAiModel != nil {
+		return json.Marshal(a.InflectionAiModel)
+	}
+	if a.typ == "OpenAiModel" || a.OpenAiModel != nil {
+		return json.Marshal(a.OpenAiModel)
+	}
+	if a.typ == "OpenRouterModel" || a.OpenRouterModel != nil {
+		return json.Marshal(a.OpenRouterModel)
+	}
+	if a.typ == "PerplexityAiModel" || a.PerplexityAiModel != nil {
+		return json.Marshal(a.PerplexityAiModel)
+	}
+	if a.typ == "TogetherAiModel" || a.TogetherAiModel != nil {
+		return json.Marshal(a.TogetherAiModel)
+	}
+	if a.typ == "VapiModel" || a.VapiModel != nil {
+		return json.Marshal(a.VapiModel)
+	}
+	if a.typ == "XaiModel" || a.XaiModel != nil {
+		return json.Marshal(a.XaiModel)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
+type AssistantUserEditableModelVisitor interface {
+	VisitAnyscaleModel(*AnyscaleModel) error
+	VisitAnthropicModel(*AnthropicModel) error
+	VisitCerebrasModel(*CerebrasModel) error
+	VisitCustomLlmModel(*CustomLlmModel) error
+	VisitDeepInfraModel(*DeepInfraModel) error
+	VisitDeepSeekModel(*DeepSeekModel) error
+	VisitGoogleModel(*GoogleModel) error
+	VisitGroqModel(*GroqModel) error
+	VisitInflectionAiModel(*InflectionAiModel) error
+	VisitOpenAiModel(*OpenAiModel) error
+	VisitOpenRouterModel(*OpenRouterModel) error
+	VisitPerplexityAiModel(*PerplexityAiModel) error
+	VisitTogetherAiModel(*TogetherAiModel) error
+	VisitVapiModel(*VapiModel) error
+	VisitXaiModel(*XaiModel) error
+}
+
+func (a *AssistantUserEditableModel) Accept(visitor AssistantUserEditableModelVisitor) error {
+	if a.typ == "AnyscaleModel" || a.AnyscaleModel != nil {
+		return visitor.VisitAnyscaleModel(a.AnyscaleModel)
+	}
+	if a.typ == "AnthropicModel" || a.AnthropicModel != nil {
+		return visitor.VisitAnthropicModel(a.AnthropicModel)
+	}
+	if a.typ == "CerebrasModel" || a.CerebrasModel != nil {
+		return visitor.VisitCerebrasModel(a.CerebrasModel)
+	}
+	if a.typ == "CustomLlmModel" || a.CustomLlmModel != nil {
+		return visitor.VisitCustomLlmModel(a.CustomLlmModel)
+	}
+	if a.typ == "DeepInfraModel" || a.DeepInfraModel != nil {
+		return visitor.VisitDeepInfraModel(a.DeepInfraModel)
+	}
+	if a.typ == "DeepSeekModel" || a.DeepSeekModel != nil {
+		return visitor.VisitDeepSeekModel(a.DeepSeekModel)
+	}
+	if a.typ == "GoogleModel" || a.GoogleModel != nil {
+		return visitor.VisitGoogleModel(a.GoogleModel)
+	}
+	if a.typ == "GroqModel" || a.GroqModel != nil {
+		return visitor.VisitGroqModel(a.GroqModel)
+	}
+	if a.typ == "InflectionAiModel" || a.InflectionAiModel != nil {
+		return visitor.VisitInflectionAiModel(a.InflectionAiModel)
+	}
+	if a.typ == "OpenAiModel" || a.OpenAiModel != nil {
+		return visitor.VisitOpenAiModel(a.OpenAiModel)
+	}
+	if a.typ == "OpenRouterModel" || a.OpenRouterModel != nil {
+		return visitor.VisitOpenRouterModel(a.OpenRouterModel)
+	}
+	if a.typ == "PerplexityAiModel" || a.PerplexityAiModel != nil {
+		return visitor.VisitPerplexityAiModel(a.PerplexityAiModel)
+	}
+	if a.typ == "TogetherAiModel" || a.TogetherAiModel != nil {
+		return visitor.VisitTogetherAiModel(a.TogetherAiModel)
+	}
+	if a.typ == "VapiModel" || a.VapiModel != nil {
+		return visitor.VisitVapiModel(a.VapiModel)
+	}
+	if a.typ == "XaiModel" || a.XaiModel != nil {
+		return visitor.VisitXaiModel(a.XaiModel)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
+// These are the options for the assistant's transcriber.
+type AssistantUserEditableTranscriber struct {
+	AssemblyAiTranscriber   *AssemblyAiTranscriber
+	AzureSpeechTranscriber  *AzureSpeechTranscriber
+	CustomTranscriber       *CustomTranscriber
+	DeepgramTranscriber     *DeepgramTranscriber
+	ElevenLabsTranscriber   *ElevenLabsTranscriber
+	GladiaTranscriber       *GladiaTranscriber
+	SpeechmaticsTranscriber *SpeechmaticsTranscriber
+	TalkscriberTranscriber  *TalkscriberTranscriber
+	GoogleTranscriber       *GoogleTranscriber
+	OpenAiTranscriber       *OpenAiTranscriber
+
+	typ string
+}
+
+func (a *AssistantUserEditableTranscriber) GetAssemblyAiTranscriber() *AssemblyAiTranscriber {
+	if a == nil {
+		return nil
+	}
+	return a.AssemblyAiTranscriber
+}
+
+func (a *AssistantUserEditableTranscriber) GetAzureSpeechTranscriber() *AzureSpeechTranscriber {
+	if a == nil {
+		return nil
+	}
+	return a.AzureSpeechTranscriber
+}
+
+func (a *AssistantUserEditableTranscriber) GetCustomTranscriber() *CustomTranscriber {
+	if a == nil {
+		return nil
+	}
+	return a.CustomTranscriber
+}
+
+func (a *AssistantUserEditableTranscriber) GetDeepgramTranscriber() *DeepgramTranscriber {
+	if a == nil {
+		return nil
+	}
+	return a.DeepgramTranscriber
+}
+
+func (a *AssistantUserEditableTranscriber) GetElevenLabsTranscriber() *ElevenLabsTranscriber {
+	if a == nil {
+		return nil
+	}
+	return a.ElevenLabsTranscriber
+}
+
+func (a *AssistantUserEditableTranscriber) GetGladiaTranscriber() *GladiaTranscriber {
+	if a == nil {
+		return nil
+	}
+	return a.GladiaTranscriber
+}
+
+func (a *AssistantUserEditableTranscriber) GetSpeechmaticsTranscriber() *SpeechmaticsTranscriber {
+	if a == nil {
+		return nil
+	}
+	return a.SpeechmaticsTranscriber
+}
+
+func (a *AssistantUserEditableTranscriber) GetTalkscriberTranscriber() *TalkscriberTranscriber {
+	if a == nil {
+		return nil
+	}
+	return a.TalkscriberTranscriber
+}
+
+func (a *AssistantUserEditableTranscriber) GetGoogleTranscriber() *GoogleTranscriber {
+	if a == nil {
+		return nil
+	}
+	return a.GoogleTranscriber
+}
+
+func (a *AssistantUserEditableTranscriber) GetOpenAiTranscriber() *OpenAiTranscriber {
+	if a == nil {
+		return nil
+	}
+	return a.OpenAiTranscriber
+}
+
+func (a *AssistantUserEditableTranscriber) UnmarshalJSON(data []byte) error {
+	valueAssemblyAiTranscriber := new(AssemblyAiTranscriber)
+	if err := json.Unmarshal(data, &valueAssemblyAiTranscriber); err == nil {
+		a.typ = "AssemblyAiTranscriber"
+		a.AssemblyAiTranscriber = valueAssemblyAiTranscriber
+		return nil
+	}
+	valueAzureSpeechTranscriber := new(AzureSpeechTranscriber)
+	if err := json.Unmarshal(data, &valueAzureSpeechTranscriber); err == nil {
+		a.typ = "AzureSpeechTranscriber"
+		a.AzureSpeechTranscriber = valueAzureSpeechTranscriber
+		return nil
+	}
+	valueCustomTranscriber := new(CustomTranscriber)
+	if err := json.Unmarshal(data, &valueCustomTranscriber); err == nil {
+		a.typ = "CustomTranscriber"
+		a.CustomTranscriber = valueCustomTranscriber
+		return nil
+	}
+	valueDeepgramTranscriber := new(DeepgramTranscriber)
+	if err := json.Unmarshal(data, &valueDeepgramTranscriber); err == nil {
+		a.typ = "DeepgramTranscriber"
+		a.DeepgramTranscriber = valueDeepgramTranscriber
+		return nil
+	}
+	valueElevenLabsTranscriber := new(ElevenLabsTranscriber)
+	if err := json.Unmarshal(data, &valueElevenLabsTranscriber); err == nil {
+		a.typ = "ElevenLabsTranscriber"
+		a.ElevenLabsTranscriber = valueElevenLabsTranscriber
+		return nil
+	}
+	valueGladiaTranscriber := new(GladiaTranscriber)
+	if err := json.Unmarshal(data, &valueGladiaTranscriber); err == nil {
+		a.typ = "GladiaTranscriber"
+		a.GladiaTranscriber = valueGladiaTranscriber
+		return nil
+	}
+	valueSpeechmaticsTranscriber := new(SpeechmaticsTranscriber)
+	if err := json.Unmarshal(data, &valueSpeechmaticsTranscriber); err == nil {
+		a.typ = "SpeechmaticsTranscriber"
+		a.SpeechmaticsTranscriber = valueSpeechmaticsTranscriber
+		return nil
+	}
+	valueTalkscriberTranscriber := new(TalkscriberTranscriber)
+	if err := json.Unmarshal(data, &valueTalkscriberTranscriber); err == nil {
+		a.typ = "TalkscriberTranscriber"
+		a.TalkscriberTranscriber = valueTalkscriberTranscriber
+		return nil
+	}
+	valueGoogleTranscriber := new(GoogleTranscriber)
+	if err := json.Unmarshal(data, &valueGoogleTranscriber); err == nil {
+		a.typ = "GoogleTranscriber"
+		a.GoogleTranscriber = valueGoogleTranscriber
+		return nil
+	}
+	valueOpenAiTranscriber := new(OpenAiTranscriber)
+	if err := json.Unmarshal(data, &valueOpenAiTranscriber); err == nil {
+		a.typ = "OpenAiTranscriber"
+		a.OpenAiTranscriber = valueOpenAiTranscriber
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, a)
+}
+
+func (a AssistantUserEditableTranscriber) MarshalJSON() ([]byte, error) {
+	if a.typ == "AssemblyAiTranscriber" || a.AssemblyAiTranscriber != nil {
+		return json.Marshal(a.AssemblyAiTranscriber)
+	}
+	if a.typ == "AzureSpeechTranscriber" || a.AzureSpeechTranscriber != nil {
+		return json.Marshal(a.AzureSpeechTranscriber)
+	}
+	if a.typ == "CustomTranscriber" || a.CustomTranscriber != nil {
+		return json.Marshal(a.CustomTranscriber)
+	}
+	if a.typ == "DeepgramTranscriber" || a.DeepgramTranscriber != nil {
+		return json.Marshal(a.DeepgramTranscriber)
+	}
+	if a.typ == "ElevenLabsTranscriber" || a.ElevenLabsTranscriber != nil {
+		return json.Marshal(a.ElevenLabsTranscriber)
+	}
+	if a.typ == "GladiaTranscriber" || a.GladiaTranscriber != nil {
+		return json.Marshal(a.GladiaTranscriber)
+	}
+	if a.typ == "SpeechmaticsTranscriber" || a.SpeechmaticsTranscriber != nil {
+		return json.Marshal(a.SpeechmaticsTranscriber)
+	}
+	if a.typ == "TalkscriberTranscriber" || a.TalkscriberTranscriber != nil {
+		return json.Marshal(a.TalkscriberTranscriber)
+	}
+	if a.typ == "GoogleTranscriber" || a.GoogleTranscriber != nil {
+		return json.Marshal(a.GoogleTranscriber)
+	}
+	if a.typ == "OpenAiTranscriber" || a.OpenAiTranscriber != nil {
+		return json.Marshal(a.OpenAiTranscriber)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
+type AssistantUserEditableTranscriberVisitor interface {
+	VisitAssemblyAiTranscriber(*AssemblyAiTranscriber) error
+	VisitAzureSpeechTranscriber(*AzureSpeechTranscriber) error
+	VisitCustomTranscriber(*CustomTranscriber) error
+	VisitDeepgramTranscriber(*DeepgramTranscriber) error
+	VisitElevenLabsTranscriber(*ElevenLabsTranscriber) error
+	VisitGladiaTranscriber(*GladiaTranscriber) error
+	VisitSpeechmaticsTranscriber(*SpeechmaticsTranscriber) error
+	VisitTalkscriberTranscriber(*TalkscriberTranscriber) error
+	VisitGoogleTranscriber(*GoogleTranscriber) error
+	VisitOpenAiTranscriber(*OpenAiTranscriber) error
+}
+
+func (a *AssistantUserEditableTranscriber) Accept(visitor AssistantUserEditableTranscriberVisitor) error {
+	if a.typ == "AssemblyAiTranscriber" || a.AssemblyAiTranscriber != nil {
+		return visitor.VisitAssemblyAiTranscriber(a.AssemblyAiTranscriber)
+	}
+	if a.typ == "AzureSpeechTranscriber" || a.AzureSpeechTranscriber != nil {
+		return visitor.VisitAzureSpeechTranscriber(a.AzureSpeechTranscriber)
+	}
+	if a.typ == "CustomTranscriber" || a.CustomTranscriber != nil {
+		return visitor.VisitCustomTranscriber(a.CustomTranscriber)
+	}
+	if a.typ == "DeepgramTranscriber" || a.DeepgramTranscriber != nil {
+		return visitor.VisitDeepgramTranscriber(a.DeepgramTranscriber)
+	}
+	if a.typ == "ElevenLabsTranscriber" || a.ElevenLabsTranscriber != nil {
+		return visitor.VisitElevenLabsTranscriber(a.ElevenLabsTranscriber)
+	}
+	if a.typ == "GladiaTranscriber" || a.GladiaTranscriber != nil {
+		return visitor.VisitGladiaTranscriber(a.GladiaTranscriber)
+	}
+	if a.typ == "SpeechmaticsTranscriber" || a.SpeechmaticsTranscriber != nil {
+		return visitor.VisitSpeechmaticsTranscriber(a.SpeechmaticsTranscriber)
+	}
+	if a.typ == "TalkscriberTranscriber" || a.TalkscriberTranscriber != nil {
+		return visitor.VisitTalkscriberTranscriber(a.TalkscriberTranscriber)
+	}
+	if a.typ == "GoogleTranscriber" || a.GoogleTranscriber != nil {
+		return visitor.VisitGoogleTranscriber(a.GoogleTranscriber)
+	}
+	if a.typ == "OpenAiTranscriber" || a.OpenAiTranscriber != nil {
+		return visitor.VisitOpenAiTranscriber(a.OpenAiTranscriber)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
+// These are the options for the assistant's voice.
+type AssistantUserEditableVoice struct {
+	AzureVoice      *AzureVoice
+	CartesiaVoice   *CartesiaVoice
+	CustomVoice     *CustomVoice
+	DeepgramVoice   *DeepgramVoice
+	ElevenLabsVoice *ElevenLabsVoice
+	HumeVoice       *HumeVoice
+	LmntVoice       *LmntVoice
+	NeuphonicVoice  *NeuphonicVoice
+	OpenAiVoice     *OpenAiVoice
+	PlayHtVoice     *PlayHtVoice
+	RimeAiVoice     *RimeAiVoice
+	SmallestAiVoice *SmallestAiVoice
+	TavusVoice      *TavusVoice
+	VapiVoice       *VapiVoice
+
+	typ string
+}
+
+func (a *AssistantUserEditableVoice) GetAzureVoice() *AzureVoice {
+	if a == nil {
+		return nil
+	}
+	return a.AzureVoice
+}
+
+func (a *AssistantUserEditableVoice) GetCartesiaVoice() *CartesiaVoice {
+	if a == nil {
+		return nil
+	}
+	return a.CartesiaVoice
+}
+
+func (a *AssistantUserEditableVoice) GetCustomVoice() *CustomVoice {
+	if a == nil {
+		return nil
+	}
+	return a.CustomVoice
+}
+
+func (a *AssistantUserEditableVoice) GetDeepgramVoice() *DeepgramVoice {
+	if a == nil {
+		return nil
+	}
+	return a.DeepgramVoice
+}
+
+func (a *AssistantUserEditableVoice) GetElevenLabsVoice() *ElevenLabsVoice {
+	if a == nil {
+		return nil
+	}
+	return a.ElevenLabsVoice
+}
+
+func (a *AssistantUserEditableVoice) GetHumeVoice() *HumeVoice {
+	if a == nil {
+		return nil
+	}
+	return a.HumeVoice
+}
+
+func (a *AssistantUserEditableVoice) GetLmntVoice() *LmntVoice {
+	if a == nil {
+		return nil
+	}
+	return a.LmntVoice
+}
+
+func (a *AssistantUserEditableVoice) GetNeuphonicVoice() *NeuphonicVoice {
+	if a == nil {
+		return nil
+	}
+	return a.NeuphonicVoice
+}
+
+func (a *AssistantUserEditableVoice) GetOpenAiVoice() *OpenAiVoice {
+	if a == nil {
+		return nil
+	}
+	return a.OpenAiVoice
+}
+
+func (a *AssistantUserEditableVoice) GetPlayHtVoice() *PlayHtVoice {
+	if a == nil {
+		return nil
+	}
+	return a.PlayHtVoice
+}
+
+func (a *AssistantUserEditableVoice) GetRimeAiVoice() *RimeAiVoice {
+	if a == nil {
+		return nil
+	}
+	return a.RimeAiVoice
+}
+
+func (a *AssistantUserEditableVoice) GetSmallestAiVoice() *SmallestAiVoice {
+	if a == nil {
+		return nil
+	}
+	return a.SmallestAiVoice
+}
+
+func (a *AssistantUserEditableVoice) GetTavusVoice() *TavusVoice {
+	if a == nil {
+		return nil
+	}
+	return a.TavusVoice
+}
+
+func (a *AssistantUserEditableVoice) GetVapiVoice() *VapiVoice {
+	if a == nil {
+		return nil
+	}
+	return a.VapiVoice
+}
+
+func (a *AssistantUserEditableVoice) UnmarshalJSON(data []byte) error {
+	valueAzureVoice := new(AzureVoice)
+	if err := json.Unmarshal(data, &valueAzureVoice); err == nil {
+		a.typ = "AzureVoice"
+		a.AzureVoice = valueAzureVoice
+		return nil
+	}
+	valueCartesiaVoice := new(CartesiaVoice)
+	if err := json.Unmarshal(data, &valueCartesiaVoice); err == nil {
+		a.typ = "CartesiaVoice"
+		a.CartesiaVoice = valueCartesiaVoice
+		return nil
+	}
+	valueCustomVoice := new(CustomVoice)
+	if err := json.Unmarshal(data, &valueCustomVoice); err == nil {
+		a.typ = "CustomVoice"
+		a.CustomVoice = valueCustomVoice
+		return nil
+	}
+	valueDeepgramVoice := new(DeepgramVoice)
+	if err := json.Unmarshal(data, &valueDeepgramVoice); err == nil {
+		a.typ = "DeepgramVoice"
+		a.DeepgramVoice = valueDeepgramVoice
+		return nil
+	}
+	valueElevenLabsVoice := new(ElevenLabsVoice)
+	if err := json.Unmarshal(data, &valueElevenLabsVoice); err == nil {
+		a.typ = "ElevenLabsVoice"
+		a.ElevenLabsVoice = valueElevenLabsVoice
+		return nil
+	}
+	valueHumeVoice := new(HumeVoice)
+	if err := json.Unmarshal(data, &valueHumeVoice); err == nil {
+		a.typ = "HumeVoice"
+		a.HumeVoice = valueHumeVoice
+		return nil
+	}
+	valueLmntVoice := new(LmntVoice)
+	if err := json.Unmarshal(data, &valueLmntVoice); err == nil {
+		a.typ = "LmntVoice"
+		a.LmntVoice = valueLmntVoice
+		return nil
+	}
+	valueNeuphonicVoice := new(NeuphonicVoice)
+	if err := json.Unmarshal(data, &valueNeuphonicVoice); err == nil {
+		a.typ = "NeuphonicVoice"
+		a.NeuphonicVoice = valueNeuphonicVoice
+		return nil
+	}
+	valueOpenAiVoice := new(OpenAiVoice)
+	if err := json.Unmarshal(data, &valueOpenAiVoice); err == nil {
+		a.typ = "OpenAiVoice"
+		a.OpenAiVoice = valueOpenAiVoice
+		return nil
+	}
+	valuePlayHtVoice := new(PlayHtVoice)
+	if err := json.Unmarshal(data, &valuePlayHtVoice); err == nil {
+		a.typ = "PlayHtVoice"
+		a.PlayHtVoice = valuePlayHtVoice
+		return nil
+	}
+	valueRimeAiVoice := new(RimeAiVoice)
+	if err := json.Unmarshal(data, &valueRimeAiVoice); err == nil {
+		a.typ = "RimeAiVoice"
+		a.RimeAiVoice = valueRimeAiVoice
+		return nil
+	}
+	valueSmallestAiVoice := new(SmallestAiVoice)
+	if err := json.Unmarshal(data, &valueSmallestAiVoice); err == nil {
+		a.typ = "SmallestAiVoice"
+		a.SmallestAiVoice = valueSmallestAiVoice
+		return nil
+	}
+	valueTavusVoice := new(TavusVoice)
+	if err := json.Unmarshal(data, &valueTavusVoice); err == nil {
+		a.typ = "TavusVoice"
+		a.TavusVoice = valueTavusVoice
+		return nil
+	}
+	valueVapiVoice := new(VapiVoice)
+	if err := json.Unmarshal(data, &valueVapiVoice); err == nil {
+		a.typ = "VapiVoice"
+		a.VapiVoice = valueVapiVoice
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, a)
+}
+
+func (a AssistantUserEditableVoice) MarshalJSON() ([]byte, error) {
+	if a.typ == "AzureVoice" || a.AzureVoice != nil {
+		return json.Marshal(a.AzureVoice)
+	}
+	if a.typ == "CartesiaVoice" || a.CartesiaVoice != nil {
+		return json.Marshal(a.CartesiaVoice)
+	}
+	if a.typ == "CustomVoice" || a.CustomVoice != nil {
+		return json.Marshal(a.CustomVoice)
+	}
+	if a.typ == "DeepgramVoice" || a.DeepgramVoice != nil {
+		return json.Marshal(a.DeepgramVoice)
+	}
+	if a.typ == "ElevenLabsVoice" || a.ElevenLabsVoice != nil {
+		return json.Marshal(a.ElevenLabsVoice)
+	}
+	if a.typ == "HumeVoice" || a.HumeVoice != nil {
+		return json.Marshal(a.HumeVoice)
+	}
+	if a.typ == "LmntVoice" || a.LmntVoice != nil {
+		return json.Marshal(a.LmntVoice)
+	}
+	if a.typ == "NeuphonicVoice" || a.NeuphonicVoice != nil {
+		return json.Marshal(a.NeuphonicVoice)
+	}
+	if a.typ == "OpenAiVoice" || a.OpenAiVoice != nil {
+		return json.Marshal(a.OpenAiVoice)
+	}
+	if a.typ == "PlayHtVoice" || a.PlayHtVoice != nil {
+		return json.Marshal(a.PlayHtVoice)
+	}
+	if a.typ == "RimeAiVoice" || a.RimeAiVoice != nil {
+		return json.Marshal(a.RimeAiVoice)
+	}
+	if a.typ == "SmallestAiVoice" || a.SmallestAiVoice != nil {
+		return json.Marshal(a.SmallestAiVoice)
+	}
+	if a.typ == "TavusVoice" || a.TavusVoice != nil {
+		return json.Marshal(a.TavusVoice)
+	}
+	if a.typ == "VapiVoice" || a.VapiVoice != nil {
+		return json.Marshal(a.VapiVoice)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
+type AssistantUserEditableVoiceVisitor interface {
+	VisitAzureVoice(*AzureVoice) error
+	VisitCartesiaVoice(*CartesiaVoice) error
+	VisitCustomVoice(*CustomVoice) error
+	VisitDeepgramVoice(*DeepgramVoice) error
+	VisitElevenLabsVoice(*ElevenLabsVoice) error
+	VisitHumeVoice(*HumeVoice) error
+	VisitLmntVoice(*LmntVoice) error
+	VisitNeuphonicVoice(*NeuphonicVoice) error
+	VisitOpenAiVoice(*OpenAiVoice) error
+	VisitPlayHtVoice(*PlayHtVoice) error
+	VisitRimeAiVoice(*RimeAiVoice) error
+	VisitSmallestAiVoice(*SmallestAiVoice) error
+	VisitTavusVoice(*TavusVoice) error
+	VisitVapiVoice(*VapiVoice) error
+}
+
+func (a *AssistantUserEditableVoice) Accept(visitor AssistantUserEditableVoiceVisitor) error {
+	if a.typ == "AzureVoice" || a.AzureVoice != nil {
+		return visitor.VisitAzureVoice(a.AzureVoice)
+	}
+	if a.typ == "CartesiaVoice" || a.CartesiaVoice != nil {
+		return visitor.VisitCartesiaVoice(a.CartesiaVoice)
+	}
+	if a.typ == "CustomVoice" || a.CustomVoice != nil {
+		return visitor.VisitCustomVoice(a.CustomVoice)
+	}
+	if a.typ == "DeepgramVoice" || a.DeepgramVoice != nil {
+		return visitor.VisitDeepgramVoice(a.DeepgramVoice)
+	}
+	if a.typ == "ElevenLabsVoice" || a.ElevenLabsVoice != nil {
+		return visitor.VisitElevenLabsVoice(a.ElevenLabsVoice)
+	}
+	if a.typ == "HumeVoice" || a.HumeVoice != nil {
+		return visitor.VisitHumeVoice(a.HumeVoice)
+	}
+	if a.typ == "LmntVoice" || a.LmntVoice != nil {
+		return visitor.VisitLmntVoice(a.LmntVoice)
+	}
+	if a.typ == "NeuphonicVoice" || a.NeuphonicVoice != nil {
+		return visitor.VisitNeuphonicVoice(a.NeuphonicVoice)
+	}
+	if a.typ == "OpenAiVoice" || a.OpenAiVoice != nil {
+		return visitor.VisitOpenAiVoice(a.OpenAiVoice)
+	}
+	if a.typ == "PlayHtVoice" || a.PlayHtVoice != nil {
+		return visitor.VisitPlayHtVoice(a.PlayHtVoice)
+	}
+	if a.typ == "RimeAiVoice" || a.RimeAiVoice != nil {
+		return visitor.VisitRimeAiVoice(a.RimeAiVoice)
+	}
+	if a.typ == "SmallestAiVoice" || a.SmallestAiVoice != nil {
+		return visitor.VisitSmallestAiVoice(a.SmallestAiVoice)
+	}
+	if a.typ == "TavusVoice" || a.TavusVoice != nil {
+		return visitor.VisitTavusVoice(a.TavusVoice)
+	}
+	if a.typ == "VapiVoice" || a.VapiVoice != nil {
+		return visitor.VisitVapiVoice(a.VapiVoice)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
+// These are the settings to configure or disable voicemail detection. Alternatively, voicemail detection can be configured using the model.tools=[VoicemailTool].
+// This uses Twilio's built-in detection while the VoicemailTool relies on the model to detect if a voicemail was reached.
+// You can use neither of them, one of them, or both of them. By default, Twilio built-in detection is enabled while VoicemailTool is not.
+type AssistantUserEditableVoicemailDetection struct {
+	GoogleVoicemailDetectionPlan *GoogleVoicemailDetectionPlan
+	OpenAiVoicemailDetectionPlan *OpenAiVoicemailDetectionPlan
+	TwilioVoicemailDetectionPlan *TwilioVoicemailDetectionPlan
+	VapiVoicemailDetectionPlan   *VapiVoicemailDetectionPlan
+
+	typ string
+}
+
+func (a *AssistantUserEditableVoicemailDetection) GetGoogleVoicemailDetectionPlan() *GoogleVoicemailDetectionPlan {
+	if a == nil {
+		return nil
+	}
+	return a.GoogleVoicemailDetectionPlan
+}
+
+func (a *AssistantUserEditableVoicemailDetection) GetOpenAiVoicemailDetectionPlan() *OpenAiVoicemailDetectionPlan {
+	if a == nil {
+		return nil
+	}
+	return a.OpenAiVoicemailDetectionPlan
+}
+
+func (a *AssistantUserEditableVoicemailDetection) GetTwilioVoicemailDetectionPlan() *TwilioVoicemailDetectionPlan {
+	if a == nil {
+		return nil
+	}
+	return a.TwilioVoicemailDetectionPlan
+}
+
+func (a *AssistantUserEditableVoicemailDetection) GetVapiVoicemailDetectionPlan() *VapiVoicemailDetectionPlan {
+	if a == nil {
+		return nil
+	}
+	return a.VapiVoicemailDetectionPlan
+}
+
+func (a *AssistantUserEditableVoicemailDetection) UnmarshalJSON(data []byte) error {
+	valueGoogleVoicemailDetectionPlan := new(GoogleVoicemailDetectionPlan)
+	if err := json.Unmarshal(data, &valueGoogleVoicemailDetectionPlan); err == nil {
+		a.typ = "GoogleVoicemailDetectionPlan"
+		a.GoogleVoicemailDetectionPlan = valueGoogleVoicemailDetectionPlan
+		return nil
+	}
+	valueOpenAiVoicemailDetectionPlan := new(OpenAiVoicemailDetectionPlan)
+	if err := json.Unmarshal(data, &valueOpenAiVoicemailDetectionPlan); err == nil {
+		a.typ = "OpenAiVoicemailDetectionPlan"
+		a.OpenAiVoicemailDetectionPlan = valueOpenAiVoicemailDetectionPlan
+		return nil
+	}
+	valueTwilioVoicemailDetectionPlan := new(TwilioVoicemailDetectionPlan)
+	if err := json.Unmarshal(data, &valueTwilioVoicemailDetectionPlan); err == nil {
+		a.typ = "TwilioVoicemailDetectionPlan"
+		a.TwilioVoicemailDetectionPlan = valueTwilioVoicemailDetectionPlan
+		return nil
+	}
+	valueVapiVoicemailDetectionPlan := new(VapiVoicemailDetectionPlan)
+	if err := json.Unmarshal(data, &valueVapiVoicemailDetectionPlan); err == nil {
+		a.typ = "VapiVoicemailDetectionPlan"
+		a.VapiVoicemailDetectionPlan = valueVapiVoicemailDetectionPlan
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, a)
+}
+
+func (a AssistantUserEditableVoicemailDetection) MarshalJSON() ([]byte, error) {
+	if a.typ == "GoogleVoicemailDetectionPlan" || a.GoogleVoicemailDetectionPlan != nil {
+		return json.Marshal(a.GoogleVoicemailDetectionPlan)
+	}
+	if a.typ == "OpenAiVoicemailDetectionPlan" || a.OpenAiVoicemailDetectionPlan != nil {
+		return json.Marshal(a.OpenAiVoicemailDetectionPlan)
+	}
+	if a.typ == "TwilioVoicemailDetectionPlan" || a.TwilioVoicemailDetectionPlan != nil {
+		return json.Marshal(a.TwilioVoicemailDetectionPlan)
+	}
+	if a.typ == "VapiVoicemailDetectionPlan" || a.VapiVoicemailDetectionPlan != nil {
+		return json.Marshal(a.VapiVoicemailDetectionPlan)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
+type AssistantUserEditableVoicemailDetectionVisitor interface {
+	VisitGoogleVoicemailDetectionPlan(*GoogleVoicemailDetectionPlan) error
+	VisitOpenAiVoicemailDetectionPlan(*OpenAiVoicemailDetectionPlan) error
+	VisitTwilioVoicemailDetectionPlan(*TwilioVoicemailDetectionPlan) error
+	VisitVapiVoicemailDetectionPlan(*VapiVoicemailDetectionPlan) error
+}
+
+func (a *AssistantUserEditableVoicemailDetection) Accept(visitor AssistantUserEditableVoicemailDetectionVisitor) error {
+	if a.typ == "GoogleVoicemailDetectionPlan" || a.GoogleVoicemailDetectionPlan != nil {
+		return visitor.VisitGoogleVoicemailDetectionPlan(a.GoogleVoicemailDetectionPlan)
+	}
+	if a.typ == "OpenAiVoicemailDetectionPlan" || a.OpenAiVoicemailDetectionPlan != nil {
+		return visitor.VisitOpenAiVoicemailDetectionPlan(a.OpenAiVoicemailDetectionPlan)
+	}
+	if a.typ == "TwilioVoicemailDetectionPlan" || a.TwilioVoicemailDetectionPlan != nil {
+		return visitor.VisitTwilioVoicemailDetectionPlan(a.TwilioVoicemailDetectionPlan)
+	}
+	if a.typ == "VapiVoicemailDetectionPlan" || a.VapiVoicemailDetectionPlan != nil {
+		return visitor.VisitVapiVoicemailDetectionPlan(a.VapiVoicemailDetectionPlan)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", a)
 }
 
 type AssistantVersionPaginatedResponse struct {
@@ -10087,15 +13003,32 @@ func (c *ClientMessage) String() string {
 }
 
 type ClientMessageConversationUpdate struct {
+	// This is the phone number that the message is associated with.
+	PhoneNumber *ClientMessageConversationUpdatePhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "conversation-update" is sent when an update is committed to the conversation history.
 	// This is the most up-to-date conversation history at the time the message is sent.
 	Messages []*ClientMessageConversationUpdateMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
 	// This is the most up-to-date conversation history at the time the message is sent, formatted for OpenAI.
 	MessagesOpenAiFormatted []*OpenAiMessage `json:"messagesOpenAIFormatted,omitempty" url:"messagesOpenAIFormatted,omitempty"`
-	type_                   string
+	// This is the timestamp of the message.
+	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
+	// This is the call that the message is associated with.
+	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
+	type_     string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (c *ClientMessageConversationUpdate) GetPhoneNumber() *ClientMessageConversationUpdatePhoneNumber {
+	if c == nil {
+		return nil
+	}
+	return c.PhoneNumber
 }
 
 func (c *ClientMessageConversationUpdate) GetMessages() []*ClientMessageConversationUpdateMessagesItem {
@@ -10110,6 +13043,34 @@ func (c *ClientMessageConversationUpdate) GetMessagesOpenAiFormatted() []*OpenAi
 		return nil
 	}
 	return c.MessagesOpenAiFormatted
+}
+
+func (c *ClientMessageConversationUpdate) GetTimestamp() *float64 {
+	if c == nil {
+		return nil
+	}
+	return c.Timestamp
+}
+
+func (c *ClientMessageConversationUpdate) GetCall() *Call {
+	if c == nil {
+		return nil
+	}
+	return c.Call
+}
+
+func (c *ClientMessageConversationUpdate) GetCustomer() *CustomerUserEditable {
+	if c == nil {
+		return nil
+	}
+	return c.Customer
+}
+
+func (c *ClientMessageConversationUpdate) GetAssistant() *AssistantUserEditable {
+	if c == nil {
+		return nil
+	}
+	return c.Assistant
 }
 
 func (c *ClientMessageConversationUpdate) Type() string {
@@ -10294,16 +13255,124 @@ func (c *ClientMessageConversationUpdateMessagesItem) Accept(visitor ClientMessa
 	return fmt.Errorf("type %T does not include a non-empty union type", c)
 }
 
+// This is the phone number that the message is associated with.
+type ClientMessageConversationUpdatePhoneNumber struct {
+	Unknown                    interface{}
+	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
+
+	typ string
+}
+
+func (c *ClientMessageConversationUpdatePhoneNumber) GetUnknown() interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.Unknown
+}
+
+func (c *ClientMessageConversationUpdatePhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateTwilioPhoneNumberDto
+}
+
+func (c *ClientMessageConversationUpdatePhoneNumber) UnmarshalJSON(data []byte) error {
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		c.typ = "Unknown"
+		c.Unknown = valueUnknown
+		return nil
+	}
+	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
+	if err := json.Unmarshal(data, &valueCreateTwilioPhoneNumberDto); err == nil {
+		c.typ = "CreateTwilioPhoneNumberDto"
+		c.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c ClientMessageConversationUpdatePhoneNumber) MarshalJSON() ([]byte, error) {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return json.Marshal(c.Unknown)
+	}
+	if c.typ == "CreateTwilioPhoneNumberDto" || c.CreateTwilioPhoneNumberDto != nil {
+		return json.Marshal(c.CreateTwilioPhoneNumberDto)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type ClientMessageConversationUpdatePhoneNumberVisitor interface {
+	VisitUnknown(interface{}) error
+	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
+}
+
+func (c *ClientMessageConversationUpdatePhoneNumber) Accept(visitor ClientMessageConversationUpdatePhoneNumberVisitor) error {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return visitor.VisitUnknown(c.Unknown)
+	}
+	if c.typ == "CreateTwilioPhoneNumberDto" || c.CreateTwilioPhoneNumberDto != nil {
+		return visitor.VisitCreateTwilioPhoneNumberDto(c.CreateTwilioPhoneNumberDto)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
 type ClientMessageHang struct {
+	// This is the phone number that the message is associated with.
+	PhoneNumber *ClientMessageHangPhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "hang" is sent when the assistant is hanging due to a delay. The delay can be caused by many factors, such as:
 	// - the model is too slow to respond
 	// - the voice is too slow to respond
 	// - the tool call is still waiting for a response from your server
 	// - etc.
-	type_ string
+	// This is the timestamp of the message.
+	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
+	// This is the call that the message is associated with.
+	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
+	type_     string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (c *ClientMessageHang) GetPhoneNumber() *ClientMessageHangPhoneNumber {
+	if c == nil {
+		return nil
+	}
+	return c.PhoneNumber
+}
+
+func (c *ClientMessageHang) GetTimestamp() *float64 {
+	if c == nil {
+		return nil
+	}
+	return c.Timestamp
+}
+
+func (c *ClientMessageHang) GetCall() *Call {
+	if c == nil {
+		return nil
+	}
+	return c.Call
+}
+
+func (c *ClientMessageHang) GetCustomer() *CustomerUserEditable {
+	if c == nil {
+		return nil
+	}
+	return c.Customer
+}
+
+func (c *ClientMessageHang) GetAssistant() *AssistantUserEditable {
+	if c == nil {
+		return nil
+	}
+	return c.Assistant
 }
 
 func (c *ClientMessageHang) Type() string {
@@ -10363,14 +13432,122 @@ func (c *ClientMessageHang) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
+// This is the phone number that the message is associated with.
+type ClientMessageHangPhoneNumber struct {
+	Unknown                    interface{}
+	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
+
+	typ string
+}
+
+func (c *ClientMessageHangPhoneNumber) GetUnknown() interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.Unknown
+}
+
+func (c *ClientMessageHangPhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateTwilioPhoneNumberDto
+}
+
+func (c *ClientMessageHangPhoneNumber) UnmarshalJSON(data []byte) error {
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		c.typ = "Unknown"
+		c.Unknown = valueUnknown
+		return nil
+	}
+	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
+	if err := json.Unmarshal(data, &valueCreateTwilioPhoneNumberDto); err == nil {
+		c.typ = "CreateTwilioPhoneNumberDto"
+		c.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c ClientMessageHangPhoneNumber) MarshalJSON() ([]byte, error) {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return json.Marshal(c.Unknown)
+	}
+	if c.typ == "CreateTwilioPhoneNumberDto" || c.CreateTwilioPhoneNumberDto != nil {
+		return json.Marshal(c.CreateTwilioPhoneNumberDto)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type ClientMessageHangPhoneNumberVisitor interface {
+	VisitUnknown(interface{}) error
+	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
+}
+
+func (c *ClientMessageHangPhoneNumber) Accept(visitor ClientMessageHangPhoneNumberVisitor) error {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return visitor.VisitUnknown(c.Unknown)
+	}
+	if c.typ == "CreateTwilioPhoneNumberDto" || c.CreateTwilioPhoneNumberDto != nil {
+		return visitor.VisitCreateTwilioPhoneNumberDto(c.CreateTwilioPhoneNumberDto)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
 type ClientMessageLanguageChangeDetected struct {
+	// This is the phone number that the message is associated with.
+	PhoneNumber *ClientMessageLanguageChangeDetectedPhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "language-change-detected" is sent when the transcriber is automatically switched based on the detected language.
+	// This is the timestamp of the message.
+	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
+	// This is the call that the message is associated with.
+	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
 	// This is the language the transcriber is switched to.
 	Language string `json:"language" url:"language"`
 	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (c *ClientMessageLanguageChangeDetected) GetPhoneNumber() *ClientMessageLanguageChangeDetectedPhoneNumber {
+	if c == nil {
+		return nil
+	}
+	return c.PhoneNumber
+}
+
+func (c *ClientMessageLanguageChangeDetected) GetTimestamp() *float64 {
+	if c == nil {
+		return nil
+	}
+	return c.Timestamp
+}
+
+func (c *ClientMessageLanguageChangeDetected) GetCall() *Call {
+	if c == nil {
+		return nil
+	}
+	return c.Call
+}
+
+func (c *ClientMessageLanguageChangeDetected) GetCustomer() *CustomerUserEditable {
+	if c == nil {
+		return nil
+	}
+	return c.Customer
+}
+
+func (c *ClientMessageLanguageChangeDetected) GetAssistant() *AssistantUserEditable {
+	if c == nil {
+		return nil
+	}
+	return c.Assistant
 }
 
 func (c *ClientMessageLanguageChangeDetected) GetLanguage() string {
@@ -10435,6 +13612,69 @@ func (c *ClientMessageLanguageChangeDetected) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", c)
+}
+
+// This is the phone number that the message is associated with.
+type ClientMessageLanguageChangeDetectedPhoneNumber struct {
+	Unknown                    interface{}
+	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
+
+	typ string
+}
+
+func (c *ClientMessageLanguageChangeDetectedPhoneNumber) GetUnknown() interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.Unknown
+}
+
+func (c *ClientMessageLanguageChangeDetectedPhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateTwilioPhoneNumberDto
+}
+
+func (c *ClientMessageLanguageChangeDetectedPhoneNumber) UnmarshalJSON(data []byte) error {
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		c.typ = "Unknown"
+		c.Unknown = valueUnknown
+		return nil
+	}
+	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
+	if err := json.Unmarshal(data, &valueCreateTwilioPhoneNumberDto); err == nil {
+		c.typ = "CreateTwilioPhoneNumberDto"
+		c.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c ClientMessageLanguageChangeDetectedPhoneNumber) MarshalJSON() ([]byte, error) {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return json.Marshal(c.Unknown)
+	}
+	if c.typ == "CreateTwilioPhoneNumberDto" || c.CreateTwilioPhoneNumberDto != nil {
+		return json.Marshal(c.CreateTwilioPhoneNumberDto)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type ClientMessageLanguageChangeDetectedPhoneNumberVisitor interface {
+	VisitUnknown(interface{}) error
+	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
+}
+
+func (c *ClientMessageLanguageChangeDetectedPhoneNumber) Accept(visitor ClientMessageLanguageChangeDetectedPhoneNumberVisitor) error {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return visitor.VisitUnknown(c.Unknown)
+	}
+	if c.typ == "CreateTwilioPhoneNumberDto" || c.CreateTwilioPhoneNumberDto != nil {
+		return visitor.VisitCreateTwilioPhoneNumberDto(c.CreateTwilioPhoneNumberDto)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
 }
 
 // These are all the messages that can be sent to the client-side SDKs during the call. Configure the messages you'd like to receive in `assistant.clientMessages`.
@@ -10732,13 +13972,58 @@ func (c *ClientMessageMessage) Accept(visitor ClientMessageMessageVisitor) error
 }
 
 type ClientMessageMetadata struct {
+	// This is the phone number that the message is associated with.
+	PhoneNumber *ClientMessageMetadataPhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "metadata" is sent to forward metadata to the client.
+	// This is the timestamp of the message.
+	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
+	// This is the call that the message is associated with.
+	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
 	// This is the metadata content
 	Metadata string `json:"metadata" url:"metadata"`
 	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (c *ClientMessageMetadata) GetPhoneNumber() *ClientMessageMetadataPhoneNumber {
+	if c == nil {
+		return nil
+	}
+	return c.PhoneNumber
+}
+
+func (c *ClientMessageMetadata) GetTimestamp() *float64 {
+	if c == nil {
+		return nil
+	}
+	return c.Timestamp
+}
+
+func (c *ClientMessageMetadata) GetCall() *Call {
+	if c == nil {
+		return nil
+	}
+	return c.Call
+}
+
+func (c *ClientMessageMetadata) GetCustomer() *CustomerUserEditable {
+	if c == nil {
+		return nil
+	}
+	return c.Customer
+}
+
+func (c *ClientMessageMetadata) GetAssistant() *AssistantUserEditable {
+	if c == nil {
+		return nil
+	}
+	return c.Assistant
 }
 
 func (c *ClientMessageMetadata) GetMetadata() string {
@@ -10805,14 +14090,122 @@ func (c *ClientMessageMetadata) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
+// This is the phone number that the message is associated with.
+type ClientMessageMetadataPhoneNumber struct {
+	Unknown                    interface{}
+	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
+
+	typ string
+}
+
+func (c *ClientMessageMetadataPhoneNumber) GetUnknown() interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.Unknown
+}
+
+func (c *ClientMessageMetadataPhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateTwilioPhoneNumberDto
+}
+
+func (c *ClientMessageMetadataPhoneNumber) UnmarshalJSON(data []byte) error {
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		c.typ = "Unknown"
+		c.Unknown = valueUnknown
+		return nil
+	}
+	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
+	if err := json.Unmarshal(data, &valueCreateTwilioPhoneNumberDto); err == nil {
+		c.typ = "CreateTwilioPhoneNumberDto"
+		c.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c ClientMessageMetadataPhoneNumber) MarshalJSON() ([]byte, error) {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return json.Marshal(c.Unknown)
+	}
+	if c.typ == "CreateTwilioPhoneNumberDto" || c.CreateTwilioPhoneNumberDto != nil {
+		return json.Marshal(c.CreateTwilioPhoneNumberDto)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type ClientMessageMetadataPhoneNumberVisitor interface {
+	VisitUnknown(interface{}) error
+	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
+}
+
+func (c *ClientMessageMetadataPhoneNumber) Accept(visitor ClientMessageMetadataPhoneNumberVisitor) error {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return visitor.VisitUnknown(c.Unknown)
+	}
+	if c.typ == "CreateTwilioPhoneNumberDto" || c.CreateTwilioPhoneNumberDto != nil {
+		return visitor.VisitCreateTwilioPhoneNumberDto(c.CreateTwilioPhoneNumberDto)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
 type ClientMessageModelOutput struct {
+	// This is the phone number that the message is associated with.
+	PhoneNumber *ClientMessageModelOutputPhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "model-output" is sent as the model outputs tokens.
+	// This is the timestamp of the message.
+	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
+	// This is the call that the message is associated with.
+	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
 	// This is the output of the model. It can be a token or tool call.
 	Output map[string]interface{} `json:"output,omitempty" url:"output,omitempty"`
 	type_  string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (c *ClientMessageModelOutput) GetPhoneNumber() *ClientMessageModelOutputPhoneNumber {
+	if c == nil {
+		return nil
+	}
+	return c.PhoneNumber
+}
+
+func (c *ClientMessageModelOutput) GetTimestamp() *float64 {
+	if c == nil {
+		return nil
+	}
+	return c.Timestamp
+}
+
+func (c *ClientMessageModelOutput) GetCall() *Call {
+	if c == nil {
+		return nil
+	}
+	return c.Call
+}
+
+func (c *ClientMessageModelOutput) GetCustomer() *CustomerUserEditable {
+	if c == nil {
+		return nil
+	}
+	return c.Customer
+}
+
+func (c *ClientMessageModelOutput) GetAssistant() *AssistantUserEditable {
+	if c == nil {
+		return nil
+	}
+	return c.Assistant
 }
 
 func (c *ClientMessageModelOutput) GetOutput() map[string]interface{} {
@@ -10879,18 +14272,98 @@ func (c *ClientMessageModelOutput) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
+// This is the phone number that the message is associated with.
+type ClientMessageModelOutputPhoneNumber struct {
+	Unknown                    interface{}
+	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
+
+	typ string
+}
+
+func (c *ClientMessageModelOutputPhoneNumber) GetUnknown() interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.Unknown
+}
+
+func (c *ClientMessageModelOutputPhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateTwilioPhoneNumberDto
+}
+
+func (c *ClientMessageModelOutputPhoneNumber) UnmarshalJSON(data []byte) error {
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		c.typ = "Unknown"
+		c.Unknown = valueUnknown
+		return nil
+	}
+	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
+	if err := json.Unmarshal(data, &valueCreateTwilioPhoneNumberDto); err == nil {
+		c.typ = "CreateTwilioPhoneNumberDto"
+		c.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c ClientMessageModelOutputPhoneNumber) MarshalJSON() ([]byte, error) {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return json.Marshal(c.Unknown)
+	}
+	if c.typ == "CreateTwilioPhoneNumberDto" || c.CreateTwilioPhoneNumberDto != nil {
+		return json.Marshal(c.CreateTwilioPhoneNumberDto)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type ClientMessageModelOutputPhoneNumberVisitor interface {
+	VisitUnknown(interface{}) error
+	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
+}
+
+func (c *ClientMessageModelOutputPhoneNumber) Accept(visitor ClientMessageModelOutputPhoneNumberVisitor) error {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return visitor.VisitUnknown(c.Unknown)
+	}
+	if c.typ == "CreateTwilioPhoneNumberDto" || c.CreateTwilioPhoneNumberDto != nil {
+		return visitor.VisitCreateTwilioPhoneNumberDto(c.CreateTwilioPhoneNumberDto)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
 type ClientMessageSpeechUpdate struct {
+	// This is the phone number that the message is associated with.
+	PhoneNumber *ClientMessageSpeechUpdatePhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "speech-update" is sent whenever assistant or user start or stop speaking.
 	// This is the status of the speech update.
 	Status ClientMessageSpeechUpdateStatus `json:"status" url:"status"`
 	// This is the role which the speech update is for.
 	Role ClientMessageSpeechUpdateRole `json:"role" url:"role"`
 	// This is the turn number of the speech update (0-indexed).
-	Turn  *float64 `json:"turn,omitempty" url:"turn,omitempty"`
-	type_ string
+	Turn *float64 `json:"turn,omitempty" url:"turn,omitempty"`
+	// This is the timestamp of the message.
+	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
+	// This is the call that the message is associated with.
+	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
+	type_     string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (c *ClientMessageSpeechUpdate) GetPhoneNumber() *ClientMessageSpeechUpdatePhoneNumber {
+	if c == nil {
+		return nil
+	}
+	return c.PhoneNumber
 }
 
 func (c *ClientMessageSpeechUpdate) GetStatus() ClientMessageSpeechUpdateStatus {
@@ -10912,6 +14385,34 @@ func (c *ClientMessageSpeechUpdate) GetTurn() *float64 {
 		return nil
 	}
 	return c.Turn
+}
+
+func (c *ClientMessageSpeechUpdate) GetTimestamp() *float64 {
+	if c == nil {
+		return nil
+	}
+	return c.Timestamp
+}
+
+func (c *ClientMessageSpeechUpdate) GetCall() *Call {
+	if c == nil {
+		return nil
+	}
+	return c.Call
+}
+
+func (c *ClientMessageSpeechUpdate) GetCustomer() *CustomerUserEditable {
+	if c == nil {
+		return nil
+	}
+	return c.Customer
+}
+
+func (c *ClientMessageSpeechUpdate) GetAssistant() *AssistantUserEditable {
+	if c == nil {
+		return nil
+	}
+	return c.Assistant
 }
 
 func (c *ClientMessageSpeechUpdate) Type() string {
@@ -10971,6 +14472,69 @@ func (c *ClientMessageSpeechUpdate) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
+// This is the phone number that the message is associated with.
+type ClientMessageSpeechUpdatePhoneNumber struct {
+	Unknown                    interface{}
+	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
+
+	typ string
+}
+
+func (c *ClientMessageSpeechUpdatePhoneNumber) GetUnknown() interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.Unknown
+}
+
+func (c *ClientMessageSpeechUpdatePhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateTwilioPhoneNumberDto
+}
+
+func (c *ClientMessageSpeechUpdatePhoneNumber) UnmarshalJSON(data []byte) error {
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		c.typ = "Unknown"
+		c.Unknown = valueUnknown
+		return nil
+	}
+	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
+	if err := json.Unmarshal(data, &valueCreateTwilioPhoneNumberDto); err == nil {
+		c.typ = "CreateTwilioPhoneNumberDto"
+		c.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c ClientMessageSpeechUpdatePhoneNumber) MarshalJSON() ([]byte, error) {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return json.Marshal(c.Unknown)
+	}
+	if c.typ == "CreateTwilioPhoneNumberDto" || c.CreateTwilioPhoneNumberDto != nil {
+		return json.Marshal(c.CreateTwilioPhoneNumberDto)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type ClientMessageSpeechUpdatePhoneNumberVisitor interface {
+	VisitUnknown(interface{}) error
+	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
+}
+
+func (c *ClientMessageSpeechUpdatePhoneNumber) Accept(visitor ClientMessageSpeechUpdatePhoneNumberVisitor) error {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return visitor.VisitUnknown(c.Unknown)
+	}
+	if c.typ == "CreateTwilioPhoneNumberDto" || c.CreateTwilioPhoneNumberDto != nil {
+		return visitor.VisitCreateTwilioPhoneNumberDto(c.CreateTwilioPhoneNumberDto)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
 // This is the role which the speech update is for.
 type ClientMessageSpeechUpdateRole string
 
@@ -11018,10 +14582,20 @@ func (c ClientMessageSpeechUpdateStatus) Ptr() *ClientMessageSpeechUpdateStatus 
 }
 
 type ClientMessageToolCalls struct {
+	// This is the phone number that the message is associated with.
+	PhoneNumber *ClientMessageToolCallsPhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "tool-calls" is sent to call a tool.
 	Type *string `json:"type,omitempty" url:"type,omitempty"`
 	// This is the list of tools calls that the model is requesting along with the original tool configuration.
 	ToolWithToolCallList []*ClientMessageToolCallsToolWithToolCallListItem `json:"toolWithToolCallList,omitempty" url:"toolWithToolCallList,omitempty"`
+	// This is the timestamp of the message.
+	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
+	// This is the call that the message is associated with.
+	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
 	// This is the list of tool calls that the model is requesting.
 	ToolCallList []*ToolCall `json:"toolCallList,omitempty" url:"toolCallList,omitempty"`
 
@@ -11029,11 +14603,46 @@ type ClientMessageToolCalls struct {
 	rawJSON         json.RawMessage
 }
 
+func (c *ClientMessageToolCalls) GetPhoneNumber() *ClientMessageToolCallsPhoneNumber {
+	if c == nil {
+		return nil
+	}
+	return c.PhoneNumber
+}
+
 func (c *ClientMessageToolCalls) GetToolWithToolCallList() []*ClientMessageToolCallsToolWithToolCallListItem {
 	if c == nil {
 		return nil
 	}
 	return c.ToolWithToolCallList
+}
+
+func (c *ClientMessageToolCalls) GetTimestamp() *float64 {
+	if c == nil {
+		return nil
+	}
+	return c.Timestamp
+}
+
+func (c *ClientMessageToolCalls) GetCall() *Call {
+	if c == nil {
+		return nil
+	}
+	return c.Call
+}
+
+func (c *ClientMessageToolCalls) GetCustomer() *CustomerUserEditable {
+	if c == nil {
+		return nil
+	}
+	return c.Customer
+}
+
+func (c *ClientMessageToolCalls) GetAssistant() *AssistantUserEditable {
+	if c == nil {
+		return nil
+	}
+	return c.Assistant
 }
 
 func (c *ClientMessageToolCalls) GetToolCallList() []*ToolCall {
@@ -11075,14 +14684,122 @@ func (c *ClientMessageToolCalls) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
+// This is the phone number that the message is associated with.
+type ClientMessageToolCallsPhoneNumber struct {
+	Unknown                    interface{}
+	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
+
+	typ string
+}
+
+func (c *ClientMessageToolCallsPhoneNumber) GetUnknown() interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.Unknown
+}
+
+func (c *ClientMessageToolCallsPhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateTwilioPhoneNumberDto
+}
+
+func (c *ClientMessageToolCallsPhoneNumber) UnmarshalJSON(data []byte) error {
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		c.typ = "Unknown"
+		c.Unknown = valueUnknown
+		return nil
+	}
+	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
+	if err := json.Unmarshal(data, &valueCreateTwilioPhoneNumberDto); err == nil {
+		c.typ = "CreateTwilioPhoneNumberDto"
+		c.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c ClientMessageToolCallsPhoneNumber) MarshalJSON() ([]byte, error) {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return json.Marshal(c.Unknown)
+	}
+	if c.typ == "CreateTwilioPhoneNumberDto" || c.CreateTwilioPhoneNumberDto != nil {
+		return json.Marshal(c.CreateTwilioPhoneNumberDto)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type ClientMessageToolCallsPhoneNumberVisitor interface {
+	VisitUnknown(interface{}) error
+	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
+}
+
+func (c *ClientMessageToolCallsPhoneNumber) Accept(visitor ClientMessageToolCallsPhoneNumberVisitor) error {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return visitor.VisitUnknown(c.Unknown)
+	}
+	if c.typ == "CreateTwilioPhoneNumberDto" || c.CreateTwilioPhoneNumberDto != nil {
+		return visitor.VisitCreateTwilioPhoneNumberDto(c.CreateTwilioPhoneNumberDto)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
 type ClientMessageToolCallsResult struct {
+	// This is the phone number that the message is associated with.
+	PhoneNumber *ClientMessageToolCallsResultPhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "tool-calls-result" is sent to forward the result of a tool call to the client.
+	// This is the timestamp of the message.
+	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
+	// This is the call that the message is associated with.
+	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
 	// This is the result of the tool call.
 	ToolCallResult map[string]interface{} `json:"toolCallResult,omitempty" url:"toolCallResult,omitempty"`
 	type_          string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (c *ClientMessageToolCallsResult) GetPhoneNumber() *ClientMessageToolCallsResultPhoneNumber {
+	if c == nil {
+		return nil
+	}
+	return c.PhoneNumber
+}
+
+func (c *ClientMessageToolCallsResult) GetTimestamp() *float64 {
+	if c == nil {
+		return nil
+	}
+	return c.Timestamp
+}
+
+func (c *ClientMessageToolCallsResult) GetCall() *Call {
+	if c == nil {
+		return nil
+	}
+	return c.Call
+}
+
+func (c *ClientMessageToolCallsResult) GetCustomer() *CustomerUserEditable {
+	if c == nil {
+		return nil
+	}
+	return c.Customer
+}
+
+func (c *ClientMessageToolCallsResult) GetAssistant() *AssistantUserEditable {
+	if c == nil {
+		return nil
+	}
+	return c.Assistant
 }
 
 func (c *ClientMessageToolCallsResult) GetToolCallResult() map[string]interface{} {
@@ -11147,6 +14864,69 @@ func (c *ClientMessageToolCallsResult) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", c)
+}
+
+// This is the phone number that the message is associated with.
+type ClientMessageToolCallsResultPhoneNumber struct {
+	Unknown                    interface{}
+	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
+
+	typ string
+}
+
+func (c *ClientMessageToolCallsResultPhoneNumber) GetUnknown() interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.Unknown
+}
+
+func (c *ClientMessageToolCallsResultPhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateTwilioPhoneNumberDto
+}
+
+func (c *ClientMessageToolCallsResultPhoneNumber) UnmarshalJSON(data []byte) error {
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		c.typ = "Unknown"
+		c.Unknown = valueUnknown
+		return nil
+	}
+	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
+	if err := json.Unmarshal(data, &valueCreateTwilioPhoneNumberDto); err == nil {
+		c.typ = "CreateTwilioPhoneNumberDto"
+		c.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c ClientMessageToolCallsResultPhoneNumber) MarshalJSON() ([]byte, error) {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return json.Marshal(c.Unknown)
+	}
+	if c.typ == "CreateTwilioPhoneNumberDto" || c.CreateTwilioPhoneNumberDto != nil {
+		return json.Marshal(c.CreateTwilioPhoneNumberDto)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type ClientMessageToolCallsResultPhoneNumberVisitor interface {
+	VisitUnknown(interface{}) error
+	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
+}
+
+func (c *ClientMessageToolCallsResultPhoneNumber) Accept(visitor ClientMessageToolCallsResultPhoneNumberVisitor) error {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return visitor.VisitUnknown(c.Unknown)
+	}
+	if c.typ == "CreateTwilioPhoneNumberDto" || c.CreateTwilioPhoneNumberDto != nil {
+		return visitor.VisitCreateTwilioPhoneNumberDto(c.CreateTwilioPhoneNumberDto)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
 }
 
 type ClientMessageToolCallsToolWithToolCallListItem struct {
@@ -11317,8 +15097,18 @@ func (c *ClientMessageToolCallsToolWithToolCallListItem) Accept(visitor ClientMe
 }
 
 type ClientMessageTranscript struct {
+	// This is the phone number that the message is associated with.
+	PhoneNumber *ClientMessageTranscriptPhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "transcript" is sent as transcriber outputs partial or final transcript.
 	Type ClientMessageTranscriptType `json:"type" url:"type"`
+	// This is the timestamp of the message.
+	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
+	// This is the call that the message is associated with.
+	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
 	// This is the role for which the transcript is for.
 	Role ClientMessageTranscriptRole `json:"role" url:"role"`
 	// This is the type of the transcript.
@@ -11330,11 +15120,46 @@ type ClientMessageTranscript struct {
 	rawJSON         json.RawMessage
 }
 
+func (c *ClientMessageTranscript) GetPhoneNumber() *ClientMessageTranscriptPhoneNumber {
+	if c == nil {
+		return nil
+	}
+	return c.PhoneNumber
+}
+
 func (c *ClientMessageTranscript) GetType() ClientMessageTranscriptType {
 	if c == nil {
 		return ""
 	}
 	return c.Type
+}
+
+func (c *ClientMessageTranscript) GetTimestamp() *float64 {
+	if c == nil {
+		return nil
+	}
+	return c.Timestamp
+}
+
+func (c *ClientMessageTranscript) GetCall() *Call {
+	if c == nil {
+		return nil
+	}
+	return c.Call
+}
+
+func (c *ClientMessageTranscript) GetCustomer() *CustomerUserEditable {
+	if c == nil {
+		return nil
+	}
+	return c.Customer
+}
+
+func (c *ClientMessageTranscript) GetAssistant() *AssistantUserEditable {
+	if c == nil {
+		return nil
+	}
+	return c.Assistant
 }
 
 func (c *ClientMessageTranscript) GetRole() ClientMessageTranscriptRole {
@@ -11388,6 +15213,69 @@ func (c *ClientMessageTranscript) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", c)
+}
+
+// This is the phone number that the message is associated with.
+type ClientMessageTranscriptPhoneNumber struct {
+	Unknown                    interface{}
+	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
+
+	typ string
+}
+
+func (c *ClientMessageTranscriptPhoneNumber) GetUnknown() interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.Unknown
+}
+
+func (c *ClientMessageTranscriptPhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateTwilioPhoneNumberDto
+}
+
+func (c *ClientMessageTranscriptPhoneNumber) UnmarshalJSON(data []byte) error {
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		c.typ = "Unknown"
+		c.Unknown = valueUnknown
+		return nil
+	}
+	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
+	if err := json.Unmarshal(data, &valueCreateTwilioPhoneNumberDto); err == nil {
+		c.typ = "CreateTwilioPhoneNumberDto"
+		c.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c ClientMessageTranscriptPhoneNumber) MarshalJSON() ([]byte, error) {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return json.Marshal(c.Unknown)
+	}
+	if c.typ == "CreateTwilioPhoneNumberDto" || c.CreateTwilioPhoneNumberDto != nil {
+		return json.Marshal(c.CreateTwilioPhoneNumberDto)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type ClientMessageTranscriptPhoneNumberVisitor interface {
+	VisitUnknown(interface{}) error
+	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
+}
+
+func (c *ClientMessageTranscriptPhoneNumber) Accept(visitor ClientMessageTranscriptPhoneNumberVisitor) error {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return visitor.VisitUnknown(c.Unknown)
+	}
+	if c.typ == "CreateTwilioPhoneNumberDto" || c.CreateTwilioPhoneNumberDto != nil {
+		return visitor.VisitCreateTwilioPhoneNumberDto(c.CreateTwilioPhoneNumberDto)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
 }
 
 // This is the role for which the transcript is for.
@@ -11460,9 +15348,19 @@ func (c ClientMessageTranscriptType) Ptr() *ClientMessageTranscriptType {
 }
 
 type ClientMessageTransferUpdate struct {
+	// This is the phone number that the message is associated with.
+	PhoneNumber *ClientMessageTransferUpdatePhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "transfer-update" is sent whenever a transfer happens.
 	// This is the destination of the transfer.
 	Destination *ClientMessageTransferUpdateDestination `json:"destination,omitempty" url:"destination,omitempty"`
+	// This is the timestamp of the message.
+	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
+	// This is the call that the message is associated with.
+	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
 	// This is the assistant that the call is being transferred to. This is only sent if `destination.type` is "assistant".
 	ToAssistant *CreateAssistantDto `json:"toAssistant,omitempty" url:"toAssistant,omitempty"`
 	// This is the assistant that the call is being transferred from. This is only sent if `destination.type` is "assistant".
@@ -11477,11 +15375,46 @@ type ClientMessageTransferUpdate struct {
 	rawJSON         json.RawMessage
 }
 
+func (c *ClientMessageTransferUpdate) GetPhoneNumber() *ClientMessageTransferUpdatePhoneNumber {
+	if c == nil {
+		return nil
+	}
+	return c.PhoneNumber
+}
+
 func (c *ClientMessageTransferUpdate) GetDestination() *ClientMessageTransferUpdateDestination {
 	if c == nil {
 		return nil
 	}
 	return c.Destination
+}
+
+func (c *ClientMessageTransferUpdate) GetTimestamp() *float64 {
+	if c == nil {
+		return nil
+	}
+	return c.Timestamp
+}
+
+func (c *ClientMessageTransferUpdate) GetCall() *Call {
+	if c == nil {
+		return nil
+	}
+	return c.Call
+}
+
+func (c *ClientMessageTransferUpdate) GetCustomer() *CustomerUserEditable {
+	if c == nil {
+		return nil
+	}
+	return c.Customer
+}
+
+func (c *ClientMessageTransferUpdate) GetAssistant() *AssistantUserEditable {
+	if c == nil {
+		return nil
+	}
+	return c.Assistant
 }
 
 func (c *ClientMessageTransferUpdate) GetToAssistant() *CreateAssistantDto {
@@ -11674,12 +15607,120 @@ func (c *ClientMessageTransferUpdateDestination) Accept(visitor ClientMessageTra
 	return fmt.Errorf("type %T does not include a non-empty union type", c)
 }
 
+// This is the phone number that the message is associated with.
+type ClientMessageTransferUpdatePhoneNumber struct {
+	Unknown                    interface{}
+	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
+
+	typ string
+}
+
+func (c *ClientMessageTransferUpdatePhoneNumber) GetUnknown() interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.Unknown
+}
+
+func (c *ClientMessageTransferUpdatePhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateTwilioPhoneNumberDto
+}
+
+func (c *ClientMessageTransferUpdatePhoneNumber) UnmarshalJSON(data []byte) error {
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		c.typ = "Unknown"
+		c.Unknown = valueUnknown
+		return nil
+	}
+	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
+	if err := json.Unmarshal(data, &valueCreateTwilioPhoneNumberDto); err == nil {
+		c.typ = "CreateTwilioPhoneNumberDto"
+		c.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c ClientMessageTransferUpdatePhoneNumber) MarshalJSON() ([]byte, error) {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return json.Marshal(c.Unknown)
+	}
+	if c.typ == "CreateTwilioPhoneNumberDto" || c.CreateTwilioPhoneNumberDto != nil {
+		return json.Marshal(c.CreateTwilioPhoneNumberDto)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type ClientMessageTransferUpdatePhoneNumberVisitor interface {
+	VisitUnknown(interface{}) error
+	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
+}
+
+func (c *ClientMessageTransferUpdatePhoneNumber) Accept(visitor ClientMessageTransferUpdatePhoneNumberVisitor) error {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return visitor.VisitUnknown(c.Unknown)
+	}
+	if c.typ == "CreateTwilioPhoneNumberDto" || c.CreateTwilioPhoneNumberDto != nil {
+		return visitor.VisitCreateTwilioPhoneNumberDto(c.CreateTwilioPhoneNumberDto)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
 type ClientMessageUserInterrupted struct {
+	// This is the phone number that the message is associated with.
+	PhoneNumber *ClientMessageUserInterruptedPhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "user-interrupted" is sent when the user interrupts the assistant.
-	type_ string
+	// This is the timestamp of the message.
+	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
+	// This is the call that the message is associated with.
+	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
+	type_     string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (c *ClientMessageUserInterrupted) GetPhoneNumber() *ClientMessageUserInterruptedPhoneNumber {
+	if c == nil {
+		return nil
+	}
+	return c.PhoneNumber
+}
+
+func (c *ClientMessageUserInterrupted) GetTimestamp() *float64 {
+	if c == nil {
+		return nil
+	}
+	return c.Timestamp
+}
+
+func (c *ClientMessageUserInterrupted) GetCall() *Call {
+	if c == nil {
+		return nil
+	}
+	return c.Call
+}
+
+func (c *ClientMessageUserInterrupted) GetCustomer() *CustomerUserEditable {
+	if c == nil {
+		return nil
+	}
+	return c.Customer
+}
+
+func (c *ClientMessageUserInterrupted) GetAssistant() *AssistantUserEditable {
+	if c == nil {
+		return nil
+	}
+	return c.Assistant
 }
 
 func (c *ClientMessageUserInterrupted) Type() string {
@@ -11739,14 +15780,122 @@ func (c *ClientMessageUserInterrupted) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
+// This is the phone number that the message is associated with.
+type ClientMessageUserInterruptedPhoneNumber struct {
+	Unknown                    interface{}
+	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
+
+	typ string
+}
+
+func (c *ClientMessageUserInterruptedPhoneNumber) GetUnknown() interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.Unknown
+}
+
+func (c *ClientMessageUserInterruptedPhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateTwilioPhoneNumberDto
+}
+
+func (c *ClientMessageUserInterruptedPhoneNumber) UnmarshalJSON(data []byte) error {
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		c.typ = "Unknown"
+		c.Unknown = valueUnknown
+		return nil
+	}
+	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
+	if err := json.Unmarshal(data, &valueCreateTwilioPhoneNumberDto); err == nil {
+		c.typ = "CreateTwilioPhoneNumberDto"
+		c.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c ClientMessageUserInterruptedPhoneNumber) MarshalJSON() ([]byte, error) {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return json.Marshal(c.Unknown)
+	}
+	if c.typ == "CreateTwilioPhoneNumberDto" || c.CreateTwilioPhoneNumberDto != nil {
+		return json.Marshal(c.CreateTwilioPhoneNumberDto)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type ClientMessageUserInterruptedPhoneNumberVisitor interface {
+	VisitUnknown(interface{}) error
+	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
+}
+
+func (c *ClientMessageUserInterruptedPhoneNumber) Accept(visitor ClientMessageUserInterruptedPhoneNumberVisitor) error {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return visitor.VisitUnknown(c.Unknown)
+	}
+	if c.typ == "CreateTwilioPhoneNumberDto" || c.CreateTwilioPhoneNumberDto != nil {
+		return visitor.VisitCreateTwilioPhoneNumberDto(c.CreateTwilioPhoneNumberDto)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
 type ClientMessageVoiceInput struct {
+	// This is the phone number that the message is associated with.
+	PhoneNumber *ClientMessageVoiceInputPhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "voice-input" is sent when a generation is requested from voice provider.
+	// This is the timestamp of the message.
+	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
+	// This is the call that the message is associated with.
+	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
 	// This is the voice input content
 	Input string `json:"input" url:"input"`
 	type_ string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (c *ClientMessageVoiceInput) GetPhoneNumber() *ClientMessageVoiceInputPhoneNumber {
+	if c == nil {
+		return nil
+	}
+	return c.PhoneNumber
+}
+
+func (c *ClientMessageVoiceInput) GetTimestamp() *float64 {
+	if c == nil {
+		return nil
+	}
+	return c.Timestamp
+}
+
+func (c *ClientMessageVoiceInput) GetCall() *Call {
+	if c == nil {
+		return nil
+	}
+	return c.Call
+}
+
+func (c *ClientMessageVoiceInput) GetCustomer() *CustomerUserEditable {
+	if c == nil {
+		return nil
+	}
+	return c.Customer
+}
+
+func (c *ClientMessageVoiceInput) GetAssistant() *AssistantUserEditable {
+	if c == nil {
+		return nil
+	}
+	return c.Assistant
 }
 
 func (c *ClientMessageVoiceInput) GetInput() string {
@@ -11813,14 +15962,122 @@ func (c *ClientMessageVoiceInput) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
+// This is the phone number that the message is associated with.
+type ClientMessageVoiceInputPhoneNumber struct {
+	Unknown                    interface{}
+	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
+
+	typ string
+}
+
+func (c *ClientMessageVoiceInputPhoneNumber) GetUnknown() interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.Unknown
+}
+
+func (c *ClientMessageVoiceInputPhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateTwilioPhoneNumberDto
+}
+
+func (c *ClientMessageVoiceInputPhoneNumber) UnmarshalJSON(data []byte) error {
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		c.typ = "Unknown"
+		c.Unknown = valueUnknown
+		return nil
+	}
+	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
+	if err := json.Unmarshal(data, &valueCreateTwilioPhoneNumberDto); err == nil {
+		c.typ = "CreateTwilioPhoneNumberDto"
+		c.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c ClientMessageVoiceInputPhoneNumber) MarshalJSON() ([]byte, error) {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return json.Marshal(c.Unknown)
+	}
+	if c.typ == "CreateTwilioPhoneNumberDto" || c.CreateTwilioPhoneNumberDto != nil {
+		return json.Marshal(c.CreateTwilioPhoneNumberDto)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type ClientMessageVoiceInputPhoneNumberVisitor interface {
+	VisitUnknown(interface{}) error
+	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
+}
+
+func (c *ClientMessageVoiceInputPhoneNumber) Accept(visitor ClientMessageVoiceInputPhoneNumberVisitor) error {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return visitor.VisitUnknown(c.Unknown)
+	}
+	if c.typ == "CreateTwilioPhoneNumberDto" || c.CreateTwilioPhoneNumberDto != nil {
+		return visitor.VisitCreateTwilioPhoneNumberDto(c.CreateTwilioPhoneNumberDto)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
 type ClientMessageWorkflowNodeStarted struct {
+	// This is the phone number that the message is associated with.
+	PhoneNumber *ClientMessageWorkflowNodeStartedPhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "workflow.node.started" is sent when the active node changes.
+	// This is the timestamp of the message.
+	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
+	// This is the call that the message is associated with.
+	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
 	// This is the active node.
 	Node  map[string]interface{} `json:"node,omitempty" url:"node,omitempty"`
 	type_ string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (c *ClientMessageWorkflowNodeStarted) GetPhoneNumber() *ClientMessageWorkflowNodeStartedPhoneNumber {
+	if c == nil {
+		return nil
+	}
+	return c.PhoneNumber
+}
+
+func (c *ClientMessageWorkflowNodeStarted) GetTimestamp() *float64 {
+	if c == nil {
+		return nil
+	}
+	return c.Timestamp
+}
+
+func (c *ClientMessageWorkflowNodeStarted) GetCall() *Call {
+	if c == nil {
+		return nil
+	}
+	return c.Call
+}
+
+func (c *ClientMessageWorkflowNodeStarted) GetCustomer() *CustomerUserEditable {
+	if c == nil {
+		return nil
+	}
+	return c.Customer
+}
+
+func (c *ClientMessageWorkflowNodeStarted) GetAssistant() *AssistantUserEditable {
+	if c == nil {
+		return nil
+	}
+	return c.Assistant
 }
 
 func (c *ClientMessageWorkflowNodeStarted) GetNode() map[string]interface{} {
@@ -11885,6 +16142,69 @@ func (c *ClientMessageWorkflowNodeStarted) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", c)
+}
+
+// This is the phone number that the message is associated with.
+type ClientMessageWorkflowNodeStartedPhoneNumber struct {
+	Unknown                    interface{}
+	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
+
+	typ string
+}
+
+func (c *ClientMessageWorkflowNodeStartedPhoneNumber) GetUnknown() interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.Unknown
+}
+
+func (c *ClientMessageWorkflowNodeStartedPhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateTwilioPhoneNumberDto
+}
+
+func (c *ClientMessageWorkflowNodeStartedPhoneNumber) UnmarshalJSON(data []byte) error {
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		c.typ = "Unknown"
+		c.Unknown = valueUnknown
+		return nil
+	}
+	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
+	if err := json.Unmarshal(data, &valueCreateTwilioPhoneNumberDto); err == nil {
+		c.typ = "CreateTwilioPhoneNumberDto"
+		c.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c ClientMessageWorkflowNodeStartedPhoneNumber) MarshalJSON() ([]byte, error) {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return json.Marshal(c.Unknown)
+	}
+	if c.typ == "CreateTwilioPhoneNumberDto" || c.CreateTwilioPhoneNumberDto != nil {
+		return json.Marshal(c.CreateTwilioPhoneNumberDto)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type ClientMessageWorkflowNodeStartedPhoneNumberVisitor interface {
+	VisitUnknown(interface{}) error
+	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
+}
+
+func (c *ClientMessageWorkflowNodeStartedPhoneNumber) Accept(visitor ClientMessageWorkflowNodeStartedPhoneNumberVisitor) error {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return visitor.VisitUnknown(c.Unknown)
+	}
+	if c.typ == "CreateTwilioPhoneNumberDto" || c.CreateTwilioPhoneNumberDto != nil {
+		return visitor.VisitCreateTwilioPhoneNumberDto(c.CreateTwilioPhoneNumberDto)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
 }
 
 type CloneVoiceDto struct {
@@ -12915,9 +17235,8 @@ type CreateAssistantDto struct {
 	// This uses Twilio's built-in detection while the VoicemailTool relies on the model to detect if a voicemail was reached.
 	// You can use neither of them, one of them, or both of them. By default, Twilio built-in detection is enabled while VoicemailTool is not.
 	VoicemailDetection *CreateAssistantDtoVoicemailDetection `json:"voicemailDetection,omitempty" url:"voicemailDetection,omitempty"`
-	// These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
-	ClientMessages []CreateAssistantDtoClientMessagesItem `json:"clientMessages,omitempty" url:"clientMessages,omitempty"`
-	ServerMessages [][]map[string]interface{}             `json:"serverMessages,omitempty" url:"serverMessages,omitempty"`
+	ClientMessages     [][]map[string]interface{}            `json:"clientMessages,omitempty" url:"clientMessages,omitempty"`
+	ServerMessages     [][]map[string]interface{}            `json:"serverMessages,omitempty" url:"serverMessages,omitempty"`
 	// How many seconds of silence to wait before ending the call. Defaults to 30.
 	//
 	// @default 30
@@ -12949,7 +17268,7 @@ type CreateAssistantDto struct {
 	// These are dynamic credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials.
 	Credentials []*CreateAssistantDtoCredentialsItem `json:"credentials,omitempty" url:"credentials,omitempty"`
 	// This is a set of actions that will be performed on certain events.
-	Hooks []*AssistantHookCallEnding `json:"hooks,omitempty" url:"hooks,omitempty"`
+	Hooks []*CreateAssistantDtoHooksItem `json:"hooks,omitempty" url:"hooks,omitempty"`
 	// This is the name of the assistant.
 	//
 	// This is required when you want to transfer between assistants in a call.
@@ -13066,7 +17385,7 @@ func (c *CreateAssistantDto) GetVoicemailDetection() *CreateAssistantDtoVoicemai
 	return c.VoicemailDetection
 }
 
-func (c *CreateAssistantDto) GetClientMessages() []CreateAssistantDtoClientMessagesItem {
+func (c *CreateAssistantDto) GetClientMessages() [][]map[string]interface{} {
 	if c == nil {
 		return nil
 	}
@@ -13136,7 +17455,7 @@ func (c *CreateAssistantDto) GetCredentials() []*CreateAssistantDtoCredentialsIt
 	return c.Credentials
 }
 
-func (c *CreateAssistantDto) GetHooks() []*AssistantHookCallEnding {
+func (c *CreateAssistantDto) GetHooks() []*CreateAssistantDtoHooksItem {
 	if c == nil {
 		return nil
 	}
@@ -13363,73 +17682,6 @@ func NewCreateAssistantDtoBackgroundSoundZeroFromString(s string) (CreateAssista
 }
 
 func (c CreateAssistantDtoBackgroundSoundZero) Ptr() *CreateAssistantDtoBackgroundSoundZero {
-	return &c
-}
-
-type CreateAssistantDtoClientMessagesItem string
-
-const (
-	CreateAssistantDtoClientMessagesItemConversationUpdate  CreateAssistantDtoClientMessagesItem = "conversation-update"
-	CreateAssistantDtoClientMessagesItemFunctionCall        CreateAssistantDtoClientMessagesItem = "function-call"
-	CreateAssistantDtoClientMessagesItemFunctionCallResult  CreateAssistantDtoClientMessagesItem = "function-call-result"
-	CreateAssistantDtoClientMessagesItemHang                CreateAssistantDtoClientMessagesItem = "hang"
-	CreateAssistantDtoClientMessagesItemLanguageChanged     CreateAssistantDtoClientMessagesItem = "language-changed"
-	CreateAssistantDtoClientMessagesItemMetadata            CreateAssistantDtoClientMessagesItem = "metadata"
-	CreateAssistantDtoClientMessagesItemModelOutput         CreateAssistantDtoClientMessagesItem = "model-output"
-	CreateAssistantDtoClientMessagesItemSpeechUpdate        CreateAssistantDtoClientMessagesItem = "speech-update"
-	CreateAssistantDtoClientMessagesItemStatusUpdate        CreateAssistantDtoClientMessagesItem = "status-update"
-	CreateAssistantDtoClientMessagesItemTranscript          CreateAssistantDtoClientMessagesItem = "transcript"
-	CreateAssistantDtoClientMessagesItemToolCalls           CreateAssistantDtoClientMessagesItem = "tool-calls"
-	CreateAssistantDtoClientMessagesItemToolCallsResult     CreateAssistantDtoClientMessagesItem = "tool-calls-result"
-	CreateAssistantDtoClientMessagesItemToolCompleted       CreateAssistantDtoClientMessagesItem = "tool.completed"
-	CreateAssistantDtoClientMessagesItemTransferUpdate      CreateAssistantDtoClientMessagesItem = "transfer-update"
-	CreateAssistantDtoClientMessagesItemUserInterrupted     CreateAssistantDtoClientMessagesItem = "user-interrupted"
-	CreateAssistantDtoClientMessagesItemVoiceInput          CreateAssistantDtoClientMessagesItem = "voice-input"
-	CreateAssistantDtoClientMessagesItemWorkflowNodeStarted CreateAssistantDtoClientMessagesItem = "workflow.node.started"
-)
-
-func NewCreateAssistantDtoClientMessagesItemFromString(s string) (CreateAssistantDtoClientMessagesItem, error) {
-	switch s {
-	case "conversation-update":
-		return CreateAssistantDtoClientMessagesItemConversationUpdate, nil
-	case "function-call":
-		return CreateAssistantDtoClientMessagesItemFunctionCall, nil
-	case "function-call-result":
-		return CreateAssistantDtoClientMessagesItemFunctionCallResult, nil
-	case "hang":
-		return CreateAssistantDtoClientMessagesItemHang, nil
-	case "language-changed":
-		return CreateAssistantDtoClientMessagesItemLanguageChanged, nil
-	case "metadata":
-		return CreateAssistantDtoClientMessagesItemMetadata, nil
-	case "model-output":
-		return CreateAssistantDtoClientMessagesItemModelOutput, nil
-	case "speech-update":
-		return CreateAssistantDtoClientMessagesItemSpeechUpdate, nil
-	case "status-update":
-		return CreateAssistantDtoClientMessagesItemStatusUpdate, nil
-	case "transcript":
-		return CreateAssistantDtoClientMessagesItemTranscript, nil
-	case "tool-calls":
-		return CreateAssistantDtoClientMessagesItemToolCalls, nil
-	case "tool-calls-result":
-		return CreateAssistantDtoClientMessagesItemToolCallsResult, nil
-	case "tool.completed":
-		return CreateAssistantDtoClientMessagesItemToolCompleted, nil
-	case "transfer-update":
-		return CreateAssistantDtoClientMessagesItemTransferUpdate, nil
-	case "user-interrupted":
-		return CreateAssistantDtoClientMessagesItemUserInterrupted, nil
-	case "voice-input":
-		return CreateAssistantDtoClientMessagesItemVoiceInput, nil
-	case "workflow.node.started":
-		return CreateAssistantDtoClientMessagesItemWorkflowNodeStarted, nil
-	}
-	var t CreateAssistantDtoClientMessagesItem
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (c CreateAssistantDtoClientMessagesItem) Ptr() *CreateAssistantDtoClientMessagesItem {
 	return &c
 }
 
@@ -14471,6 +18723,89 @@ func NewCreateAssistantDtoFirstMessageModeFromString(s string) (CreateAssistantD
 
 func (c CreateAssistantDtoFirstMessageMode) Ptr() *CreateAssistantDtoFirstMessageMode {
 	return &c
+}
+
+type CreateAssistantDtoHooksItem struct {
+	AssistantHookCallEnding                 *AssistantHookCallEnding
+	AssistantHookAssistantSpeechInterrupted *AssistantHookAssistantSpeechInterrupted
+	AssistantHookCustomerSpeechInterrupted  *AssistantHookCustomerSpeechInterrupted
+
+	typ string
+}
+
+func (c *CreateAssistantDtoHooksItem) GetAssistantHookCallEnding() *AssistantHookCallEnding {
+	if c == nil {
+		return nil
+	}
+	return c.AssistantHookCallEnding
+}
+
+func (c *CreateAssistantDtoHooksItem) GetAssistantHookAssistantSpeechInterrupted() *AssistantHookAssistantSpeechInterrupted {
+	if c == nil {
+		return nil
+	}
+	return c.AssistantHookAssistantSpeechInterrupted
+}
+
+func (c *CreateAssistantDtoHooksItem) GetAssistantHookCustomerSpeechInterrupted() *AssistantHookCustomerSpeechInterrupted {
+	if c == nil {
+		return nil
+	}
+	return c.AssistantHookCustomerSpeechInterrupted
+}
+
+func (c *CreateAssistantDtoHooksItem) UnmarshalJSON(data []byte) error {
+	valueAssistantHookCallEnding := new(AssistantHookCallEnding)
+	if err := json.Unmarshal(data, &valueAssistantHookCallEnding); err == nil {
+		c.typ = "AssistantHookCallEnding"
+		c.AssistantHookCallEnding = valueAssistantHookCallEnding
+		return nil
+	}
+	valueAssistantHookAssistantSpeechInterrupted := new(AssistantHookAssistantSpeechInterrupted)
+	if err := json.Unmarshal(data, &valueAssistantHookAssistantSpeechInterrupted); err == nil {
+		c.typ = "AssistantHookAssistantSpeechInterrupted"
+		c.AssistantHookAssistantSpeechInterrupted = valueAssistantHookAssistantSpeechInterrupted
+		return nil
+	}
+	valueAssistantHookCustomerSpeechInterrupted := new(AssistantHookCustomerSpeechInterrupted)
+	if err := json.Unmarshal(data, &valueAssistantHookCustomerSpeechInterrupted); err == nil {
+		c.typ = "AssistantHookCustomerSpeechInterrupted"
+		c.AssistantHookCustomerSpeechInterrupted = valueAssistantHookCustomerSpeechInterrupted
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c CreateAssistantDtoHooksItem) MarshalJSON() ([]byte, error) {
+	if c.typ == "AssistantHookCallEnding" || c.AssistantHookCallEnding != nil {
+		return json.Marshal(c.AssistantHookCallEnding)
+	}
+	if c.typ == "AssistantHookAssistantSpeechInterrupted" || c.AssistantHookAssistantSpeechInterrupted != nil {
+		return json.Marshal(c.AssistantHookAssistantSpeechInterrupted)
+	}
+	if c.typ == "AssistantHookCustomerSpeechInterrupted" || c.AssistantHookCustomerSpeechInterrupted != nil {
+		return json.Marshal(c.AssistantHookCustomerSpeechInterrupted)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type CreateAssistantDtoHooksItemVisitor interface {
+	VisitAssistantHookCallEnding(*AssistantHookCallEnding) error
+	VisitAssistantHookAssistantSpeechInterrupted(*AssistantHookAssistantSpeechInterrupted) error
+	VisitAssistantHookCustomerSpeechInterrupted(*AssistantHookCustomerSpeechInterrupted) error
+}
+
+func (c *CreateAssistantDtoHooksItem) Accept(visitor CreateAssistantDtoHooksItemVisitor) error {
+	if c.typ == "AssistantHookCallEnding" || c.AssistantHookCallEnding != nil {
+		return visitor.VisitAssistantHookCallEnding(c.AssistantHookCallEnding)
+	}
+	if c.typ == "AssistantHookAssistantSpeechInterrupted" || c.AssistantHookAssistantSpeechInterrupted != nil {
+		return visitor.VisitAssistantHookAssistantSpeechInterrupted(c.AssistantHookAssistantSpeechInterrupted)
+	}
+	if c.typ == "AssistantHookCustomerSpeechInterrupted" || c.AssistantHookCustomerSpeechInterrupted != nil {
+		return visitor.VisitAssistantHookCustomerSpeechInterrupted(c.AssistantHookCustomerSpeechInterrupted)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
 }
 
 // These are the options for the assistant's LLM.
@@ -20208,15 +24543,49 @@ type CreateOutboundCallDto struct {
 	// This is the transport of the call.
 	Transport map[string]interface{} `json:"transport,omitempty" url:"transport,omitempty"`
 	// This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead.
+	// Usage:
+	//
+	//	To start the call with Assistant as entrypoint, use assistant or assistantId
+	//	To start the call with Squad as entrypoint, use squad or squadId
+	//	To start the call with Workflow as entrypoint, use workflow or workflowId
 	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
 	// This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead.
+	// Usage:
+	//
+	//	To start the call with Assistant as entrypoint, use assistant or assistantId
+	//	To start the call with Squad as entrypoint, use squad or squadId
+	//	To start the call with Workflow as entrypoint, use workflow or workflowId
 	Assistant *CreateAssistantDto `json:"assistant,omitempty" url:"assistant,omitempty"`
 	// These are the overrides for the `assistant` or `assistantId`'s settings and template variables.
 	AssistantOverrides *AssistantOverrides `json:"assistantOverrides,omitempty" url:"assistantOverrides,omitempty"`
 	// This is the squad that will be used for the call. To use a transient squad, use `squad` instead.
+	// Usage:
+	//
+	//	To start the call with Assistant as entrypoint, use assistant or assistantId
+	//	To start the call with Squad as entrypoint, use squad or squadId
+	//	To start the call with Workflow as entrypoint, use workflow or workflowId
 	SquadId *string `json:"squadId,omitempty" url:"squadId,omitempty"`
 	// This is a squad that will be used for the call. To use an existing squad, use `squadId` instead.
+	// Usage:
+	//
+	//	To start the call with Assistant as entrypoint, use assistant or assistantId
+	//	To start the call with Squad as entrypoint, use squad or squadId
+	//	To start the call with Workflow as entrypoint, use workflow or workflowId
 	Squad *CreateSquadDto `json:"squad,omitempty" url:"squad,omitempty"`
+	// This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
+	// Usage:
+	//
+	//	To start the call with Assistant as entrypoint, use assistant or assistantId
+	//	To start the call with Squad as entrypoint, use squad or squadId
+	//	To start the call with Workflow as entrypoint, use workflow or workflowId
+	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
+	// This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
+	// Usage:
+	//
+	//	To start the call with Assistant as entrypoint, use assistant or assistantId
+	//	To start the call with Squad as entrypoint, use squad or squadId
+	//	To start the call with Workflow as entrypoint, use workflow or workflowId
+	Workflow *CreateWorkflowDto `json:"workflow,omitempty" url:"workflow,omitempty"`
 	// This is the phone number that will be used for the call. To use a transient number, use `phoneNumber` instead.
 	//
 	// Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
@@ -20299,6 +24668,20 @@ func (c *CreateOutboundCallDto) GetSquad() *CreateSquadDto {
 		return nil
 	}
 	return c.Squad
+}
+
+func (c *CreateOutboundCallDto) GetWorkflowId() *string {
+	if c == nil {
+		return nil
+	}
+	return c.WorkflowId
+}
+
+func (c *CreateOutboundCallDto) GetWorkflow() *CreateWorkflowDto {
+	if c == nil {
+		return nil
+	}
+	return c.Workflow
 }
 
 func (c *CreateOutboundCallDto) GetPhoneNumberId() *string {
@@ -23298,15 +27681,49 @@ func (c *CreateVonageCredentialDto) String() string {
 
 type CreateWebCallDto struct {
 	// This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead.
+	// Usage:
+	//
+	//	To start the call with Assistant as entrypoint, use assistant or assistantId
+	//	To start the call with Squad as entrypoint, use squad or squadId
+	//	To start the call with Workflow as entrypoint, use workflow or workflowId
 	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
 	// This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead.
+	// Usage:
+	//
+	//	To start the call with Assistant as entrypoint, use assistant or assistantId
+	//	To start the call with Squad as entrypoint, use squad or squadId
+	//	To start the call with Workflow as entrypoint, use workflow or workflowId
 	Assistant *CreateAssistantDto `json:"assistant,omitempty" url:"assistant,omitempty"`
 	// These are the overrides for the `assistant` or `assistantId`'s settings and template variables.
 	AssistantOverrides *AssistantOverrides `json:"assistantOverrides,omitempty" url:"assistantOverrides,omitempty"`
 	// This is the squad that will be used for the call. To use a transient squad, use `squad` instead.
+	// Usage:
+	//
+	//	To start the call with Assistant as entrypoint, use assistant or assistantId
+	//	To start the call with Squad as entrypoint, use squad or squadId
+	//	To start the call with Workflow as entrypoint, use workflow or workflowId
 	SquadId *string `json:"squadId,omitempty" url:"squadId,omitempty"`
 	// This is a squad that will be used for the call. To use an existing squad, use `squadId` instead.
+	// Usage:
+	//
+	//	To start the call with Assistant as entrypoint, use assistant or assistantId
+	//	To start the call with Squad as entrypoint, use squad or squadId
+	//	To start the call with Workflow as entrypoint, use workflow or workflowId
 	Squad *CreateSquadDto `json:"squad,omitempty" url:"squad,omitempty"`
+	// This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
+	// Usage:
+	//
+	//	To start the call with Assistant as entrypoint, use assistant or assistantId
+	//	To start the call with Squad as entrypoint, use squad or squadId
+	//	To start the call with Workflow as entrypoint, use workflow or workflowId
+	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
+	// This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
+	// Usage:
+	//
+	//	To start the call with Assistant as entrypoint, use assistant or assistantId
+	//	To start the call with Squad as entrypoint, use squad or squadId
+	//	To start the call with Workflow as entrypoint, use workflow or workflowId
+	Workflow *CreateWorkflowDto `json:"workflow,omitempty" url:"workflow,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -23345,6 +27762,20 @@ func (c *CreateWebCallDto) GetSquad() *CreateSquadDto {
 		return nil
 	}
 	return c.Squad
+}
+
+func (c *CreateWebCallDto) GetWorkflowId() *string {
+	if c == nil {
+		return nil
+	}
+	return c.WorkflowId
+}
+
+func (c *CreateWebCallDto) GetWorkflow() *CreateWorkflowDto {
+	if c == nil {
+		return nil
+	}
+	return c.Workflow
 }
 
 func (c *CreateWebCallDto) GetExtraProperties() map[string]interface{} {
@@ -23459,6 +27890,559 @@ func (c *CreateWebhookCredentialDto) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", c)
+}
+
+type CreateWorkflowDto struct {
+	Nodes []*CreateWorkflowDtoNodesItem `json:"nodes,omitempty" url:"nodes,omitempty"`
+	// These are the options for the workflow's LLM.
+	Model *CreateWorkflowDtoModel `json:"model,omitempty" url:"model,omitempty"`
+	Name  string                  `json:"name" url:"name"`
+	Edges []*Edge                 `json:"edges,omitempty" url:"edges,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CreateWorkflowDto) GetNodes() []*CreateWorkflowDtoNodesItem {
+	if c == nil {
+		return nil
+	}
+	return c.Nodes
+}
+
+func (c *CreateWorkflowDto) GetModel() *CreateWorkflowDtoModel {
+	if c == nil {
+		return nil
+	}
+	return c.Model
+}
+
+func (c *CreateWorkflowDto) GetName() string {
+	if c == nil {
+		return ""
+	}
+	return c.Name
+}
+
+func (c *CreateWorkflowDto) GetEdges() []*Edge {
+	if c == nil {
+		return nil
+	}
+	return c.Edges
+}
+
+func (c *CreateWorkflowDto) GetExtraProperties() map[string]interface{} {
+	return c.extraProperties
+}
+
+func (c *CreateWorkflowDto) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateWorkflowDto
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CreateWorkflowDto(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CreateWorkflowDto) String() string {
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+// These are the options for the workflow's LLM.
+type CreateWorkflowDtoModel struct {
+	AnthropicModel    *AnthropicModel
+	AnyscaleModel     *AnyscaleModel
+	CerebrasModel     *CerebrasModel
+	CustomLlmModel    *CustomLlmModel
+	DeepInfraModel    *DeepInfraModel
+	DeepSeekModel     *DeepSeekModel
+	GoogleModel       *GoogleModel
+	GroqModel         *GroqModel
+	InflectionAiModel *InflectionAiModel
+	OpenAiModel       *OpenAiModel
+	OpenRouterModel   *OpenRouterModel
+	PerplexityAiModel *PerplexityAiModel
+	TogetherAiModel   *TogetherAiModel
+	XaiModel          *XaiModel
+
+	typ string
+}
+
+func (c *CreateWorkflowDtoModel) GetAnthropicModel() *AnthropicModel {
+	if c == nil {
+		return nil
+	}
+	return c.AnthropicModel
+}
+
+func (c *CreateWorkflowDtoModel) GetAnyscaleModel() *AnyscaleModel {
+	if c == nil {
+		return nil
+	}
+	return c.AnyscaleModel
+}
+
+func (c *CreateWorkflowDtoModel) GetCerebrasModel() *CerebrasModel {
+	if c == nil {
+		return nil
+	}
+	return c.CerebrasModel
+}
+
+func (c *CreateWorkflowDtoModel) GetCustomLlmModel() *CustomLlmModel {
+	if c == nil {
+		return nil
+	}
+	return c.CustomLlmModel
+}
+
+func (c *CreateWorkflowDtoModel) GetDeepInfraModel() *DeepInfraModel {
+	if c == nil {
+		return nil
+	}
+	return c.DeepInfraModel
+}
+
+func (c *CreateWorkflowDtoModel) GetDeepSeekModel() *DeepSeekModel {
+	if c == nil {
+		return nil
+	}
+	return c.DeepSeekModel
+}
+
+func (c *CreateWorkflowDtoModel) GetGoogleModel() *GoogleModel {
+	if c == nil {
+		return nil
+	}
+	return c.GoogleModel
+}
+
+func (c *CreateWorkflowDtoModel) GetGroqModel() *GroqModel {
+	if c == nil {
+		return nil
+	}
+	return c.GroqModel
+}
+
+func (c *CreateWorkflowDtoModel) GetInflectionAiModel() *InflectionAiModel {
+	if c == nil {
+		return nil
+	}
+	return c.InflectionAiModel
+}
+
+func (c *CreateWorkflowDtoModel) GetOpenAiModel() *OpenAiModel {
+	if c == nil {
+		return nil
+	}
+	return c.OpenAiModel
+}
+
+func (c *CreateWorkflowDtoModel) GetOpenRouterModel() *OpenRouterModel {
+	if c == nil {
+		return nil
+	}
+	return c.OpenRouterModel
+}
+
+func (c *CreateWorkflowDtoModel) GetPerplexityAiModel() *PerplexityAiModel {
+	if c == nil {
+		return nil
+	}
+	return c.PerplexityAiModel
+}
+
+func (c *CreateWorkflowDtoModel) GetTogetherAiModel() *TogetherAiModel {
+	if c == nil {
+		return nil
+	}
+	return c.TogetherAiModel
+}
+
+func (c *CreateWorkflowDtoModel) GetXaiModel() *XaiModel {
+	if c == nil {
+		return nil
+	}
+	return c.XaiModel
+}
+
+func (c *CreateWorkflowDtoModel) UnmarshalJSON(data []byte) error {
+	valueAnthropicModel := new(AnthropicModel)
+	if err := json.Unmarshal(data, &valueAnthropicModel); err == nil {
+		c.typ = "AnthropicModel"
+		c.AnthropicModel = valueAnthropicModel
+		return nil
+	}
+	valueAnyscaleModel := new(AnyscaleModel)
+	if err := json.Unmarshal(data, &valueAnyscaleModel); err == nil {
+		c.typ = "AnyscaleModel"
+		c.AnyscaleModel = valueAnyscaleModel
+		return nil
+	}
+	valueCerebrasModel := new(CerebrasModel)
+	if err := json.Unmarshal(data, &valueCerebrasModel); err == nil {
+		c.typ = "CerebrasModel"
+		c.CerebrasModel = valueCerebrasModel
+		return nil
+	}
+	valueCustomLlmModel := new(CustomLlmModel)
+	if err := json.Unmarshal(data, &valueCustomLlmModel); err == nil {
+		c.typ = "CustomLlmModel"
+		c.CustomLlmModel = valueCustomLlmModel
+		return nil
+	}
+	valueDeepInfraModel := new(DeepInfraModel)
+	if err := json.Unmarshal(data, &valueDeepInfraModel); err == nil {
+		c.typ = "DeepInfraModel"
+		c.DeepInfraModel = valueDeepInfraModel
+		return nil
+	}
+	valueDeepSeekModel := new(DeepSeekModel)
+	if err := json.Unmarshal(data, &valueDeepSeekModel); err == nil {
+		c.typ = "DeepSeekModel"
+		c.DeepSeekModel = valueDeepSeekModel
+		return nil
+	}
+	valueGoogleModel := new(GoogleModel)
+	if err := json.Unmarshal(data, &valueGoogleModel); err == nil {
+		c.typ = "GoogleModel"
+		c.GoogleModel = valueGoogleModel
+		return nil
+	}
+	valueGroqModel := new(GroqModel)
+	if err := json.Unmarshal(data, &valueGroqModel); err == nil {
+		c.typ = "GroqModel"
+		c.GroqModel = valueGroqModel
+		return nil
+	}
+	valueInflectionAiModel := new(InflectionAiModel)
+	if err := json.Unmarshal(data, &valueInflectionAiModel); err == nil {
+		c.typ = "InflectionAiModel"
+		c.InflectionAiModel = valueInflectionAiModel
+		return nil
+	}
+	valueOpenAiModel := new(OpenAiModel)
+	if err := json.Unmarshal(data, &valueOpenAiModel); err == nil {
+		c.typ = "OpenAiModel"
+		c.OpenAiModel = valueOpenAiModel
+		return nil
+	}
+	valueOpenRouterModel := new(OpenRouterModel)
+	if err := json.Unmarshal(data, &valueOpenRouterModel); err == nil {
+		c.typ = "OpenRouterModel"
+		c.OpenRouterModel = valueOpenRouterModel
+		return nil
+	}
+	valuePerplexityAiModel := new(PerplexityAiModel)
+	if err := json.Unmarshal(data, &valuePerplexityAiModel); err == nil {
+		c.typ = "PerplexityAiModel"
+		c.PerplexityAiModel = valuePerplexityAiModel
+		return nil
+	}
+	valueTogetherAiModel := new(TogetherAiModel)
+	if err := json.Unmarshal(data, &valueTogetherAiModel); err == nil {
+		c.typ = "TogetherAiModel"
+		c.TogetherAiModel = valueTogetherAiModel
+		return nil
+	}
+	valueXaiModel := new(XaiModel)
+	if err := json.Unmarshal(data, &valueXaiModel); err == nil {
+		c.typ = "XaiModel"
+		c.XaiModel = valueXaiModel
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c CreateWorkflowDtoModel) MarshalJSON() ([]byte, error) {
+	if c.typ == "AnthropicModel" || c.AnthropicModel != nil {
+		return json.Marshal(c.AnthropicModel)
+	}
+	if c.typ == "AnyscaleModel" || c.AnyscaleModel != nil {
+		return json.Marshal(c.AnyscaleModel)
+	}
+	if c.typ == "CerebrasModel" || c.CerebrasModel != nil {
+		return json.Marshal(c.CerebrasModel)
+	}
+	if c.typ == "CustomLlmModel" || c.CustomLlmModel != nil {
+		return json.Marshal(c.CustomLlmModel)
+	}
+	if c.typ == "DeepInfraModel" || c.DeepInfraModel != nil {
+		return json.Marshal(c.DeepInfraModel)
+	}
+	if c.typ == "DeepSeekModel" || c.DeepSeekModel != nil {
+		return json.Marshal(c.DeepSeekModel)
+	}
+	if c.typ == "GoogleModel" || c.GoogleModel != nil {
+		return json.Marshal(c.GoogleModel)
+	}
+	if c.typ == "GroqModel" || c.GroqModel != nil {
+		return json.Marshal(c.GroqModel)
+	}
+	if c.typ == "InflectionAiModel" || c.InflectionAiModel != nil {
+		return json.Marshal(c.InflectionAiModel)
+	}
+	if c.typ == "OpenAiModel" || c.OpenAiModel != nil {
+		return json.Marshal(c.OpenAiModel)
+	}
+	if c.typ == "OpenRouterModel" || c.OpenRouterModel != nil {
+		return json.Marshal(c.OpenRouterModel)
+	}
+	if c.typ == "PerplexityAiModel" || c.PerplexityAiModel != nil {
+		return json.Marshal(c.PerplexityAiModel)
+	}
+	if c.typ == "TogetherAiModel" || c.TogetherAiModel != nil {
+		return json.Marshal(c.TogetherAiModel)
+	}
+	if c.typ == "XaiModel" || c.XaiModel != nil {
+		return json.Marshal(c.XaiModel)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type CreateWorkflowDtoModelVisitor interface {
+	VisitAnthropicModel(*AnthropicModel) error
+	VisitAnyscaleModel(*AnyscaleModel) error
+	VisitCerebrasModel(*CerebrasModel) error
+	VisitCustomLlmModel(*CustomLlmModel) error
+	VisitDeepInfraModel(*DeepInfraModel) error
+	VisitDeepSeekModel(*DeepSeekModel) error
+	VisitGoogleModel(*GoogleModel) error
+	VisitGroqModel(*GroqModel) error
+	VisitInflectionAiModel(*InflectionAiModel) error
+	VisitOpenAiModel(*OpenAiModel) error
+	VisitOpenRouterModel(*OpenRouterModel) error
+	VisitPerplexityAiModel(*PerplexityAiModel) error
+	VisitTogetherAiModel(*TogetherAiModel) error
+	VisitXaiModel(*XaiModel) error
+}
+
+func (c *CreateWorkflowDtoModel) Accept(visitor CreateWorkflowDtoModelVisitor) error {
+	if c.typ == "AnthropicModel" || c.AnthropicModel != nil {
+		return visitor.VisitAnthropicModel(c.AnthropicModel)
+	}
+	if c.typ == "AnyscaleModel" || c.AnyscaleModel != nil {
+		return visitor.VisitAnyscaleModel(c.AnyscaleModel)
+	}
+	if c.typ == "CerebrasModel" || c.CerebrasModel != nil {
+		return visitor.VisitCerebrasModel(c.CerebrasModel)
+	}
+	if c.typ == "CustomLlmModel" || c.CustomLlmModel != nil {
+		return visitor.VisitCustomLlmModel(c.CustomLlmModel)
+	}
+	if c.typ == "DeepInfraModel" || c.DeepInfraModel != nil {
+		return visitor.VisitDeepInfraModel(c.DeepInfraModel)
+	}
+	if c.typ == "DeepSeekModel" || c.DeepSeekModel != nil {
+		return visitor.VisitDeepSeekModel(c.DeepSeekModel)
+	}
+	if c.typ == "GoogleModel" || c.GoogleModel != nil {
+		return visitor.VisitGoogleModel(c.GoogleModel)
+	}
+	if c.typ == "GroqModel" || c.GroqModel != nil {
+		return visitor.VisitGroqModel(c.GroqModel)
+	}
+	if c.typ == "InflectionAiModel" || c.InflectionAiModel != nil {
+		return visitor.VisitInflectionAiModel(c.InflectionAiModel)
+	}
+	if c.typ == "OpenAiModel" || c.OpenAiModel != nil {
+		return visitor.VisitOpenAiModel(c.OpenAiModel)
+	}
+	if c.typ == "OpenRouterModel" || c.OpenRouterModel != nil {
+		return visitor.VisitOpenRouterModel(c.OpenRouterModel)
+	}
+	if c.typ == "PerplexityAiModel" || c.PerplexityAiModel != nil {
+		return visitor.VisitPerplexityAiModel(c.PerplexityAiModel)
+	}
+	if c.typ == "TogetherAiModel" || c.TogetherAiModel != nil {
+		return visitor.VisitTogetherAiModel(c.TogetherAiModel)
+	}
+	if c.typ == "XaiModel" || c.XaiModel != nil {
+		return visitor.VisitXaiModel(c.XaiModel)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type CreateWorkflowDtoNodesItem struct {
+	Start      *Start
+	Assistant  *Assistant
+	Say        *Say
+	Gather     *Gather
+	ApiRequest *ApiRequest
+	Hangup     *Hangup
+	Transfer   *Transfer
+
+	typ string
+}
+
+func (c *CreateWorkflowDtoNodesItem) GetStart() *Start {
+	if c == nil {
+		return nil
+	}
+	return c.Start
+}
+
+func (c *CreateWorkflowDtoNodesItem) GetAssistant() *Assistant {
+	if c == nil {
+		return nil
+	}
+	return c.Assistant
+}
+
+func (c *CreateWorkflowDtoNodesItem) GetSay() *Say {
+	if c == nil {
+		return nil
+	}
+	return c.Say
+}
+
+func (c *CreateWorkflowDtoNodesItem) GetGather() *Gather {
+	if c == nil {
+		return nil
+	}
+	return c.Gather
+}
+
+func (c *CreateWorkflowDtoNodesItem) GetApiRequest() *ApiRequest {
+	if c == nil {
+		return nil
+	}
+	return c.ApiRequest
+}
+
+func (c *CreateWorkflowDtoNodesItem) GetHangup() *Hangup {
+	if c == nil {
+		return nil
+	}
+	return c.Hangup
+}
+
+func (c *CreateWorkflowDtoNodesItem) GetTransfer() *Transfer {
+	if c == nil {
+		return nil
+	}
+	return c.Transfer
+}
+
+func (c *CreateWorkflowDtoNodesItem) UnmarshalJSON(data []byte) error {
+	valueStart := new(Start)
+	if err := json.Unmarshal(data, &valueStart); err == nil {
+		c.typ = "Start"
+		c.Start = valueStart
+		return nil
+	}
+	valueAssistant := new(Assistant)
+	if err := json.Unmarshal(data, &valueAssistant); err == nil {
+		c.typ = "Assistant"
+		c.Assistant = valueAssistant
+		return nil
+	}
+	valueSay := new(Say)
+	if err := json.Unmarshal(data, &valueSay); err == nil {
+		c.typ = "Say"
+		c.Say = valueSay
+		return nil
+	}
+	valueGather := new(Gather)
+	if err := json.Unmarshal(data, &valueGather); err == nil {
+		c.typ = "Gather"
+		c.Gather = valueGather
+		return nil
+	}
+	valueApiRequest := new(ApiRequest)
+	if err := json.Unmarshal(data, &valueApiRequest); err == nil {
+		c.typ = "ApiRequest"
+		c.ApiRequest = valueApiRequest
+		return nil
+	}
+	valueHangup := new(Hangup)
+	if err := json.Unmarshal(data, &valueHangup); err == nil {
+		c.typ = "Hangup"
+		c.Hangup = valueHangup
+		return nil
+	}
+	valueTransfer := new(Transfer)
+	if err := json.Unmarshal(data, &valueTransfer); err == nil {
+		c.typ = "Transfer"
+		c.Transfer = valueTransfer
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c CreateWorkflowDtoNodesItem) MarshalJSON() ([]byte, error) {
+	if c.typ == "Start" || c.Start != nil {
+		return json.Marshal(c.Start)
+	}
+	if c.typ == "Assistant" || c.Assistant != nil {
+		return json.Marshal(c.Assistant)
+	}
+	if c.typ == "Say" || c.Say != nil {
+		return json.Marshal(c.Say)
+	}
+	if c.typ == "Gather" || c.Gather != nil {
+		return json.Marshal(c.Gather)
+	}
+	if c.typ == "ApiRequest" || c.ApiRequest != nil {
+		return json.Marshal(c.ApiRequest)
+	}
+	if c.typ == "Hangup" || c.Hangup != nil {
+		return json.Marshal(c.Hangup)
+	}
+	if c.typ == "Transfer" || c.Transfer != nil {
+		return json.Marshal(c.Transfer)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type CreateWorkflowDtoNodesItemVisitor interface {
+	VisitStart(*Start) error
+	VisitAssistant(*Assistant) error
+	VisitSay(*Say) error
+	VisitGather(*Gather) error
+	VisitApiRequest(*ApiRequest) error
+	VisitHangup(*Hangup) error
+	VisitTransfer(*Transfer) error
+}
+
+func (c *CreateWorkflowDtoNodesItem) Accept(visitor CreateWorkflowDtoNodesItemVisitor) error {
+	if c.typ == "Start" || c.Start != nil {
+		return visitor.VisitStart(c.Start)
+	}
+	if c.typ == "Assistant" || c.Assistant != nil {
+		return visitor.VisitAssistant(c.Assistant)
+	}
+	if c.typ == "Say" || c.Say != nil {
+		return visitor.VisitSay(c.Say)
+	}
+	if c.typ == "Gather" || c.Gather != nil {
+		return visitor.VisitGather(c.Gather)
+	}
+	if c.typ == "ApiRequest" || c.ApiRequest != nil {
+		return visitor.VisitApiRequest(c.ApiRequest)
+	}
+	if c.typ == "Hangup" || c.Hangup != nil {
+		return visitor.VisitHangup(c.Hangup)
+	}
+	if c.typ == "Transfer" || c.Transfer != nil {
+		return visitor.VisitTransfer(c.Transfer)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
 }
 
 type CreateXAiCredentialDto struct {
@@ -25119,6 +30103,109 @@ func (c *CustomerCustomEndpointingRule) MarshalJSON() ([]byte, error) {
 }
 
 func (c *CustomerCustomEndpointingRule) String() string {
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+type CustomerUserEditable struct {
+	// This is the flag to toggle the E164 check for the `number` field. This is an advanced property which should be used if you know your use case requires it.
+	//
+	// Use cases:
+	// - `false`: To allow non-E164 numbers like `+001234567890`, `1234`, or `abc`. This is useful for dialing out to non-E164 numbers on your SIP trunks.
+	// - `true` (default): To allow only E164 numbers like `+14155551234`. This is standard for PSTN calls.
+	//
+	// If `false`, the `number` is still required to only contain alphanumeric characters (regex: `/^\+?[a-zA-Z0-9]+$/`).
+	//
+	// @default true (E164 check is enabled)
+	NumberE164CheckEnabled *bool `json:"numberE164CheckEnabled,omitempty" url:"numberE164CheckEnabled,omitempty"`
+	// This is the extension that will be dialed after the call is answered.
+	Extension *string `json:"extension,omitempty" url:"extension,omitempty"`
+	// These are the overrides for the assistant's settings and template variables specific to this customer.
+	// This allows customization of the assistant's behavior for individual customers in batch calls.
+	AssistantOverrides *AssistantOverrides `json:"assistantOverrides,omitempty" url:"assistantOverrides,omitempty"`
+	// This is the number of the customer.
+	Number *string `json:"number,omitempty" url:"number,omitempty"`
+	// This is the SIP URI of the customer.
+	SipUri *string `json:"sipUri,omitempty" url:"sipUri,omitempty"`
+	// This is the name of the customer. This is just for your own reference.
+	//
+	// For SIP inbound calls, this is extracted from the `From` SIP header with format `"Display Name" <sip:username@domain>`.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CustomerUserEditable) GetNumberE164CheckEnabled() *bool {
+	if c == nil {
+		return nil
+	}
+	return c.NumberE164CheckEnabled
+}
+
+func (c *CustomerUserEditable) GetExtension() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Extension
+}
+
+func (c *CustomerUserEditable) GetAssistantOverrides() *AssistantOverrides {
+	if c == nil {
+		return nil
+	}
+	return c.AssistantOverrides
+}
+
+func (c *CustomerUserEditable) GetNumber() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Number
+}
+
+func (c *CustomerUserEditable) GetSipUri() *string {
+	if c == nil {
+		return nil
+	}
+	return c.SipUri
+}
+
+func (c *CustomerUserEditable) GetName() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Name
+}
+
+func (c *CustomerUserEditable) GetExtraProperties() map[string]interface{} {
+	return c.extraProperties
+}
+
+func (c *CustomerUserEditable) UnmarshalJSON(data []byte) error {
+	type unmarshaler CustomerUserEditable
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CustomerUserEditable(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CustomerUserEditable) String() string {
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -42137,11 +47224,15 @@ type ImportVonagePhoneNumberDto struct {
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the assistant that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
+	// This is the workflow that will be used for incoming calls to this phone number.
+	//
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
 	// This is the squad that will be used for incoming calls to this phone number.
 	//
-	// If neither `assistantId` nor `squadId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
 	SquadId *string `json:"squadId,omitempty" url:"squadId,omitempty"`
 	// This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
 	//
@@ -42196,6 +47287,13 @@ func (i *ImportVonagePhoneNumberDto) GetAssistantId() *string {
 		return nil
 	}
 	return i.AssistantId
+}
+
+func (i *ImportVonagePhoneNumberDto) GetWorkflowId() *string {
+	if i == nil {
+		return nil
+	}
+	return i.WorkflowId
 }
 
 func (i *ImportVonagePhoneNumberDto) GetSquadId() *string {
@@ -43917,7 +49015,7 @@ type LivekitSmartEndpointingPlan struct {
 	//
 	// Under the hood, this is parsed into a mathjs expression. Whatever you use to write your expression needs to be valid with respect to mathjs
 	//
-	// @default "70 + 4000 * x"
+	// @default "20 + 500 * sqrt(x) + 2500 * x^3"
 	WaitFunction *string `json:"waitFunction,omitempty" url:"waitFunction,omitempty"`
 
 	extraProperties map[string]interface{}
@@ -51737,40 +56835,20 @@ func (s *ServerMessage) String() string {
 }
 
 type ServerMessageAssistantRequest struct {
-	// This is the phone number associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.phoneNumber`,
-	// - `call.phoneNumberId`.
+	// This is the phone number that the message is associated with.
 	PhoneNumber *ServerMessageAssistantRequestPhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "assistant-request" is sent to fetch assistant configuration for an incoming call.
-	// This is the timestamp of when the message was sent in milliseconds since Unix Epoch.
+	// This is the timestamp of the message.
 	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
 	// This is a live version of the `call.artifact`.
 	//
 	// This matches what is stored on `call.artifact` after the call.
 	Artifact *Artifact `json:"artifact,omitempty" url:"artifact,omitempty"`
-	// This is the assistant that is currently active. This is provided for convenience.
-	//
-	// This matches one of the following:
-	// - `call.assistant`,
-	// - `call.assistantId`,
-	// - `call.squad[n].assistant`,
-	// - `call.squad[n].assistantId`,
-	// - `call.squadId->[n].assistant`,
-	// - `call.squadId->[n].assistantId`.
-	Assistant *CreateAssistantDto `json:"assistant,omitempty" url:"assistant,omitempty"`
-	// This is the customer associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.customer`,
-	// - `call.customerId`.
-	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
-	// This is the call object.
-	//
-	// This matches what was returned in POST /call.
-	//
-	// Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the call that the message is associated with.
 	Call  *Call `json:"call,omitempty" url:"call,omitempty"`
 	type_ string
 
@@ -51799,14 +56877,14 @@ func (s *ServerMessageAssistantRequest) GetArtifact() *Artifact {
 	return s.Artifact
 }
 
-func (s *ServerMessageAssistantRequest) GetAssistant() *CreateAssistantDto {
+func (s *ServerMessageAssistantRequest) GetAssistant() *AssistantUserEditable {
 	if s == nil {
 		return nil
 	}
 	return s.Assistant
 }
 
-func (s *ServerMessageAssistantRequest) GetCustomer() *CreateCustomerDto {
+func (s *ServerMessageAssistantRequest) GetCustomer() *CustomerUserEditable {
 	if s == nil {
 		return nil
 	}
@@ -51877,25 +56955,19 @@ func (s *ServerMessageAssistantRequest) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
-// This is the phone number associated with the call.
-//
-// This matches one of the following:
-// - `call.phoneNumber`,
-// - `call.phoneNumberId`.
+// This is the phone number that the message is associated with.
 type ServerMessageAssistantRequestPhoneNumber struct {
-	CreateByoPhoneNumberDto    *CreateByoPhoneNumberDto
+	Unknown                    interface{}
 	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
-	CreateVonagePhoneNumberDto *CreateVonagePhoneNumberDto
-	CreateVapiPhoneNumberDto   *CreateVapiPhoneNumberDto
 
 	typ string
 }
 
-func (s *ServerMessageAssistantRequestPhoneNumber) GetCreateByoPhoneNumberDto() *CreateByoPhoneNumberDto {
+func (s *ServerMessageAssistantRequestPhoneNumber) GetUnknown() interface{} {
 	if s == nil {
 		return nil
 	}
-	return s.CreateByoPhoneNumberDto
+	return s.Unknown
 }
 
 func (s *ServerMessageAssistantRequestPhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
@@ -51905,25 +56977,11 @@ func (s *ServerMessageAssistantRequestPhoneNumber) GetCreateTwilioPhoneNumberDto
 	return s.CreateTwilioPhoneNumberDto
 }
 
-func (s *ServerMessageAssistantRequestPhoneNumber) GetCreateVonagePhoneNumberDto() *CreateVonagePhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVonagePhoneNumberDto
-}
-
-func (s *ServerMessageAssistantRequestPhoneNumber) GetCreateVapiPhoneNumberDto() *CreateVapiPhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVapiPhoneNumberDto
-}
-
 func (s *ServerMessageAssistantRequestPhoneNumber) UnmarshalJSON(data []byte) error {
-	valueCreateByoPhoneNumberDto := new(CreateByoPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateByoPhoneNumberDto); err == nil {
-		s.typ = "CreateByoPhoneNumberDto"
-		s.CreateByoPhoneNumberDto = valueCreateByoPhoneNumberDto
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		s.typ = "Unknown"
+		s.Unknown = valueUnknown
 		return nil
 	}
 	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
@@ -51932,99 +56990,53 @@ func (s *ServerMessageAssistantRequestPhoneNumber) UnmarshalJSON(data []byte) er
 		s.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
 		return nil
 	}
-	valueCreateVonagePhoneNumberDto := new(CreateVonagePhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVonagePhoneNumberDto); err == nil {
-		s.typ = "CreateVonagePhoneNumberDto"
-		s.CreateVonagePhoneNumberDto = valueCreateVonagePhoneNumberDto
-		return nil
-	}
-	valueCreateVapiPhoneNumberDto := new(CreateVapiPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVapiPhoneNumberDto); err == nil {
-		s.typ = "CreateVapiPhoneNumberDto"
-		s.CreateVapiPhoneNumberDto = valueCreateVapiPhoneNumberDto
-		return nil
-	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
 }
 
 func (s ServerMessageAssistantRequestPhoneNumber) MarshalJSON() ([]byte, error) {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return json.Marshal(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return json.Marshal(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return json.Marshal(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return json.Marshal(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return json.Marshal(s.CreateVapiPhoneNumberDto)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessageAssistantRequestPhoneNumberVisitor interface {
-	VisitCreateByoPhoneNumberDto(*CreateByoPhoneNumberDto) error
+	VisitUnknown(interface{}) error
 	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
-	VisitCreateVonagePhoneNumberDto(*CreateVonagePhoneNumberDto) error
-	VisitCreateVapiPhoneNumberDto(*CreateVapiPhoneNumberDto) error
 }
 
 func (s *ServerMessageAssistantRequestPhoneNumber) Accept(visitor ServerMessageAssistantRequestPhoneNumberVisitor) error {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return visitor.VisitCreateByoPhoneNumberDto(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return visitor.VisitUnknown(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return visitor.VisitCreateTwilioPhoneNumberDto(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return visitor.VisitCreateVonagePhoneNumberDto(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return visitor.VisitCreateVapiPhoneNumberDto(s.CreateVapiPhoneNumberDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessageConversationUpdate struct {
-	// This is the phone number associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.phoneNumber`,
-	// - `call.phoneNumberId`.
+	// This is the phone number that the message is associated with.
 	PhoneNumber *ServerMessageConversationUpdatePhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "conversation-update" is sent when an update is committed to the conversation history.
 	// This is the most up-to-date conversation history at the time the message is sent.
 	Messages []*ServerMessageConversationUpdateMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
 	// This is the most up-to-date conversation history at the time the message is sent, formatted for OpenAI.
 	MessagesOpenAiFormatted []*OpenAiMessage `json:"messagesOpenAIFormatted,omitempty" url:"messagesOpenAIFormatted,omitempty"`
-	// This is the timestamp of when the message was sent in milliseconds since Unix Epoch.
+	// This is the timestamp of the message.
 	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
 	// This is a live version of the `call.artifact`.
 	//
 	// This matches what is stored on `call.artifact` after the call.
 	Artifact *Artifact `json:"artifact,omitempty" url:"artifact,omitempty"`
-	// This is the assistant that is currently active. This is provided for convenience.
-	//
-	// This matches one of the following:
-	// - `call.assistant`,
-	// - `call.assistantId`,
-	// - `call.squad[n].assistant`,
-	// - `call.squad[n].assistantId`,
-	// - `call.squadId->[n].assistant`,
-	// - `call.squadId->[n].assistantId`.
-	Assistant *CreateAssistantDto `json:"assistant,omitempty" url:"assistant,omitempty"`
-	// This is the customer associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.customer`,
-	// - `call.customerId`.
-	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
-	// This is the call object.
-	//
-	// This matches what was returned in POST /call.
-	//
-	// Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the call that the message is associated with.
 	Call  *Call `json:"call,omitempty" url:"call,omitempty"`
 	type_ string
 
@@ -52067,14 +57079,14 @@ func (s *ServerMessageConversationUpdate) GetArtifact() *Artifact {
 	return s.Artifact
 }
 
-func (s *ServerMessageConversationUpdate) GetAssistant() *CreateAssistantDto {
+func (s *ServerMessageConversationUpdate) GetAssistant() *AssistantUserEditable {
 	if s == nil {
 		return nil
 	}
 	return s.Assistant
 }
 
-func (s *ServerMessageConversationUpdate) GetCustomer() *CreateCustomerDto {
+func (s *ServerMessageConversationUpdate) GetCustomer() *CustomerUserEditable {
 	if s == nil {
 		return nil
 	}
@@ -52270,25 +57282,19 @@ func (s *ServerMessageConversationUpdateMessagesItem) Accept(visitor ServerMessa
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
-// This is the phone number associated with the call.
-//
-// This matches one of the following:
-// - `call.phoneNumber`,
-// - `call.phoneNumberId`.
+// This is the phone number that the message is associated with.
 type ServerMessageConversationUpdatePhoneNumber struct {
-	CreateByoPhoneNumberDto    *CreateByoPhoneNumberDto
+	Unknown                    interface{}
 	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
-	CreateVonagePhoneNumberDto *CreateVonagePhoneNumberDto
-	CreateVapiPhoneNumberDto   *CreateVapiPhoneNumberDto
 
 	typ string
 }
 
-func (s *ServerMessageConversationUpdatePhoneNumber) GetCreateByoPhoneNumberDto() *CreateByoPhoneNumberDto {
+func (s *ServerMessageConversationUpdatePhoneNumber) GetUnknown() interface{} {
 	if s == nil {
 		return nil
 	}
-	return s.CreateByoPhoneNumberDto
+	return s.Unknown
 }
 
 func (s *ServerMessageConversationUpdatePhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
@@ -52298,25 +57304,11 @@ func (s *ServerMessageConversationUpdatePhoneNumber) GetCreateTwilioPhoneNumberD
 	return s.CreateTwilioPhoneNumberDto
 }
 
-func (s *ServerMessageConversationUpdatePhoneNumber) GetCreateVonagePhoneNumberDto() *CreateVonagePhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVonagePhoneNumberDto
-}
-
-func (s *ServerMessageConversationUpdatePhoneNumber) GetCreateVapiPhoneNumberDto() *CreateVapiPhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVapiPhoneNumberDto
-}
-
 func (s *ServerMessageConversationUpdatePhoneNumber) UnmarshalJSON(data []byte) error {
-	valueCreateByoPhoneNumberDto := new(CreateByoPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateByoPhoneNumberDto); err == nil {
-		s.typ = "CreateByoPhoneNumberDto"
-		s.CreateByoPhoneNumberDto = valueCreateByoPhoneNumberDto
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		s.typ = "Unknown"
+		s.Unknown = valueUnknown
 		return nil
 	}
 	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
@@ -52325,66 +57317,36 @@ func (s *ServerMessageConversationUpdatePhoneNumber) UnmarshalJSON(data []byte) 
 		s.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
 		return nil
 	}
-	valueCreateVonagePhoneNumberDto := new(CreateVonagePhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVonagePhoneNumberDto); err == nil {
-		s.typ = "CreateVonagePhoneNumberDto"
-		s.CreateVonagePhoneNumberDto = valueCreateVonagePhoneNumberDto
-		return nil
-	}
-	valueCreateVapiPhoneNumberDto := new(CreateVapiPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVapiPhoneNumberDto); err == nil {
-		s.typ = "CreateVapiPhoneNumberDto"
-		s.CreateVapiPhoneNumberDto = valueCreateVapiPhoneNumberDto
-		return nil
-	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
 }
 
 func (s ServerMessageConversationUpdatePhoneNumber) MarshalJSON() ([]byte, error) {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return json.Marshal(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return json.Marshal(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return json.Marshal(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return json.Marshal(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return json.Marshal(s.CreateVapiPhoneNumberDto)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessageConversationUpdatePhoneNumberVisitor interface {
-	VisitCreateByoPhoneNumberDto(*CreateByoPhoneNumberDto) error
+	VisitUnknown(interface{}) error
 	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
-	VisitCreateVonagePhoneNumberDto(*CreateVonagePhoneNumberDto) error
-	VisitCreateVapiPhoneNumberDto(*CreateVapiPhoneNumberDto) error
 }
 
 func (s *ServerMessageConversationUpdatePhoneNumber) Accept(visitor ServerMessageConversationUpdatePhoneNumberVisitor) error {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return visitor.VisitCreateByoPhoneNumberDto(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return visitor.VisitUnknown(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return visitor.VisitCreateTwilioPhoneNumberDto(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return visitor.VisitCreateVonagePhoneNumberDto(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return visitor.VisitCreateVapiPhoneNumberDto(s.CreateVapiPhoneNumberDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessageEndOfCallReport struct {
-	// This is the phone number associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.phoneNumber`,
-	// - `call.phoneNumberId`.
+	// This is the phone number that the message is associated with.
 	PhoneNumber *ServerMessageEndOfCallReportPhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "end-of-call-report" is sent when the call ends and post-processing is complete.
 	// This is the reason the call ended. This can also be found at `call.endedReason` on GET /call/:id.
@@ -52393,31 +57355,15 @@ type ServerMessageEndOfCallReport struct {
 	Cost *float64 `json:"cost,omitempty" url:"cost,omitempty"`
 	// These are the costs of individual components of the call in USD. This can also be found at `call.costs` on GET /call/:id.
 	Costs []*ServerMessageEndOfCallReportCostsItem `json:"costs,omitempty" url:"costs,omitempty"`
-	// This is the timestamp of when the message was sent in milliseconds since Unix Epoch.
+	// This is the timestamp of the message.
 	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
 	// These are the artifacts from the call. This can also be found at `call.artifact` on GET /call/:id.
 	Artifact *Artifact `json:"artifact,omitempty" url:"artifact,omitempty"`
-	// This is the assistant that is currently active. This is provided for convenience.
-	//
-	// This matches one of the following:
-	// - `call.assistant`,
-	// - `call.assistantId`,
-	// - `call.squad[n].assistant`,
-	// - `call.squad[n].assistantId`,
-	// - `call.squadId->[n].assistant`,
-	// - `call.squadId->[n].assistantId`.
-	Assistant *CreateAssistantDto `json:"assistant,omitempty" url:"assistant,omitempty"`
-	// This is the customer associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.customer`,
-	// - `call.customerId`.
-	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
-	// This is the call object.
-	//
-	// This matches what was returned in POST /call.
-	//
-	// Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the call that the message is associated with.
 	Call *Call `json:"call,omitempty" url:"call,omitempty"`
 	// This is the analysis of the call. This can also be found at `call.analysis` on GET /call/:id.
 	Analysis *Analysis `json:"analysis,omitempty" url:"analysis,omitempty"`
@@ -52473,14 +57419,14 @@ func (s *ServerMessageEndOfCallReport) GetArtifact() *Artifact {
 	return s.Artifact
 }
 
-func (s *ServerMessageEndOfCallReport) GetAssistant() *CreateAssistantDto {
+func (s *ServerMessageEndOfCallReport) GetAssistant() *AssistantUserEditable {
 	if s == nil {
 		return nil
 	}
 	return s.Assistant
 }
 
-func (s *ServerMessageEndOfCallReport) GetCustomer() *CreateCustomerDto {
+func (s *ServerMessageEndOfCallReport) GetCustomer() *CustomerUserEditable {
 	if s == nil {
 		return nil
 	}
@@ -52588,6 +57534,7 @@ type ServerMessageEndOfCallReportCostsItem struct {
 	VapiCost               *VapiCost
 	VoicemailDetectionCost *VoicemailDetectionCost
 	AnalysisCost           *AnalysisCost
+	KnowledgeBaseCost      *KnowledgeBaseCost
 
 	typ string
 }
@@ -52641,6 +57588,13 @@ func (s *ServerMessageEndOfCallReportCostsItem) GetAnalysisCost() *AnalysisCost 
 	return s.AnalysisCost
 }
 
+func (s *ServerMessageEndOfCallReportCostsItem) GetKnowledgeBaseCost() *KnowledgeBaseCost {
+	if s == nil {
+		return nil
+	}
+	return s.KnowledgeBaseCost
+}
+
 func (s *ServerMessageEndOfCallReportCostsItem) UnmarshalJSON(data []byte) error {
 	valueTransportCost := new(TransportCost)
 	if err := json.Unmarshal(data, &valueTransportCost); err == nil {
@@ -52684,6 +57638,12 @@ func (s *ServerMessageEndOfCallReportCostsItem) UnmarshalJSON(data []byte) error
 		s.AnalysisCost = valueAnalysisCost
 		return nil
 	}
+	valueKnowledgeBaseCost := new(KnowledgeBaseCost)
+	if err := json.Unmarshal(data, &valueKnowledgeBaseCost); err == nil {
+		s.typ = "KnowledgeBaseCost"
+		s.KnowledgeBaseCost = valueKnowledgeBaseCost
+		return nil
+	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
 }
 
@@ -52709,6 +57669,9 @@ func (s ServerMessageEndOfCallReportCostsItem) MarshalJSON() ([]byte, error) {
 	if s.typ == "AnalysisCost" || s.AnalysisCost != nil {
 		return json.Marshal(s.AnalysisCost)
 	}
+	if s.typ == "KnowledgeBaseCost" || s.KnowledgeBaseCost != nil {
+		return json.Marshal(s.KnowledgeBaseCost)
+	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
@@ -52720,6 +57683,7 @@ type ServerMessageEndOfCallReportCostsItemVisitor interface {
 	VisitVapiCost(*VapiCost) error
 	VisitVoicemailDetectionCost(*VoicemailDetectionCost) error
 	VisitAnalysisCost(*AnalysisCost) error
+	VisitKnowledgeBaseCost(*KnowledgeBaseCost) error
 }
 
 func (s *ServerMessageEndOfCallReportCostsItem) Accept(visitor ServerMessageEndOfCallReportCostsItemVisitor) error {
@@ -52743,6 +57707,9 @@ func (s *ServerMessageEndOfCallReportCostsItem) Accept(visitor ServerMessageEndO
 	}
 	if s.typ == "AnalysisCost" || s.AnalysisCost != nil {
 		return visitor.VisitAnalysisCost(s.AnalysisCost)
+	}
+	if s.typ == "KnowledgeBaseCost" || s.KnowledgeBaseCost != nil {
+		return visitor.VisitKnowledgeBaseCost(s.KnowledgeBaseCost)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
@@ -54225,25 +59192,19 @@ func (s ServerMessageEndOfCallReportEndedReason) Ptr() *ServerMessageEndOfCallRe
 	return &s
 }
 
-// This is the phone number associated with the call.
-//
-// This matches one of the following:
-// - `call.phoneNumber`,
-// - `call.phoneNumberId`.
+// This is the phone number that the message is associated with.
 type ServerMessageEndOfCallReportPhoneNumber struct {
-	CreateByoPhoneNumberDto    *CreateByoPhoneNumberDto
+	Unknown                    interface{}
 	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
-	CreateVonagePhoneNumberDto *CreateVonagePhoneNumberDto
-	CreateVapiPhoneNumberDto   *CreateVapiPhoneNumberDto
 
 	typ string
 }
 
-func (s *ServerMessageEndOfCallReportPhoneNumber) GetCreateByoPhoneNumberDto() *CreateByoPhoneNumberDto {
+func (s *ServerMessageEndOfCallReportPhoneNumber) GetUnknown() interface{} {
 	if s == nil {
 		return nil
 	}
-	return s.CreateByoPhoneNumberDto
+	return s.Unknown
 }
 
 func (s *ServerMessageEndOfCallReportPhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
@@ -54253,25 +59214,11 @@ func (s *ServerMessageEndOfCallReportPhoneNumber) GetCreateTwilioPhoneNumberDto(
 	return s.CreateTwilioPhoneNumberDto
 }
 
-func (s *ServerMessageEndOfCallReportPhoneNumber) GetCreateVonagePhoneNumberDto() *CreateVonagePhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVonagePhoneNumberDto
-}
-
-func (s *ServerMessageEndOfCallReportPhoneNumber) GetCreateVapiPhoneNumberDto() *CreateVapiPhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVapiPhoneNumberDto
-}
-
 func (s *ServerMessageEndOfCallReportPhoneNumber) UnmarshalJSON(data []byte) error {
-	valueCreateByoPhoneNumberDto := new(CreateByoPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateByoPhoneNumberDto); err == nil {
-		s.typ = "CreateByoPhoneNumberDto"
-		s.CreateByoPhoneNumberDto = valueCreateByoPhoneNumberDto
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		s.typ = "Unknown"
+		s.Unknown = valueUnknown
 		return nil
 	}
 	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
@@ -54280,99 +59227,53 @@ func (s *ServerMessageEndOfCallReportPhoneNumber) UnmarshalJSON(data []byte) err
 		s.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
 		return nil
 	}
-	valueCreateVonagePhoneNumberDto := new(CreateVonagePhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVonagePhoneNumberDto); err == nil {
-		s.typ = "CreateVonagePhoneNumberDto"
-		s.CreateVonagePhoneNumberDto = valueCreateVonagePhoneNumberDto
-		return nil
-	}
-	valueCreateVapiPhoneNumberDto := new(CreateVapiPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVapiPhoneNumberDto); err == nil {
-		s.typ = "CreateVapiPhoneNumberDto"
-		s.CreateVapiPhoneNumberDto = valueCreateVapiPhoneNumberDto
-		return nil
-	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
 }
 
 func (s ServerMessageEndOfCallReportPhoneNumber) MarshalJSON() ([]byte, error) {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return json.Marshal(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return json.Marshal(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return json.Marshal(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return json.Marshal(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return json.Marshal(s.CreateVapiPhoneNumberDto)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessageEndOfCallReportPhoneNumberVisitor interface {
-	VisitCreateByoPhoneNumberDto(*CreateByoPhoneNumberDto) error
+	VisitUnknown(interface{}) error
 	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
-	VisitCreateVonagePhoneNumberDto(*CreateVonagePhoneNumberDto) error
-	VisitCreateVapiPhoneNumberDto(*CreateVapiPhoneNumberDto) error
 }
 
 func (s *ServerMessageEndOfCallReportPhoneNumber) Accept(visitor ServerMessageEndOfCallReportPhoneNumberVisitor) error {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return visitor.VisitCreateByoPhoneNumberDto(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return visitor.VisitUnknown(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return visitor.VisitCreateTwilioPhoneNumberDto(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return visitor.VisitCreateVonagePhoneNumberDto(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return visitor.VisitCreateVapiPhoneNumberDto(s.CreateVapiPhoneNumberDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessageHang struct {
-	// This is the phone number associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.phoneNumber`,
-	// - `call.phoneNumberId`.
+	// This is the phone number that the message is associated with.
 	PhoneNumber *ServerMessageHangPhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "hang" is sent when the assistant is hanging due to a delay. The delay can be caused by many factors, such as:
 	// - the model is too slow to respond
 	// - the voice is too slow to respond
 	// - the tool call is still waiting for a response from your server
 	// - etc.
-	// This is the timestamp of when the message was sent in milliseconds since Unix Epoch.
+	// This is the timestamp of the message.
 	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
 	// This is a live version of the `call.artifact`.
 	//
 	// This matches what is stored on `call.artifact` after the call.
 	Artifact *Artifact `json:"artifact,omitempty" url:"artifact,omitempty"`
-	// This is the assistant that is currently active. This is provided for convenience.
-	//
-	// This matches one of the following:
-	// - `call.assistant`,
-	// - `call.assistantId`,
-	// - `call.squad[n].assistant`,
-	// - `call.squad[n].assistantId`,
-	// - `call.squadId->[n].assistant`,
-	// - `call.squadId->[n].assistantId`.
-	Assistant *CreateAssistantDto `json:"assistant,omitempty" url:"assistant,omitempty"`
-	// This is the customer associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.customer`,
-	// - `call.customerId`.
-	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
-	// This is the call object.
-	//
-	// This matches what was returned in POST /call.
-	//
-	// Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the call that the message is associated with.
 	Call  *Call `json:"call,omitempty" url:"call,omitempty"`
 	type_ string
 
@@ -54401,14 +59302,14 @@ func (s *ServerMessageHang) GetArtifact() *Artifact {
 	return s.Artifact
 }
 
-func (s *ServerMessageHang) GetAssistant() *CreateAssistantDto {
+func (s *ServerMessageHang) GetAssistant() *AssistantUserEditable {
 	if s == nil {
 		return nil
 	}
 	return s.Assistant
 }
 
-func (s *ServerMessageHang) GetCustomer() *CreateCustomerDto {
+func (s *ServerMessageHang) GetCustomer() *CustomerUserEditable {
 	if s == nil {
 		return nil
 	}
@@ -54479,25 +59380,19 @@ func (s *ServerMessageHang) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
-// This is the phone number associated with the call.
-//
-// This matches one of the following:
-// - `call.phoneNumber`,
-// - `call.phoneNumberId`.
+// This is the phone number that the message is associated with.
 type ServerMessageHangPhoneNumber struct {
-	CreateByoPhoneNumberDto    *CreateByoPhoneNumberDto
+	Unknown                    interface{}
 	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
-	CreateVonagePhoneNumberDto *CreateVonagePhoneNumberDto
-	CreateVapiPhoneNumberDto   *CreateVapiPhoneNumberDto
 
 	typ string
 }
 
-func (s *ServerMessageHangPhoneNumber) GetCreateByoPhoneNumberDto() *CreateByoPhoneNumberDto {
+func (s *ServerMessageHangPhoneNumber) GetUnknown() interface{} {
 	if s == nil {
 		return nil
 	}
-	return s.CreateByoPhoneNumberDto
+	return s.Unknown
 }
 
 func (s *ServerMessageHangPhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
@@ -54507,25 +59402,11 @@ func (s *ServerMessageHangPhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTw
 	return s.CreateTwilioPhoneNumberDto
 }
 
-func (s *ServerMessageHangPhoneNumber) GetCreateVonagePhoneNumberDto() *CreateVonagePhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVonagePhoneNumberDto
-}
-
-func (s *ServerMessageHangPhoneNumber) GetCreateVapiPhoneNumberDto() *CreateVapiPhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVapiPhoneNumberDto
-}
-
 func (s *ServerMessageHangPhoneNumber) UnmarshalJSON(data []byte) error {
-	valueCreateByoPhoneNumberDto := new(CreateByoPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateByoPhoneNumberDto); err == nil {
-		s.typ = "CreateByoPhoneNumberDto"
-		s.CreateByoPhoneNumberDto = valueCreateByoPhoneNumberDto
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		s.typ = "Unknown"
+		s.Unknown = valueUnknown
 		return nil
 	}
 	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
@@ -54534,99 +59415,53 @@ func (s *ServerMessageHangPhoneNumber) UnmarshalJSON(data []byte) error {
 		s.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
 		return nil
 	}
-	valueCreateVonagePhoneNumberDto := new(CreateVonagePhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVonagePhoneNumberDto); err == nil {
-		s.typ = "CreateVonagePhoneNumberDto"
-		s.CreateVonagePhoneNumberDto = valueCreateVonagePhoneNumberDto
-		return nil
-	}
-	valueCreateVapiPhoneNumberDto := new(CreateVapiPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVapiPhoneNumberDto); err == nil {
-		s.typ = "CreateVapiPhoneNumberDto"
-		s.CreateVapiPhoneNumberDto = valueCreateVapiPhoneNumberDto
-		return nil
-	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
 }
 
 func (s ServerMessageHangPhoneNumber) MarshalJSON() ([]byte, error) {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return json.Marshal(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return json.Marshal(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return json.Marshal(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return json.Marshal(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return json.Marshal(s.CreateVapiPhoneNumberDto)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessageHangPhoneNumberVisitor interface {
-	VisitCreateByoPhoneNumberDto(*CreateByoPhoneNumberDto) error
+	VisitUnknown(interface{}) error
 	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
-	VisitCreateVonagePhoneNumberDto(*CreateVonagePhoneNumberDto) error
-	VisitCreateVapiPhoneNumberDto(*CreateVapiPhoneNumberDto) error
 }
 
 func (s *ServerMessageHangPhoneNumber) Accept(visitor ServerMessageHangPhoneNumberVisitor) error {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return visitor.VisitCreateByoPhoneNumberDto(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return visitor.VisitUnknown(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return visitor.VisitCreateTwilioPhoneNumberDto(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return visitor.VisitCreateVonagePhoneNumberDto(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return visitor.VisitCreateVapiPhoneNumberDto(s.CreateVapiPhoneNumberDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessageKnowledgeBaseRequest struct {
-	// This is the phone number associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.phoneNumber`,
-	// - `call.phoneNumberId`.
+	// This is the phone number that the message is associated with.
 	PhoneNumber *ServerMessageKnowledgeBaseRequestPhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "knowledge-base-request" is sent to request knowledge base documents. To enable, use `assistant.knowledgeBase.provider=custom-knowledge-base`.
 	// These are the messages that are going to be sent to the `model` right after the `knowledge-base-request` webhook completes.
 	Messages []*ServerMessageKnowledgeBaseRequestMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
 	// This is just `messages` formatted for OpenAI.
 	MessagesOpenAiFormatted []*OpenAiMessage `json:"messagesOpenAIFormatted,omitempty" url:"messagesOpenAIFormatted,omitempty"`
-	// This is the timestamp of when the message was sent in milliseconds since Unix Epoch.
+	// This is the timestamp of the message.
 	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
 	// This is a live version of the `call.artifact`.
 	//
 	// This matches what is stored on `call.artifact` after the call.
 	Artifact *Artifact `json:"artifact,omitempty" url:"artifact,omitempty"`
-	// This is the assistant that is currently active. This is provided for convenience.
-	//
-	// This matches one of the following:
-	// - `call.assistant`,
-	// - `call.assistantId`,
-	// - `call.squad[n].assistant`,
-	// - `call.squad[n].assistantId`,
-	// - `call.squadId->[n].assistant`,
-	// - `call.squadId->[n].assistantId`.
-	Assistant *CreateAssistantDto `json:"assistant,omitempty" url:"assistant,omitempty"`
-	// This is the customer associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.customer`,
-	// - `call.customerId`.
-	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
-	// This is the call object.
-	//
-	// This matches what was returned in POST /call.
-	//
-	// Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the call that the message is associated with.
 	Call  *Call `json:"call,omitempty" url:"call,omitempty"`
 	type_ string
 
@@ -54669,14 +59504,14 @@ func (s *ServerMessageKnowledgeBaseRequest) GetArtifact() *Artifact {
 	return s.Artifact
 }
 
-func (s *ServerMessageKnowledgeBaseRequest) GetAssistant() *CreateAssistantDto {
+func (s *ServerMessageKnowledgeBaseRequest) GetAssistant() *AssistantUserEditable {
 	if s == nil {
 		return nil
 	}
 	return s.Assistant
 }
 
-func (s *ServerMessageKnowledgeBaseRequest) GetCustomer() *CreateCustomerDto {
+func (s *ServerMessageKnowledgeBaseRequest) GetCustomer() *CustomerUserEditable {
 	if s == nil {
 		return nil
 	}
@@ -54872,25 +59707,19 @@ func (s *ServerMessageKnowledgeBaseRequestMessagesItem) Accept(visitor ServerMes
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
-// This is the phone number associated with the call.
-//
-// This matches one of the following:
-// - `call.phoneNumber`,
-// - `call.phoneNumberId`.
+// This is the phone number that the message is associated with.
 type ServerMessageKnowledgeBaseRequestPhoneNumber struct {
-	CreateByoPhoneNumberDto    *CreateByoPhoneNumberDto
+	Unknown                    interface{}
 	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
-	CreateVonagePhoneNumberDto *CreateVonagePhoneNumberDto
-	CreateVapiPhoneNumberDto   *CreateVapiPhoneNumberDto
 
 	typ string
 }
 
-func (s *ServerMessageKnowledgeBaseRequestPhoneNumber) GetCreateByoPhoneNumberDto() *CreateByoPhoneNumberDto {
+func (s *ServerMessageKnowledgeBaseRequestPhoneNumber) GetUnknown() interface{} {
 	if s == nil {
 		return nil
 	}
-	return s.CreateByoPhoneNumberDto
+	return s.Unknown
 }
 
 func (s *ServerMessageKnowledgeBaseRequestPhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
@@ -54900,25 +59729,11 @@ func (s *ServerMessageKnowledgeBaseRequestPhoneNumber) GetCreateTwilioPhoneNumbe
 	return s.CreateTwilioPhoneNumberDto
 }
 
-func (s *ServerMessageKnowledgeBaseRequestPhoneNumber) GetCreateVonagePhoneNumberDto() *CreateVonagePhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVonagePhoneNumberDto
-}
-
-func (s *ServerMessageKnowledgeBaseRequestPhoneNumber) GetCreateVapiPhoneNumberDto() *CreateVapiPhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVapiPhoneNumberDto
-}
-
 func (s *ServerMessageKnowledgeBaseRequestPhoneNumber) UnmarshalJSON(data []byte) error {
-	valueCreateByoPhoneNumberDto := new(CreateByoPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateByoPhoneNumberDto); err == nil {
-		s.typ = "CreateByoPhoneNumberDto"
-		s.CreateByoPhoneNumberDto = valueCreateByoPhoneNumberDto
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		s.typ = "Unknown"
+		s.Unknown = valueUnknown
 		return nil
 	}
 	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
@@ -54927,95 +59742,49 @@ func (s *ServerMessageKnowledgeBaseRequestPhoneNumber) UnmarshalJSON(data []byte
 		s.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
 		return nil
 	}
-	valueCreateVonagePhoneNumberDto := new(CreateVonagePhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVonagePhoneNumberDto); err == nil {
-		s.typ = "CreateVonagePhoneNumberDto"
-		s.CreateVonagePhoneNumberDto = valueCreateVonagePhoneNumberDto
-		return nil
-	}
-	valueCreateVapiPhoneNumberDto := new(CreateVapiPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVapiPhoneNumberDto); err == nil {
-		s.typ = "CreateVapiPhoneNumberDto"
-		s.CreateVapiPhoneNumberDto = valueCreateVapiPhoneNumberDto
-		return nil
-	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
 }
 
 func (s ServerMessageKnowledgeBaseRequestPhoneNumber) MarshalJSON() ([]byte, error) {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return json.Marshal(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return json.Marshal(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return json.Marshal(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return json.Marshal(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return json.Marshal(s.CreateVapiPhoneNumberDto)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessageKnowledgeBaseRequestPhoneNumberVisitor interface {
-	VisitCreateByoPhoneNumberDto(*CreateByoPhoneNumberDto) error
+	VisitUnknown(interface{}) error
 	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
-	VisitCreateVonagePhoneNumberDto(*CreateVonagePhoneNumberDto) error
-	VisitCreateVapiPhoneNumberDto(*CreateVapiPhoneNumberDto) error
 }
 
 func (s *ServerMessageKnowledgeBaseRequestPhoneNumber) Accept(visitor ServerMessageKnowledgeBaseRequestPhoneNumberVisitor) error {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return visitor.VisitCreateByoPhoneNumberDto(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return visitor.VisitUnknown(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return visitor.VisitCreateTwilioPhoneNumberDto(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return visitor.VisitCreateVonagePhoneNumberDto(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return visitor.VisitCreateVapiPhoneNumberDto(s.CreateVapiPhoneNumberDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessageLanguageChangeDetected struct {
-	// This is the phone number associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.phoneNumber`,
-	// - `call.phoneNumberId`.
+	// This is the phone number that the message is associated with.
 	PhoneNumber *ServerMessageLanguageChangeDetectedPhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "language-change-detected" is sent when the transcriber is automatically switched based on the detected language.
-	// This is the timestamp of when the message was sent in milliseconds since Unix Epoch.
+	// This is the timestamp of the message.
 	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
 	// This is a live version of the `call.artifact`.
 	//
 	// This matches what is stored on `call.artifact` after the call.
 	Artifact *Artifact `json:"artifact,omitempty" url:"artifact,omitempty"`
-	// This is the assistant that is currently active. This is provided for convenience.
-	//
-	// This matches one of the following:
-	// - `call.assistant`,
-	// - `call.assistantId`,
-	// - `call.squad[n].assistant`,
-	// - `call.squad[n].assistantId`,
-	// - `call.squadId->[n].assistant`,
-	// - `call.squadId->[n].assistantId`.
-	Assistant *CreateAssistantDto `json:"assistant,omitempty" url:"assistant,omitempty"`
-	// This is the customer associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.customer`,
-	// - `call.customerId`.
-	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
-	// This is the call object.
-	//
-	// This matches what was returned in POST /call.
-	//
-	// Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the call that the message is associated with.
 	Call *Call `json:"call,omitempty" url:"call,omitempty"`
 	// This is the language the transcriber is switched to.
 	Language string `json:"language" url:"language"`
@@ -55046,14 +59815,14 @@ func (s *ServerMessageLanguageChangeDetected) GetArtifact() *Artifact {
 	return s.Artifact
 }
 
-func (s *ServerMessageLanguageChangeDetected) GetAssistant() *CreateAssistantDto {
+func (s *ServerMessageLanguageChangeDetected) GetAssistant() *AssistantUserEditable {
 	if s == nil {
 		return nil
 	}
 	return s.Assistant
 }
 
-func (s *ServerMessageLanguageChangeDetected) GetCustomer() *CreateCustomerDto {
+func (s *ServerMessageLanguageChangeDetected) GetCustomer() *CustomerUserEditable {
 	if s == nil {
 		return nil
 	}
@@ -55131,25 +59900,19 @@ func (s *ServerMessageLanguageChangeDetected) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
-// This is the phone number associated with the call.
-//
-// This matches one of the following:
-// - `call.phoneNumber`,
-// - `call.phoneNumberId`.
+// This is the phone number that the message is associated with.
 type ServerMessageLanguageChangeDetectedPhoneNumber struct {
-	CreateByoPhoneNumberDto    *CreateByoPhoneNumberDto
+	Unknown                    interface{}
 	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
-	CreateVonagePhoneNumberDto *CreateVonagePhoneNumberDto
-	CreateVapiPhoneNumberDto   *CreateVapiPhoneNumberDto
 
 	typ string
 }
 
-func (s *ServerMessageLanguageChangeDetectedPhoneNumber) GetCreateByoPhoneNumberDto() *CreateByoPhoneNumberDto {
+func (s *ServerMessageLanguageChangeDetectedPhoneNumber) GetUnknown() interface{} {
 	if s == nil {
 		return nil
 	}
-	return s.CreateByoPhoneNumberDto
+	return s.Unknown
 }
 
 func (s *ServerMessageLanguageChangeDetectedPhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
@@ -55159,25 +59922,11 @@ func (s *ServerMessageLanguageChangeDetectedPhoneNumber) GetCreateTwilioPhoneNum
 	return s.CreateTwilioPhoneNumberDto
 }
 
-func (s *ServerMessageLanguageChangeDetectedPhoneNumber) GetCreateVonagePhoneNumberDto() *CreateVonagePhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVonagePhoneNumberDto
-}
-
-func (s *ServerMessageLanguageChangeDetectedPhoneNumber) GetCreateVapiPhoneNumberDto() *CreateVapiPhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVapiPhoneNumberDto
-}
-
 func (s *ServerMessageLanguageChangeDetectedPhoneNumber) UnmarshalJSON(data []byte) error {
-	valueCreateByoPhoneNumberDto := new(CreateByoPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateByoPhoneNumberDto); err == nil {
-		s.typ = "CreateByoPhoneNumberDto"
-		s.CreateByoPhoneNumberDto = valueCreateByoPhoneNumberDto
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		s.typ = "Unknown"
+		s.Unknown = valueUnknown
 		return nil
 	}
 	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
@@ -55186,56 +59935,30 @@ func (s *ServerMessageLanguageChangeDetectedPhoneNumber) UnmarshalJSON(data []by
 		s.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
 		return nil
 	}
-	valueCreateVonagePhoneNumberDto := new(CreateVonagePhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVonagePhoneNumberDto); err == nil {
-		s.typ = "CreateVonagePhoneNumberDto"
-		s.CreateVonagePhoneNumberDto = valueCreateVonagePhoneNumberDto
-		return nil
-	}
-	valueCreateVapiPhoneNumberDto := new(CreateVapiPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVapiPhoneNumberDto); err == nil {
-		s.typ = "CreateVapiPhoneNumberDto"
-		s.CreateVapiPhoneNumberDto = valueCreateVapiPhoneNumberDto
-		return nil
-	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
 }
 
 func (s ServerMessageLanguageChangeDetectedPhoneNumber) MarshalJSON() ([]byte, error) {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return json.Marshal(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return json.Marshal(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return json.Marshal(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return json.Marshal(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return json.Marshal(s.CreateVapiPhoneNumberDto)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessageLanguageChangeDetectedPhoneNumberVisitor interface {
-	VisitCreateByoPhoneNumberDto(*CreateByoPhoneNumberDto) error
+	VisitUnknown(interface{}) error
 	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
-	VisitCreateVonagePhoneNumberDto(*CreateVonagePhoneNumberDto) error
-	VisitCreateVapiPhoneNumberDto(*CreateVapiPhoneNumberDto) error
 }
 
 func (s *ServerMessageLanguageChangeDetectedPhoneNumber) Accept(visitor ServerMessageLanguageChangeDetectedPhoneNumberVisitor) error {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return visitor.VisitCreateByoPhoneNumberDto(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return visitor.VisitUnknown(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return visitor.VisitCreateTwilioPhoneNumberDto(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return visitor.VisitCreateVonagePhoneNumberDto(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return visitor.VisitCreateVapiPhoneNumberDto(s.CreateVapiPhoneNumberDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
@@ -55626,40 +60349,20 @@ func (s *ServerMessageMessage) Accept(visitor ServerMessageMessageVisitor) error
 }
 
 type ServerMessageModelOutput struct {
-	// This is the phone number associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.phoneNumber`,
-	// - `call.phoneNumberId`.
+	// This is the phone number that the message is associated with.
 	PhoneNumber *ServerMessageModelOutputPhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "model-output" is sent as the model outputs tokens.
-	// This is the timestamp of when the message was sent in milliseconds since Unix Epoch.
+	// This is the timestamp of the message.
 	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
 	// This is a live version of the `call.artifact`.
 	//
 	// This matches what is stored on `call.artifact` after the call.
 	Artifact *Artifact `json:"artifact,omitempty" url:"artifact,omitempty"`
-	// This is the assistant that is currently active. This is provided for convenience.
-	//
-	// This matches one of the following:
-	// - `call.assistant`,
-	// - `call.assistantId`,
-	// - `call.squad[n].assistant`,
-	// - `call.squad[n].assistantId`,
-	// - `call.squadId->[n].assistant`,
-	// - `call.squadId->[n].assistantId`.
-	Assistant *CreateAssistantDto `json:"assistant,omitempty" url:"assistant,omitempty"`
-	// This is the customer associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.customer`,
-	// - `call.customerId`.
-	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
-	// This is the call object.
-	//
-	// This matches what was returned in POST /call.
-	//
-	// Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the call that the message is associated with.
 	Call *Call `json:"call,omitempty" url:"call,omitempty"`
 	// This is the output of the model. It can be a token or tool call.
 	Output map[string]interface{} `json:"output,omitempty" url:"output,omitempty"`
@@ -55690,14 +60393,14 @@ func (s *ServerMessageModelOutput) GetArtifact() *Artifact {
 	return s.Artifact
 }
 
-func (s *ServerMessageModelOutput) GetAssistant() *CreateAssistantDto {
+func (s *ServerMessageModelOutput) GetAssistant() *AssistantUserEditable {
 	if s == nil {
 		return nil
 	}
 	return s.Assistant
 }
 
-func (s *ServerMessageModelOutput) GetCustomer() *CreateCustomerDto {
+func (s *ServerMessageModelOutput) GetCustomer() *CustomerUserEditable {
 	if s == nil {
 		return nil
 	}
@@ -55775,25 +60478,19 @@ func (s *ServerMessageModelOutput) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
-// This is the phone number associated with the call.
-//
-// This matches one of the following:
-// - `call.phoneNumber`,
-// - `call.phoneNumberId`.
+// This is the phone number that the message is associated with.
 type ServerMessageModelOutputPhoneNumber struct {
-	CreateByoPhoneNumberDto    *CreateByoPhoneNumberDto
+	Unknown                    interface{}
 	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
-	CreateVonagePhoneNumberDto *CreateVonagePhoneNumberDto
-	CreateVapiPhoneNumberDto   *CreateVapiPhoneNumberDto
 
 	typ string
 }
 
-func (s *ServerMessageModelOutputPhoneNumber) GetCreateByoPhoneNumberDto() *CreateByoPhoneNumberDto {
+func (s *ServerMessageModelOutputPhoneNumber) GetUnknown() interface{} {
 	if s == nil {
 		return nil
 	}
-	return s.CreateByoPhoneNumberDto
+	return s.Unknown
 }
 
 func (s *ServerMessageModelOutputPhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
@@ -55803,25 +60500,11 @@ func (s *ServerMessageModelOutputPhoneNumber) GetCreateTwilioPhoneNumberDto() *C
 	return s.CreateTwilioPhoneNumberDto
 }
 
-func (s *ServerMessageModelOutputPhoneNumber) GetCreateVonagePhoneNumberDto() *CreateVonagePhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVonagePhoneNumberDto
-}
-
-func (s *ServerMessageModelOutputPhoneNumber) GetCreateVapiPhoneNumberDto() *CreateVapiPhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVapiPhoneNumberDto
-}
-
 func (s *ServerMessageModelOutputPhoneNumber) UnmarshalJSON(data []byte) error {
-	valueCreateByoPhoneNumberDto := new(CreateByoPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateByoPhoneNumberDto); err == nil {
-		s.typ = "CreateByoPhoneNumberDto"
-		s.CreateByoPhoneNumberDto = valueCreateByoPhoneNumberDto
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		s.typ = "Unknown"
+		s.Unknown = valueUnknown
 		return nil
 	}
 	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
@@ -55830,66 +60513,36 @@ func (s *ServerMessageModelOutputPhoneNumber) UnmarshalJSON(data []byte) error {
 		s.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
 		return nil
 	}
-	valueCreateVonagePhoneNumberDto := new(CreateVonagePhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVonagePhoneNumberDto); err == nil {
-		s.typ = "CreateVonagePhoneNumberDto"
-		s.CreateVonagePhoneNumberDto = valueCreateVonagePhoneNumberDto
-		return nil
-	}
-	valueCreateVapiPhoneNumberDto := new(CreateVapiPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVapiPhoneNumberDto); err == nil {
-		s.typ = "CreateVapiPhoneNumberDto"
-		s.CreateVapiPhoneNumberDto = valueCreateVapiPhoneNumberDto
-		return nil
-	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
 }
 
 func (s ServerMessageModelOutputPhoneNumber) MarshalJSON() ([]byte, error) {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return json.Marshal(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return json.Marshal(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return json.Marshal(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return json.Marshal(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return json.Marshal(s.CreateVapiPhoneNumberDto)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessageModelOutputPhoneNumberVisitor interface {
-	VisitCreateByoPhoneNumberDto(*CreateByoPhoneNumberDto) error
+	VisitUnknown(interface{}) error
 	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
-	VisitCreateVonagePhoneNumberDto(*CreateVonagePhoneNumberDto) error
-	VisitCreateVapiPhoneNumberDto(*CreateVapiPhoneNumberDto) error
 }
 
 func (s *ServerMessageModelOutputPhoneNumber) Accept(visitor ServerMessageModelOutputPhoneNumberVisitor) error {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return visitor.VisitCreateByoPhoneNumberDto(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return visitor.VisitUnknown(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return visitor.VisitCreateTwilioPhoneNumberDto(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return visitor.VisitCreateVonagePhoneNumberDto(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return visitor.VisitCreateVapiPhoneNumberDto(s.CreateVapiPhoneNumberDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessagePhoneCallControl struct {
-	// This is the phone number associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.phoneNumber`,
-	// - `call.phoneNumberId`.
+	// This is the phone number that the message is associated with.
 	PhoneNumber *ServerMessagePhoneCallControlPhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "phone-call-control" is an advanced type of message.
 	//
@@ -55898,33 +60551,17 @@ type ServerMessagePhoneCallControl struct {
 	Request ServerMessagePhoneCallControlRequest `json:"request" url:"request"`
 	// This is the destination to forward the call to if the request is "forward".
 	Destination *ServerMessagePhoneCallControlDestination `json:"destination,omitempty" url:"destination,omitempty"`
-	// This is the timestamp of when the message was sent in milliseconds since Unix Epoch.
+	// This is the timestamp of the message.
 	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
 	// This is a live version of the `call.artifact`.
 	//
 	// This matches what is stored on `call.artifact` after the call.
 	Artifact *Artifact `json:"artifact,omitempty" url:"artifact,omitempty"`
-	// This is the assistant that is currently active. This is provided for convenience.
-	//
-	// This matches one of the following:
-	// - `call.assistant`,
-	// - `call.assistantId`,
-	// - `call.squad[n].assistant`,
-	// - `call.squad[n].assistantId`,
-	// - `call.squadId->[n].assistant`,
-	// - `call.squadId->[n].assistantId`.
-	Assistant *CreateAssistantDto `json:"assistant,omitempty" url:"assistant,omitempty"`
-	// This is the customer associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.customer`,
-	// - `call.customerId`.
-	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
-	// This is the call object.
-	//
-	// This matches what was returned in POST /call.
-	//
-	// Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the call that the message is associated with.
 	Call  *Call `json:"call,omitempty" url:"call,omitempty"`
 	type_ string
 
@@ -55967,14 +60604,14 @@ func (s *ServerMessagePhoneCallControl) GetArtifact() *Artifact {
 	return s.Artifact
 }
 
-func (s *ServerMessagePhoneCallControl) GetAssistant() *CreateAssistantDto {
+func (s *ServerMessagePhoneCallControl) GetAssistant() *AssistantUserEditable {
 	if s == nil {
 		return nil
 	}
 	return s.Assistant
 }
 
-func (s *ServerMessagePhoneCallControl) GetCustomer() *CreateCustomerDto {
+func (s *ServerMessagePhoneCallControl) GetCustomer() *CustomerUserEditable {
 	if s == nil {
 		return nil
 	}
@@ -56108,25 +60745,19 @@ func (s *ServerMessagePhoneCallControlDestination) Accept(visitor ServerMessageP
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
-// This is the phone number associated with the call.
-//
-// This matches one of the following:
-// - `call.phoneNumber`,
-// - `call.phoneNumberId`.
+// This is the phone number that the message is associated with.
 type ServerMessagePhoneCallControlPhoneNumber struct {
-	CreateByoPhoneNumberDto    *CreateByoPhoneNumberDto
+	Unknown                    interface{}
 	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
-	CreateVonagePhoneNumberDto *CreateVonagePhoneNumberDto
-	CreateVapiPhoneNumberDto   *CreateVapiPhoneNumberDto
 
 	typ string
 }
 
-func (s *ServerMessagePhoneCallControlPhoneNumber) GetCreateByoPhoneNumberDto() *CreateByoPhoneNumberDto {
+func (s *ServerMessagePhoneCallControlPhoneNumber) GetUnknown() interface{} {
 	if s == nil {
 		return nil
 	}
-	return s.CreateByoPhoneNumberDto
+	return s.Unknown
 }
 
 func (s *ServerMessagePhoneCallControlPhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
@@ -56136,25 +60767,11 @@ func (s *ServerMessagePhoneCallControlPhoneNumber) GetCreateTwilioPhoneNumberDto
 	return s.CreateTwilioPhoneNumberDto
 }
 
-func (s *ServerMessagePhoneCallControlPhoneNumber) GetCreateVonagePhoneNumberDto() *CreateVonagePhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVonagePhoneNumberDto
-}
-
-func (s *ServerMessagePhoneCallControlPhoneNumber) GetCreateVapiPhoneNumberDto() *CreateVapiPhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVapiPhoneNumberDto
-}
-
 func (s *ServerMessagePhoneCallControlPhoneNumber) UnmarshalJSON(data []byte) error {
-	valueCreateByoPhoneNumberDto := new(CreateByoPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateByoPhoneNumberDto); err == nil {
-		s.typ = "CreateByoPhoneNumberDto"
-		s.CreateByoPhoneNumberDto = valueCreateByoPhoneNumberDto
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		s.typ = "Unknown"
+		s.Unknown = valueUnknown
 		return nil
 	}
 	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
@@ -56163,56 +60780,30 @@ func (s *ServerMessagePhoneCallControlPhoneNumber) UnmarshalJSON(data []byte) er
 		s.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
 		return nil
 	}
-	valueCreateVonagePhoneNumberDto := new(CreateVonagePhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVonagePhoneNumberDto); err == nil {
-		s.typ = "CreateVonagePhoneNumberDto"
-		s.CreateVonagePhoneNumberDto = valueCreateVonagePhoneNumberDto
-		return nil
-	}
-	valueCreateVapiPhoneNumberDto := new(CreateVapiPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVapiPhoneNumberDto); err == nil {
-		s.typ = "CreateVapiPhoneNumberDto"
-		s.CreateVapiPhoneNumberDto = valueCreateVapiPhoneNumberDto
-		return nil
-	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
 }
 
 func (s ServerMessagePhoneCallControlPhoneNumber) MarshalJSON() ([]byte, error) {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return json.Marshal(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return json.Marshal(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return json.Marshal(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return json.Marshal(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return json.Marshal(s.CreateVapiPhoneNumberDto)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessagePhoneCallControlPhoneNumberVisitor interface {
-	VisitCreateByoPhoneNumberDto(*CreateByoPhoneNumberDto) error
+	VisitUnknown(interface{}) error
 	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
-	VisitCreateVonagePhoneNumberDto(*CreateVonagePhoneNumberDto) error
-	VisitCreateVapiPhoneNumberDto(*CreateVapiPhoneNumberDto) error
 }
 
 func (s *ServerMessagePhoneCallControlPhoneNumber) Accept(visitor ServerMessagePhoneCallControlPhoneNumberVisitor) error {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return visitor.VisitCreateByoPhoneNumberDto(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return visitor.VisitUnknown(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return visitor.VisitCreateTwilioPhoneNumberDto(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return visitor.VisitCreateVonagePhoneNumberDto(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return visitor.VisitCreateVapiPhoneNumberDto(s.CreateVapiPhoneNumberDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
@@ -56933,11 +61524,7 @@ func (s *ServerMessageResponseVoiceRequest) String() string {
 }
 
 type ServerMessageSpeechUpdate struct {
-	// This is the phone number associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.phoneNumber`,
-	// - `call.phoneNumberId`.
+	// This is the phone number that the message is associated with.
 	PhoneNumber *ServerMessageSpeechUpdatePhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "speech-update" is sent whenever assistant or user start or stop speaking.
 	// This is the status of the speech update.
@@ -56946,33 +61533,17 @@ type ServerMessageSpeechUpdate struct {
 	Role ServerMessageSpeechUpdateRole `json:"role" url:"role"`
 	// This is the turn number of the speech update (0-indexed).
 	Turn *float64 `json:"turn,omitempty" url:"turn,omitempty"`
-	// This is the timestamp of when the message was sent in milliseconds since Unix Epoch.
+	// This is the timestamp of the message.
 	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
 	// This is a live version of the `call.artifact`.
 	//
 	// This matches what is stored on `call.artifact` after the call.
 	Artifact *Artifact `json:"artifact,omitempty" url:"artifact,omitempty"`
-	// This is the assistant that is currently active. This is provided for convenience.
-	//
-	// This matches one of the following:
-	// - `call.assistant`,
-	// - `call.assistantId`,
-	// - `call.squad[n].assistant`,
-	// - `call.squad[n].assistantId`,
-	// - `call.squadId->[n].assistant`,
-	// - `call.squadId->[n].assistantId`.
-	Assistant *CreateAssistantDto `json:"assistant,omitempty" url:"assistant,omitempty"`
-	// This is the customer associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.customer`,
-	// - `call.customerId`.
-	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
-	// This is the call object.
-	//
-	// This matches what was returned in POST /call.
-	//
-	// Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the call that the message is associated with.
 	Call  *Call `json:"call,omitempty" url:"call,omitempty"`
 	type_ string
 
@@ -57022,14 +61593,14 @@ func (s *ServerMessageSpeechUpdate) GetArtifact() *Artifact {
 	return s.Artifact
 }
 
-func (s *ServerMessageSpeechUpdate) GetAssistant() *CreateAssistantDto {
+func (s *ServerMessageSpeechUpdate) GetAssistant() *AssistantUserEditable {
 	if s == nil {
 		return nil
 	}
 	return s.Assistant
 }
 
-func (s *ServerMessageSpeechUpdate) GetCustomer() *CreateCustomerDto {
+func (s *ServerMessageSpeechUpdate) GetCustomer() *CustomerUserEditable {
 	if s == nil {
 		return nil
 	}
@@ -57100,25 +61671,19 @@ func (s *ServerMessageSpeechUpdate) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
-// This is the phone number associated with the call.
-//
-// This matches one of the following:
-// - `call.phoneNumber`,
-// - `call.phoneNumberId`.
+// This is the phone number that the message is associated with.
 type ServerMessageSpeechUpdatePhoneNumber struct {
-	CreateByoPhoneNumberDto    *CreateByoPhoneNumberDto
+	Unknown                    interface{}
 	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
-	CreateVonagePhoneNumberDto *CreateVonagePhoneNumberDto
-	CreateVapiPhoneNumberDto   *CreateVapiPhoneNumberDto
 
 	typ string
 }
 
-func (s *ServerMessageSpeechUpdatePhoneNumber) GetCreateByoPhoneNumberDto() *CreateByoPhoneNumberDto {
+func (s *ServerMessageSpeechUpdatePhoneNumber) GetUnknown() interface{} {
 	if s == nil {
 		return nil
 	}
-	return s.CreateByoPhoneNumberDto
+	return s.Unknown
 }
 
 func (s *ServerMessageSpeechUpdatePhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
@@ -57128,25 +61693,11 @@ func (s *ServerMessageSpeechUpdatePhoneNumber) GetCreateTwilioPhoneNumberDto() *
 	return s.CreateTwilioPhoneNumberDto
 }
 
-func (s *ServerMessageSpeechUpdatePhoneNumber) GetCreateVonagePhoneNumberDto() *CreateVonagePhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVonagePhoneNumberDto
-}
-
-func (s *ServerMessageSpeechUpdatePhoneNumber) GetCreateVapiPhoneNumberDto() *CreateVapiPhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVapiPhoneNumberDto
-}
-
 func (s *ServerMessageSpeechUpdatePhoneNumber) UnmarshalJSON(data []byte) error {
-	valueCreateByoPhoneNumberDto := new(CreateByoPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateByoPhoneNumberDto); err == nil {
-		s.typ = "CreateByoPhoneNumberDto"
-		s.CreateByoPhoneNumberDto = valueCreateByoPhoneNumberDto
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		s.typ = "Unknown"
+		s.Unknown = valueUnknown
 		return nil
 	}
 	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
@@ -57155,56 +61706,30 @@ func (s *ServerMessageSpeechUpdatePhoneNumber) UnmarshalJSON(data []byte) error 
 		s.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
 		return nil
 	}
-	valueCreateVonagePhoneNumberDto := new(CreateVonagePhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVonagePhoneNumberDto); err == nil {
-		s.typ = "CreateVonagePhoneNumberDto"
-		s.CreateVonagePhoneNumberDto = valueCreateVonagePhoneNumberDto
-		return nil
-	}
-	valueCreateVapiPhoneNumberDto := new(CreateVapiPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVapiPhoneNumberDto); err == nil {
-		s.typ = "CreateVapiPhoneNumberDto"
-		s.CreateVapiPhoneNumberDto = valueCreateVapiPhoneNumberDto
-		return nil
-	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
 }
 
 func (s ServerMessageSpeechUpdatePhoneNumber) MarshalJSON() ([]byte, error) {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return json.Marshal(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return json.Marshal(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return json.Marshal(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return json.Marshal(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return json.Marshal(s.CreateVapiPhoneNumberDto)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessageSpeechUpdatePhoneNumberVisitor interface {
-	VisitCreateByoPhoneNumberDto(*CreateByoPhoneNumberDto) error
+	VisitUnknown(interface{}) error
 	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
-	VisitCreateVonagePhoneNumberDto(*CreateVonagePhoneNumberDto) error
-	VisitCreateVapiPhoneNumberDto(*CreateVapiPhoneNumberDto) error
 }
 
 func (s *ServerMessageSpeechUpdatePhoneNumber) Accept(visitor ServerMessageSpeechUpdatePhoneNumberVisitor) error {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return visitor.VisitCreateByoPhoneNumberDto(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return visitor.VisitUnknown(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return visitor.VisitCreateTwilioPhoneNumberDto(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return visitor.VisitCreateVonagePhoneNumberDto(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return visitor.VisitCreateVapiPhoneNumberDto(s.CreateVapiPhoneNumberDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
@@ -57256,11 +61781,7 @@ func (s ServerMessageSpeechUpdateStatus) Ptr() *ServerMessageSpeechUpdateStatus 
 }
 
 type ServerMessageStatusUpdate struct {
-	// This is the phone number associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.phoneNumber`,
-	// - `call.phoneNumberId`.
+	// This is the phone number that the message is associated with.
 	PhoneNumber *ServerMessageStatusUpdatePhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "status-update" is sent whenever the `call.status` changes.
 	// This is the status of the call.
@@ -57273,33 +61794,17 @@ type ServerMessageStatusUpdate struct {
 	MessagesOpenAiFormatted []*OpenAiMessage `json:"messagesOpenAIFormatted,omitempty" url:"messagesOpenAIFormatted,omitempty"`
 	// This is the destination the call is being transferred to. This is only sent if the status is "forwarding".
 	Destination *ServerMessageStatusUpdateDestination `json:"destination,omitempty" url:"destination,omitempty"`
-	// This is the timestamp of when the message was sent in milliseconds since Unix Epoch.
+	// This is the timestamp of the message.
 	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
 	// This is a live version of the `call.artifact`.
 	//
 	// This matches what is stored on `call.artifact` after the call.
 	Artifact *Artifact `json:"artifact,omitempty" url:"artifact,omitempty"`
-	// This is the assistant that is currently active. This is provided for convenience.
-	//
-	// This matches one of the following:
-	// - `call.assistant`,
-	// - `call.assistantId`,
-	// - `call.squad[n].assistant`,
-	// - `call.squad[n].assistantId`,
-	// - `call.squadId->[n].assistant`,
-	// - `call.squadId->[n].assistantId`.
-	Assistant *CreateAssistantDto `json:"assistant,omitempty" url:"assistant,omitempty"`
-	// This is the customer associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.customer`,
-	// - `call.customerId`.
-	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
-	// This is the call object.
-	//
-	// This matches what was returned in POST /call.
-	//
-	// Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the call that the message is associated with.
 	Call *Call `json:"call,omitempty" url:"call,omitempty"`
 	// This is the transcript of the call. This is only sent if the status is "forwarding".
 	Transcript *string `json:"transcript,omitempty" url:"transcript,omitempty"`
@@ -57371,14 +61876,14 @@ func (s *ServerMessageStatusUpdate) GetArtifact() *Artifact {
 	return s.Artifact
 }
 
-func (s *ServerMessageStatusUpdate) GetAssistant() *CreateAssistantDto {
+func (s *ServerMessageStatusUpdate) GetAssistant() *AssistantUserEditable {
 	if s == nil {
 		return nil
 	}
 	return s.Assistant
 }
 
-func (s *ServerMessageStatusUpdate) GetCustomer() *CreateCustomerDto {
+func (s *ServerMessageStatusUpdate) GetCustomer() *CustomerUserEditable {
 	if s == nil {
 		return nil
 	}
@@ -59136,25 +63641,19 @@ func (s *ServerMessageStatusUpdateMessagesItem) Accept(visitor ServerMessageStat
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
-// This is the phone number associated with the call.
-//
-// This matches one of the following:
-// - `call.phoneNumber`,
-// - `call.phoneNumberId`.
+// This is the phone number that the message is associated with.
 type ServerMessageStatusUpdatePhoneNumber struct {
-	CreateByoPhoneNumberDto    *CreateByoPhoneNumberDto
+	Unknown                    interface{}
 	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
-	CreateVonagePhoneNumberDto *CreateVonagePhoneNumberDto
-	CreateVapiPhoneNumberDto   *CreateVapiPhoneNumberDto
 
 	typ string
 }
 
-func (s *ServerMessageStatusUpdatePhoneNumber) GetCreateByoPhoneNumberDto() *CreateByoPhoneNumberDto {
+func (s *ServerMessageStatusUpdatePhoneNumber) GetUnknown() interface{} {
 	if s == nil {
 		return nil
 	}
-	return s.CreateByoPhoneNumberDto
+	return s.Unknown
 }
 
 func (s *ServerMessageStatusUpdatePhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
@@ -59164,25 +63663,11 @@ func (s *ServerMessageStatusUpdatePhoneNumber) GetCreateTwilioPhoneNumberDto() *
 	return s.CreateTwilioPhoneNumberDto
 }
 
-func (s *ServerMessageStatusUpdatePhoneNumber) GetCreateVonagePhoneNumberDto() *CreateVonagePhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVonagePhoneNumberDto
-}
-
-func (s *ServerMessageStatusUpdatePhoneNumber) GetCreateVapiPhoneNumberDto() *CreateVapiPhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVapiPhoneNumberDto
-}
-
 func (s *ServerMessageStatusUpdatePhoneNumber) UnmarshalJSON(data []byte) error {
-	valueCreateByoPhoneNumberDto := new(CreateByoPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateByoPhoneNumberDto); err == nil {
-		s.typ = "CreateByoPhoneNumberDto"
-		s.CreateByoPhoneNumberDto = valueCreateByoPhoneNumberDto
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		s.typ = "Unknown"
+		s.Unknown = valueUnknown
 		return nil
 	}
 	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
@@ -59191,56 +63676,30 @@ func (s *ServerMessageStatusUpdatePhoneNumber) UnmarshalJSON(data []byte) error 
 		s.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
 		return nil
 	}
-	valueCreateVonagePhoneNumberDto := new(CreateVonagePhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVonagePhoneNumberDto); err == nil {
-		s.typ = "CreateVonagePhoneNumberDto"
-		s.CreateVonagePhoneNumberDto = valueCreateVonagePhoneNumberDto
-		return nil
-	}
-	valueCreateVapiPhoneNumberDto := new(CreateVapiPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVapiPhoneNumberDto); err == nil {
-		s.typ = "CreateVapiPhoneNumberDto"
-		s.CreateVapiPhoneNumberDto = valueCreateVapiPhoneNumberDto
-		return nil
-	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
 }
 
 func (s ServerMessageStatusUpdatePhoneNumber) MarshalJSON() ([]byte, error) {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return json.Marshal(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return json.Marshal(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return json.Marshal(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return json.Marshal(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return json.Marshal(s.CreateVapiPhoneNumberDto)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessageStatusUpdatePhoneNumberVisitor interface {
-	VisitCreateByoPhoneNumberDto(*CreateByoPhoneNumberDto) error
+	VisitUnknown(interface{}) error
 	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
-	VisitCreateVonagePhoneNumberDto(*CreateVonagePhoneNumberDto) error
-	VisitCreateVapiPhoneNumberDto(*CreateVapiPhoneNumberDto) error
 }
 
 func (s *ServerMessageStatusUpdatePhoneNumber) Accept(visitor ServerMessageStatusUpdatePhoneNumberVisitor) error {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return visitor.VisitCreateByoPhoneNumberDto(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return visitor.VisitUnknown(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return visitor.VisitCreateTwilioPhoneNumberDto(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return visitor.VisitCreateVonagePhoneNumberDto(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return visitor.VisitCreateVapiPhoneNumberDto(s.CreateVapiPhoneNumberDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
@@ -59281,43 +63740,23 @@ func (s ServerMessageStatusUpdateStatus) Ptr() *ServerMessageStatusUpdateStatus 
 }
 
 type ServerMessageToolCalls struct {
-	// This is the phone number associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.phoneNumber`,
-	// - `call.phoneNumberId`.
+	// This is the phone number that the message is associated with.
 	PhoneNumber *ServerMessageToolCallsPhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "tool-calls" is sent to call a tool.
 	Type *string `json:"type,omitempty" url:"type,omitempty"`
 	// This is the list of tools calls that the model is requesting along with the original tool configuration.
 	ToolWithToolCallList []*ServerMessageToolCallsToolWithToolCallListItem `json:"toolWithToolCallList,omitempty" url:"toolWithToolCallList,omitempty"`
-	// This is the timestamp of when the message was sent in milliseconds since Unix Epoch.
+	// This is the timestamp of the message.
 	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
 	// This is a live version of the `call.artifact`.
 	//
 	// This matches what is stored on `call.artifact` after the call.
 	Artifact *Artifact `json:"artifact,omitempty" url:"artifact,omitempty"`
-	// This is the assistant that is currently active. This is provided for convenience.
-	//
-	// This matches one of the following:
-	// - `call.assistant`,
-	// - `call.assistantId`,
-	// - `call.squad[n].assistant`,
-	// - `call.squad[n].assistantId`,
-	// - `call.squadId->[n].assistant`,
-	// - `call.squadId->[n].assistantId`.
-	Assistant *CreateAssistantDto `json:"assistant,omitempty" url:"assistant,omitempty"`
-	// This is the customer associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.customer`,
-	// - `call.customerId`.
-	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
-	// This is the call object.
-	//
-	// This matches what was returned in POST /call.
-	//
-	// Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the call that the message is associated with.
 	Call *Call `json:"call,omitempty" url:"call,omitempty"`
 	// This is the list of tool calls that the model is requesting.
 	ToolCallList []*ToolCall `json:"toolCallList,omitempty" url:"toolCallList,omitempty"`
@@ -59354,14 +63793,14 @@ func (s *ServerMessageToolCalls) GetArtifact() *Artifact {
 	return s.Artifact
 }
 
-func (s *ServerMessageToolCalls) GetAssistant() *CreateAssistantDto {
+func (s *ServerMessageToolCalls) GetAssistant() *AssistantUserEditable {
 	if s == nil {
 		return nil
 	}
 	return s.Assistant
 }
 
-func (s *ServerMessageToolCalls) GetCustomer() *CreateCustomerDto {
+func (s *ServerMessageToolCalls) GetCustomer() *CustomerUserEditable {
 	if s == nil {
 		return nil
 	}
@@ -59414,25 +63853,19 @@ func (s *ServerMessageToolCalls) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
-// This is the phone number associated with the call.
-//
-// This matches one of the following:
-// - `call.phoneNumber`,
-// - `call.phoneNumberId`.
+// This is the phone number that the message is associated with.
 type ServerMessageToolCallsPhoneNumber struct {
-	CreateByoPhoneNumberDto    *CreateByoPhoneNumberDto
+	Unknown                    interface{}
 	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
-	CreateVonagePhoneNumberDto *CreateVonagePhoneNumberDto
-	CreateVapiPhoneNumberDto   *CreateVapiPhoneNumberDto
 
 	typ string
 }
 
-func (s *ServerMessageToolCallsPhoneNumber) GetCreateByoPhoneNumberDto() *CreateByoPhoneNumberDto {
+func (s *ServerMessageToolCallsPhoneNumber) GetUnknown() interface{} {
 	if s == nil {
 		return nil
 	}
-	return s.CreateByoPhoneNumberDto
+	return s.Unknown
 }
 
 func (s *ServerMessageToolCallsPhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
@@ -59442,25 +63875,11 @@ func (s *ServerMessageToolCallsPhoneNumber) GetCreateTwilioPhoneNumberDto() *Cre
 	return s.CreateTwilioPhoneNumberDto
 }
 
-func (s *ServerMessageToolCallsPhoneNumber) GetCreateVonagePhoneNumberDto() *CreateVonagePhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVonagePhoneNumberDto
-}
-
-func (s *ServerMessageToolCallsPhoneNumber) GetCreateVapiPhoneNumberDto() *CreateVapiPhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVapiPhoneNumberDto
-}
-
 func (s *ServerMessageToolCallsPhoneNumber) UnmarshalJSON(data []byte) error {
-	valueCreateByoPhoneNumberDto := new(CreateByoPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateByoPhoneNumberDto); err == nil {
-		s.typ = "CreateByoPhoneNumberDto"
-		s.CreateByoPhoneNumberDto = valueCreateByoPhoneNumberDto
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		s.typ = "Unknown"
+		s.Unknown = valueUnknown
 		return nil
 	}
 	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
@@ -59469,56 +63888,30 @@ func (s *ServerMessageToolCallsPhoneNumber) UnmarshalJSON(data []byte) error {
 		s.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
 		return nil
 	}
-	valueCreateVonagePhoneNumberDto := new(CreateVonagePhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVonagePhoneNumberDto); err == nil {
-		s.typ = "CreateVonagePhoneNumberDto"
-		s.CreateVonagePhoneNumberDto = valueCreateVonagePhoneNumberDto
-		return nil
-	}
-	valueCreateVapiPhoneNumberDto := new(CreateVapiPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVapiPhoneNumberDto); err == nil {
-		s.typ = "CreateVapiPhoneNumberDto"
-		s.CreateVapiPhoneNumberDto = valueCreateVapiPhoneNumberDto
-		return nil
-	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
 }
 
 func (s ServerMessageToolCallsPhoneNumber) MarshalJSON() ([]byte, error) {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return json.Marshal(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return json.Marshal(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return json.Marshal(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return json.Marshal(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return json.Marshal(s.CreateVapiPhoneNumberDto)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessageToolCallsPhoneNumberVisitor interface {
-	VisitCreateByoPhoneNumberDto(*CreateByoPhoneNumberDto) error
+	VisitUnknown(interface{}) error
 	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
-	VisitCreateVonagePhoneNumberDto(*CreateVonagePhoneNumberDto) error
-	VisitCreateVapiPhoneNumberDto(*CreateVapiPhoneNumberDto) error
 }
 
 func (s *ServerMessageToolCallsPhoneNumber) Accept(visitor ServerMessageToolCallsPhoneNumberVisitor) error {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return visitor.VisitCreateByoPhoneNumberDto(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return visitor.VisitUnknown(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return visitor.VisitCreateTwilioPhoneNumberDto(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return visitor.VisitCreateVonagePhoneNumberDto(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return visitor.VisitCreateVapiPhoneNumberDto(s.CreateVapiPhoneNumberDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
@@ -59691,41 +64084,21 @@ func (s *ServerMessageToolCallsToolWithToolCallListItem) Accept(visitor ServerMe
 }
 
 type ServerMessageTranscript struct {
-	// This is the phone number associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.phoneNumber`,
-	// - `call.phoneNumberId`.
+	// This is the phone number that the message is associated with.
 	PhoneNumber *ServerMessageTranscriptPhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "transcript" is sent as transcriber outputs partial or final transcript.
 	Type ServerMessageTranscriptType `json:"type" url:"type"`
-	// This is the timestamp of when the message was sent in milliseconds since Unix Epoch.
+	// This is the timestamp of the message.
 	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
 	// This is a live version of the `call.artifact`.
 	//
 	// This matches what is stored on `call.artifact` after the call.
 	Artifact *Artifact `json:"artifact,omitempty" url:"artifact,omitempty"`
-	// This is the assistant that is currently active. This is provided for convenience.
-	//
-	// This matches one of the following:
-	// - `call.assistant`,
-	// - `call.assistantId`,
-	// - `call.squad[n].assistant`,
-	// - `call.squad[n].assistantId`,
-	// - `call.squadId->[n].assistant`,
-	// - `call.squadId->[n].assistantId`.
-	Assistant *CreateAssistantDto `json:"assistant,omitempty" url:"assistant,omitempty"`
-	// This is the customer associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.customer`,
-	// - `call.customerId`.
-	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
-	// This is the call object.
-	//
-	// This matches what was returned in POST /call.
-	//
-	// Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the call that the message is associated with.
 	Call *Call `json:"call,omitempty" url:"call,omitempty"`
 	// This is the role for which the transcript is for.
 	Role ServerMessageTranscriptRole `json:"role" url:"role"`
@@ -59766,14 +64139,14 @@ func (s *ServerMessageTranscript) GetArtifact() *Artifact {
 	return s.Artifact
 }
 
-func (s *ServerMessageTranscript) GetAssistant() *CreateAssistantDto {
+func (s *ServerMessageTranscript) GetAssistant() *AssistantUserEditable {
 	if s == nil {
 		return nil
 	}
 	return s.Assistant
 }
 
-func (s *ServerMessageTranscript) GetCustomer() *CreateCustomerDto {
+func (s *ServerMessageTranscript) GetCustomer() *CustomerUserEditable {
 	if s == nil {
 		return nil
 	}
@@ -59840,25 +64213,19 @@ func (s *ServerMessageTranscript) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
-// This is the phone number associated with the call.
-//
-// This matches one of the following:
-// - `call.phoneNumber`,
-// - `call.phoneNumberId`.
+// This is the phone number that the message is associated with.
 type ServerMessageTranscriptPhoneNumber struct {
-	CreateByoPhoneNumberDto    *CreateByoPhoneNumberDto
+	Unknown                    interface{}
 	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
-	CreateVonagePhoneNumberDto *CreateVonagePhoneNumberDto
-	CreateVapiPhoneNumberDto   *CreateVapiPhoneNumberDto
 
 	typ string
 }
 
-func (s *ServerMessageTranscriptPhoneNumber) GetCreateByoPhoneNumberDto() *CreateByoPhoneNumberDto {
+func (s *ServerMessageTranscriptPhoneNumber) GetUnknown() interface{} {
 	if s == nil {
 		return nil
 	}
-	return s.CreateByoPhoneNumberDto
+	return s.Unknown
 }
 
 func (s *ServerMessageTranscriptPhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
@@ -59868,25 +64235,11 @@ func (s *ServerMessageTranscriptPhoneNumber) GetCreateTwilioPhoneNumberDto() *Cr
 	return s.CreateTwilioPhoneNumberDto
 }
 
-func (s *ServerMessageTranscriptPhoneNumber) GetCreateVonagePhoneNumberDto() *CreateVonagePhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVonagePhoneNumberDto
-}
-
-func (s *ServerMessageTranscriptPhoneNumber) GetCreateVapiPhoneNumberDto() *CreateVapiPhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVapiPhoneNumberDto
-}
-
 func (s *ServerMessageTranscriptPhoneNumber) UnmarshalJSON(data []byte) error {
-	valueCreateByoPhoneNumberDto := new(CreateByoPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateByoPhoneNumberDto); err == nil {
-		s.typ = "CreateByoPhoneNumberDto"
-		s.CreateByoPhoneNumberDto = valueCreateByoPhoneNumberDto
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		s.typ = "Unknown"
+		s.Unknown = valueUnknown
 		return nil
 	}
 	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
@@ -59895,56 +64248,30 @@ func (s *ServerMessageTranscriptPhoneNumber) UnmarshalJSON(data []byte) error {
 		s.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
 		return nil
 	}
-	valueCreateVonagePhoneNumberDto := new(CreateVonagePhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVonagePhoneNumberDto); err == nil {
-		s.typ = "CreateVonagePhoneNumberDto"
-		s.CreateVonagePhoneNumberDto = valueCreateVonagePhoneNumberDto
-		return nil
-	}
-	valueCreateVapiPhoneNumberDto := new(CreateVapiPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVapiPhoneNumberDto); err == nil {
-		s.typ = "CreateVapiPhoneNumberDto"
-		s.CreateVapiPhoneNumberDto = valueCreateVapiPhoneNumberDto
-		return nil
-	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
 }
 
 func (s ServerMessageTranscriptPhoneNumber) MarshalJSON() ([]byte, error) {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return json.Marshal(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return json.Marshal(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return json.Marshal(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return json.Marshal(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return json.Marshal(s.CreateVapiPhoneNumberDto)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessageTranscriptPhoneNumberVisitor interface {
-	VisitCreateByoPhoneNumberDto(*CreateByoPhoneNumberDto) error
+	VisitUnknown(interface{}) error
 	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
-	VisitCreateVonagePhoneNumberDto(*CreateVonagePhoneNumberDto) error
-	VisitCreateVapiPhoneNumberDto(*CreateVapiPhoneNumberDto) error
 }
 
 func (s *ServerMessageTranscriptPhoneNumber) Accept(visitor ServerMessageTranscriptPhoneNumberVisitor) error {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return visitor.VisitCreateByoPhoneNumberDto(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return visitor.VisitUnknown(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return visitor.VisitCreateTwilioPhoneNumberDto(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return visitor.VisitCreateVonagePhoneNumberDto(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return visitor.VisitCreateVapiPhoneNumberDto(s.CreateVapiPhoneNumberDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
@@ -60019,40 +64346,20 @@ func (s ServerMessageTranscriptType) Ptr() *ServerMessageTranscriptType {
 }
 
 type ServerMessageTransferDestinationRequest struct {
-	// This is the phone number associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.phoneNumber`,
-	// - `call.phoneNumberId`.
+	// This is the phone number that the message is associated with.
 	PhoneNumber *ServerMessageTransferDestinationRequestPhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "transfer-destination-request" is sent when the model is requesting transfer but destination is unknown.
-	// This is the timestamp of when the message was sent in milliseconds since Unix Epoch.
+	// This is the timestamp of the message.
 	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
 	// This is a live version of the `call.artifact`.
 	//
 	// This matches what is stored on `call.artifact` after the call.
 	Artifact *Artifact `json:"artifact,omitempty" url:"artifact,omitempty"`
-	// This is the assistant that is currently active. This is provided for convenience.
-	//
-	// This matches one of the following:
-	// - `call.assistant`,
-	// - `call.assistantId`,
-	// - `call.squad[n].assistant`,
-	// - `call.squad[n].assistantId`,
-	// - `call.squadId->[n].assistant`,
-	// - `call.squadId->[n].assistantId`.
-	Assistant *CreateAssistantDto `json:"assistant,omitempty" url:"assistant,omitempty"`
-	// This is the customer associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.customer`,
-	// - `call.customerId`.
-	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
-	// This is the call object.
-	//
-	// This matches what was returned in POST /call.
-	//
-	// Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the call that the message is associated with.
 	Call  *Call `json:"call,omitempty" url:"call,omitempty"`
 	type_ string
 
@@ -60081,14 +64388,14 @@ func (s *ServerMessageTransferDestinationRequest) GetArtifact() *Artifact {
 	return s.Artifact
 }
 
-func (s *ServerMessageTransferDestinationRequest) GetAssistant() *CreateAssistantDto {
+func (s *ServerMessageTransferDestinationRequest) GetAssistant() *AssistantUserEditable {
 	if s == nil {
 		return nil
 	}
 	return s.Assistant
 }
 
-func (s *ServerMessageTransferDestinationRequest) GetCustomer() *CreateCustomerDto {
+func (s *ServerMessageTransferDestinationRequest) GetCustomer() *CustomerUserEditable {
 	if s == nil {
 		return nil
 	}
@@ -60159,25 +64466,19 @@ func (s *ServerMessageTransferDestinationRequest) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
-// This is the phone number associated with the call.
-//
-// This matches one of the following:
-// - `call.phoneNumber`,
-// - `call.phoneNumberId`.
+// This is the phone number that the message is associated with.
 type ServerMessageTransferDestinationRequestPhoneNumber struct {
-	CreateByoPhoneNumberDto    *CreateByoPhoneNumberDto
+	Unknown                    interface{}
 	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
-	CreateVonagePhoneNumberDto *CreateVonagePhoneNumberDto
-	CreateVapiPhoneNumberDto   *CreateVapiPhoneNumberDto
 
 	typ string
 }
 
-func (s *ServerMessageTransferDestinationRequestPhoneNumber) GetCreateByoPhoneNumberDto() *CreateByoPhoneNumberDto {
+func (s *ServerMessageTransferDestinationRequestPhoneNumber) GetUnknown() interface{} {
 	if s == nil {
 		return nil
 	}
-	return s.CreateByoPhoneNumberDto
+	return s.Unknown
 }
 
 func (s *ServerMessageTransferDestinationRequestPhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
@@ -60187,25 +64488,11 @@ func (s *ServerMessageTransferDestinationRequestPhoneNumber) GetCreateTwilioPhon
 	return s.CreateTwilioPhoneNumberDto
 }
 
-func (s *ServerMessageTransferDestinationRequestPhoneNumber) GetCreateVonagePhoneNumberDto() *CreateVonagePhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVonagePhoneNumberDto
-}
-
-func (s *ServerMessageTransferDestinationRequestPhoneNumber) GetCreateVapiPhoneNumberDto() *CreateVapiPhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVapiPhoneNumberDto
-}
-
 func (s *ServerMessageTransferDestinationRequestPhoneNumber) UnmarshalJSON(data []byte) error {
-	valueCreateByoPhoneNumberDto := new(CreateByoPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateByoPhoneNumberDto); err == nil {
-		s.typ = "CreateByoPhoneNumberDto"
-		s.CreateByoPhoneNumberDto = valueCreateByoPhoneNumberDto
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		s.typ = "Unknown"
+		s.Unknown = valueUnknown
 		return nil
 	}
 	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
@@ -60214,97 +64501,51 @@ func (s *ServerMessageTransferDestinationRequestPhoneNumber) UnmarshalJSON(data 
 		s.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
 		return nil
 	}
-	valueCreateVonagePhoneNumberDto := new(CreateVonagePhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVonagePhoneNumberDto); err == nil {
-		s.typ = "CreateVonagePhoneNumberDto"
-		s.CreateVonagePhoneNumberDto = valueCreateVonagePhoneNumberDto
-		return nil
-	}
-	valueCreateVapiPhoneNumberDto := new(CreateVapiPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVapiPhoneNumberDto); err == nil {
-		s.typ = "CreateVapiPhoneNumberDto"
-		s.CreateVapiPhoneNumberDto = valueCreateVapiPhoneNumberDto
-		return nil
-	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
 }
 
 func (s ServerMessageTransferDestinationRequestPhoneNumber) MarshalJSON() ([]byte, error) {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return json.Marshal(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return json.Marshal(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return json.Marshal(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return json.Marshal(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return json.Marshal(s.CreateVapiPhoneNumberDto)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessageTransferDestinationRequestPhoneNumberVisitor interface {
-	VisitCreateByoPhoneNumberDto(*CreateByoPhoneNumberDto) error
+	VisitUnknown(interface{}) error
 	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
-	VisitCreateVonagePhoneNumberDto(*CreateVonagePhoneNumberDto) error
-	VisitCreateVapiPhoneNumberDto(*CreateVapiPhoneNumberDto) error
 }
 
 func (s *ServerMessageTransferDestinationRequestPhoneNumber) Accept(visitor ServerMessageTransferDestinationRequestPhoneNumberVisitor) error {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return visitor.VisitCreateByoPhoneNumberDto(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return visitor.VisitUnknown(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return visitor.VisitCreateTwilioPhoneNumberDto(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return visitor.VisitCreateVonagePhoneNumberDto(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return visitor.VisitCreateVapiPhoneNumberDto(s.CreateVapiPhoneNumberDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessageTransferUpdate struct {
-	// This is the phone number associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.phoneNumber`,
-	// - `call.phoneNumberId`.
+	// This is the phone number that the message is associated with.
 	PhoneNumber *ServerMessageTransferUpdatePhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "transfer-update" is sent whenever a transfer happens.
 	// This is the destination of the transfer.
 	Destination *ServerMessageTransferUpdateDestination `json:"destination,omitempty" url:"destination,omitempty"`
-	// This is the timestamp of when the message was sent in milliseconds since Unix Epoch.
+	// This is the timestamp of the message.
 	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
 	// This is a live version of the `call.artifact`.
 	//
 	// This matches what is stored on `call.artifact` after the call.
 	Artifact *Artifact `json:"artifact,omitempty" url:"artifact,omitempty"`
-	// This is the assistant that is currently active. This is provided for convenience.
-	//
-	// This matches one of the following:
-	// - `call.assistant`,
-	// - `call.assistantId`,
-	// - `call.squad[n].assistant`,
-	// - `call.squad[n].assistantId`,
-	// - `call.squadId->[n].assistant`,
-	// - `call.squadId->[n].assistantId`.
-	Assistant *CreateAssistantDto `json:"assistant,omitempty" url:"assistant,omitempty"`
-	// This is the customer associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.customer`,
-	// - `call.customerId`.
-	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
-	// This is the call object.
-	//
-	// This matches what was returned in POST /call.
-	//
-	// Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the call that the message is associated with.
 	Call *Call `json:"call,omitempty" url:"call,omitempty"`
 	// This is the assistant that the call is being transferred to. This is only sent if `destination.type` is "assistant".
 	ToAssistant *CreateAssistantDto `json:"toAssistant,omitempty" url:"toAssistant,omitempty"`
@@ -60348,14 +64589,14 @@ func (s *ServerMessageTransferUpdate) GetArtifact() *Artifact {
 	return s.Artifact
 }
 
-func (s *ServerMessageTransferUpdate) GetAssistant() *CreateAssistantDto {
+func (s *ServerMessageTransferUpdate) GetAssistant() *AssistantUserEditable {
 	if s == nil {
 		return nil
 	}
 	return s.Assistant
 }
 
-func (s *ServerMessageTransferUpdate) GetCustomer() *CreateCustomerDto {
+func (s *ServerMessageTransferUpdate) GetCustomer() *CustomerUserEditable {
 	if s == nil {
 		return nil
 	}
@@ -60559,25 +64800,19 @@ func (s *ServerMessageTransferUpdateDestination) Accept(visitor ServerMessageTra
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
-// This is the phone number associated with the call.
-//
-// This matches one of the following:
-// - `call.phoneNumber`,
-// - `call.phoneNumberId`.
+// This is the phone number that the message is associated with.
 type ServerMessageTransferUpdatePhoneNumber struct {
-	CreateByoPhoneNumberDto    *CreateByoPhoneNumberDto
+	Unknown                    interface{}
 	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
-	CreateVonagePhoneNumberDto *CreateVonagePhoneNumberDto
-	CreateVapiPhoneNumberDto   *CreateVapiPhoneNumberDto
 
 	typ string
 }
 
-func (s *ServerMessageTransferUpdatePhoneNumber) GetCreateByoPhoneNumberDto() *CreateByoPhoneNumberDto {
+func (s *ServerMessageTransferUpdatePhoneNumber) GetUnknown() interface{} {
 	if s == nil {
 		return nil
 	}
-	return s.CreateByoPhoneNumberDto
+	return s.Unknown
 }
 
 func (s *ServerMessageTransferUpdatePhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
@@ -60587,25 +64822,11 @@ func (s *ServerMessageTransferUpdatePhoneNumber) GetCreateTwilioPhoneNumberDto()
 	return s.CreateTwilioPhoneNumberDto
 }
 
-func (s *ServerMessageTransferUpdatePhoneNumber) GetCreateVonagePhoneNumberDto() *CreateVonagePhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVonagePhoneNumberDto
-}
-
-func (s *ServerMessageTransferUpdatePhoneNumber) GetCreateVapiPhoneNumberDto() *CreateVapiPhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVapiPhoneNumberDto
-}
-
 func (s *ServerMessageTransferUpdatePhoneNumber) UnmarshalJSON(data []byte) error {
-	valueCreateByoPhoneNumberDto := new(CreateByoPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateByoPhoneNumberDto); err == nil {
-		s.typ = "CreateByoPhoneNumberDto"
-		s.CreateByoPhoneNumberDto = valueCreateByoPhoneNumberDto
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		s.typ = "Unknown"
+		s.Unknown = valueUnknown
 		return nil
 	}
 	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
@@ -60614,95 +64835,49 @@ func (s *ServerMessageTransferUpdatePhoneNumber) UnmarshalJSON(data []byte) erro
 		s.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
 		return nil
 	}
-	valueCreateVonagePhoneNumberDto := new(CreateVonagePhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVonagePhoneNumberDto); err == nil {
-		s.typ = "CreateVonagePhoneNumberDto"
-		s.CreateVonagePhoneNumberDto = valueCreateVonagePhoneNumberDto
-		return nil
-	}
-	valueCreateVapiPhoneNumberDto := new(CreateVapiPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVapiPhoneNumberDto); err == nil {
-		s.typ = "CreateVapiPhoneNumberDto"
-		s.CreateVapiPhoneNumberDto = valueCreateVapiPhoneNumberDto
-		return nil
-	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
 }
 
 func (s ServerMessageTransferUpdatePhoneNumber) MarshalJSON() ([]byte, error) {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return json.Marshal(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return json.Marshal(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return json.Marshal(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return json.Marshal(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return json.Marshal(s.CreateVapiPhoneNumberDto)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessageTransferUpdatePhoneNumberVisitor interface {
-	VisitCreateByoPhoneNumberDto(*CreateByoPhoneNumberDto) error
+	VisitUnknown(interface{}) error
 	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
-	VisitCreateVonagePhoneNumberDto(*CreateVonagePhoneNumberDto) error
-	VisitCreateVapiPhoneNumberDto(*CreateVapiPhoneNumberDto) error
 }
 
 func (s *ServerMessageTransferUpdatePhoneNumber) Accept(visitor ServerMessageTransferUpdatePhoneNumberVisitor) error {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return visitor.VisitCreateByoPhoneNumberDto(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return visitor.VisitUnknown(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return visitor.VisitCreateTwilioPhoneNumberDto(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return visitor.VisitCreateVonagePhoneNumberDto(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return visitor.VisitCreateVapiPhoneNumberDto(s.CreateVapiPhoneNumberDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessageUserInterrupted struct {
-	// This is the phone number associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.phoneNumber`,
-	// - `call.phoneNumberId`.
+	// This is the phone number that the message is associated with.
 	PhoneNumber *ServerMessageUserInterruptedPhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "user-interrupted" is sent when the user interrupts the assistant.
-	// This is the timestamp of when the message was sent in milliseconds since Unix Epoch.
+	// This is the timestamp of the message.
 	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
 	// This is a live version of the `call.artifact`.
 	//
 	// This matches what is stored on `call.artifact` after the call.
 	Artifact *Artifact `json:"artifact,omitempty" url:"artifact,omitempty"`
-	// This is the assistant that is currently active. This is provided for convenience.
-	//
-	// This matches one of the following:
-	// - `call.assistant`,
-	// - `call.assistantId`,
-	// - `call.squad[n].assistant`,
-	// - `call.squad[n].assistantId`,
-	// - `call.squadId->[n].assistant`,
-	// - `call.squadId->[n].assistantId`.
-	Assistant *CreateAssistantDto `json:"assistant,omitempty" url:"assistant,omitempty"`
-	// This is the customer associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.customer`,
-	// - `call.customerId`.
-	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
-	// This is the call object.
-	//
-	// This matches what was returned in POST /call.
-	//
-	// Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the call that the message is associated with.
 	Call  *Call `json:"call,omitempty" url:"call,omitempty"`
 	type_ string
 
@@ -60731,14 +64906,14 @@ func (s *ServerMessageUserInterrupted) GetArtifact() *Artifact {
 	return s.Artifact
 }
 
-func (s *ServerMessageUserInterrupted) GetAssistant() *CreateAssistantDto {
+func (s *ServerMessageUserInterrupted) GetAssistant() *AssistantUserEditable {
 	if s == nil {
 		return nil
 	}
 	return s.Assistant
 }
 
-func (s *ServerMessageUserInterrupted) GetCustomer() *CreateCustomerDto {
+func (s *ServerMessageUserInterrupted) GetCustomer() *CustomerUserEditable {
 	if s == nil {
 		return nil
 	}
@@ -60809,25 +64984,19 @@ func (s *ServerMessageUserInterrupted) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
-// This is the phone number associated with the call.
-//
-// This matches one of the following:
-// - `call.phoneNumber`,
-// - `call.phoneNumberId`.
+// This is the phone number that the message is associated with.
 type ServerMessageUserInterruptedPhoneNumber struct {
-	CreateByoPhoneNumberDto    *CreateByoPhoneNumberDto
+	Unknown                    interface{}
 	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
-	CreateVonagePhoneNumberDto *CreateVonagePhoneNumberDto
-	CreateVapiPhoneNumberDto   *CreateVapiPhoneNumberDto
 
 	typ string
 }
 
-func (s *ServerMessageUserInterruptedPhoneNumber) GetCreateByoPhoneNumberDto() *CreateByoPhoneNumberDto {
+func (s *ServerMessageUserInterruptedPhoneNumber) GetUnknown() interface{} {
 	if s == nil {
 		return nil
 	}
-	return s.CreateByoPhoneNumberDto
+	return s.Unknown
 }
 
 func (s *ServerMessageUserInterruptedPhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
@@ -60837,25 +65006,11 @@ func (s *ServerMessageUserInterruptedPhoneNumber) GetCreateTwilioPhoneNumberDto(
 	return s.CreateTwilioPhoneNumberDto
 }
 
-func (s *ServerMessageUserInterruptedPhoneNumber) GetCreateVonagePhoneNumberDto() *CreateVonagePhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVonagePhoneNumberDto
-}
-
-func (s *ServerMessageUserInterruptedPhoneNumber) GetCreateVapiPhoneNumberDto() *CreateVapiPhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVapiPhoneNumberDto
-}
-
 func (s *ServerMessageUserInterruptedPhoneNumber) UnmarshalJSON(data []byte) error {
-	valueCreateByoPhoneNumberDto := new(CreateByoPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateByoPhoneNumberDto); err == nil {
-		s.typ = "CreateByoPhoneNumberDto"
-		s.CreateByoPhoneNumberDto = valueCreateByoPhoneNumberDto
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		s.typ = "Unknown"
+		s.Unknown = valueUnknown
 		return nil
 	}
 	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
@@ -60864,95 +65019,49 @@ func (s *ServerMessageUserInterruptedPhoneNumber) UnmarshalJSON(data []byte) err
 		s.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
 		return nil
 	}
-	valueCreateVonagePhoneNumberDto := new(CreateVonagePhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVonagePhoneNumberDto); err == nil {
-		s.typ = "CreateVonagePhoneNumberDto"
-		s.CreateVonagePhoneNumberDto = valueCreateVonagePhoneNumberDto
-		return nil
-	}
-	valueCreateVapiPhoneNumberDto := new(CreateVapiPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVapiPhoneNumberDto); err == nil {
-		s.typ = "CreateVapiPhoneNumberDto"
-		s.CreateVapiPhoneNumberDto = valueCreateVapiPhoneNumberDto
-		return nil
-	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
 }
 
 func (s ServerMessageUserInterruptedPhoneNumber) MarshalJSON() ([]byte, error) {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return json.Marshal(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return json.Marshal(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return json.Marshal(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return json.Marshal(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return json.Marshal(s.CreateVapiPhoneNumberDto)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessageUserInterruptedPhoneNumberVisitor interface {
-	VisitCreateByoPhoneNumberDto(*CreateByoPhoneNumberDto) error
+	VisitUnknown(interface{}) error
 	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
-	VisitCreateVonagePhoneNumberDto(*CreateVonagePhoneNumberDto) error
-	VisitCreateVapiPhoneNumberDto(*CreateVapiPhoneNumberDto) error
 }
 
 func (s *ServerMessageUserInterruptedPhoneNumber) Accept(visitor ServerMessageUserInterruptedPhoneNumberVisitor) error {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return visitor.VisitCreateByoPhoneNumberDto(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return visitor.VisitUnknown(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return visitor.VisitCreateTwilioPhoneNumberDto(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return visitor.VisitCreateVonagePhoneNumberDto(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return visitor.VisitCreateVapiPhoneNumberDto(s.CreateVapiPhoneNumberDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessageVoiceInput struct {
-	// This is the phone number associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.phoneNumber`,
-	// - `call.phoneNumberId`.
+	// This is the phone number that the message is associated with.
 	PhoneNumber *ServerMessageVoiceInputPhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "voice-input" is sent when a generation is requested from voice provider.
-	// This is the timestamp of when the message was sent in milliseconds since Unix Epoch.
+	// This is the timestamp of the message.
 	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
 	// This is a live version of the `call.artifact`.
 	//
 	// This matches what is stored on `call.artifact` after the call.
 	Artifact *Artifact `json:"artifact,omitempty" url:"artifact,omitempty"`
-	// This is the assistant that is currently active. This is provided for convenience.
-	//
-	// This matches one of the following:
-	// - `call.assistant`,
-	// - `call.assistantId`,
-	// - `call.squad[n].assistant`,
-	// - `call.squad[n].assistantId`,
-	// - `call.squadId->[n].assistant`,
-	// - `call.squadId->[n].assistantId`.
-	Assistant *CreateAssistantDto `json:"assistant,omitempty" url:"assistant,omitempty"`
-	// This is the customer associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.customer`,
-	// - `call.customerId`.
-	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
-	// This is the call object.
-	//
-	// This matches what was returned in POST /call.
-	//
-	// Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the call that the message is associated with.
 	Call *Call `json:"call,omitempty" url:"call,omitempty"`
 	// This is the voice input content
 	Input string `json:"input" url:"input"`
@@ -60983,14 +65092,14 @@ func (s *ServerMessageVoiceInput) GetArtifact() *Artifact {
 	return s.Artifact
 }
 
-func (s *ServerMessageVoiceInput) GetAssistant() *CreateAssistantDto {
+func (s *ServerMessageVoiceInput) GetAssistant() *AssistantUserEditable {
 	if s == nil {
 		return nil
 	}
 	return s.Assistant
 }
 
-func (s *ServerMessageVoiceInput) GetCustomer() *CreateCustomerDto {
+func (s *ServerMessageVoiceInput) GetCustomer() *CustomerUserEditable {
 	if s == nil {
 		return nil
 	}
@@ -61068,25 +65177,19 @@ func (s *ServerMessageVoiceInput) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
-// This is the phone number associated with the call.
-//
-// This matches one of the following:
-// - `call.phoneNumber`,
-// - `call.phoneNumberId`.
+// This is the phone number that the message is associated with.
 type ServerMessageVoiceInputPhoneNumber struct {
-	CreateByoPhoneNumberDto    *CreateByoPhoneNumberDto
+	Unknown                    interface{}
 	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
-	CreateVonagePhoneNumberDto *CreateVonagePhoneNumberDto
-	CreateVapiPhoneNumberDto   *CreateVapiPhoneNumberDto
 
 	typ string
 }
 
-func (s *ServerMessageVoiceInputPhoneNumber) GetCreateByoPhoneNumberDto() *CreateByoPhoneNumberDto {
+func (s *ServerMessageVoiceInputPhoneNumber) GetUnknown() interface{} {
 	if s == nil {
 		return nil
 	}
-	return s.CreateByoPhoneNumberDto
+	return s.Unknown
 }
 
 func (s *ServerMessageVoiceInputPhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
@@ -61096,25 +65199,11 @@ func (s *ServerMessageVoiceInputPhoneNumber) GetCreateTwilioPhoneNumberDto() *Cr
 	return s.CreateTwilioPhoneNumberDto
 }
 
-func (s *ServerMessageVoiceInputPhoneNumber) GetCreateVonagePhoneNumberDto() *CreateVonagePhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVonagePhoneNumberDto
-}
-
-func (s *ServerMessageVoiceInputPhoneNumber) GetCreateVapiPhoneNumberDto() *CreateVapiPhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVapiPhoneNumberDto
-}
-
 func (s *ServerMessageVoiceInputPhoneNumber) UnmarshalJSON(data []byte) error {
-	valueCreateByoPhoneNumberDto := new(CreateByoPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateByoPhoneNumberDto); err == nil {
-		s.typ = "CreateByoPhoneNumberDto"
-		s.CreateByoPhoneNumberDto = valueCreateByoPhoneNumberDto
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		s.typ = "Unknown"
+		s.Unknown = valueUnknown
 		return nil
 	}
 	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
@@ -61123,66 +65212,36 @@ func (s *ServerMessageVoiceInputPhoneNumber) UnmarshalJSON(data []byte) error {
 		s.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
 		return nil
 	}
-	valueCreateVonagePhoneNumberDto := new(CreateVonagePhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVonagePhoneNumberDto); err == nil {
-		s.typ = "CreateVonagePhoneNumberDto"
-		s.CreateVonagePhoneNumberDto = valueCreateVonagePhoneNumberDto
-		return nil
-	}
-	valueCreateVapiPhoneNumberDto := new(CreateVapiPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVapiPhoneNumberDto); err == nil {
-		s.typ = "CreateVapiPhoneNumberDto"
-		s.CreateVapiPhoneNumberDto = valueCreateVapiPhoneNumberDto
-		return nil
-	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
 }
 
 func (s ServerMessageVoiceInputPhoneNumber) MarshalJSON() ([]byte, error) {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return json.Marshal(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return json.Marshal(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return json.Marshal(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return json.Marshal(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return json.Marshal(s.CreateVapiPhoneNumberDto)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessageVoiceInputPhoneNumberVisitor interface {
-	VisitCreateByoPhoneNumberDto(*CreateByoPhoneNumberDto) error
+	VisitUnknown(interface{}) error
 	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
-	VisitCreateVonagePhoneNumberDto(*CreateVonagePhoneNumberDto) error
-	VisitCreateVapiPhoneNumberDto(*CreateVapiPhoneNumberDto) error
 }
 
 func (s *ServerMessageVoiceInputPhoneNumber) Accept(visitor ServerMessageVoiceInputPhoneNumberVisitor) error {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return visitor.VisitCreateByoPhoneNumberDto(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return visitor.VisitUnknown(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return visitor.VisitCreateTwilioPhoneNumberDto(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return visitor.VisitCreateVonagePhoneNumberDto(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return visitor.VisitCreateVapiPhoneNumberDto(s.CreateVapiPhoneNumberDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessageVoiceRequest struct {
-	// This is the phone number associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.phoneNumber`,
-	// - `call.phoneNumberId`.
+	// This is the phone number that the message is associated with.
 	PhoneNumber *ServerMessageVoiceRequestPhoneNumber `json:"phoneNumber,omitempty" url:"phoneNumber,omitempty"`
 	// This is the type of the message. "voice-request" is sent when using `assistant.voice={ "type": "custom-voice" }`.
 	//
@@ -61208,33 +65267,17 @@ type ServerMessageVoiceRequest struct {
 	//	});
 	//
 	// ```
-	// This is the timestamp of when the message was sent in milliseconds since Unix Epoch.
+	// This is the timestamp of the message.
 	Timestamp *float64 `json:"timestamp,omitempty" url:"timestamp,omitempty"`
 	// This is a live version of the `call.artifact`.
 	//
 	// This matches what is stored on `call.artifact` after the call.
 	Artifact *Artifact `json:"artifact,omitempty" url:"artifact,omitempty"`
-	// This is the assistant that is currently active. This is provided for convenience.
-	//
-	// This matches one of the following:
-	// - `call.assistant`,
-	// - `call.assistantId`,
-	// - `call.squad[n].assistant`,
-	// - `call.squad[n].assistantId`,
-	// - `call.squadId->[n].assistant`,
-	// - `call.squadId->[n].assistantId`.
-	Assistant *CreateAssistantDto `json:"assistant,omitempty" url:"assistant,omitempty"`
-	// This is the customer associated with the call.
-	//
-	// This matches one of the following:
-	// - `call.customer`,
-	// - `call.customerId`.
-	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
-	// This is the call object.
-	//
-	// This matches what was returned in POST /call.
-	//
-	// Note: This might get stale during the call. To get the latest call object, especially after the call is ended, use GET /call/:id.
+	// This is the assistant that the message is associated with.
+	Assistant *AssistantUserEditable `json:"assistant,omitempty" url:"assistant,omitempty"`
+	// This is the customer that the message is associated with.
+	Customer *CustomerUserEditable `json:"customer,omitempty" url:"customer,omitempty"`
+	// This is the call that the message is associated with.
 	Call *Call `json:"call,omitempty" url:"call,omitempty"`
 	// This is the text to be synthesized.
 	Text string `json:"text" url:"text"`
@@ -61267,14 +65310,14 @@ func (s *ServerMessageVoiceRequest) GetArtifact() *Artifact {
 	return s.Artifact
 }
 
-func (s *ServerMessageVoiceRequest) GetAssistant() *CreateAssistantDto {
+func (s *ServerMessageVoiceRequest) GetAssistant() *AssistantUserEditable {
 	if s == nil {
 		return nil
 	}
 	return s.Assistant
 }
 
-func (s *ServerMessageVoiceRequest) GetCustomer() *CreateCustomerDto {
+func (s *ServerMessageVoiceRequest) GetCustomer() *CustomerUserEditable {
 	if s == nil {
 		return nil
 	}
@@ -61359,25 +65402,19 @@ func (s *ServerMessageVoiceRequest) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
-// This is the phone number associated with the call.
-//
-// This matches one of the following:
-// - `call.phoneNumber`,
-// - `call.phoneNumberId`.
+// This is the phone number that the message is associated with.
 type ServerMessageVoiceRequestPhoneNumber struct {
-	CreateByoPhoneNumberDto    *CreateByoPhoneNumberDto
+	Unknown                    interface{}
 	CreateTwilioPhoneNumberDto *CreateTwilioPhoneNumberDto
-	CreateVonagePhoneNumberDto *CreateVonagePhoneNumberDto
-	CreateVapiPhoneNumberDto   *CreateVapiPhoneNumberDto
 
 	typ string
 }
 
-func (s *ServerMessageVoiceRequestPhoneNumber) GetCreateByoPhoneNumberDto() *CreateByoPhoneNumberDto {
+func (s *ServerMessageVoiceRequestPhoneNumber) GetUnknown() interface{} {
 	if s == nil {
 		return nil
 	}
-	return s.CreateByoPhoneNumberDto
+	return s.Unknown
 }
 
 func (s *ServerMessageVoiceRequestPhoneNumber) GetCreateTwilioPhoneNumberDto() *CreateTwilioPhoneNumberDto {
@@ -61387,25 +65424,11 @@ func (s *ServerMessageVoiceRequestPhoneNumber) GetCreateTwilioPhoneNumberDto() *
 	return s.CreateTwilioPhoneNumberDto
 }
 
-func (s *ServerMessageVoiceRequestPhoneNumber) GetCreateVonagePhoneNumberDto() *CreateVonagePhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVonagePhoneNumberDto
-}
-
-func (s *ServerMessageVoiceRequestPhoneNumber) GetCreateVapiPhoneNumberDto() *CreateVapiPhoneNumberDto {
-	if s == nil {
-		return nil
-	}
-	return s.CreateVapiPhoneNumberDto
-}
-
 func (s *ServerMessageVoiceRequestPhoneNumber) UnmarshalJSON(data []byte) error {
-	valueCreateByoPhoneNumberDto := new(CreateByoPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateByoPhoneNumberDto); err == nil {
-		s.typ = "CreateByoPhoneNumberDto"
-		s.CreateByoPhoneNumberDto = valueCreateByoPhoneNumberDto
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		s.typ = "Unknown"
+		s.Unknown = valueUnknown
 		return nil
 	}
 	valueCreateTwilioPhoneNumberDto := new(CreateTwilioPhoneNumberDto)
@@ -61414,56 +65437,30 @@ func (s *ServerMessageVoiceRequestPhoneNumber) UnmarshalJSON(data []byte) error 
 		s.CreateTwilioPhoneNumberDto = valueCreateTwilioPhoneNumberDto
 		return nil
 	}
-	valueCreateVonagePhoneNumberDto := new(CreateVonagePhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVonagePhoneNumberDto); err == nil {
-		s.typ = "CreateVonagePhoneNumberDto"
-		s.CreateVonagePhoneNumberDto = valueCreateVonagePhoneNumberDto
-		return nil
-	}
-	valueCreateVapiPhoneNumberDto := new(CreateVapiPhoneNumberDto)
-	if err := json.Unmarshal(data, &valueCreateVapiPhoneNumberDto); err == nil {
-		s.typ = "CreateVapiPhoneNumberDto"
-		s.CreateVapiPhoneNumberDto = valueCreateVapiPhoneNumberDto
-		return nil
-	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
 }
 
 func (s ServerMessageVoiceRequestPhoneNumber) MarshalJSON() ([]byte, error) {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return json.Marshal(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return json.Marshal(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return json.Marshal(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return json.Marshal(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return json.Marshal(s.CreateVapiPhoneNumberDto)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 type ServerMessageVoiceRequestPhoneNumberVisitor interface {
-	VisitCreateByoPhoneNumberDto(*CreateByoPhoneNumberDto) error
+	VisitUnknown(interface{}) error
 	VisitCreateTwilioPhoneNumberDto(*CreateTwilioPhoneNumberDto) error
-	VisitCreateVonagePhoneNumberDto(*CreateVonagePhoneNumberDto) error
-	VisitCreateVapiPhoneNumberDto(*CreateVapiPhoneNumberDto) error
 }
 
 func (s *ServerMessageVoiceRequestPhoneNumber) Accept(visitor ServerMessageVoiceRequestPhoneNumberVisitor) error {
-	if s.typ == "CreateByoPhoneNumberDto" || s.CreateByoPhoneNumberDto != nil {
-		return visitor.VisitCreateByoPhoneNumberDto(s.CreateByoPhoneNumberDto)
+	if s.typ == "Unknown" || s.Unknown != nil {
+		return visitor.VisitUnknown(s.Unknown)
 	}
 	if s.typ == "CreateTwilioPhoneNumberDto" || s.CreateTwilioPhoneNumberDto != nil {
 		return visitor.VisitCreateTwilioPhoneNumberDto(s.CreateTwilioPhoneNumberDto)
-	}
-	if s.typ == "CreateVonagePhoneNumberDto" || s.CreateVonagePhoneNumberDto != nil {
-		return visitor.VisitCreateVonagePhoneNumberDto(s.CreateVonagePhoneNumberDto)
-	}
-	if s.typ == "CreateVapiPhoneNumberDto" || s.CreateVapiPhoneNumberDto != nil {
-		return visitor.VisitCreateVapiPhoneNumberDto(s.CreateVapiPhoneNumberDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
@@ -70332,6 +74329,129 @@ func (t *TransferDestinationStepMessage) Accept(visitor TransferDestinationStepM
 	return fmt.Errorf("type %T does not include a non-empty union type", t)
 }
 
+type TransferFallbackPlan struct {
+	// This is the message the assistant will deliver to the customer if the transfer fails.
+	Message *TransferFallbackPlanMessage `json:"message,omitempty" url:"message,omitempty"`
+	// This controls what happens after delivering the failure message to the customer.
+	// - true: End the call after delivering the failure message (default)
+	// - false: Keep the assistant on the call to continue handling the customer's request
+	//
+	// @default true
+	EndCallEnabled *bool `json:"endCallEnabled,omitempty" url:"endCallEnabled,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TransferFallbackPlan) GetMessage() *TransferFallbackPlanMessage {
+	if t == nil {
+		return nil
+	}
+	return t.Message
+}
+
+func (t *TransferFallbackPlan) GetEndCallEnabled() *bool {
+	if t == nil {
+		return nil
+	}
+	return t.EndCallEnabled
+}
+
+func (t *TransferFallbackPlan) GetExtraProperties() map[string]interface{} {
+	return t.extraProperties
+}
+
+func (t *TransferFallbackPlan) UnmarshalJSON(data []byte) error {
+	type unmarshaler TransferFallbackPlan
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = TransferFallbackPlan(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TransferFallbackPlan) String() string {
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+// This is the message the assistant will deliver to the customer if the transfer fails.
+type TransferFallbackPlanMessage struct {
+	String        string
+	CustomMessage *CustomMessage
+
+	typ string
+}
+
+func (t *TransferFallbackPlanMessage) GetString() string {
+	if t == nil {
+		return ""
+	}
+	return t.String
+}
+
+func (t *TransferFallbackPlanMessage) GetCustomMessage() *CustomMessage {
+	if t == nil {
+		return nil
+	}
+	return t.CustomMessage
+}
+
+func (t *TransferFallbackPlanMessage) UnmarshalJSON(data []byte) error {
+	var valueString string
+	if err := json.Unmarshal(data, &valueString); err == nil {
+		t.typ = "String"
+		t.String = valueString
+		return nil
+	}
+	valueCustomMessage := new(CustomMessage)
+	if err := json.Unmarshal(data, &valueCustomMessage); err == nil {
+		t.typ = "CustomMessage"
+		t.CustomMessage = valueCustomMessage
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, t)
+}
+
+func (t TransferFallbackPlanMessage) MarshalJSON() ([]byte, error) {
+	if t.typ == "String" || t.String != "" {
+		return json.Marshal(t.String)
+	}
+	if t.typ == "CustomMessage" || t.CustomMessage != nil {
+		return json.Marshal(t.CustomMessage)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", t)
+}
+
+type TransferFallbackPlanMessageVisitor interface {
+	VisitString(string) error
+	VisitCustomMessage(*CustomMessage) error
+}
+
+func (t *TransferFallbackPlanMessage) Accept(visitor TransferFallbackPlanMessageVisitor) error {
+	if t.typ == "String" || t.String != "" {
+		return visitor.VisitString(t.String)
+	}
+	if t.typ == "CustomMessage" || t.CustomMessage != nil {
+		return visitor.VisitCustomMessage(t.CustomMessage)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", t)
+}
+
 type TransferMode string
 
 const (
@@ -70502,19 +74622,29 @@ type TransferPlan struct {
 	// - `warm-transfer-wait-for-operator-to-speak-first-and-then-say-message`: The assistant dials the destination, waits for the operator to speak, delivers the `message` to the destination party, and then connects the customer.
 	// - `warm-transfer-wait-for-operator-to-speak-first-and-then-say-summary`: The assistant dials the destination, waits for the operator to speak, provides a summary of the call to the destination party, and then connects the customer.
 	// - `warm-transfer-twiml`: The assistant dials the destination, executes the twiml instructions on the destination call leg, connects the customer, and leaves the call.
+	// - `warm-transfer-experimental`: The assistant puts the customer on hold, dials the destination, and if the destination answers (and is human), delivers a message or summary before connecting the customer. If the destination is unreachable or not human (e.g., with voicemail detection), the assistant delivers the `fallbackMessage` to the customer and optionally ends the call.
 	//
 	// @default 'blind-transfer'
 	Mode TransferPlanMode `json:"mode" url:"mode"`
 	// This is the message the assistant will deliver to the destination party before connecting the customer.
 	//
 	// Usage:
-	// - Used only when `mode` is `blind-transfer-add-summary-to-sip-header`, `warm-transfer-say-message` or `warm-transfer-wait-for-operator-to-speak-first-and-then-say-message`.
+	// - Used only when `mode` is `blind-transfer-add-summary-to-sip-header`, `warm-transfer-say-message`, `warm-transfer-wait-for-operator-to-speak-first-and-then-say-message`, or `warm-transfer-experimental`.
 	Message *TransferPlanMessage `json:"message,omitempty" url:"message,omitempty"`
 	// This specifies the SIP verb to use while transferring the call.
 	// - 'refer': Uses SIP REFER to transfer the call (default)
 	// - 'bye': Ends current call with SIP BYE
 	// - 'dial': Uses SIP DIAL to transfer the call
 	SipVerb map[string]interface{} `json:"sipVerb,omitempty" url:"sipVerb,omitempty"`
+	// This is the URL to an audio file played while the customer is on hold during transfer.
+	//
+	// Usage:
+	// - Used only when `mode` is `warm-transfer-experimental`.
+	// - Used when transferring calls to play hold audio for the customer.
+	// - Must be a publicly accessible URL to an audio file.
+	// - Supported formats: MP3 and WAV.
+	// - If not provided, the default hold audio will be used.
+	HoldAudioUrl *string `json:"holdAudioUrl,omitempty" url:"holdAudioUrl,omitempty"`
 	// This is the TwiML instructions to execute on the destination call leg before connecting the customer.
 	//
 	// Usage:
@@ -70532,12 +74662,18 @@ type TransferPlan struct {
 	// This is the plan for generating a summary of the call to present to the destination party.
 	//
 	// Usage:
-	// - Used only when `mode` is `blind-transfer-add-summary-to-sip-header` or `warm-transfer-say-summary` or `warm-transfer-wait-for-operator-to-speak-first-and-then-say-summary`.
+	// - Used only when `mode` is `blind-transfer-add-summary-to-sip-header` or `warm-transfer-say-summary` or `warm-transfer-wait-for-operator-to-speak-first-and-then-say-summary` or `warm-transfer-experimental`.
 	SummaryPlan *SummaryPlan `json:"summaryPlan,omitempty" url:"summaryPlan,omitempty"`
 	// This flag includes the sipHeaders from above in the refer to sip uri as url encoded query params.
 	//
 	// @default false
 	SipHeadersInReferToEnabled *bool `json:"sipHeadersInReferToEnabled,omitempty" url:"sipHeadersInReferToEnabled,omitempty"`
+	// This configures the fallback plan when the transfer fails (destination unreachable, busy, or not human).
+	//
+	// Usage:
+	// - Used only when `mode` is `warm-transfer-experimental`.
+	// - If not provided when using `warm-transfer-experimental`, a default message will be used.
+	FallbackPlan *TransferFallbackPlan `json:"fallbackPlan,omitempty" url:"fallbackPlan,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -70564,6 +74700,13 @@ func (t *TransferPlan) GetSipVerb() map[string]interface{} {
 	return t.SipVerb
 }
 
+func (t *TransferPlan) GetHoldAudioUrl() *string {
+	if t == nil {
+		return nil
+	}
+	return t.HoldAudioUrl
+}
+
 func (t *TransferPlan) GetTwiml() *string {
 	if t == nil {
 		return nil
@@ -70583,6 +74726,13 @@ func (t *TransferPlan) GetSipHeadersInReferToEnabled() *bool {
 		return nil
 	}
 	return t.SipHeadersInReferToEnabled
+}
+
+func (t *TransferPlan) GetFallbackPlan() *TransferFallbackPlan {
+	if t == nil {
+		return nil
+	}
+	return t.FallbackPlan
 }
 
 func (t *TransferPlan) GetExtraProperties() map[string]interface{} {
@@ -70620,7 +74770,7 @@ func (t *TransferPlan) String() string {
 // This is the message the assistant will deliver to the destination party before connecting the customer.
 //
 // Usage:
-// - Used only when `mode` is `blind-transfer-add-summary-to-sip-header`, `warm-transfer-say-message` or `warm-transfer-wait-for-operator-to-speak-first-and-then-say-message`.
+// - Used only when `mode` is `blind-transfer-add-summary-to-sip-header`, `warm-transfer-say-message`, `warm-transfer-wait-for-operator-to-speak-first-and-then-say-message`, or `warm-transfer-experimental`.
 type TransferPlanMessage struct {
 	String        string
 	CustomMessage *CustomMessage
@@ -70693,6 +74843,7 @@ func (t *TransferPlanMessage) Accept(visitor TransferPlanMessageVisitor) error {
 // - `warm-transfer-wait-for-operator-to-speak-first-and-then-say-message`: The assistant dials the destination, waits for the operator to speak, delivers the `message` to the destination party, and then connects the customer.
 // - `warm-transfer-wait-for-operator-to-speak-first-and-then-say-summary`: The assistant dials the destination, waits for the operator to speak, provides a summary of the call to the destination party, and then connects the customer.
 // - `warm-transfer-twiml`: The assistant dials the destination, executes the twiml instructions on the destination call leg, connects the customer, and leaves the call.
+// - `warm-transfer-experimental`: The assistant puts the customer on hold, dials the destination, and if the destination answers (and is human), delivers a message or summary before connecting the customer. If the destination is unreachable or not human (e.g., with voicemail detection), the assistant delivers the `fallbackMessage` to the customer and optionally ends the call.
 //
 // @default 'blind-transfer'
 type TransferPlanMode string
@@ -70705,6 +74856,7 @@ const (
 	TransferPlanModeWarmTransferTwiml                                        TransferPlanMode = "warm-transfer-twiml"
 	TransferPlanModeWarmTransferWaitForOperatorToSpeakFirstAndThenSayMessage TransferPlanMode = "warm-transfer-wait-for-operator-to-speak-first-and-then-say-message"
 	TransferPlanModeWarmTransferWaitForOperatorToSpeakFirstAndThenSaySummary TransferPlanMode = "warm-transfer-wait-for-operator-to-speak-first-and-then-say-summary"
+	TransferPlanModeWarmTransferExperimental                                 TransferPlanMode = "warm-transfer-experimental"
 )
 
 func NewTransferPlanModeFromString(s string) (TransferPlanMode, error) {
@@ -70723,6 +74875,8 @@ func NewTransferPlanModeFromString(s string) (TransferPlanMode, error) {
 		return TransferPlanModeWarmTransferWaitForOperatorToSpeakFirstAndThenSayMessage, nil
 	case "warm-transfer-wait-for-operator-to-speak-first-and-then-say-summary":
 		return TransferPlanModeWarmTransferWaitForOperatorToSpeakFirstAndThenSaySummary, nil
+	case "warm-transfer-experimental":
+		return TransferPlanModeWarmTransferExperimental, nil
 	}
 	var t TransferPlanMode
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -75634,7 +79788,7 @@ type VapiModel struct {
 	// This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
 	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
 	// This is the workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
-	Workflow *Workflow `json:"workflow,omitempty" url:"workflow,omitempty"`
+	Workflow *WorkflowUserEditable `json:"workflow,omitempty" url:"workflow,omitempty"`
 	// This is the name of the model. Ex. cognitivecomputations/dolphin-mixtral-8x7b
 	Model string `json:"model" url:"model"`
 	// This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
@@ -75701,7 +79855,7 @@ func (v *VapiModel) GetWorkflowId() *string {
 	return v.WorkflowId
 }
 
-func (v *VapiModel) GetWorkflow() *Workflow {
+func (v *VapiModel) GetWorkflow() *WorkflowUserEditable {
 	if v == nil {
 		return nil
 	}
@@ -77241,96 +81395,56 @@ func (w *WebhookCredential) String() string {
 	return fmt.Sprintf("%#v", w)
 }
 
-type Workflow struct {
-	Nodes []*WorkflowNodesItem `json:"nodes,omitempty" url:"nodes,omitempty"`
+type WorkflowUserEditable struct {
+	Nodes []*WorkflowUserEditableNodesItem `json:"nodes,omitempty" url:"nodes,omitempty"`
 	// These are the options for the workflow's LLM.
-	Model     *WorkflowModel `json:"model,omitempty" url:"model,omitempty"`
-	Id        string         `json:"id" url:"id"`
-	OrgId     string         `json:"orgId" url:"orgId"`
-	CreatedAt time.Time      `json:"createdAt" url:"createdAt"`
-	UpdatedAt time.Time      `json:"updatedAt" url:"updatedAt"`
-	Name      string         `json:"name" url:"name"`
-	Edges     []*Edge        `json:"edges,omitempty" url:"edges,omitempty"`
+	Model *WorkflowUserEditableModel `json:"model,omitempty" url:"model,omitempty"`
+	Name  string                     `json:"name" url:"name"`
+	Edges []*Edge                    `json:"edges,omitempty" url:"edges,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
 }
 
-func (w *Workflow) GetNodes() []*WorkflowNodesItem {
+func (w *WorkflowUserEditable) GetNodes() []*WorkflowUserEditableNodesItem {
 	if w == nil {
 		return nil
 	}
 	return w.Nodes
 }
 
-func (w *Workflow) GetModel() *WorkflowModel {
+func (w *WorkflowUserEditable) GetModel() *WorkflowUserEditableModel {
 	if w == nil {
 		return nil
 	}
 	return w.Model
 }
 
-func (w *Workflow) GetId() string {
-	if w == nil {
-		return ""
-	}
-	return w.Id
-}
-
-func (w *Workflow) GetOrgId() string {
-	if w == nil {
-		return ""
-	}
-	return w.OrgId
-}
-
-func (w *Workflow) GetCreatedAt() time.Time {
-	if w == nil {
-		return time.Time{}
-	}
-	return w.CreatedAt
-}
-
-func (w *Workflow) GetUpdatedAt() time.Time {
-	if w == nil {
-		return time.Time{}
-	}
-	return w.UpdatedAt
-}
-
-func (w *Workflow) GetName() string {
+func (w *WorkflowUserEditable) GetName() string {
 	if w == nil {
 		return ""
 	}
 	return w.Name
 }
 
-func (w *Workflow) GetEdges() []*Edge {
+func (w *WorkflowUserEditable) GetEdges() []*Edge {
 	if w == nil {
 		return nil
 	}
 	return w.Edges
 }
 
-func (w *Workflow) GetExtraProperties() map[string]interface{} {
+func (w *WorkflowUserEditable) GetExtraProperties() map[string]interface{} {
 	return w.extraProperties
 }
 
-func (w *Workflow) UnmarshalJSON(data []byte) error {
-	type embed Workflow
-	var unmarshaler = struct {
-		embed
-		CreatedAt *internal.DateTime `json:"createdAt"`
-		UpdatedAt *internal.DateTime `json:"updatedAt"`
-	}{
-		embed: embed(*w),
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+func (w *WorkflowUserEditable) UnmarshalJSON(data []byte) error {
+	type unmarshaler WorkflowUserEditable
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*w = Workflow(unmarshaler.embed)
-	w.CreatedAt = unmarshaler.CreatedAt.Time()
-	w.UpdatedAt = unmarshaler.UpdatedAt.Time()
+	*w = WorkflowUserEditable(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *w)
 	if err != nil {
 		return err
@@ -77340,21 +81454,7 @@ func (w *Workflow) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (w *Workflow) MarshalJSON() ([]byte, error) {
-	type embed Workflow
-	var marshaler = struct {
-		embed
-		CreatedAt *internal.DateTime `json:"createdAt"`
-		UpdatedAt *internal.DateTime `json:"updatedAt"`
-	}{
-		embed:     embed(*w),
-		CreatedAt: internal.NewDateTime(w.CreatedAt),
-		UpdatedAt: internal.NewDateTime(w.UpdatedAt),
-	}
-	return json.Marshal(marshaler)
-}
-
-func (w *Workflow) String() string {
+func (w *WorkflowUserEditable) String() string {
 	if len(w.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(w.rawJSON); err == nil {
 			return value
@@ -77367,7 +81467,7 @@ func (w *Workflow) String() string {
 }
 
 // These are the options for the workflow's LLM.
-type WorkflowModel struct {
+type WorkflowUserEditableModel struct {
 	AnthropicModel    *AnthropicModel
 	AnyscaleModel     *AnyscaleModel
 	CerebrasModel     *CerebrasModel
@@ -77386,105 +81486,105 @@ type WorkflowModel struct {
 	typ string
 }
 
-func (w *WorkflowModel) GetAnthropicModel() *AnthropicModel {
+func (w *WorkflowUserEditableModel) GetAnthropicModel() *AnthropicModel {
 	if w == nil {
 		return nil
 	}
 	return w.AnthropicModel
 }
 
-func (w *WorkflowModel) GetAnyscaleModel() *AnyscaleModel {
+func (w *WorkflowUserEditableModel) GetAnyscaleModel() *AnyscaleModel {
 	if w == nil {
 		return nil
 	}
 	return w.AnyscaleModel
 }
 
-func (w *WorkflowModel) GetCerebrasModel() *CerebrasModel {
+func (w *WorkflowUserEditableModel) GetCerebrasModel() *CerebrasModel {
 	if w == nil {
 		return nil
 	}
 	return w.CerebrasModel
 }
 
-func (w *WorkflowModel) GetCustomLlmModel() *CustomLlmModel {
+func (w *WorkflowUserEditableModel) GetCustomLlmModel() *CustomLlmModel {
 	if w == nil {
 		return nil
 	}
 	return w.CustomLlmModel
 }
 
-func (w *WorkflowModel) GetDeepInfraModel() *DeepInfraModel {
+func (w *WorkflowUserEditableModel) GetDeepInfraModel() *DeepInfraModel {
 	if w == nil {
 		return nil
 	}
 	return w.DeepInfraModel
 }
 
-func (w *WorkflowModel) GetDeepSeekModel() *DeepSeekModel {
+func (w *WorkflowUserEditableModel) GetDeepSeekModel() *DeepSeekModel {
 	if w == nil {
 		return nil
 	}
 	return w.DeepSeekModel
 }
 
-func (w *WorkflowModel) GetGoogleModel() *GoogleModel {
+func (w *WorkflowUserEditableModel) GetGoogleModel() *GoogleModel {
 	if w == nil {
 		return nil
 	}
 	return w.GoogleModel
 }
 
-func (w *WorkflowModel) GetGroqModel() *GroqModel {
+func (w *WorkflowUserEditableModel) GetGroqModel() *GroqModel {
 	if w == nil {
 		return nil
 	}
 	return w.GroqModel
 }
 
-func (w *WorkflowModel) GetInflectionAiModel() *InflectionAiModel {
+func (w *WorkflowUserEditableModel) GetInflectionAiModel() *InflectionAiModel {
 	if w == nil {
 		return nil
 	}
 	return w.InflectionAiModel
 }
 
-func (w *WorkflowModel) GetOpenAiModel() *OpenAiModel {
+func (w *WorkflowUserEditableModel) GetOpenAiModel() *OpenAiModel {
 	if w == nil {
 		return nil
 	}
 	return w.OpenAiModel
 }
 
-func (w *WorkflowModel) GetOpenRouterModel() *OpenRouterModel {
+func (w *WorkflowUserEditableModel) GetOpenRouterModel() *OpenRouterModel {
 	if w == nil {
 		return nil
 	}
 	return w.OpenRouterModel
 }
 
-func (w *WorkflowModel) GetPerplexityAiModel() *PerplexityAiModel {
+func (w *WorkflowUserEditableModel) GetPerplexityAiModel() *PerplexityAiModel {
 	if w == nil {
 		return nil
 	}
 	return w.PerplexityAiModel
 }
 
-func (w *WorkflowModel) GetTogetherAiModel() *TogetherAiModel {
+func (w *WorkflowUserEditableModel) GetTogetherAiModel() *TogetherAiModel {
 	if w == nil {
 		return nil
 	}
 	return w.TogetherAiModel
 }
 
-func (w *WorkflowModel) GetXaiModel() *XaiModel {
+func (w *WorkflowUserEditableModel) GetXaiModel() *XaiModel {
 	if w == nil {
 		return nil
 	}
 	return w.XaiModel
 }
 
-func (w *WorkflowModel) UnmarshalJSON(data []byte) error {
+func (w *WorkflowUserEditableModel) UnmarshalJSON(data []byte) error {
 	valueAnthropicModel := new(AnthropicModel)
 	if err := json.Unmarshal(data, &valueAnthropicModel); err == nil {
 		w.typ = "AnthropicModel"
@@ -77572,7 +81672,7 @@ func (w *WorkflowModel) UnmarshalJSON(data []byte) error {
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, w)
 }
 
-func (w WorkflowModel) MarshalJSON() ([]byte, error) {
+func (w WorkflowUserEditableModel) MarshalJSON() ([]byte, error) {
 	if w.typ == "AnthropicModel" || w.AnthropicModel != nil {
 		return json.Marshal(w.AnthropicModel)
 	}
@@ -77618,7 +81718,7 @@ func (w WorkflowModel) MarshalJSON() ([]byte, error) {
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", w)
 }
 
-type WorkflowModelVisitor interface {
+type WorkflowUserEditableModelVisitor interface {
 	VisitAnthropicModel(*AnthropicModel) error
 	VisitAnyscaleModel(*AnyscaleModel) error
 	VisitCerebrasModel(*CerebrasModel) error
@@ -77635,7 +81735,7 @@ type WorkflowModelVisitor interface {
 	VisitXaiModel(*XaiModel) error
 }
 
-func (w *WorkflowModel) Accept(visitor WorkflowModelVisitor) error {
+func (w *WorkflowUserEditableModel) Accept(visitor WorkflowUserEditableModelVisitor) error {
 	if w.typ == "AnthropicModel" || w.AnthropicModel != nil {
 		return visitor.VisitAnthropicModel(w.AnthropicModel)
 	}
@@ -77681,7 +81781,7 @@ func (w *WorkflowModel) Accept(visitor WorkflowModelVisitor) error {
 	return fmt.Errorf("type %T does not include a non-empty union type", w)
 }
 
-type WorkflowNodesItem struct {
+type WorkflowUserEditableNodesItem struct {
 	Start      *Start
 	Assistant  *Assistant
 	Say        *Say
@@ -77693,56 +81793,56 @@ type WorkflowNodesItem struct {
 	typ string
 }
 
-func (w *WorkflowNodesItem) GetStart() *Start {
+func (w *WorkflowUserEditableNodesItem) GetStart() *Start {
 	if w == nil {
 		return nil
 	}
 	return w.Start
 }
 
-func (w *WorkflowNodesItem) GetAssistant() *Assistant {
+func (w *WorkflowUserEditableNodesItem) GetAssistant() *Assistant {
 	if w == nil {
 		return nil
 	}
 	return w.Assistant
 }
 
-func (w *WorkflowNodesItem) GetSay() *Say {
+func (w *WorkflowUserEditableNodesItem) GetSay() *Say {
 	if w == nil {
 		return nil
 	}
 	return w.Say
 }
 
-func (w *WorkflowNodesItem) GetGather() *Gather {
+func (w *WorkflowUserEditableNodesItem) GetGather() *Gather {
 	if w == nil {
 		return nil
 	}
 	return w.Gather
 }
 
-func (w *WorkflowNodesItem) GetApiRequest() *ApiRequest {
+func (w *WorkflowUserEditableNodesItem) GetApiRequest() *ApiRequest {
 	if w == nil {
 		return nil
 	}
 	return w.ApiRequest
 }
 
-func (w *WorkflowNodesItem) GetHangup() *Hangup {
+func (w *WorkflowUserEditableNodesItem) GetHangup() *Hangup {
 	if w == nil {
 		return nil
 	}
 	return w.Hangup
 }
 
-func (w *WorkflowNodesItem) GetTransfer() *Transfer {
+func (w *WorkflowUserEditableNodesItem) GetTransfer() *Transfer {
 	if w == nil {
 		return nil
 	}
 	return w.Transfer
 }
 
-func (w *WorkflowNodesItem) UnmarshalJSON(data []byte) error {
+func (w *WorkflowUserEditableNodesItem) UnmarshalJSON(data []byte) error {
 	valueStart := new(Start)
 	if err := json.Unmarshal(data, &valueStart); err == nil {
 		w.typ = "Start"
@@ -77788,7 +81888,7 @@ func (w *WorkflowNodesItem) UnmarshalJSON(data []byte) error {
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, w)
 }
 
-func (w WorkflowNodesItem) MarshalJSON() ([]byte, error) {
+func (w WorkflowUserEditableNodesItem) MarshalJSON() ([]byte, error) {
 	if w.typ == "Start" || w.Start != nil {
 		return json.Marshal(w.Start)
 	}
@@ -77813,7 +81913,7 @@ func (w WorkflowNodesItem) MarshalJSON() ([]byte, error) {
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", w)
 }
 
-type WorkflowNodesItemVisitor interface {
+type WorkflowUserEditableNodesItemVisitor interface {
 	VisitStart(*Start) error
 	VisitAssistant(*Assistant) error
 	VisitSay(*Say) error
@@ -77823,7 +81923,7 @@ type WorkflowNodesItemVisitor interface {
 	VisitTransfer(*Transfer) error
 }
 
-func (w *WorkflowNodesItem) Accept(visitor WorkflowNodesItemVisitor) error {
+func (w *WorkflowUserEditableNodesItem) Accept(visitor WorkflowUserEditableNodesItemVisitor) error {
 	if w.typ == "Start" || w.Start != nil {
 		return visitor.VisitStart(w.Start)
 	}
