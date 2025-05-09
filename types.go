@@ -3099,8 +3099,10 @@ type AssistantOverrides struct {
 	// This uses Twilio's built-in detection while the VoicemailTool relies on the model to detect if a voicemail was reached.
 	// You can use neither of them, one of them, or both of them. By default, Twilio built-in detection is enabled while VoicemailTool is not.
 	VoicemailDetection *AssistantOverridesVoicemailDetection `json:"voicemailDetection,omitempty" url:"voicemailDetection,omitempty"`
-	ClientMessages     [][]map[string]interface{}            `json:"clientMessages,omitempty" url:"clientMessages,omitempty"`
-	ServerMessages     [][]map[string]interface{}            `json:"serverMessages,omitempty" url:"serverMessages,omitempty"`
+	// These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
+	ClientMessages []AssistantOverridesClientMessagesItem `json:"clientMessages,omitempty" url:"clientMessages,omitempty"`
+	// These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
+	ServerMessages []AssistantOverridesServerMessagesItem `json:"serverMessages,omitempty" url:"serverMessages,omitempty"`
 	// How many seconds of silence to wait before ending the call. Defaults to 30.
 	//
 	// @default 30
@@ -3258,14 +3260,14 @@ func (a *AssistantOverrides) GetVoicemailDetection() *AssistantOverridesVoicemai
 	return a.VoicemailDetection
 }
 
-func (a *AssistantOverrides) GetClientMessages() [][]map[string]interface{} {
+func (a *AssistantOverrides) GetClientMessages() []AssistantOverridesClientMessagesItem {
 	if a == nil {
 		return nil
 	}
 	return a.ClientMessages
 }
 
-func (a *AssistantOverrides) GetServerMessages() [][]map[string]interface{} {
+func (a *AssistantOverrides) GetServerMessages() []AssistantOverridesServerMessagesItem {
 	if a == nil {
 		return nil
 	}
@@ -3565,6 +3567,73 @@ func (a AssistantOverridesBackgroundSoundZero) Ptr() *AssistantOverridesBackgrou
 	return &a
 }
 
+type AssistantOverridesClientMessagesItem string
+
+const (
+	AssistantOverridesClientMessagesItemConversationUpdate  AssistantOverridesClientMessagesItem = "conversation-update"
+	AssistantOverridesClientMessagesItemFunctionCall        AssistantOverridesClientMessagesItem = "function-call"
+	AssistantOverridesClientMessagesItemFunctionCallResult  AssistantOverridesClientMessagesItem = "function-call-result"
+	AssistantOverridesClientMessagesItemHang                AssistantOverridesClientMessagesItem = "hang"
+	AssistantOverridesClientMessagesItemLanguageChanged     AssistantOverridesClientMessagesItem = "language-changed"
+	AssistantOverridesClientMessagesItemMetadata            AssistantOverridesClientMessagesItem = "metadata"
+	AssistantOverridesClientMessagesItemModelOutput         AssistantOverridesClientMessagesItem = "model-output"
+	AssistantOverridesClientMessagesItemSpeechUpdate        AssistantOverridesClientMessagesItem = "speech-update"
+	AssistantOverridesClientMessagesItemStatusUpdate        AssistantOverridesClientMessagesItem = "status-update"
+	AssistantOverridesClientMessagesItemTranscript          AssistantOverridesClientMessagesItem = "transcript"
+	AssistantOverridesClientMessagesItemToolCalls           AssistantOverridesClientMessagesItem = "tool-calls"
+	AssistantOverridesClientMessagesItemToolCallsResult     AssistantOverridesClientMessagesItem = "tool-calls-result"
+	AssistantOverridesClientMessagesItemToolCompleted       AssistantOverridesClientMessagesItem = "tool.completed"
+	AssistantOverridesClientMessagesItemTransferUpdate      AssistantOverridesClientMessagesItem = "transfer-update"
+	AssistantOverridesClientMessagesItemUserInterrupted     AssistantOverridesClientMessagesItem = "user-interrupted"
+	AssistantOverridesClientMessagesItemVoiceInput          AssistantOverridesClientMessagesItem = "voice-input"
+	AssistantOverridesClientMessagesItemWorkflowNodeStarted AssistantOverridesClientMessagesItem = "workflow.node.started"
+)
+
+func NewAssistantOverridesClientMessagesItemFromString(s string) (AssistantOverridesClientMessagesItem, error) {
+	switch s {
+	case "conversation-update":
+		return AssistantOverridesClientMessagesItemConversationUpdate, nil
+	case "function-call":
+		return AssistantOverridesClientMessagesItemFunctionCall, nil
+	case "function-call-result":
+		return AssistantOverridesClientMessagesItemFunctionCallResult, nil
+	case "hang":
+		return AssistantOverridesClientMessagesItemHang, nil
+	case "language-changed":
+		return AssistantOverridesClientMessagesItemLanguageChanged, nil
+	case "metadata":
+		return AssistantOverridesClientMessagesItemMetadata, nil
+	case "model-output":
+		return AssistantOverridesClientMessagesItemModelOutput, nil
+	case "speech-update":
+		return AssistantOverridesClientMessagesItemSpeechUpdate, nil
+	case "status-update":
+		return AssistantOverridesClientMessagesItemStatusUpdate, nil
+	case "transcript":
+		return AssistantOverridesClientMessagesItemTranscript, nil
+	case "tool-calls":
+		return AssistantOverridesClientMessagesItemToolCalls, nil
+	case "tool-calls-result":
+		return AssistantOverridesClientMessagesItemToolCallsResult, nil
+	case "tool.completed":
+		return AssistantOverridesClientMessagesItemToolCompleted, nil
+	case "transfer-update":
+		return AssistantOverridesClientMessagesItemTransferUpdate, nil
+	case "user-interrupted":
+		return AssistantOverridesClientMessagesItemUserInterrupted, nil
+	case "voice-input":
+		return AssistantOverridesClientMessagesItemVoiceInput, nil
+	case "workflow.node.started":
+		return AssistantOverridesClientMessagesItemWorkflowNodeStarted, nil
+	}
+	var t AssistantOverridesClientMessagesItem
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (a AssistantOverridesClientMessagesItem) Ptr() *AssistantOverridesClientMessagesItem {
+	return &a
+}
+
 type AssistantOverridesCredentialsItem struct {
 	CreateElevenLabsCredentialDto                        *CreateElevenLabsCredentialDto
 	CreateAnthropicCredentialDto                         *CreateAnthropicCredentialDto
@@ -3613,6 +3682,7 @@ type AssistantOverridesCredentialsItem struct {
 	CreateGoogleCalendarOAuth2AuthorizationCredentialDto *CreateGoogleCalendarOAuth2AuthorizationCredentialDto
 	CreateGoogleSheetsOAuth2AuthorizationCredentialDto   *CreateGoogleSheetsOAuth2AuthorizationCredentialDto
 	CreateSlackOAuth2AuthorizationCredentialDto          *CreateSlackOAuth2AuthorizationCredentialDto
+	CreateGoHighLevelMcpCredentialDto                    *CreateGoHighLevelMcpCredentialDto
 
 	typ string
 }
@@ -3946,6 +4016,13 @@ func (a *AssistantOverridesCredentialsItem) GetCreateSlackOAuth2AuthorizationCre
 	return a.CreateSlackOAuth2AuthorizationCredentialDto
 }
 
+func (a *AssistantOverridesCredentialsItem) GetCreateGoHighLevelMcpCredentialDto() *CreateGoHighLevelMcpCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateGoHighLevelMcpCredentialDto
+}
+
 func (a *AssistantOverridesCredentialsItem) UnmarshalJSON(data []byte) error {
 	valueCreateElevenLabsCredentialDto := new(CreateElevenLabsCredentialDto)
 	if err := json.Unmarshal(data, &valueCreateElevenLabsCredentialDto); err == nil {
@@ -4229,6 +4306,12 @@ func (a *AssistantOverridesCredentialsItem) UnmarshalJSON(data []byte) error {
 		a.CreateSlackOAuth2AuthorizationCredentialDto = valueCreateSlackOAuth2AuthorizationCredentialDto
 		return nil
 	}
+	valueCreateGoHighLevelMcpCredentialDto := new(CreateGoHighLevelMcpCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoHighLevelMcpCredentialDto); err == nil {
+		a.typ = "CreateGoHighLevelMcpCredentialDto"
+		a.CreateGoHighLevelMcpCredentialDto = valueCreateGoHighLevelMcpCredentialDto
+		return nil
+	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, a)
 }
 
@@ -4374,6 +4457,9 @@ func (a AssistantOverridesCredentialsItem) MarshalJSON() ([]byte, error) {
 	if a.typ == "CreateSlackOAuth2AuthorizationCredentialDto" || a.CreateSlackOAuth2AuthorizationCredentialDto != nil {
 		return json.Marshal(a.CreateSlackOAuth2AuthorizationCredentialDto)
 	}
+	if a.typ == "CreateGoHighLevelMcpCredentialDto" || a.CreateGoHighLevelMcpCredentialDto != nil {
+		return json.Marshal(a.CreateGoHighLevelMcpCredentialDto)
+	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", a)
 }
 
@@ -4425,6 +4511,7 @@ type AssistantOverridesCredentialsItemVisitor interface {
 	VisitCreateGoogleCalendarOAuth2AuthorizationCredentialDto(*CreateGoogleCalendarOAuth2AuthorizationCredentialDto) error
 	VisitCreateGoogleSheetsOAuth2AuthorizationCredentialDto(*CreateGoogleSheetsOAuth2AuthorizationCredentialDto) error
 	VisitCreateSlackOAuth2AuthorizationCredentialDto(*CreateSlackOAuth2AuthorizationCredentialDto) error
+	VisitCreateGoHighLevelMcpCredentialDto(*CreateGoHighLevelMcpCredentialDto) error
 }
 
 func (a *AssistantOverridesCredentialsItem) Accept(visitor AssistantOverridesCredentialsItemVisitor) error {
@@ -4568,6 +4655,9 @@ func (a *AssistantOverridesCredentialsItem) Accept(visitor AssistantOverridesCre
 	}
 	if a.typ == "CreateSlackOAuth2AuthorizationCredentialDto" || a.CreateSlackOAuth2AuthorizationCredentialDto != nil {
 		return visitor.VisitCreateSlackOAuth2AuthorizationCredentialDto(a.CreateSlackOAuth2AuthorizationCredentialDto)
+	}
+	if a.typ == "CreateGoHighLevelMcpCredentialDto" || a.CreateGoHighLevelMcpCredentialDto != nil {
+		return visitor.VisitCreateGoHighLevelMcpCredentialDto(a.CreateGoHighLevelMcpCredentialDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", a)
 }
@@ -5022,6 +5112,73 @@ func (a *AssistantOverridesModel) Accept(visitor AssistantOverridesModelVisitor)
 		return visitor.VisitXaiModel(a.XaiModel)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
+type AssistantOverridesServerMessagesItem string
+
+const (
+	AssistantOverridesServerMessagesItemConversationUpdate            AssistantOverridesServerMessagesItem = "conversation-update"
+	AssistantOverridesServerMessagesItemEndOfCallReport               AssistantOverridesServerMessagesItem = "end-of-call-report"
+	AssistantOverridesServerMessagesItemFunctionCall                  AssistantOverridesServerMessagesItem = "function-call"
+	AssistantOverridesServerMessagesItemHang                          AssistantOverridesServerMessagesItem = "hang"
+	AssistantOverridesServerMessagesItemLanguageChanged               AssistantOverridesServerMessagesItem = "language-changed"
+	AssistantOverridesServerMessagesItemLanguageChangeDetected        AssistantOverridesServerMessagesItem = "language-change-detected"
+	AssistantOverridesServerMessagesItemModelOutput                   AssistantOverridesServerMessagesItem = "model-output"
+	AssistantOverridesServerMessagesItemPhoneCallControl              AssistantOverridesServerMessagesItem = "phone-call-control"
+	AssistantOverridesServerMessagesItemSpeechUpdate                  AssistantOverridesServerMessagesItem = "speech-update"
+	AssistantOverridesServerMessagesItemStatusUpdate                  AssistantOverridesServerMessagesItem = "status-update"
+	AssistantOverridesServerMessagesItemTranscript                    AssistantOverridesServerMessagesItem = "transcript"
+	AssistantOverridesServerMessagesItemTranscriptTranscriptTypeFinal AssistantOverridesServerMessagesItem = "transcript[transcriptType=\\\"final\\\"]"
+	AssistantOverridesServerMessagesItemToolCalls                     AssistantOverridesServerMessagesItem = "tool-calls"
+	AssistantOverridesServerMessagesItemTransferDestinationRequest    AssistantOverridesServerMessagesItem = "transfer-destination-request"
+	AssistantOverridesServerMessagesItemTransferUpdate                AssistantOverridesServerMessagesItem = "transfer-update"
+	AssistantOverridesServerMessagesItemUserInterrupted               AssistantOverridesServerMessagesItem = "user-interrupted"
+	AssistantOverridesServerMessagesItemVoiceInput                    AssistantOverridesServerMessagesItem = "voice-input"
+)
+
+func NewAssistantOverridesServerMessagesItemFromString(s string) (AssistantOverridesServerMessagesItem, error) {
+	switch s {
+	case "conversation-update":
+		return AssistantOverridesServerMessagesItemConversationUpdate, nil
+	case "end-of-call-report":
+		return AssistantOverridesServerMessagesItemEndOfCallReport, nil
+	case "function-call":
+		return AssistantOverridesServerMessagesItemFunctionCall, nil
+	case "hang":
+		return AssistantOverridesServerMessagesItemHang, nil
+	case "language-changed":
+		return AssistantOverridesServerMessagesItemLanguageChanged, nil
+	case "language-change-detected":
+		return AssistantOverridesServerMessagesItemLanguageChangeDetected, nil
+	case "model-output":
+		return AssistantOverridesServerMessagesItemModelOutput, nil
+	case "phone-call-control":
+		return AssistantOverridesServerMessagesItemPhoneCallControl, nil
+	case "speech-update":
+		return AssistantOverridesServerMessagesItemSpeechUpdate, nil
+	case "status-update":
+		return AssistantOverridesServerMessagesItemStatusUpdate, nil
+	case "transcript":
+		return AssistantOverridesServerMessagesItemTranscript, nil
+	case "transcript[transcriptType=\"final\"]":
+		return AssistantOverridesServerMessagesItemTranscriptTranscriptTypeFinal, nil
+	case "tool-calls":
+		return AssistantOverridesServerMessagesItemToolCalls, nil
+	case "transfer-destination-request":
+		return AssistantOverridesServerMessagesItemTransferDestinationRequest, nil
+	case "transfer-update":
+		return AssistantOverridesServerMessagesItemTransferUpdate, nil
+	case "user-interrupted":
+		return AssistantOverridesServerMessagesItemUserInterrupted, nil
+	case "voice-input":
+		return AssistantOverridesServerMessagesItemVoiceInput, nil
+	}
+	var t AssistantOverridesServerMessagesItem
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (a AssistantOverridesServerMessagesItem) Ptr() *AssistantOverridesServerMessagesItem {
+	return &a
 }
 
 // These are the options for the assistant's transcriber.
@@ -5756,8 +5913,10 @@ type AssistantUserEditable struct {
 	// This uses Twilio's built-in detection while the VoicemailTool relies on the model to detect if a voicemail was reached.
 	// You can use neither of them, one of them, or both of them. By default, Twilio built-in detection is enabled while VoicemailTool is not.
 	VoicemailDetection *AssistantUserEditableVoicemailDetection `json:"voicemailDetection,omitempty" url:"voicemailDetection,omitempty"`
-	ClientMessages     [][]map[string]interface{}               `json:"clientMessages,omitempty" url:"clientMessages,omitempty"`
-	ServerMessages     [][]map[string]interface{}               `json:"serverMessages,omitempty" url:"serverMessages,omitempty"`
+	// These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
+	ClientMessages []AssistantUserEditableClientMessagesItem `json:"clientMessages,omitempty" url:"clientMessages,omitempty"`
+	// These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
+	ServerMessages []AssistantUserEditableServerMessagesItem `json:"serverMessages,omitempty" url:"serverMessages,omitempty"`
 	// How many seconds of silence to wait before ending the call. Defaults to 30.
 	//
 	// @default 30
@@ -5906,14 +6065,14 @@ func (a *AssistantUserEditable) GetVoicemailDetection() *AssistantUserEditableVo
 	return a.VoicemailDetection
 }
 
-func (a *AssistantUserEditable) GetClientMessages() [][]map[string]interface{} {
+func (a *AssistantUserEditable) GetClientMessages() []AssistantUserEditableClientMessagesItem {
 	if a == nil {
 		return nil
 	}
 	return a.ClientMessages
 }
 
-func (a *AssistantUserEditable) GetServerMessages() [][]map[string]interface{} {
+func (a *AssistantUserEditable) GetServerMessages() []AssistantUserEditableServerMessagesItem {
 	if a == nil {
 		return nil
 	}
@@ -6206,6 +6365,73 @@ func (a AssistantUserEditableBackgroundSoundZero) Ptr() *AssistantUserEditableBa
 	return &a
 }
 
+type AssistantUserEditableClientMessagesItem string
+
+const (
+	AssistantUserEditableClientMessagesItemConversationUpdate  AssistantUserEditableClientMessagesItem = "conversation-update"
+	AssistantUserEditableClientMessagesItemFunctionCall        AssistantUserEditableClientMessagesItem = "function-call"
+	AssistantUserEditableClientMessagesItemFunctionCallResult  AssistantUserEditableClientMessagesItem = "function-call-result"
+	AssistantUserEditableClientMessagesItemHang                AssistantUserEditableClientMessagesItem = "hang"
+	AssistantUserEditableClientMessagesItemLanguageChanged     AssistantUserEditableClientMessagesItem = "language-changed"
+	AssistantUserEditableClientMessagesItemMetadata            AssistantUserEditableClientMessagesItem = "metadata"
+	AssistantUserEditableClientMessagesItemModelOutput         AssistantUserEditableClientMessagesItem = "model-output"
+	AssistantUserEditableClientMessagesItemSpeechUpdate        AssistantUserEditableClientMessagesItem = "speech-update"
+	AssistantUserEditableClientMessagesItemStatusUpdate        AssistantUserEditableClientMessagesItem = "status-update"
+	AssistantUserEditableClientMessagesItemTranscript          AssistantUserEditableClientMessagesItem = "transcript"
+	AssistantUserEditableClientMessagesItemToolCalls           AssistantUserEditableClientMessagesItem = "tool-calls"
+	AssistantUserEditableClientMessagesItemToolCallsResult     AssistantUserEditableClientMessagesItem = "tool-calls-result"
+	AssistantUserEditableClientMessagesItemToolCompleted       AssistantUserEditableClientMessagesItem = "tool.completed"
+	AssistantUserEditableClientMessagesItemTransferUpdate      AssistantUserEditableClientMessagesItem = "transfer-update"
+	AssistantUserEditableClientMessagesItemUserInterrupted     AssistantUserEditableClientMessagesItem = "user-interrupted"
+	AssistantUserEditableClientMessagesItemVoiceInput          AssistantUserEditableClientMessagesItem = "voice-input"
+	AssistantUserEditableClientMessagesItemWorkflowNodeStarted AssistantUserEditableClientMessagesItem = "workflow.node.started"
+)
+
+func NewAssistantUserEditableClientMessagesItemFromString(s string) (AssistantUserEditableClientMessagesItem, error) {
+	switch s {
+	case "conversation-update":
+		return AssistantUserEditableClientMessagesItemConversationUpdate, nil
+	case "function-call":
+		return AssistantUserEditableClientMessagesItemFunctionCall, nil
+	case "function-call-result":
+		return AssistantUserEditableClientMessagesItemFunctionCallResult, nil
+	case "hang":
+		return AssistantUserEditableClientMessagesItemHang, nil
+	case "language-changed":
+		return AssistantUserEditableClientMessagesItemLanguageChanged, nil
+	case "metadata":
+		return AssistantUserEditableClientMessagesItemMetadata, nil
+	case "model-output":
+		return AssistantUserEditableClientMessagesItemModelOutput, nil
+	case "speech-update":
+		return AssistantUserEditableClientMessagesItemSpeechUpdate, nil
+	case "status-update":
+		return AssistantUserEditableClientMessagesItemStatusUpdate, nil
+	case "transcript":
+		return AssistantUserEditableClientMessagesItemTranscript, nil
+	case "tool-calls":
+		return AssistantUserEditableClientMessagesItemToolCalls, nil
+	case "tool-calls-result":
+		return AssistantUserEditableClientMessagesItemToolCallsResult, nil
+	case "tool.completed":
+		return AssistantUserEditableClientMessagesItemToolCompleted, nil
+	case "transfer-update":
+		return AssistantUserEditableClientMessagesItemTransferUpdate, nil
+	case "user-interrupted":
+		return AssistantUserEditableClientMessagesItemUserInterrupted, nil
+	case "voice-input":
+		return AssistantUserEditableClientMessagesItemVoiceInput, nil
+	case "workflow.node.started":
+		return AssistantUserEditableClientMessagesItemWorkflowNodeStarted, nil
+	}
+	var t AssistantUserEditableClientMessagesItem
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (a AssistantUserEditableClientMessagesItem) Ptr() *AssistantUserEditableClientMessagesItem {
+	return &a
+}
+
 type AssistantUserEditableCredentialsItem struct {
 	CreateElevenLabsCredentialDto                        *CreateElevenLabsCredentialDto
 	CreateAnthropicCredentialDto                         *CreateAnthropicCredentialDto
@@ -6254,6 +6480,7 @@ type AssistantUserEditableCredentialsItem struct {
 	CreateGoogleCalendarOAuth2AuthorizationCredentialDto *CreateGoogleCalendarOAuth2AuthorizationCredentialDto
 	CreateGoogleSheetsOAuth2AuthorizationCredentialDto   *CreateGoogleSheetsOAuth2AuthorizationCredentialDto
 	CreateSlackOAuth2AuthorizationCredentialDto          *CreateSlackOAuth2AuthorizationCredentialDto
+	CreateGoHighLevelMcpCredentialDto                    *CreateGoHighLevelMcpCredentialDto
 
 	typ string
 }
@@ -6587,6 +6814,13 @@ func (a *AssistantUserEditableCredentialsItem) GetCreateSlackOAuth2Authorization
 	return a.CreateSlackOAuth2AuthorizationCredentialDto
 }
 
+func (a *AssistantUserEditableCredentialsItem) GetCreateGoHighLevelMcpCredentialDto() *CreateGoHighLevelMcpCredentialDto {
+	if a == nil {
+		return nil
+	}
+	return a.CreateGoHighLevelMcpCredentialDto
+}
+
 func (a *AssistantUserEditableCredentialsItem) UnmarshalJSON(data []byte) error {
 	valueCreateElevenLabsCredentialDto := new(CreateElevenLabsCredentialDto)
 	if err := json.Unmarshal(data, &valueCreateElevenLabsCredentialDto); err == nil {
@@ -6870,6 +7104,12 @@ func (a *AssistantUserEditableCredentialsItem) UnmarshalJSON(data []byte) error 
 		a.CreateSlackOAuth2AuthorizationCredentialDto = valueCreateSlackOAuth2AuthorizationCredentialDto
 		return nil
 	}
+	valueCreateGoHighLevelMcpCredentialDto := new(CreateGoHighLevelMcpCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoHighLevelMcpCredentialDto); err == nil {
+		a.typ = "CreateGoHighLevelMcpCredentialDto"
+		a.CreateGoHighLevelMcpCredentialDto = valueCreateGoHighLevelMcpCredentialDto
+		return nil
+	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, a)
 }
 
@@ -7015,6 +7255,9 @@ func (a AssistantUserEditableCredentialsItem) MarshalJSON() ([]byte, error) {
 	if a.typ == "CreateSlackOAuth2AuthorizationCredentialDto" || a.CreateSlackOAuth2AuthorizationCredentialDto != nil {
 		return json.Marshal(a.CreateSlackOAuth2AuthorizationCredentialDto)
 	}
+	if a.typ == "CreateGoHighLevelMcpCredentialDto" || a.CreateGoHighLevelMcpCredentialDto != nil {
+		return json.Marshal(a.CreateGoHighLevelMcpCredentialDto)
+	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", a)
 }
 
@@ -7066,6 +7309,7 @@ type AssistantUserEditableCredentialsItemVisitor interface {
 	VisitCreateGoogleCalendarOAuth2AuthorizationCredentialDto(*CreateGoogleCalendarOAuth2AuthorizationCredentialDto) error
 	VisitCreateGoogleSheetsOAuth2AuthorizationCredentialDto(*CreateGoogleSheetsOAuth2AuthorizationCredentialDto) error
 	VisitCreateSlackOAuth2AuthorizationCredentialDto(*CreateSlackOAuth2AuthorizationCredentialDto) error
+	VisitCreateGoHighLevelMcpCredentialDto(*CreateGoHighLevelMcpCredentialDto) error
 }
 
 func (a *AssistantUserEditableCredentialsItem) Accept(visitor AssistantUserEditableCredentialsItemVisitor) error {
@@ -7209,6 +7453,9 @@ func (a *AssistantUserEditableCredentialsItem) Accept(visitor AssistantUserEdita
 	}
 	if a.typ == "CreateSlackOAuth2AuthorizationCredentialDto" || a.CreateSlackOAuth2AuthorizationCredentialDto != nil {
 		return visitor.VisitCreateSlackOAuth2AuthorizationCredentialDto(a.CreateSlackOAuth2AuthorizationCredentialDto)
+	}
+	if a.typ == "CreateGoHighLevelMcpCredentialDto" || a.CreateGoHighLevelMcpCredentialDto != nil {
+		return visitor.VisitCreateGoHighLevelMcpCredentialDto(a.CreateGoHighLevelMcpCredentialDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", a)
 }
@@ -7663,6 +7910,73 @@ func (a *AssistantUserEditableModel) Accept(visitor AssistantUserEditableModelVi
 		return visitor.VisitXaiModel(a.XaiModel)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
+type AssistantUserEditableServerMessagesItem string
+
+const (
+	AssistantUserEditableServerMessagesItemConversationUpdate            AssistantUserEditableServerMessagesItem = "conversation-update"
+	AssistantUserEditableServerMessagesItemEndOfCallReport               AssistantUserEditableServerMessagesItem = "end-of-call-report"
+	AssistantUserEditableServerMessagesItemFunctionCall                  AssistantUserEditableServerMessagesItem = "function-call"
+	AssistantUserEditableServerMessagesItemHang                          AssistantUserEditableServerMessagesItem = "hang"
+	AssistantUserEditableServerMessagesItemLanguageChanged               AssistantUserEditableServerMessagesItem = "language-changed"
+	AssistantUserEditableServerMessagesItemLanguageChangeDetected        AssistantUserEditableServerMessagesItem = "language-change-detected"
+	AssistantUserEditableServerMessagesItemModelOutput                   AssistantUserEditableServerMessagesItem = "model-output"
+	AssistantUserEditableServerMessagesItemPhoneCallControl              AssistantUserEditableServerMessagesItem = "phone-call-control"
+	AssistantUserEditableServerMessagesItemSpeechUpdate                  AssistantUserEditableServerMessagesItem = "speech-update"
+	AssistantUserEditableServerMessagesItemStatusUpdate                  AssistantUserEditableServerMessagesItem = "status-update"
+	AssistantUserEditableServerMessagesItemTranscript                    AssistantUserEditableServerMessagesItem = "transcript"
+	AssistantUserEditableServerMessagesItemTranscriptTranscriptTypeFinal AssistantUserEditableServerMessagesItem = "transcript[transcriptType=\\\"final\\\"]"
+	AssistantUserEditableServerMessagesItemToolCalls                     AssistantUserEditableServerMessagesItem = "tool-calls"
+	AssistantUserEditableServerMessagesItemTransferDestinationRequest    AssistantUserEditableServerMessagesItem = "transfer-destination-request"
+	AssistantUserEditableServerMessagesItemTransferUpdate                AssistantUserEditableServerMessagesItem = "transfer-update"
+	AssistantUserEditableServerMessagesItemUserInterrupted               AssistantUserEditableServerMessagesItem = "user-interrupted"
+	AssistantUserEditableServerMessagesItemVoiceInput                    AssistantUserEditableServerMessagesItem = "voice-input"
+)
+
+func NewAssistantUserEditableServerMessagesItemFromString(s string) (AssistantUserEditableServerMessagesItem, error) {
+	switch s {
+	case "conversation-update":
+		return AssistantUserEditableServerMessagesItemConversationUpdate, nil
+	case "end-of-call-report":
+		return AssistantUserEditableServerMessagesItemEndOfCallReport, nil
+	case "function-call":
+		return AssistantUserEditableServerMessagesItemFunctionCall, nil
+	case "hang":
+		return AssistantUserEditableServerMessagesItemHang, nil
+	case "language-changed":
+		return AssistantUserEditableServerMessagesItemLanguageChanged, nil
+	case "language-change-detected":
+		return AssistantUserEditableServerMessagesItemLanguageChangeDetected, nil
+	case "model-output":
+		return AssistantUserEditableServerMessagesItemModelOutput, nil
+	case "phone-call-control":
+		return AssistantUserEditableServerMessagesItemPhoneCallControl, nil
+	case "speech-update":
+		return AssistantUserEditableServerMessagesItemSpeechUpdate, nil
+	case "status-update":
+		return AssistantUserEditableServerMessagesItemStatusUpdate, nil
+	case "transcript":
+		return AssistantUserEditableServerMessagesItemTranscript, nil
+	case "transcript[transcriptType=\"final\"]":
+		return AssistantUserEditableServerMessagesItemTranscriptTranscriptTypeFinal, nil
+	case "tool-calls":
+		return AssistantUserEditableServerMessagesItemToolCalls, nil
+	case "transfer-destination-request":
+		return AssistantUserEditableServerMessagesItemTransferDestinationRequest, nil
+	case "transfer-update":
+		return AssistantUserEditableServerMessagesItemTransferUpdate, nil
+	case "user-interrupted":
+		return AssistantUserEditableServerMessagesItemUserInterrupted, nil
+	case "voice-input":
+		return AssistantUserEditableServerMessagesItemVoiceInput, nil
+	}
+	var t AssistantUserEditableServerMessagesItem
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (a AssistantUserEditableServerMessagesItem) Ptr() *AssistantUserEditableServerMessagesItem {
+	return &a
 }
 
 // These are the options for the assistant's transcriber.
@@ -15329,14 +15643,14 @@ type ClientMessageTranscriptType string
 
 const (
 	ClientMessageTranscriptTypeTranscript                    ClientMessageTranscriptType = "transcript"
-	ClientMessageTranscriptTypeTranscriptTranscriptTypeFinal ClientMessageTranscriptType = "transcript[transcriptType='final']"
+	ClientMessageTranscriptTypeTranscriptTranscriptTypeFinal ClientMessageTranscriptType = "transcript[transcriptType=\\\"final\\\"]"
 )
 
 func NewClientMessageTranscriptTypeFromString(s string) (ClientMessageTranscriptType, error) {
 	switch s {
 	case "transcript":
 		return ClientMessageTranscriptTypeTranscript, nil
-	case "transcript[transcriptType='final']":
+	case "transcript[transcriptType=\"final\"]":
 		return ClientMessageTranscriptTypeTranscriptTranscriptTypeFinal, nil
 	}
 	var t ClientMessageTranscriptType
@@ -16964,6 +17278,727 @@ func (c ConditionOperator) Ptr() *ConditionOperator {
 	return &c
 }
 
+type Conversation struct {
+	// This is the model for the Conversation Task.
+	Model *ConversationModel `json:"model,omitempty" url:"model,omitempty"`
+	// These are the options for the assistant's transcriber.
+	Transcriber *ConversationTranscriber `json:"transcriber,omitempty" url:"transcriber,omitempty"`
+	// These are the options for the assistant's voice.
+	Voice       *ConversationVoice `json:"voice,omitempty" url:"voice,omitempty"`
+	Prompt      *string            `json:"prompt,omitempty" url:"prompt,omitempty"`
+	MessagePlan *MessagePlan       `json:"messagePlan,omitempty" url:"messagePlan,omitempty"`
+	// This is the plan for the global node.
+	GlobalNodePlan *GlobalNodePlan `json:"globalNodePlan,omitempty" url:"globalNodePlan,omitempty"`
+	Name           string          `json:"name" url:"name"`
+	// This is for metadata you want to store on the task.
+	Metadata map[string]interface{} `json:"metadata,omitempty" url:"metadata,omitempty"`
+	type_    string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *Conversation) GetModel() *ConversationModel {
+	if c == nil {
+		return nil
+	}
+	return c.Model
+}
+
+func (c *Conversation) GetTranscriber() *ConversationTranscriber {
+	if c == nil {
+		return nil
+	}
+	return c.Transcriber
+}
+
+func (c *Conversation) GetVoice() *ConversationVoice {
+	if c == nil {
+		return nil
+	}
+	return c.Voice
+}
+
+func (c *Conversation) GetPrompt() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Prompt
+}
+
+func (c *Conversation) GetMessagePlan() *MessagePlan {
+	if c == nil {
+		return nil
+	}
+	return c.MessagePlan
+}
+
+func (c *Conversation) GetGlobalNodePlan() *GlobalNodePlan {
+	if c == nil {
+		return nil
+	}
+	return c.GlobalNodePlan
+}
+
+func (c *Conversation) GetName() string {
+	if c == nil {
+		return ""
+	}
+	return c.Name
+}
+
+func (c *Conversation) GetMetadata() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.Metadata
+}
+
+func (c *Conversation) Type() string {
+	return c.type_
+}
+
+func (c *Conversation) GetExtraProperties() map[string]interface{} {
+	return c.extraProperties
+}
+
+func (c *Conversation) UnmarshalJSON(data []byte) error {
+	type embed Conversation
+	var unmarshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*c),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*c = Conversation(unmarshaler.embed)
+	if unmarshaler.Type != "conversation" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", c, "conversation", unmarshaler.Type)
+	}
+	c.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *c, "type")
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *Conversation) MarshalJSON() ([]byte, error) {
+	type embed Conversation
+	var marshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*c),
+		Type:  "conversation",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (c *Conversation) String() string {
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+// This is the model for the Conversation Task.
+type ConversationModel struct {
+	Unknown interface{}
+
+	typ string
+}
+
+func (c *ConversationModel) GetUnknown() interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.Unknown
+}
+
+func (c *ConversationModel) UnmarshalJSON(data []byte) error {
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		c.typ = "Unknown"
+		c.Unknown = valueUnknown
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c ConversationModel) MarshalJSON() ([]byte, error) {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return json.Marshal(c.Unknown)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type ConversationModelVisitor interface {
+	VisitUnknown(interface{}) error
+}
+
+func (c *ConversationModel) Accept(visitor ConversationModelVisitor) error {
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return visitor.VisitUnknown(c.Unknown)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+// These are the options for the assistant's transcriber.
+type ConversationTranscriber struct {
+	AssemblyAiTranscriber   *AssemblyAiTranscriber
+	AzureSpeechTranscriber  *AzureSpeechTranscriber
+	CustomTranscriber       *CustomTranscriber
+	DeepgramTranscriber     *DeepgramTranscriber
+	ElevenLabsTranscriber   *ElevenLabsTranscriber
+	GladiaTranscriber       *GladiaTranscriber
+	SpeechmaticsTranscriber *SpeechmaticsTranscriber
+	TalkscriberTranscriber  *TalkscriberTranscriber
+	GoogleTranscriber       *GoogleTranscriber
+	OpenAiTranscriber       *OpenAiTranscriber
+
+	typ string
+}
+
+func (c *ConversationTranscriber) GetAssemblyAiTranscriber() *AssemblyAiTranscriber {
+	if c == nil {
+		return nil
+	}
+	return c.AssemblyAiTranscriber
+}
+
+func (c *ConversationTranscriber) GetAzureSpeechTranscriber() *AzureSpeechTranscriber {
+	if c == nil {
+		return nil
+	}
+	return c.AzureSpeechTranscriber
+}
+
+func (c *ConversationTranscriber) GetCustomTranscriber() *CustomTranscriber {
+	if c == nil {
+		return nil
+	}
+	return c.CustomTranscriber
+}
+
+func (c *ConversationTranscriber) GetDeepgramTranscriber() *DeepgramTranscriber {
+	if c == nil {
+		return nil
+	}
+	return c.DeepgramTranscriber
+}
+
+func (c *ConversationTranscriber) GetElevenLabsTranscriber() *ElevenLabsTranscriber {
+	if c == nil {
+		return nil
+	}
+	return c.ElevenLabsTranscriber
+}
+
+func (c *ConversationTranscriber) GetGladiaTranscriber() *GladiaTranscriber {
+	if c == nil {
+		return nil
+	}
+	return c.GladiaTranscriber
+}
+
+func (c *ConversationTranscriber) GetSpeechmaticsTranscriber() *SpeechmaticsTranscriber {
+	if c == nil {
+		return nil
+	}
+	return c.SpeechmaticsTranscriber
+}
+
+func (c *ConversationTranscriber) GetTalkscriberTranscriber() *TalkscriberTranscriber {
+	if c == nil {
+		return nil
+	}
+	return c.TalkscriberTranscriber
+}
+
+func (c *ConversationTranscriber) GetGoogleTranscriber() *GoogleTranscriber {
+	if c == nil {
+		return nil
+	}
+	return c.GoogleTranscriber
+}
+
+func (c *ConversationTranscriber) GetOpenAiTranscriber() *OpenAiTranscriber {
+	if c == nil {
+		return nil
+	}
+	return c.OpenAiTranscriber
+}
+
+func (c *ConversationTranscriber) UnmarshalJSON(data []byte) error {
+	valueAssemblyAiTranscriber := new(AssemblyAiTranscriber)
+	if err := json.Unmarshal(data, &valueAssemblyAiTranscriber); err == nil {
+		c.typ = "AssemblyAiTranscriber"
+		c.AssemblyAiTranscriber = valueAssemblyAiTranscriber
+		return nil
+	}
+	valueAzureSpeechTranscriber := new(AzureSpeechTranscriber)
+	if err := json.Unmarshal(data, &valueAzureSpeechTranscriber); err == nil {
+		c.typ = "AzureSpeechTranscriber"
+		c.AzureSpeechTranscriber = valueAzureSpeechTranscriber
+		return nil
+	}
+	valueCustomTranscriber := new(CustomTranscriber)
+	if err := json.Unmarshal(data, &valueCustomTranscriber); err == nil {
+		c.typ = "CustomTranscriber"
+		c.CustomTranscriber = valueCustomTranscriber
+		return nil
+	}
+	valueDeepgramTranscriber := new(DeepgramTranscriber)
+	if err := json.Unmarshal(data, &valueDeepgramTranscriber); err == nil {
+		c.typ = "DeepgramTranscriber"
+		c.DeepgramTranscriber = valueDeepgramTranscriber
+		return nil
+	}
+	valueElevenLabsTranscriber := new(ElevenLabsTranscriber)
+	if err := json.Unmarshal(data, &valueElevenLabsTranscriber); err == nil {
+		c.typ = "ElevenLabsTranscriber"
+		c.ElevenLabsTranscriber = valueElevenLabsTranscriber
+		return nil
+	}
+	valueGladiaTranscriber := new(GladiaTranscriber)
+	if err := json.Unmarshal(data, &valueGladiaTranscriber); err == nil {
+		c.typ = "GladiaTranscriber"
+		c.GladiaTranscriber = valueGladiaTranscriber
+		return nil
+	}
+	valueSpeechmaticsTranscriber := new(SpeechmaticsTranscriber)
+	if err := json.Unmarshal(data, &valueSpeechmaticsTranscriber); err == nil {
+		c.typ = "SpeechmaticsTranscriber"
+		c.SpeechmaticsTranscriber = valueSpeechmaticsTranscriber
+		return nil
+	}
+	valueTalkscriberTranscriber := new(TalkscriberTranscriber)
+	if err := json.Unmarshal(data, &valueTalkscriberTranscriber); err == nil {
+		c.typ = "TalkscriberTranscriber"
+		c.TalkscriberTranscriber = valueTalkscriberTranscriber
+		return nil
+	}
+	valueGoogleTranscriber := new(GoogleTranscriber)
+	if err := json.Unmarshal(data, &valueGoogleTranscriber); err == nil {
+		c.typ = "GoogleTranscriber"
+		c.GoogleTranscriber = valueGoogleTranscriber
+		return nil
+	}
+	valueOpenAiTranscriber := new(OpenAiTranscriber)
+	if err := json.Unmarshal(data, &valueOpenAiTranscriber); err == nil {
+		c.typ = "OpenAiTranscriber"
+		c.OpenAiTranscriber = valueOpenAiTranscriber
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c ConversationTranscriber) MarshalJSON() ([]byte, error) {
+	if c.typ == "AssemblyAiTranscriber" || c.AssemblyAiTranscriber != nil {
+		return json.Marshal(c.AssemblyAiTranscriber)
+	}
+	if c.typ == "AzureSpeechTranscriber" || c.AzureSpeechTranscriber != nil {
+		return json.Marshal(c.AzureSpeechTranscriber)
+	}
+	if c.typ == "CustomTranscriber" || c.CustomTranscriber != nil {
+		return json.Marshal(c.CustomTranscriber)
+	}
+	if c.typ == "DeepgramTranscriber" || c.DeepgramTranscriber != nil {
+		return json.Marshal(c.DeepgramTranscriber)
+	}
+	if c.typ == "ElevenLabsTranscriber" || c.ElevenLabsTranscriber != nil {
+		return json.Marshal(c.ElevenLabsTranscriber)
+	}
+	if c.typ == "GladiaTranscriber" || c.GladiaTranscriber != nil {
+		return json.Marshal(c.GladiaTranscriber)
+	}
+	if c.typ == "SpeechmaticsTranscriber" || c.SpeechmaticsTranscriber != nil {
+		return json.Marshal(c.SpeechmaticsTranscriber)
+	}
+	if c.typ == "TalkscriberTranscriber" || c.TalkscriberTranscriber != nil {
+		return json.Marshal(c.TalkscriberTranscriber)
+	}
+	if c.typ == "GoogleTranscriber" || c.GoogleTranscriber != nil {
+		return json.Marshal(c.GoogleTranscriber)
+	}
+	if c.typ == "OpenAiTranscriber" || c.OpenAiTranscriber != nil {
+		return json.Marshal(c.OpenAiTranscriber)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type ConversationTranscriberVisitor interface {
+	VisitAssemblyAiTranscriber(*AssemblyAiTranscriber) error
+	VisitAzureSpeechTranscriber(*AzureSpeechTranscriber) error
+	VisitCustomTranscriber(*CustomTranscriber) error
+	VisitDeepgramTranscriber(*DeepgramTranscriber) error
+	VisitElevenLabsTranscriber(*ElevenLabsTranscriber) error
+	VisitGladiaTranscriber(*GladiaTranscriber) error
+	VisitSpeechmaticsTranscriber(*SpeechmaticsTranscriber) error
+	VisitTalkscriberTranscriber(*TalkscriberTranscriber) error
+	VisitGoogleTranscriber(*GoogleTranscriber) error
+	VisitOpenAiTranscriber(*OpenAiTranscriber) error
+}
+
+func (c *ConversationTranscriber) Accept(visitor ConversationTranscriberVisitor) error {
+	if c.typ == "AssemblyAiTranscriber" || c.AssemblyAiTranscriber != nil {
+		return visitor.VisitAssemblyAiTranscriber(c.AssemblyAiTranscriber)
+	}
+	if c.typ == "AzureSpeechTranscriber" || c.AzureSpeechTranscriber != nil {
+		return visitor.VisitAzureSpeechTranscriber(c.AzureSpeechTranscriber)
+	}
+	if c.typ == "CustomTranscriber" || c.CustomTranscriber != nil {
+		return visitor.VisitCustomTranscriber(c.CustomTranscriber)
+	}
+	if c.typ == "DeepgramTranscriber" || c.DeepgramTranscriber != nil {
+		return visitor.VisitDeepgramTranscriber(c.DeepgramTranscriber)
+	}
+	if c.typ == "ElevenLabsTranscriber" || c.ElevenLabsTranscriber != nil {
+		return visitor.VisitElevenLabsTranscriber(c.ElevenLabsTranscriber)
+	}
+	if c.typ == "GladiaTranscriber" || c.GladiaTranscriber != nil {
+		return visitor.VisitGladiaTranscriber(c.GladiaTranscriber)
+	}
+	if c.typ == "SpeechmaticsTranscriber" || c.SpeechmaticsTranscriber != nil {
+		return visitor.VisitSpeechmaticsTranscriber(c.SpeechmaticsTranscriber)
+	}
+	if c.typ == "TalkscriberTranscriber" || c.TalkscriberTranscriber != nil {
+		return visitor.VisitTalkscriberTranscriber(c.TalkscriberTranscriber)
+	}
+	if c.typ == "GoogleTranscriber" || c.GoogleTranscriber != nil {
+		return visitor.VisitGoogleTranscriber(c.GoogleTranscriber)
+	}
+	if c.typ == "OpenAiTranscriber" || c.OpenAiTranscriber != nil {
+		return visitor.VisitOpenAiTranscriber(c.OpenAiTranscriber)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+// These are the options for the assistant's voice.
+type ConversationVoice struct {
+	AzureVoice      *AzureVoice
+	CartesiaVoice   *CartesiaVoice
+	CustomVoice     *CustomVoice
+	DeepgramVoice   *DeepgramVoice
+	ElevenLabsVoice *ElevenLabsVoice
+	HumeVoice       *HumeVoice
+	LmntVoice       *LmntVoice
+	NeuphonicVoice  *NeuphonicVoice
+	OpenAiVoice     *OpenAiVoice
+	PlayHtVoice     *PlayHtVoice
+	RimeAiVoice     *RimeAiVoice
+	SmallestAiVoice *SmallestAiVoice
+	TavusVoice      *TavusVoice
+	VapiVoice       *VapiVoice
+
+	typ string
+}
+
+func (c *ConversationVoice) GetAzureVoice() *AzureVoice {
+	if c == nil {
+		return nil
+	}
+	return c.AzureVoice
+}
+
+func (c *ConversationVoice) GetCartesiaVoice() *CartesiaVoice {
+	if c == nil {
+		return nil
+	}
+	return c.CartesiaVoice
+}
+
+func (c *ConversationVoice) GetCustomVoice() *CustomVoice {
+	if c == nil {
+		return nil
+	}
+	return c.CustomVoice
+}
+
+func (c *ConversationVoice) GetDeepgramVoice() *DeepgramVoice {
+	if c == nil {
+		return nil
+	}
+	return c.DeepgramVoice
+}
+
+func (c *ConversationVoice) GetElevenLabsVoice() *ElevenLabsVoice {
+	if c == nil {
+		return nil
+	}
+	return c.ElevenLabsVoice
+}
+
+func (c *ConversationVoice) GetHumeVoice() *HumeVoice {
+	if c == nil {
+		return nil
+	}
+	return c.HumeVoice
+}
+
+func (c *ConversationVoice) GetLmntVoice() *LmntVoice {
+	if c == nil {
+		return nil
+	}
+	return c.LmntVoice
+}
+
+func (c *ConversationVoice) GetNeuphonicVoice() *NeuphonicVoice {
+	if c == nil {
+		return nil
+	}
+	return c.NeuphonicVoice
+}
+
+func (c *ConversationVoice) GetOpenAiVoice() *OpenAiVoice {
+	if c == nil {
+		return nil
+	}
+	return c.OpenAiVoice
+}
+
+func (c *ConversationVoice) GetPlayHtVoice() *PlayHtVoice {
+	if c == nil {
+		return nil
+	}
+	return c.PlayHtVoice
+}
+
+func (c *ConversationVoice) GetRimeAiVoice() *RimeAiVoice {
+	if c == nil {
+		return nil
+	}
+	return c.RimeAiVoice
+}
+
+func (c *ConversationVoice) GetSmallestAiVoice() *SmallestAiVoice {
+	if c == nil {
+		return nil
+	}
+	return c.SmallestAiVoice
+}
+
+func (c *ConversationVoice) GetTavusVoice() *TavusVoice {
+	if c == nil {
+		return nil
+	}
+	return c.TavusVoice
+}
+
+func (c *ConversationVoice) GetVapiVoice() *VapiVoice {
+	if c == nil {
+		return nil
+	}
+	return c.VapiVoice
+}
+
+func (c *ConversationVoice) UnmarshalJSON(data []byte) error {
+	valueAzureVoice := new(AzureVoice)
+	if err := json.Unmarshal(data, &valueAzureVoice); err == nil {
+		c.typ = "AzureVoice"
+		c.AzureVoice = valueAzureVoice
+		return nil
+	}
+	valueCartesiaVoice := new(CartesiaVoice)
+	if err := json.Unmarshal(data, &valueCartesiaVoice); err == nil {
+		c.typ = "CartesiaVoice"
+		c.CartesiaVoice = valueCartesiaVoice
+		return nil
+	}
+	valueCustomVoice := new(CustomVoice)
+	if err := json.Unmarshal(data, &valueCustomVoice); err == nil {
+		c.typ = "CustomVoice"
+		c.CustomVoice = valueCustomVoice
+		return nil
+	}
+	valueDeepgramVoice := new(DeepgramVoice)
+	if err := json.Unmarshal(data, &valueDeepgramVoice); err == nil {
+		c.typ = "DeepgramVoice"
+		c.DeepgramVoice = valueDeepgramVoice
+		return nil
+	}
+	valueElevenLabsVoice := new(ElevenLabsVoice)
+	if err := json.Unmarshal(data, &valueElevenLabsVoice); err == nil {
+		c.typ = "ElevenLabsVoice"
+		c.ElevenLabsVoice = valueElevenLabsVoice
+		return nil
+	}
+	valueHumeVoice := new(HumeVoice)
+	if err := json.Unmarshal(data, &valueHumeVoice); err == nil {
+		c.typ = "HumeVoice"
+		c.HumeVoice = valueHumeVoice
+		return nil
+	}
+	valueLmntVoice := new(LmntVoice)
+	if err := json.Unmarshal(data, &valueLmntVoice); err == nil {
+		c.typ = "LmntVoice"
+		c.LmntVoice = valueLmntVoice
+		return nil
+	}
+	valueNeuphonicVoice := new(NeuphonicVoice)
+	if err := json.Unmarshal(data, &valueNeuphonicVoice); err == nil {
+		c.typ = "NeuphonicVoice"
+		c.NeuphonicVoice = valueNeuphonicVoice
+		return nil
+	}
+	valueOpenAiVoice := new(OpenAiVoice)
+	if err := json.Unmarshal(data, &valueOpenAiVoice); err == nil {
+		c.typ = "OpenAiVoice"
+		c.OpenAiVoice = valueOpenAiVoice
+		return nil
+	}
+	valuePlayHtVoice := new(PlayHtVoice)
+	if err := json.Unmarshal(data, &valuePlayHtVoice); err == nil {
+		c.typ = "PlayHtVoice"
+		c.PlayHtVoice = valuePlayHtVoice
+		return nil
+	}
+	valueRimeAiVoice := new(RimeAiVoice)
+	if err := json.Unmarshal(data, &valueRimeAiVoice); err == nil {
+		c.typ = "RimeAiVoice"
+		c.RimeAiVoice = valueRimeAiVoice
+		return nil
+	}
+	valueSmallestAiVoice := new(SmallestAiVoice)
+	if err := json.Unmarshal(data, &valueSmallestAiVoice); err == nil {
+		c.typ = "SmallestAiVoice"
+		c.SmallestAiVoice = valueSmallestAiVoice
+		return nil
+	}
+	valueTavusVoice := new(TavusVoice)
+	if err := json.Unmarshal(data, &valueTavusVoice); err == nil {
+		c.typ = "TavusVoice"
+		c.TavusVoice = valueTavusVoice
+		return nil
+	}
+	valueVapiVoice := new(VapiVoice)
+	if err := json.Unmarshal(data, &valueVapiVoice); err == nil {
+		c.typ = "VapiVoice"
+		c.VapiVoice = valueVapiVoice
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c ConversationVoice) MarshalJSON() ([]byte, error) {
+	if c.typ == "AzureVoice" || c.AzureVoice != nil {
+		return json.Marshal(c.AzureVoice)
+	}
+	if c.typ == "CartesiaVoice" || c.CartesiaVoice != nil {
+		return json.Marshal(c.CartesiaVoice)
+	}
+	if c.typ == "CustomVoice" || c.CustomVoice != nil {
+		return json.Marshal(c.CustomVoice)
+	}
+	if c.typ == "DeepgramVoice" || c.DeepgramVoice != nil {
+		return json.Marshal(c.DeepgramVoice)
+	}
+	if c.typ == "ElevenLabsVoice" || c.ElevenLabsVoice != nil {
+		return json.Marshal(c.ElevenLabsVoice)
+	}
+	if c.typ == "HumeVoice" || c.HumeVoice != nil {
+		return json.Marshal(c.HumeVoice)
+	}
+	if c.typ == "LmntVoice" || c.LmntVoice != nil {
+		return json.Marshal(c.LmntVoice)
+	}
+	if c.typ == "NeuphonicVoice" || c.NeuphonicVoice != nil {
+		return json.Marshal(c.NeuphonicVoice)
+	}
+	if c.typ == "OpenAiVoice" || c.OpenAiVoice != nil {
+		return json.Marshal(c.OpenAiVoice)
+	}
+	if c.typ == "PlayHtVoice" || c.PlayHtVoice != nil {
+		return json.Marshal(c.PlayHtVoice)
+	}
+	if c.typ == "RimeAiVoice" || c.RimeAiVoice != nil {
+		return json.Marshal(c.RimeAiVoice)
+	}
+	if c.typ == "SmallestAiVoice" || c.SmallestAiVoice != nil {
+		return json.Marshal(c.SmallestAiVoice)
+	}
+	if c.typ == "TavusVoice" || c.TavusVoice != nil {
+		return json.Marshal(c.TavusVoice)
+	}
+	if c.typ == "VapiVoice" || c.VapiVoice != nil {
+		return json.Marshal(c.VapiVoice)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type ConversationVoiceVisitor interface {
+	VisitAzureVoice(*AzureVoice) error
+	VisitCartesiaVoice(*CartesiaVoice) error
+	VisitCustomVoice(*CustomVoice) error
+	VisitDeepgramVoice(*DeepgramVoice) error
+	VisitElevenLabsVoice(*ElevenLabsVoice) error
+	VisitHumeVoice(*HumeVoice) error
+	VisitLmntVoice(*LmntVoice) error
+	VisitNeuphonicVoice(*NeuphonicVoice) error
+	VisitOpenAiVoice(*OpenAiVoice) error
+	VisitPlayHtVoice(*PlayHtVoice) error
+	VisitRimeAiVoice(*RimeAiVoice) error
+	VisitSmallestAiVoice(*SmallestAiVoice) error
+	VisitTavusVoice(*TavusVoice) error
+	VisitVapiVoice(*VapiVoice) error
+}
+
+func (c *ConversationVoice) Accept(visitor ConversationVoiceVisitor) error {
+	if c.typ == "AzureVoice" || c.AzureVoice != nil {
+		return visitor.VisitAzureVoice(c.AzureVoice)
+	}
+	if c.typ == "CartesiaVoice" || c.CartesiaVoice != nil {
+		return visitor.VisitCartesiaVoice(c.CartesiaVoice)
+	}
+	if c.typ == "CustomVoice" || c.CustomVoice != nil {
+		return visitor.VisitCustomVoice(c.CustomVoice)
+	}
+	if c.typ == "DeepgramVoice" || c.DeepgramVoice != nil {
+		return visitor.VisitDeepgramVoice(c.DeepgramVoice)
+	}
+	if c.typ == "ElevenLabsVoice" || c.ElevenLabsVoice != nil {
+		return visitor.VisitElevenLabsVoice(c.ElevenLabsVoice)
+	}
+	if c.typ == "HumeVoice" || c.HumeVoice != nil {
+		return visitor.VisitHumeVoice(c.HumeVoice)
+	}
+	if c.typ == "LmntVoice" || c.LmntVoice != nil {
+		return visitor.VisitLmntVoice(c.LmntVoice)
+	}
+	if c.typ == "NeuphonicVoice" || c.NeuphonicVoice != nil {
+		return visitor.VisitNeuphonicVoice(c.NeuphonicVoice)
+	}
+	if c.typ == "OpenAiVoice" || c.OpenAiVoice != nil {
+		return visitor.VisitOpenAiVoice(c.OpenAiVoice)
+	}
+	if c.typ == "PlayHtVoice" || c.PlayHtVoice != nil {
+		return visitor.VisitPlayHtVoice(c.PlayHtVoice)
+	}
+	if c.typ == "RimeAiVoice" || c.RimeAiVoice != nil {
+		return visitor.VisitRimeAiVoice(c.RimeAiVoice)
+	}
+	if c.typ == "SmallestAiVoice" || c.SmallestAiVoice != nil {
+		return visitor.VisitSmallestAiVoice(c.SmallestAiVoice)
+	}
+	if c.typ == "TavusVoice" || c.TavusVoice != nil {
+		return visitor.VisitTavusVoice(c.TavusVoice)
+	}
+	if c.typ == "VapiVoice" || c.VapiVoice != nil {
+		return visitor.VisitVapiVoice(c.VapiVoice)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
 type CreateAnthropicCredentialDto struct {
 	// This is not returned in the API.
 	ApiKey string `json:"apiKey" url:"apiKey"`
@@ -17235,8 +18270,10 @@ type CreateAssistantDto struct {
 	// This uses Twilio's built-in detection while the VoicemailTool relies on the model to detect if a voicemail was reached.
 	// You can use neither of them, one of them, or both of them. By default, Twilio built-in detection is enabled while VoicemailTool is not.
 	VoicemailDetection *CreateAssistantDtoVoicemailDetection `json:"voicemailDetection,omitempty" url:"voicemailDetection,omitempty"`
-	ClientMessages     [][]map[string]interface{}            `json:"clientMessages,omitempty" url:"clientMessages,omitempty"`
-	ServerMessages     [][]map[string]interface{}            `json:"serverMessages,omitempty" url:"serverMessages,omitempty"`
+	// These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
+	ClientMessages []CreateAssistantDtoClientMessagesItem `json:"clientMessages,omitempty" url:"clientMessages,omitempty"`
+	// These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
+	ServerMessages []CreateAssistantDtoServerMessagesItem `json:"serverMessages,omitempty" url:"serverMessages,omitempty"`
 	// How many seconds of silence to wait before ending the call. Defaults to 30.
 	//
 	// @default 30
@@ -17385,14 +18422,14 @@ func (c *CreateAssistantDto) GetVoicemailDetection() *CreateAssistantDtoVoicemai
 	return c.VoicemailDetection
 }
 
-func (c *CreateAssistantDto) GetClientMessages() [][]map[string]interface{} {
+func (c *CreateAssistantDto) GetClientMessages() []CreateAssistantDtoClientMessagesItem {
 	if c == nil {
 		return nil
 	}
 	return c.ClientMessages
 }
 
-func (c *CreateAssistantDto) GetServerMessages() [][]map[string]interface{} {
+func (c *CreateAssistantDto) GetServerMessages() []CreateAssistantDtoServerMessagesItem {
 	if c == nil {
 		return nil
 	}
@@ -17685,6 +18722,73 @@ func (c CreateAssistantDtoBackgroundSoundZero) Ptr() *CreateAssistantDtoBackgrou
 	return &c
 }
 
+type CreateAssistantDtoClientMessagesItem string
+
+const (
+	CreateAssistantDtoClientMessagesItemConversationUpdate  CreateAssistantDtoClientMessagesItem = "conversation-update"
+	CreateAssistantDtoClientMessagesItemFunctionCall        CreateAssistantDtoClientMessagesItem = "function-call"
+	CreateAssistantDtoClientMessagesItemFunctionCallResult  CreateAssistantDtoClientMessagesItem = "function-call-result"
+	CreateAssistantDtoClientMessagesItemHang                CreateAssistantDtoClientMessagesItem = "hang"
+	CreateAssistantDtoClientMessagesItemLanguageChanged     CreateAssistantDtoClientMessagesItem = "language-changed"
+	CreateAssistantDtoClientMessagesItemMetadata            CreateAssistantDtoClientMessagesItem = "metadata"
+	CreateAssistantDtoClientMessagesItemModelOutput         CreateAssistantDtoClientMessagesItem = "model-output"
+	CreateAssistantDtoClientMessagesItemSpeechUpdate        CreateAssistantDtoClientMessagesItem = "speech-update"
+	CreateAssistantDtoClientMessagesItemStatusUpdate        CreateAssistantDtoClientMessagesItem = "status-update"
+	CreateAssistantDtoClientMessagesItemTranscript          CreateAssistantDtoClientMessagesItem = "transcript"
+	CreateAssistantDtoClientMessagesItemToolCalls           CreateAssistantDtoClientMessagesItem = "tool-calls"
+	CreateAssistantDtoClientMessagesItemToolCallsResult     CreateAssistantDtoClientMessagesItem = "tool-calls-result"
+	CreateAssistantDtoClientMessagesItemToolCompleted       CreateAssistantDtoClientMessagesItem = "tool.completed"
+	CreateAssistantDtoClientMessagesItemTransferUpdate      CreateAssistantDtoClientMessagesItem = "transfer-update"
+	CreateAssistantDtoClientMessagesItemUserInterrupted     CreateAssistantDtoClientMessagesItem = "user-interrupted"
+	CreateAssistantDtoClientMessagesItemVoiceInput          CreateAssistantDtoClientMessagesItem = "voice-input"
+	CreateAssistantDtoClientMessagesItemWorkflowNodeStarted CreateAssistantDtoClientMessagesItem = "workflow.node.started"
+)
+
+func NewCreateAssistantDtoClientMessagesItemFromString(s string) (CreateAssistantDtoClientMessagesItem, error) {
+	switch s {
+	case "conversation-update":
+		return CreateAssistantDtoClientMessagesItemConversationUpdate, nil
+	case "function-call":
+		return CreateAssistantDtoClientMessagesItemFunctionCall, nil
+	case "function-call-result":
+		return CreateAssistantDtoClientMessagesItemFunctionCallResult, nil
+	case "hang":
+		return CreateAssistantDtoClientMessagesItemHang, nil
+	case "language-changed":
+		return CreateAssistantDtoClientMessagesItemLanguageChanged, nil
+	case "metadata":
+		return CreateAssistantDtoClientMessagesItemMetadata, nil
+	case "model-output":
+		return CreateAssistantDtoClientMessagesItemModelOutput, nil
+	case "speech-update":
+		return CreateAssistantDtoClientMessagesItemSpeechUpdate, nil
+	case "status-update":
+		return CreateAssistantDtoClientMessagesItemStatusUpdate, nil
+	case "transcript":
+		return CreateAssistantDtoClientMessagesItemTranscript, nil
+	case "tool-calls":
+		return CreateAssistantDtoClientMessagesItemToolCalls, nil
+	case "tool-calls-result":
+		return CreateAssistantDtoClientMessagesItemToolCallsResult, nil
+	case "tool.completed":
+		return CreateAssistantDtoClientMessagesItemToolCompleted, nil
+	case "transfer-update":
+		return CreateAssistantDtoClientMessagesItemTransferUpdate, nil
+	case "user-interrupted":
+		return CreateAssistantDtoClientMessagesItemUserInterrupted, nil
+	case "voice-input":
+		return CreateAssistantDtoClientMessagesItemVoiceInput, nil
+	case "workflow.node.started":
+		return CreateAssistantDtoClientMessagesItemWorkflowNodeStarted, nil
+	}
+	var t CreateAssistantDtoClientMessagesItem
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (c CreateAssistantDtoClientMessagesItem) Ptr() *CreateAssistantDtoClientMessagesItem {
+	return &c
+}
+
 type CreateAssistantDtoCredentialsItem struct {
 	CreateElevenLabsCredentialDto                        *CreateElevenLabsCredentialDto
 	CreateAnthropicCredentialDto                         *CreateAnthropicCredentialDto
@@ -17733,6 +18837,7 @@ type CreateAssistantDtoCredentialsItem struct {
 	CreateGoogleCalendarOAuth2AuthorizationCredentialDto *CreateGoogleCalendarOAuth2AuthorizationCredentialDto
 	CreateGoogleSheetsOAuth2AuthorizationCredentialDto   *CreateGoogleSheetsOAuth2AuthorizationCredentialDto
 	CreateSlackOAuth2AuthorizationCredentialDto          *CreateSlackOAuth2AuthorizationCredentialDto
+	CreateGoHighLevelMcpCredentialDto                    *CreateGoHighLevelMcpCredentialDto
 
 	typ string
 }
@@ -18066,6 +19171,13 @@ func (c *CreateAssistantDtoCredentialsItem) GetCreateSlackOAuth2AuthorizationCre
 	return c.CreateSlackOAuth2AuthorizationCredentialDto
 }
 
+func (c *CreateAssistantDtoCredentialsItem) GetCreateGoHighLevelMcpCredentialDto() *CreateGoHighLevelMcpCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateGoHighLevelMcpCredentialDto
+}
+
 func (c *CreateAssistantDtoCredentialsItem) UnmarshalJSON(data []byte) error {
 	valueCreateElevenLabsCredentialDto := new(CreateElevenLabsCredentialDto)
 	if err := json.Unmarshal(data, &valueCreateElevenLabsCredentialDto); err == nil {
@@ -18349,6 +19461,12 @@ func (c *CreateAssistantDtoCredentialsItem) UnmarshalJSON(data []byte) error {
 		c.CreateSlackOAuth2AuthorizationCredentialDto = valueCreateSlackOAuth2AuthorizationCredentialDto
 		return nil
 	}
+	valueCreateGoHighLevelMcpCredentialDto := new(CreateGoHighLevelMcpCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoHighLevelMcpCredentialDto); err == nil {
+		c.typ = "CreateGoHighLevelMcpCredentialDto"
+		c.CreateGoHighLevelMcpCredentialDto = valueCreateGoHighLevelMcpCredentialDto
+		return nil
+	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
 }
 
@@ -18494,6 +19612,9 @@ func (c CreateAssistantDtoCredentialsItem) MarshalJSON() ([]byte, error) {
 	if c.typ == "CreateSlackOAuth2AuthorizationCredentialDto" || c.CreateSlackOAuth2AuthorizationCredentialDto != nil {
 		return json.Marshal(c.CreateSlackOAuth2AuthorizationCredentialDto)
 	}
+	if c.typ == "CreateGoHighLevelMcpCredentialDto" || c.CreateGoHighLevelMcpCredentialDto != nil {
+		return json.Marshal(c.CreateGoHighLevelMcpCredentialDto)
+	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
 }
 
@@ -18545,6 +19666,7 @@ type CreateAssistantDtoCredentialsItemVisitor interface {
 	VisitCreateGoogleCalendarOAuth2AuthorizationCredentialDto(*CreateGoogleCalendarOAuth2AuthorizationCredentialDto) error
 	VisitCreateGoogleSheetsOAuth2AuthorizationCredentialDto(*CreateGoogleSheetsOAuth2AuthorizationCredentialDto) error
 	VisitCreateSlackOAuth2AuthorizationCredentialDto(*CreateSlackOAuth2AuthorizationCredentialDto) error
+	VisitCreateGoHighLevelMcpCredentialDto(*CreateGoHighLevelMcpCredentialDto) error
 }
 
 func (c *CreateAssistantDtoCredentialsItem) Accept(visitor CreateAssistantDtoCredentialsItemVisitor) error {
@@ -18688,6 +19810,9 @@ func (c *CreateAssistantDtoCredentialsItem) Accept(visitor CreateAssistantDtoCre
 	}
 	if c.typ == "CreateSlackOAuth2AuthorizationCredentialDto" || c.CreateSlackOAuth2AuthorizationCredentialDto != nil {
 		return visitor.VisitCreateSlackOAuth2AuthorizationCredentialDto(c.CreateSlackOAuth2AuthorizationCredentialDto)
+	}
+	if c.typ == "CreateGoHighLevelMcpCredentialDto" || c.CreateGoHighLevelMcpCredentialDto != nil {
+		return visitor.VisitCreateGoHighLevelMcpCredentialDto(c.CreateGoHighLevelMcpCredentialDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", c)
 }
@@ -19142,6 +20267,73 @@ func (c *CreateAssistantDtoModel) Accept(visitor CreateAssistantDtoModelVisitor)
 		return visitor.VisitXaiModel(c.XaiModel)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type CreateAssistantDtoServerMessagesItem string
+
+const (
+	CreateAssistantDtoServerMessagesItemConversationUpdate            CreateAssistantDtoServerMessagesItem = "conversation-update"
+	CreateAssistantDtoServerMessagesItemEndOfCallReport               CreateAssistantDtoServerMessagesItem = "end-of-call-report"
+	CreateAssistantDtoServerMessagesItemFunctionCall                  CreateAssistantDtoServerMessagesItem = "function-call"
+	CreateAssistantDtoServerMessagesItemHang                          CreateAssistantDtoServerMessagesItem = "hang"
+	CreateAssistantDtoServerMessagesItemLanguageChanged               CreateAssistantDtoServerMessagesItem = "language-changed"
+	CreateAssistantDtoServerMessagesItemLanguageChangeDetected        CreateAssistantDtoServerMessagesItem = "language-change-detected"
+	CreateAssistantDtoServerMessagesItemModelOutput                   CreateAssistantDtoServerMessagesItem = "model-output"
+	CreateAssistantDtoServerMessagesItemPhoneCallControl              CreateAssistantDtoServerMessagesItem = "phone-call-control"
+	CreateAssistantDtoServerMessagesItemSpeechUpdate                  CreateAssistantDtoServerMessagesItem = "speech-update"
+	CreateAssistantDtoServerMessagesItemStatusUpdate                  CreateAssistantDtoServerMessagesItem = "status-update"
+	CreateAssistantDtoServerMessagesItemTranscript                    CreateAssistantDtoServerMessagesItem = "transcript"
+	CreateAssistantDtoServerMessagesItemTranscriptTranscriptTypeFinal CreateAssistantDtoServerMessagesItem = "transcript[transcriptType=\\\"final\\\"]"
+	CreateAssistantDtoServerMessagesItemToolCalls                     CreateAssistantDtoServerMessagesItem = "tool-calls"
+	CreateAssistantDtoServerMessagesItemTransferDestinationRequest    CreateAssistantDtoServerMessagesItem = "transfer-destination-request"
+	CreateAssistantDtoServerMessagesItemTransferUpdate                CreateAssistantDtoServerMessagesItem = "transfer-update"
+	CreateAssistantDtoServerMessagesItemUserInterrupted               CreateAssistantDtoServerMessagesItem = "user-interrupted"
+	CreateAssistantDtoServerMessagesItemVoiceInput                    CreateAssistantDtoServerMessagesItem = "voice-input"
+)
+
+func NewCreateAssistantDtoServerMessagesItemFromString(s string) (CreateAssistantDtoServerMessagesItem, error) {
+	switch s {
+	case "conversation-update":
+		return CreateAssistantDtoServerMessagesItemConversationUpdate, nil
+	case "end-of-call-report":
+		return CreateAssistantDtoServerMessagesItemEndOfCallReport, nil
+	case "function-call":
+		return CreateAssistantDtoServerMessagesItemFunctionCall, nil
+	case "hang":
+		return CreateAssistantDtoServerMessagesItemHang, nil
+	case "language-changed":
+		return CreateAssistantDtoServerMessagesItemLanguageChanged, nil
+	case "language-change-detected":
+		return CreateAssistantDtoServerMessagesItemLanguageChangeDetected, nil
+	case "model-output":
+		return CreateAssistantDtoServerMessagesItemModelOutput, nil
+	case "phone-call-control":
+		return CreateAssistantDtoServerMessagesItemPhoneCallControl, nil
+	case "speech-update":
+		return CreateAssistantDtoServerMessagesItemSpeechUpdate, nil
+	case "status-update":
+		return CreateAssistantDtoServerMessagesItemStatusUpdate, nil
+	case "transcript":
+		return CreateAssistantDtoServerMessagesItemTranscript, nil
+	case "transcript[transcriptType=\"final\"]":
+		return CreateAssistantDtoServerMessagesItemTranscriptTranscriptTypeFinal, nil
+	case "tool-calls":
+		return CreateAssistantDtoServerMessagesItemToolCalls, nil
+	case "transfer-destination-request":
+		return CreateAssistantDtoServerMessagesItemTransferDestinationRequest, nil
+	case "transfer-update":
+		return CreateAssistantDtoServerMessagesItemTransferUpdate, nil
+	case "user-interrupted":
+		return CreateAssistantDtoServerMessagesItemUserInterrupted, nil
+	case "voice-input":
+		return CreateAssistantDtoServerMessagesItemVoiceInput, nil
+	}
+	var t CreateAssistantDtoServerMessagesItem
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (c CreateAssistantDtoServerMessagesItem) Ptr() *CreateAssistantDtoServerMessagesItem {
+	return &c
 }
 
 // These are the options for the assistant's transcriber.
@@ -22311,6 +23503,88 @@ func (c *CreateGoHighLevelCredentialDto) MarshalJSON() ([]byte, error) {
 }
 
 func (c *CreateGoHighLevelCredentialDto) String() string {
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+type CreateGoHighLevelMcpCredentialDto struct {
+	// This is the authentication session for the credential.
+	AuthenticationSession *Oauth2AuthenticationSession `json:"authenticationSession,omitempty" url:"authenticationSession,omitempty"`
+	// This is the name of credential. This is just for your reference.
+	Name     *string `json:"name,omitempty" url:"name,omitempty"`
+	provider string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CreateGoHighLevelMcpCredentialDto) GetAuthenticationSession() *Oauth2AuthenticationSession {
+	if c == nil {
+		return nil
+	}
+	return c.AuthenticationSession
+}
+
+func (c *CreateGoHighLevelMcpCredentialDto) GetName() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Name
+}
+
+func (c *CreateGoHighLevelMcpCredentialDto) Provider() string {
+	return c.provider
+}
+
+func (c *CreateGoHighLevelMcpCredentialDto) GetExtraProperties() map[string]interface{} {
+	return c.extraProperties
+}
+
+func (c *CreateGoHighLevelMcpCredentialDto) UnmarshalJSON(data []byte) error {
+	type embed CreateGoHighLevelMcpCredentialDto
+	var unmarshaler = struct {
+		embed
+		Provider string `json:"provider"`
+	}{
+		embed: embed(*c),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*c = CreateGoHighLevelMcpCredentialDto(unmarshaler.embed)
+	if unmarshaler.Provider != "ghl.oauth2-authorization" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", c, "ghl.oauth2-authorization", unmarshaler.Provider)
+	}
+	c.provider = unmarshaler.Provider
+	extraProperties, err := internal.ExtractExtraProperties(data, *c, "provider")
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CreateGoHighLevelMcpCredentialDto) MarshalJSON() ([]byte, error) {
+	type embed CreateGoHighLevelMcpCredentialDto
+	var marshaler = struct {
+		embed
+		Provider string `json:"provider"`
+	}{
+		embed:    embed(*c),
+		Provider: "ghl.oauth2-authorization",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (c *CreateGoHighLevelMcpCredentialDto) String() string {
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -28279,13 +29553,14 @@ func (c *CreateWorkflowDtoModel) Accept(visitor CreateWorkflowDtoModelVisitor) e
 }
 
 type CreateWorkflowDtoNodesItem struct {
-	Start      *Start
-	Assistant  *Assistant
-	Say        *Say
-	Gather     *Gather
-	ApiRequest *ApiRequest
-	Hangup     *Hangup
-	Transfer   *Transfer
+	Start        *Start
+	Assistant    *Assistant
+	Say          *Say
+	Gather       *Gather
+	ApiRequest   *ApiRequest
+	Hangup       *Hangup
+	Transfer     *Transfer
+	Conversation *Conversation
 
 	typ string
 }
@@ -28339,6 +29614,13 @@ func (c *CreateWorkflowDtoNodesItem) GetTransfer() *Transfer {
 	return c.Transfer
 }
 
+func (c *CreateWorkflowDtoNodesItem) GetConversation() *Conversation {
+	if c == nil {
+		return nil
+	}
+	return c.Conversation
+}
+
 func (c *CreateWorkflowDtoNodesItem) UnmarshalJSON(data []byte) error {
 	valueStart := new(Start)
 	if err := json.Unmarshal(data, &valueStart); err == nil {
@@ -28382,6 +29664,12 @@ func (c *CreateWorkflowDtoNodesItem) UnmarshalJSON(data []byte) error {
 		c.Transfer = valueTransfer
 		return nil
 	}
+	valueConversation := new(Conversation)
+	if err := json.Unmarshal(data, &valueConversation); err == nil {
+		c.typ = "Conversation"
+		c.Conversation = valueConversation
+		return nil
+	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
 }
 
@@ -28407,6 +29695,9 @@ func (c CreateWorkflowDtoNodesItem) MarshalJSON() ([]byte, error) {
 	if c.typ == "Transfer" || c.Transfer != nil {
 		return json.Marshal(c.Transfer)
 	}
+	if c.typ == "Conversation" || c.Conversation != nil {
+		return json.Marshal(c.Conversation)
+	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
 }
 
@@ -28418,6 +29709,7 @@ type CreateWorkflowDtoNodesItemVisitor interface {
 	VisitApiRequest(*ApiRequest) error
 	VisitHangup(*Hangup) error
 	VisitTransfer(*Transfer) error
+	VisitConversation(*Conversation) error
 }
 
 func (c *CreateWorkflowDtoNodesItem) Accept(visitor CreateWorkflowDtoNodesItemVisitor) error {
@@ -28441,6 +29733,9 @@ func (c *CreateWorkflowDtoNodesItem) Accept(visitor CreateWorkflowDtoNodesItemVi
 	}
 	if c.typ == "Transfer" || c.Transfer != nil {
 		return visitor.VisitTransfer(c.Transfer)
+	}
+	if c.typ == "Conversation" || c.Conversation != nil {
+		return visitor.VisitConversation(c.Conversation)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", c)
 }
@@ -43979,6 +45274,66 @@ func (g GladiaTranscriberModel) Ptr() *GladiaTranscriberModel {
 	return &g
 }
 
+type GlobalNodePlan struct {
+	// This is the flag to determine if this node is a global node
+	//
+	// @default false
+	Enabled *bool `json:"enabled,omitempty" url:"enabled,omitempty"`
+	// This is the condition that will be checked to determine if the global node should be executed.
+	//
+	// @default ”
+	EnterCondition *string `json:"enterCondition,omitempty" url:"enterCondition,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (g *GlobalNodePlan) GetEnabled() *bool {
+	if g == nil {
+		return nil
+	}
+	return g.Enabled
+}
+
+func (g *GlobalNodePlan) GetEnterCondition() *string {
+	if g == nil {
+		return nil
+	}
+	return g.EnterCondition
+}
+
+func (g *GlobalNodePlan) GetExtraProperties() map[string]interface{} {
+	return g.extraProperties
+}
+
+func (g *GlobalNodePlan) UnmarshalJSON(data []byte) error {
+	type unmarshaler GlobalNodePlan
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*g = GlobalNodePlan(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *g)
+	if err != nil {
+		return err
+	}
+	g.extraProperties = extraProperties
+	g.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (g *GlobalNodePlan) String() string {
+	if len(g.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(g.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(g); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", g)
+}
+
 type GoHighLevelCredential struct {
 	// This is not returned in the API.
 	ApiKey string `json:"apiKey" url:"apiKey"`
@@ -44094,6 +45449,132 @@ func (g *GoHighLevelCredential) MarshalJSON() ([]byte, error) {
 }
 
 func (g *GoHighLevelCredential) String() string {
+	if len(g.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(g.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(g); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", g)
+}
+
+type GoHighLevelMcpCredential struct {
+	// This is the authentication session for the credential.
+	AuthenticationSession *Oauth2AuthenticationSession `json:"authenticationSession,omitempty" url:"authenticationSession,omitempty"`
+	// This is the unique identifier for the credential.
+	Id string `json:"id" url:"id"`
+	// This is the unique identifier for the org that this credential belongs to.
+	OrgId string `json:"orgId" url:"orgId"`
+	// This is the ISO 8601 date-time string of when the credential was created.
+	CreatedAt time.Time `json:"createdAt" url:"createdAt"`
+	// This is the ISO 8601 date-time string of when the assistant was last updated.
+	UpdatedAt time.Time `json:"updatedAt" url:"updatedAt"`
+	// This is the name of credential. This is just for your reference.
+	Name     *string `json:"name,omitempty" url:"name,omitempty"`
+	provider string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (g *GoHighLevelMcpCredential) GetAuthenticationSession() *Oauth2AuthenticationSession {
+	if g == nil {
+		return nil
+	}
+	return g.AuthenticationSession
+}
+
+func (g *GoHighLevelMcpCredential) GetId() string {
+	if g == nil {
+		return ""
+	}
+	return g.Id
+}
+
+func (g *GoHighLevelMcpCredential) GetOrgId() string {
+	if g == nil {
+		return ""
+	}
+	return g.OrgId
+}
+
+func (g *GoHighLevelMcpCredential) GetCreatedAt() time.Time {
+	if g == nil {
+		return time.Time{}
+	}
+	return g.CreatedAt
+}
+
+func (g *GoHighLevelMcpCredential) GetUpdatedAt() time.Time {
+	if g == nil {
+		return time.Time{}
+	}
+	return g.UpdatedAt
+}
+
+func (g *GoHighLevelMcpCredential) GetName() *string {
+	if g == nil {
+		return nil
+	}
+	return g.Name
+}
+
+func (g *GoHighLevelMcpCredential) Provider() string {
+	return g.provider
+}
+
+func (g *GoHighLevelMcpCredential) GetExtraProperties() map[string]interface{} {
+	return g.extraProperties
+}
+
+func (g *GoHighLevelMcpCredential) UnmarshalJSON(data []byte) error {
+	type embed GoHighLevelMcpCredential
+	var unmarshaler = struct {
+		embed
+		CreatedAt *internal.DateTime `json:"createdAt"`
+		UpdatedAt *internal.DateTime `json:"updatedAt"`
+		Provider  string             `json:"provider"`
+	}{
+		embed: embed(*g),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*g = GoHighLevelMcpCredential(unmarshaler.embed)
+	g.CreatedAt = unmarshaler.CreatedAt.Time()
+	g.UpdatedAt = unmarshaler.UpdatedAt.Time()
+	if unmarshaler.Provider != "ghl.oauth2-authorization" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", g, "ghl.oauth2-authorization", unmarshaler.Provider)
+	}
+	g.provider = unmarshaler.Provider
+	extraProperties, err := internal.ExtractExtraProperties(data, *g, "provider")
+	if err != nil {
+		return err
+	}
+	g.extraProperties = extraProperties
+	g.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (g *GoHighLevelMcpCredential) MarshalJSON() ([]byte, error) {
+	type embed GoHighLevelMcpCredential
+	var marshaler = struct {
+		embed
+		CreatedAt *internal.DateTime `json:"createdAt"`
+		UpdatedAt *internal.DateTime `json:"updatedAt"`
+		Provider  string             `json:"provider"`
+	}{
+		embed:     embed(*g),
+		CreatedAt: internal.NewDateTime(g.CreatedAt),
+		UpdatedAt: internal.NewDateTime(g.UpdatedAt),
+		Provider:  "ghl.oauth2-authorization",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (g *GoHighLevelMcpCredential) String() string {
 	if len(g.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(g.rawJSON); err == nil {
 			return value
@@ -50884,6 +52365,8 @@ type Oauth2AuthenticationSession struct {
 	AccessToken *string `json:"accessToken,omitempty" url:"accessToken,omitempty"`
 	// This is the OAuth2 access token expiration.
 	ExpiresAt *time.Time `json:"expiresAt,omitempty" url:"expiresAt,omitempty"`
+	// This is the OAuth2 refresh token.
+	RefreshToken *string `json:"refreshToken,omitempty" url:"refreshToken,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -50901,6 +52384,13 @@ func (o *Oauth2AuthenticationSession) GetExpiresAt() *time.Time {
 		return nil
 	}
 	return o.ExpiresAt
+}
+
+func (o *Oauth2AuthenticationSession) GetRefreshToken() *string {
+	if o == nil {
+		return nil
+	}
+	return o.RefreshToken
 }
 
 func (o *Oauth2AuthenticationSession) GetExtraProperties() map[string]interface{} {
@@ -64327,14 +65817,14 @@ type ServerMessageTranscriptType string
 
 const (
 	ServerMessageTranscriptTypeTranscript                    ServerMessageTranscriptType = "transcript"
-	ServerMessageTranscriptTypeTranscriptTranscriptTypeFinal ServerMessageTranscriptType = "transcript[transcriptType='final']"
+	ServerMessageTranscriptTypeTranscriptTranscriptTypeFinal ServerMessageTranscriptType = "transcript[transcriptType=\\\"final\\\"]"
 )
 
 func NewServerMessageTranscriptTypeFromString(s string) (ServerMessageTranscriptType, error) {
 	switch s {
 	case "transcript":
 		return ServerMessageTranscriptTypeTranscript, nil
-	case "transcript[transcriptType='final']":
+	case "transcript[transcriptType=\"final\"]":
 		return ServerMessageTranscriptTypeTranscriptTranscriptTypeFinal, nil
 	}
 	var t ServerMessageTranscriptType
@@ -76982,6 +78472,62 @@ func (u *UpdateGoHighLevelCredentialDto) String() string {
 	return fmt.Sprintf("%#v", u)
 }
 
+type UpdateGoHighLevelMcpCredentialDto struct {
+	// This is the authentication session for the credential.
+	AuthenticationSession *Oauth2AuthenticationSession `json:"authenticationSession,omitempty" url:"authenticationSession,omitempty"`
+	// This is the name of credential. This is just for your reference.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (u *UpdateGoHighLevelMcpCredentialDto) GetAuthenticationSession() *Oauth2AuthenticationSession {
+	if u == nil {
+		return nil
+	}
+	return u.AuthenticationSession
+}
+
+func (u *UpdateGoHighLevelMcpCredentialDto) GetName() *string {
+	if u == nil {
+		return nil
+	}
+	return u.Name
+}
+
+func (u *UpdateGoHighLevelMcpCredentialDto) GetExtraProperties() map[string]interface{} {
+	return u.extraProperties
+}
+
+func (u *UpdateGoHighLevelMcpCredentialDto) UnmarshalJSON(data []byte) error {
+	type unmarshaler UpdateGoHighLevelMcpCredentialDto
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*u = UpdateGoHighLevelMcpCredentialDto(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *u)
+	if err != nil {
+		return err
+	}
+	u.extraProperties = extraProperties
+	u.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (u *UpdateGoHighLevelMcpCredentialDto) String() string {
+	if len(u.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(u); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", u)
+}
+
 type UpdateGoogleCalendarOAuth2AuthorizationCredentialDto struct {
 	// The authorization ID for the OAuth2 authorization
 	AuthorizationId *string `json:"authorizationId,omitempty" url:"authorizationId,omitempty"`
@@ -81782,13 +83328,14 @@ func (w *WorkflowUserEditableModel) Accept(visitor WorkflowUserEditableModelVisi
 }
 
 type WorkflowUserEditableNodesItem struct {
-	Start      *Start
-	Assistant  *Assistant
-	Say        *Say
-	Gather     *Gather
-	ApiRequest *ApiRequest
-	Hangup     *Hangup
-	Transfer   *Transfer
+	Start        *Start
+	Assistant    *Assistant
+	Say          *Say
+	Gather       *Gather
+	ApiRequest   *ApiRequest
+	Hangup       *Hangup
+	Transfer     *Transfer
+	Conversation *Conversation
 
 	typ string
 }
@@ -81842,6 +83389,13 @@ func (w *WorkflowUserEditableNodesItem) GetTransfer() *Transfer {
 	return w.Transfer
 }
 
+func (w *WorkflowUserEditableNodesItem) GetConversation() *Conversation {
+	if w == nil {
+		return nil
+	}
+	return w.Conversation
+}
+
 func (w *WorkflowUserEditableNodesItem) UnmarshalJSON(data []byte) error {
 	valueStart := new(Start)
 	if err := json.Unmarshal(data, &valueStart); err == nil {
@@ -81885,6 +83439,12 @@ func (w *WorkflowUserEditableNodesItem) UnmarshalJSON(data []byte) error {
 		w.Transfer = valueTransfer
 		return nil
 	}
+	valueConversation := new(Conversation)
+	if err := json.Unmarshal(data, &valueConversation); err == nil {
+		w.typ = "Conversation"
+		w.Conversation = valueConversation
+		return nil
+	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, w)
 }
 
@@ -81910,6 +83470,9 @@ func (w WorkflowUserEditableNodesItem) MarshalJSON() ([]byte, error) {
 	if w.typ == "Transfer" || w.Transfer != nil {
 		return json.Marshal(w.Transfer)
 	}
+	if w.typ == "Conversation" || w.Conversation != nil {
+		return json.Marshal(w.Conversation)
+	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", w)
 }
 
@@ -81921,6 +83484,7 @@ type WorkflowUserEditableNodesItemVisitor interface {
 	VisitApiRequest(*ApiRequest) error
 	VisitHangup(*Hangup) error
 	VisitTransfer(*Transfer) error
+	VisitConversation(*Conversation) error
 }
 
 func (w *WorkflowUserEditableNodesItem) Accept(visitor WorkflowUserEditableNodesItemVisitor) error {
@@ -81944,6 +83508,9 @@ func (w *WorkflowUserEditableNodesItem) Accept(visitor WorkflowUserEditableNodes
 	}
 	if w.typ == "Transfer" || w.Transfer != nil {
 		return visitor.VisitTransfer(w.Transfer)
+	}
+	if w.typ == "Conversation" || w.Conversation != nil {
+		return visitor.VisitConversation(w.Conversation)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", w)
 }

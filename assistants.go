@@ -115,6 +115,73 @@ func (u UpdateAssistantDtoBackgroundSoundZero) Ptr() *UpdateAssistantDtoBackgrou
 	return &u
 }
 
+type UpdateAssistantDtoClientMessagesItem string
+
+const (
+	UpdateAssistantDtoClientMessagesItemConversationUpdate  UpdateAssistantDtoClientMessagesItem = "conversation-update"
+	UpdateAssistantDtoClientMessagesItemFunctionCall        UpdateAssistantDtoClientMessagesItem = "function-call"
+	UpdateAssistantDtoClientMessagesItemFunctionCallResult  UpdateAssistantDtoClientMessagesItem = "function-call-result"
+	UpdateAssistantDtoClientMessagesItemHang                UpdateAssistantDtoClientMessagesItem = "hang"
+	UpdateAssistantDtoClientMessagesItemLanguageChanged     UpdateAssistantDtoClientMessagesItem = "language-changed"
+	UpdateAssistantDtoClientMessagesItemMetadata            UpdateAssistantDtoClientMessagesItem = "metadata"
+	UpdateAssistantDtoClientMessagesItemModelOutput         UpdateAssistantDtoClientMessagesItem = "model-output"
+	UpdateAssistantDtoClientMessagesItemSpeechUpdate        UpdateAssistantDtoClientMessagesItem = "speech-update"
+	UpdateAssistantDtoClientMessagesItemStatusUpdate        UpdateAssistantDtoClientMessagesItem = "status-update"
+	UpdateAssistantDtoClientMessagesItemTranscript          UpdateAssistantDtoClientMessagesItem = "transcript"
+	UpdateAssistantDtoClientMessagesItemToolCalls           UpdateAssistantDtoClientMessagesItem = "tool-calls"
+	UpdateAssistantDtoClientMessagesItemToolCallsResult     UpdateAssistantDtoClientMessagesItem = "tool-calls-result"
+	UpdateAssistantDtoClientMessagesItemToolCompleted       UpdateAssistantDtoClientMessagesItem = "tool.completed"
+	UpdateAssistantDtoClientMessagesItemTransferUpdate      UpdateAssistantDtoClientMessagesItem = "transfer-update"
+	UpdateAssistantDtoClientMessagesItemUserInterrupted     UpdateAssistantDtoClientMessagesItem = "user-interrupted"
+	UpdateAssistantDtoClientMessagesItemVoiceInput          UpdateAssistantDtoClientMessagesItem = "voice-input"
+	UpdateAssistantDtoClientMessagesItemWorkflowNodeStarted UpdateAssistantDtoClientMessagesItem = "workflow.node.started"
+)
+
+func NewUpdateAssistantDtoClientMessagesItemFromString(s string) (UpdateAssistantDtoClientMessagesItem, error) {
+	switch s {
+	case "conversation-update":
+		return UpdateAssistantDtoClientMessagesItemConversationUpdate, nil
+	case "function-call":
+		return UpdateAssistantDtoClientMessagesItemFunctionCall, nil
+	case "function-call-result":
+		return UpdateAssistantDtoClientMessagesItemFunctionCallResult, nil
+	case "hang":
+		return UpdateAssistantDtoClientMessagesItemHang, nil
+	case "language-changed":
+		return UpdateAssistantDtoClientMessagesItemLanguageChanged, nil
+	case "metadata":
+		return UpdateAssistantDtoClientMessagesItemMetadata, nil
+	case "model-output":
+		return UpdateAssistantDtoClientMessagesItemModelOutput, nil
+	case "speech-update":
+		return UpdateAssistantDtoClientMessagesItemSpeechUpdate, nil
+	case "status-update":
+		return UpdateAssistantDtoClientMessagesItemStatusUpdate, nil
+	case "transcript":
+		return UpdateAssistantDtoClientMessagesItemTranscript, nil
+	case "tool-calls":
+		return UpdateAssistantDtoClientMessagesItemToolCalls, nil
+	case "tool-calls-result":
+		return UpdateAssistantDtoClientMessagesItemToolCallsResult, nil
+	case "tool.completed":
+		return UpdateAssistantDtoClientMessagesItemToolCompleted, nil
+	case "transfer-update":
+		return UpdateAssistantDtoClientMessagesItemTransferUpdate, nil
+	case "user-interrupted":
+		return UpdateAssistantDtoClientMessagesItemUserInterrupted, nil
+	case "voice-input":
+		return UpdateAssistantDtoClientMessagesItemVoiceInput, nil
+	case "workflow.node.started":
+		return UpdateAssistantDtoClientMessagesItemWorkflowNodeStarted, nil
+	}
+	var t UpdateAssistantDtoClientMessagesItem
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (u UpdateAssistantDtoClientMessagesItem) Ptr() *UpdateAssistantDtoClientMessagesItem {
+	return &u
+}
+
 type UpdateAssistantDtoCredentialsItem struct {
 	CreateElevenLabsCredentialDto                        *CreateElevenLabsCredentialDto
 	CreateAnthropicCredentialDto                         *CreateAnthropicCredentialDto
@@ -163,6 +230,7 @@ type UpdateAssistantDtoCredentialsItem struct {
 	CreateGoogleCalendarOAuth2AuthorizationCredentialDto *CreateGoogleCalendarOAuth2AuthorizationCredentialDto
 	CreateGoogleSheetsOAuth2AuthorizationCredentialDto   *CreateGoogleSheetsOAuth2AuthorizationCredentialDto
 	CreateSlackOAuth2AuthorizationCredentialDto          *CreateSlackOAuth2AuthorizationCredentialDto
+	CreateGoHighLevelMcpCredentialDto                    *CreateGoHighLevelMcpCredentialDto
 
 	typ string
 }
@@ -496,6 +564,13 @@ func (u *UpdateAssistantDtoCredentialsItem) GetCreateSlackOAuth2AuthorizationCre
 	return u.CreateSlackOAuth2AuthorizationCredentialDto
 }
 
+func (u *UpdateAssistantDtoCredentialsItem) GetCreateGoHighLevelMcpCredentialDto() *CreateGoHighLevelMcpCredentialDto {
+	if u == nil {
+		return nil
+	}
+	return u.CreateGoHighLevelMcpCredentialDto
+}
+
 func (u *UpdateAssistantDtoCredentialsItem) UnmarshalJSON(data []byte) error {
 	valueCreateElevenLabsCredentialDto := new(CreateElevenLabsCredentialDto)
 	if err := json.Unmarshal(data, &valueCreateElevenLabsCredentialDto); err == nil {
@@ -779,6 +854,12 @@ func (u *UpdateAssistantDtoCredentialsItem) UnmarshalJSON(data []byte) error {
 		u.CreateSlackOAuth2AuthorizationCredentialDto = valueCreateSlackOAuth2AuthorizationCredentialDto
 		return nil
 	}
+	valueCreateGoHighLevelMcpCredentialDto := new(CreateGoHighLevelMcpCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoHighLevelMcpCredentialDto); err == nil {
+		u.typ = "CreateGoHighLevelMcpCredentialDto"
+		u.CreateGoHighLevelMcpCredentialDto = valueCreateGoHighLevelMcpCredentialDto
+		return nil
+	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, u)
 }
 
@@ -924,6 +1005,9 @@ func (u UpdateAssistantDtoCredentialsItem) MarshalJSON() ([]byte, error) {
 	if u.typ == "CreateSlackOAuth2AuthorizationCredentialDto" || u.CreateSlackOAuth2AuthorizationCredentialDto != nil {
 		return json.Marshal(u.CreateSlackOAuth2AuthorizationCredentialDto)
 	}
+	if u.typ == "CreateGoHighLevelMcpCredentialDto" || u.CreateGoHighLevelMcpCredentialDto != nil {
+		return json.Marshal(u.CreateGoHighLevelMcpCredentialDto)
+	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", u)
 }
 
@@ -975,6 +1059,7 @@ type UpdateAssistantDtoCredentialsItemVisitor interface {
 	VisitCreateGoogleCalendarOAuth2AuthorizationCredentialDto(*CreateGoogleCalendarOAuth2AuthorizationCredentialDto) error
 	VisitCreateGoogleSheetsOAuth2AuthorizationCredentialDto(*CreateGoogleSheetsOAuth2AuthorizationCredentialDto) error
 	VisitCreateSlackOAuth2AuthorizationCredentialDto(*CreateSlackOAuth2AuthorizationCredentialDto) error
+	VisitCreateGoHighLevelMcpCredentialDto(*CreateGoHighLevelMcpCredentialDto) error
 }
 
 func (u *UpdateAssistantDtoCredentialsItem) Accept(visitor UpdateAssistantDtoCredentialsItemVisitor) error {
@@ -1118,6 +1203,9 @@ func (u *UpdateAssistantDtoCredentialsItem) Accept(visitor UpdateAssistantDtoCre
 	}
 	if u.typ == "CreateSlackOAuth2AuthorizationCredentialDto" || u.CreateSlackOAuth2AuthorizationCredentialDto != nil {
 		return visitor.VisitCreateSlackOAuth2AuthorizationCredentialDto(u.CreateSlackOAuth2AuthorizationCredentialDto)
+	}
+	if u.typ == "CreateGoHighLevelMcpCredentialDto" || u.CreateGoHighLevelMcpCredentialDto != nil {
+		return visitor.VisitCreateGoHighLevelMcpCredentialDto(u.CreateGoHighLevelMcpCredentialDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", u)
 }
@@ -1572,6 +1660,73 @@ func (u *UpdateAssistantDtoModel) Accept(visitor UpdateAssistantDtoModelVisitor)
 		return visitor.VisitXaiModel(u.XaiModel)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", u)
+}
+
+type UpdateAssistantDtoServerMessagesItem string
+
+const (
+	UpdateAssistantDtoServerMessagesItemConversationUpdate            UpdateAssistantDtoServerMessagesItem = "conversation-update"
+	UpdateAssistantDtoServerMessagesItemEndOfCallReport               UpdateAssistantDtoServerMessagesItem = "end-of-call-report"
+	UpdateAssistantDtoServerMessagesItemFunctionCall                  UpdateAssistantDtoServerMessagesItem = "function-call"
+	UpdateAssistantDtoServerMessagesItemHang                          UpdateAssistantDtoServerMessagesItem = "hang"
+	UpdateAssistantDtoServerMessagesItemLanguageChanged               UpdateAssistantDtoServerMessagesItem = "language-changed"
+	UpdateAssistantDtoServerMessagesItemLanguageChangeDetected        UpdateAssistantDtoServerMessagesItem = "language-change-detected"
+	UpdateAssistantDtoServerMessagesItemModelOutput                   UpdateAssistantDtoServerMessagesItem = "model-output"
+	UpdateAssistantDtoServerMessagesItemPhoneCallControl              UpdateAssistantDtoServerMessagesItem = "phone-call-control"
+	UpdateAssistantDtoServerMessagesItemSpeechUpdate                  UpdateAssistantDtoServerMessagesItem = "speech-update"
+	UpdateAssistantDtoServerMessagesItemStatusUpdate                  UpdateAssistantDtoServerMessagesItem = "status-update"
+	UpdateAssistantDtoServerMessagesItemTranscript                    UpdateAssistantDtoServerMessagesItem = "transcript"
+	UpdateAssistantDtoServerMessagesItemTranscriptTranscriptTypeFinal UpdateAssistantDtoServerMessagesItem = "transcript[transcriptType=\\\"final\\\"]"
+	UpdateAssistantDtoServerMessagesItemToolCalls                     UpdateAssistantDtoServerMessagesItem = "tool-calls"
+	UpdateAssistantDtoServerMessagesItemTransferDestinationRequest    UpdateAssistantDtoServerMessagesItem = "transfer-destination-request"
+	UpdateAssistantDtoServerMessagesItemTransferUpdate                UpdateAssistantDtoServerMessagesItem = "transfer-update"
+	UpdateAssistantDtoServerMessagesItemUserInterrupted               UpdateAssistantDtoServerMessagesItem = "user-interrupted"
+	UpdateAssistantDtoServerMessagesItemVoiceInput                    UpdateAssistantDtoServerMessagesItem = "voice-input"
+)
+
+func NewUpdateAssistantDtoServerMessagesItemFromString(s string) (UpdateAssistantDtoServerMessagesItem, error) {
+	switch s {
+	case "conversation-update":
+		return UpdateAssistantDtoServerMessagesItemConversationUpdate, nil
+	case "end-of-call-report":
+		return UpdateAssistantDtoServerMessagesItemEndOfCallReport, nil
+	case "function-call":
+		return UpdateAssistantDtoServerMessagesItemFunctionCall, nil
+	case "hang":
+		return UpdateAssistantDtoServerMessagesItemHang, nil
+	case "language-changed":
+		return UpdateAssistantDtoServerMessagesItemLanguageChanged, nil
+	case "language-change-detected":
+		return UpdateAssistantDtoServerMessagesItemLanguageChangeDetected, nil
+	case "model-output":
+		return UpdateAssistantDtoServerMessagesItemModelOutput, nil
+	case "phone-call-control":
+		return UpdateAssistantDtoServerMessagesItemPhoneCallControl, nil
+	case "speech-update":
+		return UpdateAssistantDtoServerMessagesItemSpeechUpdate, nil
+	case "status-update":
+		return UpdateAssistantDtoServerMessagesItemStatusUpdate, nil
+	case "transcript":
+		return UpdateAssistantDtoServerMessagesItemTranscript, nil
+	case "transcript[transcriptType=\"final\"]":
+		return UpdateAssistantDtoServerMessagesItemTranscriptTranscriptTypeFinal, nil
+	case "tool-calls":
+		return UpdateAssistantDtoServerMessagesItemToolCalls, nil
+	case "transfer-destination-request":
+		return UpdateAssistantDtoServerMessagesItemTransferDestinationRequest, nil
+	case "transfer-update":
+		return UpdateAssistantDtoServerMessagesItemTransferUpdate, nil
+	case "user-interrupted":
+		return UpdateAssistantDtoServerMessagesItemUserInterrupted, nil
+	case "voice-input":
+		return UpdateAssistantDtoServerMessagesItemVoiceInput, nil
+	}
+	var t UpdateAssistantDtoServerMessagesItem
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (u UpdateAssistantDtoServerMessagesItem) Ptr() *UpdateAssistantDtoServerMessagesItem {
+	return &u
 }
 
 // These are the options for the assistant's transcriber.
@@ -2252,8 +2407,10 @@ type UpdateAssistantDto struct {
 	// This uses Twilio's built-in detection while the VoicemailTool relies on the model to detect if a voicemail was reached.
 	// You can use neither of them, one of them, or both of them. By default, Twilio built-in detection is enabled while VoicemailTool is not.
 	VoicemailDetection *UpdateAssistantDtoVoicemailDetection `json:"voicemailDetection,omitempty" url:"-"`
-	ClientMessages     [][]map[string]interface{}            `json:"clientMessages,omitempty" url:"-"`
-	ServerMessages     [][]map[string]interface{}            `json:"serverMessages,omitempty" url:"-"`
+	// These are the messages that will be sent to your Client SDKs. Default is conversation-update,function-call,hang,model-output,speech-update,status-update,transfer-update,transcript,tool-calls,user-interrupted,voice-input,workflow.node.started. You can check the shape of the messages in ClientMessage schema.
+	ClientMessages []UpdateAssistantDtoClientMessagesItem `json:"clientMessages,omitempty" url:"-"`
+	// These are the messages that will be sent to your Server URL. Default is conversation-update,end-of-call-report,function-call,hang,speech-update,status-update,tool-calls,transfer-destination-request,user-interrupted. You can check the shape of the messages in ServerMessage schema.
+	ServerMessages []UpdateAssistantDtoServerMessagesItem `json:"serverMessages,omitempty" url:"-"`
 	// How many seconds of silence to wait before ending the call. Defaults to 30.
 	//
 	// @default 30

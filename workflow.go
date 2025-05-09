@@ -458,13 +458,14 @@ func (w *WorkflowModel) Accept(visitor WorkflowModelVisitor) error {
 }
 
 type WorkflowNodesItem struct {
-	Start      *Start
-	Assistant  *Assistant
-	Say        *Say
-	Gather     *Gather
-	ApiRequest *ApiRequest
-	Hangup     *Hangup
-	Transfer   *Transfer
+	Start        *Start
+	Assistant    *Assistant
+	Say          *Say
+	Gather       *Gather
+	ApiRequest   *ApiRequest
+	Hangup       *Hangup
+	Transfer     *Transfer
+	Conversation *Conversation
 
 	typ string
 }
@@ -518,6 +519,13 @@ func (w *WorkflowNodesItem) GetTransfer() *Transfer {
 	return w.Transfer
 }
 
+func (w *WorkflowNodesItem) GetConversation() *Conversation {
+	if w == nil {
+		return nil
+	}
+	return w.Conversation
+}
+
 func (w *WorkflowNodesItem) UnmarshalJSON(data []byte) error {
 	valueStart := new(Start)
 	if err := json.Unmarshal(data, &valueStart); err == nil {
@@ -561,6 +569,12 @@ func (w *WorkflowNodesItem) UnmarshalJSON(data []byte) error {
 		w.Transfer = valueTransfer
 		return nil
 	}
+	valueConversation := new(Conversation)
+	if err := json.Unmarshal(data, &valueConversation); err == nil {
+		w.typ = "Conversation"
+		w.Conversation = valueConversation
+		return nil
+	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, w)
 }
 
@@ -586,6 +600,9 @@ func (w WorkflowNodesItem) MarshalJSON() ([]byte, error) {
 	if w.typ == "Transfer" || w.Transfer != nil {
 		return json.Marshal(w.Transfer)
 	}
+	if w.typ == "Conversation" || w.Conversation != nil {
+		return json.Marshal(w.Conversation)
+	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", w)
 }
 
@@ -597,6 +614,7 @@ type WorkflowNodesItemVisitor interface {
 	VisitApiRequest(*ApiRequest) error
 	VisitHangup(*Hangup) error
 	VisitTransfer(*Transfer) error
+	VisitConversation(*Conversation) error
 }
 
 func (w *WorkflowNodesItem) Accept(visitor WorkflowNodesItemVisitor) error {
@@ -620,6 +638,9 @@ func (w *WorkflowNodesItem) Accept(visitor WorkflowNodesItemVisitor) error {
 	}
 	if w.typ == "Transfer" || w.Transfer != nil {
 		return visitor.VisitTransfer(w.Transfer)
+	}
+	if w.typ == "Conversation" || w.Conversation != nil {
+		return visitor.VisitConversation(w.Conversation)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", w)
 }
@@ -940,13 +961,14 @@ func (u *UpdateWorkflowDtoModel) Accept(visitor UpdateWorkflowDtoModelVisitor) e
 }
 
 type UpdateWorkflowDtoNodesItem struct {
-	Start      *Start
-	Assistant  *Assistant
-	Say        *Say
-	Gather     *Gather
-	ApiRequest *ApiRequest
-	Hangup     *Hangup
-	Transfer   *Transfer
+	Start        *Start
+	Assistant    *Assistant
+	Say          *Say
+	Gather       *Gather
+	ApiRequest   *ApiRequest
+	Hangup       *Hangup
+	Transfer     *Transfer
+	Conversation *Conversation
 
 	typ string
 }
@@ -1000,6 +1022,13 @@ func (u *UpdateWorkflowDtoNodesItem) GetTransfer() *Transfer {
 	return u.Transfer
 }
 
+func (u *UpdateWorkflowDtoNodesItem) GetConversation() *Conversation {
+	if u == nil {
+		return nil
+	}
+	return u.Conversation
+}
+
 func (u *UpdateWorkflowDtoNodesItem) UnmarshalJSON(data []byte) error {
 	valueStart := new(Start)
 	if err := json.Unmarshal(data, &valueStart); err == nil {
@@ -1043,6 +1072,12 @@ func (u *UpdateWorkflowDtoNodesItem) UnmarshalJSON(data []byte) error {
 		u.Transfer = valueTransfer
 		return nil
 	}
+	valueConversation := new(Conversation)
+	if err := json.Unmarshal(data, &valueConversation); err == nil {
+		u.typ = "Conversation"
+		u.Conversation = valueConversation
+		return nil
+	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, u)
 }
 
@@ -1068,6 +1103,9 @@ func (u UpdateWorkflowDtoNodesItem) MarshalJSON() ([]byte, error) {
 	if u.typ == "Transfer" || u.Transfer != nil {
 		return json.Marshal(u.Transfer)
 	}
+	if u.typ == "Conversation" || u.Conversation != nil {
+		return json.Marshal(u.Conversation)
+	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", u)
 }
 
@@ -1079,6 +1117,7 @@ type UpdateWorkflowDtoNodesItemVisitor interface {
 	VisitApiRequest(*ApiRequest) error
 	VisitHangup(*Hangup) error
 	VisitTransfer(*Transfer) error
+	VisitConversation(*Conversation) error
 }
 
 func (u *UpdateWorkflowDtoNodesItem) Accept(visitor UpdateWorkflowDtoNodesItemVisitor) error {
@@ -1102,6 +1141,9 @@ func (u *UpdateWorkflowDtoNodesItem) Accept(visitor UpdateWorkflowDtoNodesItemVi
 	}
 	if u.typ == "Transfer" || u.Transfer != nil {
 		return visitor.VisitTransfer(u.Transfer)
+	}
+	if u.typ == "Conversation" || u.Conversation != nil {
+		return visitor.VisitConversation(u.Conversation)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", u)
 }
