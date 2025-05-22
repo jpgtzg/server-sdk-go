@@ -20,49 +20,53 @@ type CreateCallDto struct {
 	SchedulePlan *SchedulePlan `json:"schedulePlan,omitempty" url:"-"`
 	// This is the transport of the call.
 	Transport map[string]interface{} `json:"transport,omitempty" url:"-"`
-	// This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead.
-	// Usage:
+	// This is the assistant ID that will be used for the call. To use a transient assistant, use `assistant` instead.
 	//
-	//	To start the call with Assistant as entrypoint, use assistant or assistantId
-	//	To start the call with Squad as entrypoint, use squad or squadId
-	//	To start the call with Workflow as entrypoint, use workflow or workflowId
+	// To start a call with:
+	// - Assistant, use `assistantId` or `assistant`
+	// - Squad, use `squadId` or `squad`
+	// - Workflow, use `workflowId` or `workflow`
 	AssistantId *string `json:"assistantId,omitempty" url:"-"`
 	// This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead.
-	// Usage:
 	//
-	//	To start the call with Assistant as entrypoint, use assistant or assistantId
-	//	To start the call with Squad as entrypoint, use squad or squadId
-	//	To start the call with Workflow as entrypoint, use workflow or workflowId
+	// To start a call with:
+	// - Assistant, use `assistant`
+	// - Squad, use `squad`
+	// - Workflow, use `workflow`
 	Assistant *CreateAssistantDto `json:"assistant,omitempty" url:"-"`
 	// These are the overrides for the `assistant` or `assistantId`'s settings and template variables.
 	AssistantOverrides *AssistantOverrides `json:"assistantOverrides,omitempty" url:"-"`
 	// This is the squad that will be used for the call. To use a transient squad, use `squad` instead.
-	// Usage:
 	//
-	//	To start the call with Assistant as entrypoint, use assistant or assistantId
-	//	To start the call with Squad as entrypoint, use squad or squadId
-	//	To start the call with Workflow as entrypoint, use workflow or workflowId
+	// To start a call with:
+	// - Assistant, use `assistant` or `assistantId`
+	// - Squad, use `squad` or `squadId`
+	// - Workflow, use `workflow` or `workflowId`
 	SquadId *string `json:"squadId,omitempty" url:"-"`
 	// This is a squad that will be used for the call. To use an existing squad, use `squadId` instead.
-	// Usage:
 	//
-	//	To start the call with Assistant as entrypoint, use assistant or assistantId
-	//	To start the call with Squad as entrypoint, use squad or squadId
-	//	To start the call with Workflow as entrypoint, use workflow or workflowId
+	// To start a call with:
+	// - Assistant, use `assistant` or `assistantId`
+	// - Squad, use `squad` or `squadId`
+	// - Workflow, use `workflow` or `workflowId`
 	Squad *CreateSquadDto `json:"squad,omitempty" url:"-"`
+	// [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
+	//
 	// This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
-	// Usage:
 	//
-	//	To start the call with Assistant as entrypoint, use assistant or assistantId
-	//	To start the call with Squad as entrypoint, use squad or squadId
-	//	To start the call with Workflow as entrypoint, use workflow or workflowId
+	// To start a call with:
+	// - Assistant, use `assistant` or `assistantId`
+	// - Squad, use `squad` or `squadId`
+	// - Workflow, use `workflow` or `workflowId`
 	WorkflowId *string `json:"workflowId,omitempty" url:"-"`
-	// This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
-	// Usage:
+	// [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
 	//
-	//	To start the call with Assistant as entrypoint, use assistant or assistantId
-	//	To start the call with Squad as entrypoint, use squad or squadId
-	//	To start the call with Workflow as entrypoint, use workflow or workflowId
+	// This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
+	//
+	// To start a call with:
+	// - Assistant, use `assistant` or `assistantId`
+	// - Squad, use `squad` or `squadId`
+	// - Workflow, use `workflow` or `workflowId`
 	Workflow *CreateWorkflowDto `json:"workflow,omitempty" url:"-"`
 	// This is the phone number that will be used for the call. To use a transient number, use `phoneNumber` instead.
 	//
@@ -488,49 +492,53 @@ type Call struct {
 	//
 	// Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
 	PhoneCallProviderId *string `json:"phoneCallProviderId,omitempty" url:"phoneCallProviderId,omitempty"`
-	// This is the assistant that will be used for the call. To use a transient assistant, use `assistant` instead.
-	// Usage:
+	// This is the assistant ID that will be used for the call. To use a transient assistant, use `assistant` instead.
 	//
-	//	To start the call with Assistant as entrypoint, use assistant or assistantId
-	//	To start the call with Squad as entrypoint, use squad or squadId
-	//	To start the call with Workflow as entrypoint, use workflow or workflowId
+	// To start a call with:
+	// - Assistant, use `assistantId` or `assistant`
+	// - Squad, use `squadId` or `squad`
+	// - Workflow, use `workflowId` or `workflow`
 	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
 	// This is the assistant that will be used for the call. To use an existing assistant, use `assistantId` instead.
-	// Usage:
 	//
-	//	To start the call with Assistant as entrypoint, use assistant or assistantId
-	//	To start the call with Squad as entrypoint, use squad or squadId
-	//	To start the call with Workflow as entrypoint, use workflow or workflowId
+	// To start a call with:
+	// - Assistant, use `assistant`
+	// - Squad, use `squad`
+	// - Workflow, use `workflow`
 	Assistant *CreateAssistantDto `json:"assistant,omitempty" url:"assistant,omitempty"`
 	// These are the overrides for the `assistant` or `assistantId`'s settings and template variables.
 	AssistantOverrides *AssistantOverrides `json:"assistantOverrides,omitempty" url:"assistantOverrides,omitempty"`
 	// This is the squad that will be used for the call. To use a transient squad, use `squad` instead.
-	// Usage:
 	//
-	//	To start the call with Assistant as entrypoint, use assistant or assistantId
-	//	To start the call with Squad as entrypoint, use squad or squadId
-	//	To start the call with Workflow as entrypoint, use workflow or workflowId
+	// To start a call with:
+	// - Assistant, use `assistant` or `assistantId`
+	// - Squad, use `squad` or `squadId`
+	// - Workflow, use `workflow` or `workflowId`
 	SquadId *string `json:"squadId,omitempty" url:"squadId,omitempty"`
 	// This is a squad that will be used for the call. To use an existing squad, use `squadId` instead.
-	// Usage:
 	//
-	//	To start the call with Assistant as entrypoint, use assistant or assistantId
-	//	To start the call with Squad as entrypoint, use squad or squadId
-	//	To start the call with Workflow as entrypoint, use workflow or workflowId
+	// To start a call with:
+	// - Assistant, use `assistant` or `assistantId`
+	// - Squad, use `squad` or `squadId`
+	// - Workflow, use `workflow` or `workflowId`
 	Squad *CreateSquadDto `json:"squad,omitempty" url:"squad,omitempty"`
+	// [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
+	//
 	// This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
-	// Usage:
 	//
-	//	To start the call with Assistant as entrypoint, use assistant or assistantId
-	//	To start the call with Squad as entrypoint, use squad or squadId
-	//	To start the call with Workflow as entrypoint, use workflow or workflowId
+	// To start a call with:
+	// - Assistant, use `assistant` or `assistantId`
+	// - Squad, use `squad` or `squadId`
+	// - Workflow, use `workflow` or `workflowId`
 	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
-	// This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
-	// Usage:
+	// [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
 	//
-	//	To start the call with Assistant as entrypoint, use assistant or assistantId
-	//	To start the call with Squad as entrypoint, use squad or squadId
-	//	To start the call with Workflow as entrypoint, use workflow or workflowId
+	// This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
+	//
+	// To start a call with:
+	// - Assistant, use `assistant` or `assistantId`
+	// - Squad, use `squad` or `squadId`
+	// - Workflow, use `workflow` or `workflowId`
 	Workflow *CreateWorkflowDto `json:"workflow,omitempty" url:"workflow,omitempty"`
 	// This is the phone number that will be used for the call. To use a transient number, use `phoneNumber` instead.
 	//

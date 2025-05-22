@@ -637,7 +637,7 @@ func (c *ComputerToolMessagesItem) Accept(visitor ComputerToolMessagesItemVisito
 	return fmt.Errorf("type %T does not include a non-empty union type", c)
 }
 
-type CreateBashToolDto struct {
+type CreateGhlToolDto struct {
 	// This determines if the tool is async.
 	//
 	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
@@ -649,526 +649,8 @@ type CreateBashToolDto struct {
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-	Messages []*CreateBashToolDtoMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
-	// The sub type of tool.
-	// The name of the tool, fixed to 'bash'
-	// This is the function definition of the tool.
-	//
-	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
-	//
-	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
-	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server  *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_   string
-	subType string
-	name    string
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (c *CreateBashToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
-}
-
-func (c *CreateBashToolDto) GetMessages() []*CreateBashToolDtoMessagesItem {
-	if c == nil {
-		return nil
-	}
-	return c.Messages
-}
-
-func (c *CreateBashToolDto) GetFunction() *OpenAiFunction {
-	if c == nil {
-		return nil
-	}
-	return c.Function
-}
-
-func (c *CreateBashToolDto) GetServer() *Server {
-	if c == nil {
-		return nil
-	}
-	return c.Server
-}
-
-func (c *CreateBashToolDto) Type() string {
-	return c.type_
-}
-
-func (c *CreateBashToolDto) SubType() string {
-	return c.subType
-}
-
-func (c *CreateBashToolDto) Name() string {
-	return c.name
-}
-
-func (c *CreateBashToolDto) GetExtraProperties() map[string]interface{} {
-	return c.extraProperties
-}
-
-func (c *CreateBashToolDto) UnmarshalJSON(data []byte) error {
-	type embed CreateBashToolDto
-	var unmarshaler = struct {
-		embed
-		Type    string `json:"type"`
-		SubType string `json:"subType"`
-		Name    string `json:"name"`
-	}{
-		embed: embed(*c),
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
-		return err
-	}
-	*c = CreateBashToolDto(unmarshaler.embed)
-	if unmarshaler.Type != "bash" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", c, "bash", unmarshaler.Type)
-	}
-	c.type_ = unmarshaler.Type
-	if unmarshaler.SubType != "bash_20241022" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", c, "bash_20241022", unmarshaler.SubType)
-	}
-	c.subType = unmarshaler.SubType
-	if unmarshaler.Name != "bash" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", c, "bash", unmarshaler.Name)
-	}
-	c.name = unmarshaler.Name
-	extraProperties, err := internal.ExtractExtraProperties(data, *c, "type", "subType", "name")
-	if err != nil {
-		return err
-	}
-	c.extraProperties = extraProperties
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c *CreateBashToolDto) MarshalJSON() ([]byte, error) {
-	type embed CreateBashToolDto
-	var marshaler = struct {
-		embed
-		Type    string `json:"type"`
-		SubType string `json:"subType"`
-		Name    string `json:"name"`
-	}{
-		embed:   embed(*c),
-		Type:    "bash",
-		SubType: "bash_20241022",
-		Name:    "bash",
-	}
-	return json.Marshal(marshaler)
-}
-
-func (c *CreateBashToolDto) String() string {
-	if len(c.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(c); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", c)
-}
-
-type CreateBashToolDtoMessagesItem struct {
-	ToolMessageStart    *ToolMessageStart
-	ToolMessageComplete *ToolMessageComplete
-	ToolMessageFailed   *ToolMessageFailed
-	ToolMessageDelayed  *ToolMessageDelayed
-
-	typ string
-}
-
-func (c *CreateBashToolDtoMessagesItem) GetToolMessageStart() *ToolMessageStart {
-	if c == nil {
-		return nil
-	}
-	return c.ToolMessageStart
-}
-
-func (c *CreateBashToolDtoMessagesItem) GetToolMessageComplete() *ToolMessageComplete {
-	if c == nil {
-		return nil
-	}
-	return c.ToolMessageComplete
-}
-
-func (c *CreateBashToolDtoMessagesItem) GetToolMessageFailed() *ToolMessageFailed {
-	if c == nil {
-		return nil
-	}
-	return c.ToolMessageFailed
-}
-
-func (c *CreateBashToolDtoMessagesItem) GetToolMessageDelayed() *ToolMessageDelayed {
-	if c == nil {
-		return nil
-	}
-	return c.ToolMessageDelayed
-}
-
-func (c *CreateBashToolDtoMessagesItem) UnmarshalJSON(data []byte) error {
-	valueToolMessageStart := new(ToolMessageStart)
-	if err := json.Unmarshal(data, &valueToolMessageStart); err == nil {
-		c.typ = "ToolMessageStart"
-		c.ToolMessageStart = valueToolMessageStart
-		return nil
-	}
-	valueToolMessageComplete := new(ToolMessageComplete)
-	if err := json.Unmarshal(data, &valueToolMessageComplete); err == nil {
-		c.typ = "ToolMessageComplete"
-		c.ToolMessageComplete = valueToolMessageComplete
-		return nil
-	}
-	valueToolMessageFailed := new(ToolMessageFailed)
-	if err := json.Unmarshal(data, &valueToolMessageFailed); err == nil {
-		c.typ = "ToolMessageFailed"
-		c.ToolMessageFailed = valueToolMessageFailed
-		return nil
-	}
-	valueToolMessageDelayed := new(ToolMessageDelayed)
-	if err := json.Unmarshal(data, &valueToolMessageDelayed); err == nil {
-		c.typ = "ToolMessageDelayed"
-		c.ToolMessageDelayed = valueToolMessageDelayed
-		return nil
-	}
-	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
-}
-
-func (c CreateBashToolDtoMessagesItem) MarshalJSON() ([]byte, error) {
-	if c.typ == "ToolMessageStart" || c.ToolMessageStart != nil {
-		return json.Marshal(c.ToolMessageStart)
-	}
-	if c.typ == "ToolMessageComplete" || c.ToolMessageComplete != nil {
-		return json.Marshal(c.ToolMessageComplete)
-	}
-	if c.typ == "ToolMessageFailed" || c.ToolMessageFailed != nil {
-		return json.Marshal(c.ToolMessageFailed)
-	}
-	if c.typ == "ToolMessageDelayed" || c.ToolMessageDelayed != nil {
-		return json.Marshal(c.ToolMessageDelayed)
-	}
-	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
-}
-
-type CreateBashToolDtoMessagesItemVisitor interface {
-	VisitToolMessageStart(*ToolMessageStart) error
-	VisitToolMessageComplete(*ToolMessageComplete) error
-	VisitToolMessageFailed(*ToolMessageFailed) error
-	VisitToolMessageDelayed(*ToolMessageDelayed) error
-}
-
-func (c *CreateBashToolDtoMessagesItem) Accept(visitor CreateBashToolDtoMessagesItemVisitor) error {
-	if c.typ == "ToolMessageStart" || c.ToolMessageStart != nil {
-		return visitor.VisitToolMessageStart(c.ToolMessageStart)
-	}
-	if c.typ == "ToolMessageComplete" || c.ToolMessageComplete != nil {
-		return visitor.VisitToolMessageComplete(c.ToolMessageComplete)
-	}
-	if c.typ == "ToolMessageFailed" || c.ToolMessageFailed != nil {
-		return visitor.VisitToolMessageFailed(c.ToolMessageFailed)
-	}
-	if c.typ == "ToolMessageDelayed" || c.ToolMessageDelayed != nil {
-		return visitor.VisitToolMessageDelayed(c.ToolMessageDelayed)
-	}
-	return fmt.Errorf("type %T does not include a non-empty union type", c)
-}
-
-type CreateComputerToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
-	// These are the messages that will be spoken to the user as the tool is running.
-	//
-	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-	Messages []*CreateComputerToolDtoMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
-	// The sub type of tool.
-	// The name of the tool, fixed to 'computer'
-	// The display width in pixels
-	DisplayWidthPx float64 `json:"displayWidthPx" url:"displayWidthPx"`
-	// The display height in pixels
-	DisplayHeightPx float64 `json:"displayHeightPx" url:"displayHeightPx"`
-	// Optional display number
-	DisplayNumber *float64 `json:"displayNumber,omitempty" url:"displayNumber,omitempty"`
-	// This is the function definition of the tool.
-	//
-	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
-	//
-	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
-	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server  *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_   string
-	subType string
-	name    string
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (c *CreateComputerToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
-}
-
-func (c *CreateComputerToolDto) GetMessages() []*CreateComputerToolDtoMessagesItem {
-	if c == nil {
-		return nil
-	}
-	return c.Messages
-}
-
-func (c *CreateComputerToolDto) GetDisplayWidthPx() float64 {
-	if c == nil {
-		return 0
-	}
-	return c.DisplayWidthPx
-}
-
-func (c *CreateComputerToolDto) GetDisplayHeightPx() float64 {
-	if c == nil {
-		return 0
-	}
-	return c.DisplayHeightPx
-}
-
-func (c *CreateComputerToolDto) GetDisplayNumber() *float64 {
-	if c == nil {
-		return nil
-	}
-	return c.DisplayNumber
-}
-
-func (c *CreateComputerToolDto) GetFunction() *OpenAiFunction {
-	if c == nil {
-		return nil
-	}
-	return c.Function
-}
-
-func (c *CreateComputerToolDto) GetServer() *Server {
-	if c == nil {
-		return nil
-	}
-	return c.Server
-}
-
-func (c *CreateComputerToolDto) Type() string {
-	return c.type_
-}
-
-func (c *CreateComputerToolDto) SubType() string {
-	return c.subType
-}
-
-func (c *CreateComputerToolDto) Name() string {
-	return c.name
-}
-
-func (c *CreateComputerToolDto) GetExtraProperties() map[string]interface{} {
-	return c.extraProperties
-}
-
-func (c *CreateComputerToolDto) UnmarshalJSON(data []byte) error {
-	type embed CreateComputerToolDto
-	var unmarshaler = struct {
-		embed
-		Type    string `json:"type"`
-		SubType string `json:"subType"`
-		Name    string `json:"name"`
-	}{
-		embed: embed(*c),
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
-		return err
-	}
-	*c = CreateComputerToolDto(unmarshaler.embed)
-	if unmarshaler.Type != "computer" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", c, "computer", unmarshaler.Type)
-	}
-	c.type_ = unmarshaler.Type
-	if unmarshaler.SubType != "computer_20241022" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", c, "computer_20241022", unmarshaler.SubType)
-	}
-	c.subType = unmarshaler.SubType
-	if unmarshaler.Name != "computer" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", c, "computer", unmarshaler.Name)
-	}
-	c.name = unmarshaler.Name
-	extraProperties, err := internal.ExtractExtraProperties(data, *c, "type", "subType", "name")
-	if err != nil {
-		return err
-	}
-	c.extraProperties = extraProperties
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c *CreateComputerToolDto) MarshalJSON() ([]byte, error) {
-	type embed CreateComputerToolDto
-	var marshaler = struct {
-		embed
-		Type    string `json:"type"`
-		SubType string `json:"subType"`
-		Name    string `json:"name"`
-	}{
-		embed:   embed(*c),
-		Type:    "computer",
-		SubType: "computer_20241022",
-		Name:    "computer",
-	}
-	return json.Marshal(marshaler)
-}
-
-func (c *CreateComputerToolDto) String() string {
-	if len(c.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(c); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", c)
-}
-
-type CreateComputerToolDtoMessagesItem struct {
-	ToolMessageStart    *ToolMessageStart
-	ToolMessageComplete *ToolMessageComplete
-	ToolMessageFailed   *ToolMessageFailed
-	ToolMessageDelayed  *ToolMessageDelayed
-
-	typ string
-}
-
-func (c *CreateComputerToolDtoMessagesItem) GetToolMessageStart() *ToolMessageStart {
-	if c == nil {
-		return nil
-	}
-	return c.ToolMessageStart
-}
-
-func (c *CreateComputerToolDtoMessagesItem) GetToolMessageComplete() *ToolMessageComplete {
-	if c == nil {
-		return nil
-	}
-	return c.ToolMessageComplete
-}
-
-func (c *CreateComputerToolDtoMessagesItem) GetToolMessageFailed() *ToolMessageFailed {
-	if c == nil {
-		return nil
-	}
-	return c.ToolMessageFailed
-}
-
-func (c *CreateComputerToolDtoMessagesItem) GetToolMessageDelayed() *ToolMessageDelayed {
-	if c == nil {
-		return nil
-	}
-	return c.ToolMessageDelayed
-}
-
-func (c *CreateComputerToolDtoMessagesItem) UnmarshalJSON(data []byte) error {
-	valueToolMessageStart := new(ToolMessageStart)
-	if err := json.Unmarshal(data, &valueToolMessageStart); err == nil {
-		c.typ = "ToolMessageStart"
-		c.ToolMessageStart = valueToolMessageStart
-		return nil
-	}
-	valueToolMessageComplete := new(ToolMessageComplete)
-	if err := json.Unmarshal(data, &valueToolMessageComplete); err == nil {
-		c.typ = "ToolMessageComplete"
-		c.ToolMessageComplete = valueToolMessageComplete
-		return nil
-	}
-	valueToolMessageFailed := new(ToolMessageFailed)
-	if err := json.Unmarshal(data, &valueToolMessageFailed); err == nil {
-		c.typ = "ToolMessageFailed"
-		c.ToolMessageFailed = valueToolMessageFailed
-		return nil
-	}
-	valueToolMessageDelayed := new(ToolMessageDelayed)
-	if err := json.Unmarshal(data, &valueToolMessageDelayed); err == nil {
-		c.typ = "ToolMessageDelayed"
-		c.ToolMessageDelayed = valueToolMessageDelayed
-		return nil
-	}
-	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
-}
-
-func (c CreateComputerToolDtoMessagesItem) MarshalJSON() ([]byte, error) {
-	if c.typ == "ToolMessageStart" || c.ToolMessageStart != nil {
-		return json.Marshal(c.ToolMessageStart)
-	}
-	if c.typ == "ToolMessageComplete" || c.ToolMessageComplete != nil {
-		return json.Marshal(c.ToolMessageComplete)
-	}
-	if c.typ == "ToolMessageFailed" || c.ToolMessageFailed != nil {
-		return json.Marshal(c.ToolMessageFailed)
-	}
-	if c.typ == "ToolMessageDelayed" || c.ToolMessageDelayed != nil {
-		return json.Marshal(c.ToolMessageDelayed)
-	}
-	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
-}
-
-type CreateComputerToolDtoMessagesItemVisitor interface {
-	VisitToolMessageStart(*ToolMessageStart) error
-	VisitToolMessageComplete(*ToolMessageComplete) error
-	VisitToolMessageFailed(*ToolMessageFailed) error
-	VisitToolMessageDelayed(*ToolMessageDelayed) error
-}
-
-func (c *CreateComputerToolDtoMessagesItem) Accept(visitor CreateComputerToolDtoMessagesItemVisitor) error {
-	if c.typ == "ToolMessageStart" || c.ToolMessageStart != nil {
-		return visitor.VisitToolMessageStart(c.ToolMessageStart)
-	}
-	if c.typ == "ToolMessageComplete" || c.ToolMessageComplete != nil {
-		return visitor.VisitToolMessageComplete(c.ToolMessageComplete)
-	}
-	if c.typ == "ToolMessageFailed" || c.ToolMessageFailed != nil {
-		return visitor.VisitToolMessageFailed(c.ToolMessageFailed)
-	}
-	if c.typ == "ToolMessageDelayed" || c.ToolMessageDelayed != nil {
-		return visitor.VisitToolMessageDelayed(c.ToolMessageDelayed)
-	}
-	return fmt.Errorf("type %T does not include a non-empty union type", c)
-}
-
-type CreateMcpToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
-	// These are the messages that will be spoken to the user as the tool is running.
-	//
-	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-	Messages []*CreateMcpToolDtoMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
+	Messages []*CreateGhlToolDtoMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
+	Metadata *GhlToolMetadata                `json:"metadata,omitempty" url:"metadata,omitempty"`
 	// This is the function definition of the tool.
 	//
 	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
@@ -1187,44 +669,51 @@ type CreateMcpToolDto struct {
 	rawJSON         json.RawMessage
 }
 
-func (c *CreateMcpToolDto) GetAsync() *bool {
+func (c *CreateGhlToolDto) GetAsync() *bool {
 	if c == nil {
 		return nil
 	}
 	return c.Async
 }
 
-func (c *CreateMcpToolDto) GetMessages() []*CreateMcpToolDtoMessagesItem {
+func (c *CreateGhlToolDto) GetMessages() []*CreateGhlToolDtoMessagesItem {
 	if c == nil {
 		return nil
 	}
 	return c.Messages
 }
 
-func (c *CreateMcpToolDto) GetFunction() *OpenAiFunction {
+func (c *CreateGhlToolDto) GetMetadata() *GhlToolMetadata {
+	if c == nil {
+		return nil
+	}
+	return c.Metadata
+}
+
+func (c *CreateGhlToolDto) GetFunction() *OpenAiFunction {
 	if c == nil {
 		return nil
 	}
 	return c.Function
 }
 
-func (c *CreateMcpToolDto) GetServer() *Server {
+func (c *CreateGhlToolDto) GetServer() *Server {
 	if c == nil {
 		return nil
 	}
 	return c.Server
 }
 
-func (c *CreateMcpToolDto) Type() string {
+func (c *CreateGhlToolDto) Type() string {
 	return c.type_
 }
 
-func (c *CreateMcpToolDto) GetExtraProperties() map[string]interface{} {
+func (c *CreateGhlToolDto) GetExtraProperties() map[string]interface{} {
 	return c.extraProperties
 }
 
-func (c *CreateMcpToolDto) UnmarshalJSON(data []byte) error {
-	type embed CreateMcpToolDto
+func (c *CreateGhlToolDto) UnmarshalJSON(data []byte) error {
+	type embed CreateGhlToolDto
 	var unmarshaler = struct {
 		embed
 		Type string `json:"type"`
@@ -1234,9 +723,9 @@ func (c *CreateMcpToolDto) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &unmarshaler); err != nil {
 		return err
 	}
-	*c = CreateMcpToolDto(unmarshaler.embed)
-	if unmarshaler.Type != "mcp" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", c, "mcp", unmarshaler.Type)
+	*c = CreateGhlToolDto(unmarshaler.embed)
+	if unmarshaler.Type != "ghl" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", c, "ghl", unmarshaler.Type)
 	}
 	c.type_ = unmarshaler.Type
 	extraProperties, err := internal.ExtractExtraProperties(data, *c, "type")
@@ -1248,19 +737,19 @@ func (c *CreateMcpToolDto) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (c *CreateMcpToolDto) MarshalJSON() ([]byte, error) {
-	type embed CreateMcpToolDto
+func (c *CreateGhlToolDto) MarshalJSON() ([]byte, error) {
+	type embed CreateGhlToolDto
 	var marshaler = struct {
 		embed
 		Type string `json:"type"`
 	}{
 		embed: embed(*c),
-		Type:  "mcp",
+		Type:  "ghl",
 	}
 	return json.Marshal(marshaler)
 }
 
-func (c *CreateMcpToolDto) String() string {
+func (c *CreateGhlToolDto) String() string {
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -1272,7 +761,7 @@ func (c *CreateMcpToolDto) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-type CreateMcpToolDtoMessagesItem struct {
+type CreateGhlToolDtoMessagesItem struct {
 	ToolMessageStart    *ToolMessageStart
 	ToolMessageComplete *ToolMessageComplete
 	ToolMessageFailed   *ToolMessageFailed
@@ -1281,35 +770,35 @@ type CreateMcpToolDtoMessagesItem struct {
 	typ string
 }
 
-func (c *CreateMcpToolDtoMessagesItem) GetToolMessageStart() *ToolMessageStart {
+func (c *CreateGhlToolDtoMessagesItem) GetToolMessageStart() *ToolMessageStart {
 	if c == nil {
 		return nil
 	}
 	return c.ToolMessageStart
 }
 
-func (c *CreateMcpToolDtoMessagesItem) GetToolMessageComplete() *ToolMessageComplete {
+func (c *CreateGhlToolDtoMessagesItem) GetToolMessageComplete() *ToolMessageComplete {
 	if c == nil {
 		return nil
 	}
 	return c.ToolMessageComplete
 }
 
-func (c *CreateMcpToolDtoMessagesItem) GetToolMessageFailed() *ToolMessageFailed {
+func (c *CreateGhlToolDtoMessagesItem) GetToolMessageFailed() *ToolMessageFailed {
 	if c == nil {
 		return nil
 	}
 	return c.ToolMessageFailed
 }
 
-func (c *CreateMcpToolDtoMessagesItem) GetToolMessageDelayed() *ToolMessageDelayed {
+func (c *CreateGhlToolDtoMessagesItem) GetToolMessageDelayed() *ToolMessageDelayed {
 	if c == nil {
 		return nil
 	}
 	return c.ToolMessageDelayed
 }
 
-func (c *CreateMcpToolDtoMessagesItem) UnmarshalJSON(data []byte) error {
+func (c *CreateGhlToolDtoMessagesItem) UnmarshalJSON(data []byte) error {
 	valueToolMessageStart := new(ToolMessageStart)
 	if err := json.Unmarshal(data, &valueToolMessageStart); err == nil {
 		c.typ = "ToolMessageStart"
@@ -1337,7 +826,7 @@ func (c *CreateMcpToolDtoMessagesItem) UnmarshalJSON(data []byte) error {
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
 }
 
-func (c CreateMcpToolDtoMessagesItem) MarshalJSON() ([]byte, error) {
+func (c CreateGhlToolDtoMessagesItem) MarshalJSON() ([]byte, error) {
 	if c.typ == "ToolMessageStart" || c.ToolMessageStart != nil {
 		return json.Marshal(c.ToolMessageStart)
 	}
@@ -1353,14 +842,242 @@ func (c CreateMcpToolDtoMessagesItem) MarshalJSON() ([]byte, error) {
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
 }
 
-type CreateMcpToolDtoMessagesItemVisitor interface {
+type CreateGhlToolDtoMessagesItemVisitor interface {
 	VisitToolMessageStart(*ToolMessageStart) error
 	VisitToolMessageComplete(*ToolMessageComplete) error
 	VisitToolMessageFailed(*ToolMessageFailed) error
 	VisitToolMessageDelayed(*ToolMessageDelayed) error
 }
 
-func (c *CreateMcpToolDtoMessagesItem) Accept(visitor CreateMcpToolDtoMessagesItemVisitor) error {
+func (c *CreateGhlToolDtoMessagesItem) Accept(visitor CreateGhlToolDtoMessagesItemVisitor) error {
+	if c.typ == "ToolMessageStart" || c.ToolMessageStart != nil {
+		return visitor.VisitToolMessageStart(c.ToolMessageStart)
+	}
+	if c.typ == "ToolMessageComplete" || c.ToolMessageComplete != nil {
+		return visitor.VisitToolMessageComplete(c.ToolMessageComplete)
+	}
+	if c.typ == "ToolMessageFailed" || c.ToolMessageFailed != nil {
+		return visitor.VisitToolMessageFailed(c.ToolMessageFailed)
+	}
+	if c.typ == "ToolMessageDelayed" || c.ToolMessageDelayed != nil {
+		return visitor.VisitToolMessageDelayed(c.ToolMessageDelayed)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type CreateMakeToolDto struct {
+	// This determines if the tool is async.
+	//
+	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+	//
+	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+	//
+	// Defaults to synchronous (`false`).
+	Async *bool `json:"async,omitempty" url:"async,omitempty"`
+	// These are the messages that will be spoken to the user as the tool is running.
+	//
+	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+	Messages []*CreateMakeToolDtoMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
+	Metadata *MakeToolMetadata                `json:"metadata,omitempty" url:"metadata,omitempty"`
+	// This is the function definition of the tool.
+	//
+	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+	//
+	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
+	// This is the server that will be hit when this tool is requested by the model.
+	//
+	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+	//
+	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
+	type_  string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CreateMakeToolDto) GetAsync() *bool {
+	if c == nil {
+		return nil
+	}
+	return c.Async
+}
+
+func (c *CreateMakeToolDto) GetMessages() []*CreateMakeToolDtoMessagesItem {
+	if c == nil {
+		return nil
+	}
+	return c.Messages
+}
+
+func (c *CreateMakeToolDto) GetMetadata() *MakeToolMetadata {
+	if c == nil {
+		return nil
+	}
+	return c.Metadata
+}
+
+func (c *CreateMakeToolDto) GetFunction() *OpenAiFunction {
+	if c == nil {
+		return nil
+	}
+	return c.Function
+}
+
+func (c *CreateMakeToolDto) GetServer() *Server {
+	if c == nil {
+		return nil
+	}
+	return c.Server
+}
+
+func (c *CreateMakeToolDto) Type() string {
+	return c.type_
+}
+
+func (c *CreateMakeToolDto) GetExtraProperties() map[string]interface{} {
+	return c.extraProperties
+}
+
+func (c *CreateMakeToolDto) UnmarshalJSON(data []byte) error {
+	type embed CreateMakeToolDto
+	var unmarshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*c),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*c = CreateMakeToolDto(unmarshaler.embed)
+	if unmarshaler.Type != "make" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", c, "make", unmarshaler.Type)
+	}
+	c.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *c, "type")
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CreateMakeToolDto) MarshalJSON() ([]byte, error) {
+	type embed CreateMakeToolDto
+	var marshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*c),
+		Type:  "make",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (c *CreateMakeToolDto) String() string {
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+type CreateMakeToolDtoMessagesItem struct {
+	ToolMessageStart    *ToolMessageStart
+	ToolMessageComplete *ToolMessageComplete
+	ToolMessageFailed   *ToolMessageFailed
+	ToolMessageDelayed  *ToolMessageDelayed
+
+	typ string
+}
+
+func (c *CreateMakeToolDtoMessagesItem) GetToolMessageStart() *ToolMessageStart {
+	if c == nil {
+		return nil
+	}
+	return c.ToolMessageStart
+}
+
+func (c *CreateMakeToolDtoMessagesItem) GetToolMessageComplete() *ToolMessageComplete {
+	if c == nil {
+		return nil
+	}
+	return c.ToolMessageComplete
+}
+
+func (c *CreateMakeToolDtoMessagesItem) GetToolMessageFailed() *ToolMessageFailed {
+	if c == nil {
+		return nil
+	}
+	return c.ToolMessageFailed
+}
+
+func (c *CreateMakeToolDtoMessagesItem) GetToolMessageDelayed() *ToolMessageDelayed {
+	if c == nil {
+		return nil
+	}
+	return c.ToolMessageDelayed
+}
+
+func (c *CreateMakeToolDtoMessagesItem) UnmarshalJSON(data []byte) error {
+	valueToolMessageStart := new(ToolMessageStart)
+	if err := json.Unmarshal(data, &valueToolMessageStart); err == nil {
+		c.typ = "ToolMessageStart"
+		c.ToolMessageStart = valueToolMessageStart
+		return nil
+	}
+	valueToolMessageComplete := new(ToolMessageComplete)
+	if err := json.Unmarshal(data, &valueToolMessageComplete); err == nil {
+		c.typ = "ToolMessageComplete"
+		c.ToolMessageComplete = valueToolMessageComplete
+		return nil
+	}
+	valueToolMessageFailed := new(ToolMessageFailed)
+	if err := json.Unmarshal(data, &valueToolMessageFailed); err == nil {
+		c.typ = "ToolMessageFailed"
+		c.ToolMessageFailed = valueToolMessageFailed
+		return nil
+	}
+	valueToolMessageDelayed := new(ToolMessageDelayed)
+	if err := json.Unmarshal(data, &valueToolMessageDelayed); err == nil {
+		c.typ = "ToolMessageDelayed"
+		c.ToolMessageDelayed = valueToolMessageDelayed
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c CreateMakeToolDtoMessagesItem) MarshalJSON() ([]byte, error) {
+	if c.typ == "ToolMessageStart" || c.ToolMessageStart != nil {
+		return json.Marshal(c.ToolMessageStart)
+	}
+	if c.typ == "ToolMessageComplete" || c.ToolMessageComplete != nil {
+		return json.Marshal(c.ToolMessageComplete)
+	}
+	if c.typ == "ToolMessageFailed" || c.ToolMessageFailed != nil {
+		return json.Marshal(c.ToolMessageFailed)
+	}
+	if c.typ == "ToolMessageDelayed" || c.ToolMessageDelayed != nil {
+		return json.Marshal(c.ToolMessageDelayed)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type CreateMakeToolDtoMessagesItemVisitor interface {
+	VisitToolMessageStart(*ToolMessageStart) error
+	VisitToolMessageComplete(*ToolMessageComplete) error
+	VisitToolMessageFailed(*ToolMessageFailed) error
+	VisitToolMessageDelayed(*ToolMessageDelayed) error
+}
+
+func (c *CreateMakeToolDtoMessagesItem) Accept(visitor CreateMakeToolDtoMessagesItemVisitor) error {
 	if c.typ == "ToolMessageStart" || c.ToolMessageStart != nil {
 		return visitor.VisitToolMessageStart(c.ToolMessageStart)
 	}
@@ -1581,472 +1298,6 @@ type CreateOutputToolDtoMessagesItemVisitor interface {
 }
 
 func (c *CreateOutputToolDtoMessagesItem) Accept(visitor CreateOutputToolDtoMessagesItemVisitor) error {
-	if c.typ == "ToolMessageStart" || c.ToolMessageStart != nil {
-		return visitor.VisitToolMessageStart(c.ToolMessageStart)
-	}
-	if c.typ == "ToolMessageComplete" || c.ToolMessageComplete != nil {
-		return visitor.VisitToolMessageComplete(c.ToolMessageComplete)
-	}
-	if c.typ == "ToolMessageFailed" || c.ToolMessageFailed != nil {
-		return visitor.VisitToolMessageFailed(c.ToolMessageFailed)
-	}
-	if c.typ == "ToolMessageDelayed" || c.ToolMessageDelayed != nil {
-		return visitor.VisitToolMessageDelayed(c.ToolMessageDelayed)
-	}
-	return fmt.Errorf("type %T does not include a non-empty union type", c)
-}
-
-type CreateSmsSendToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
-	// These are the messages that will be spoken to the user as the tool is running.
-	//
-	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-	Messages []*CreateSmsSendToolDtoMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
-	// This is the function definition of the tool.
-	//
-	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
-	//
-	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
-	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (c *CreateSmsSendToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
-}
-
-func (c *CreateSmsSendToolDto) GetMessages() []*CreateSmsSendToolDtoMessagesItem {
-	if c == nil {
-		return nil
-	}
-	return c.Messages
-}
-
-func (c *CreateSmsSendToolDto) GetFunction() *OpenAiFunction {
-	if c == nil {
-		return nil
-	}
-	return c.Function
-}
-
-func (c *CreateSmsSendToolDto) GetServer() *Server {
-	if c == nil {
-		return nil
-	}
-	return c.Server
-}
-
-func (c *CreateSmsSendToolDto) Type() string {
-	return c.type_
-}
-
-func (c *CreateSmsSendToolDto) GetExtraProperties() map[string]interface{} {
-	return c.extraProperties
-}
-
-func (c *CreateSmsSendToolDto) UnmarshalJSON(data []byte) error {
-	type embed CreateSmsSendToolDto
-	var unmarshaler = struct {
-		embed
-		Type string `json:"type"`
-	}{
-		embed: embed(*c),
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
-		return err
-	}
-	*c = CreateSmsSendToolDto(unmarshaler.embed)
-	if unmarshaler.Type != "sms" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", c, "sms", unmarshaler.Type)
-	}
-	c.type_ = unmarshaler.Type
-	extraProperties, err := internal.ExtractExtraProperties(data, *c, "type")
-	if err != nil {
-		return err
-	}
-	c.extraProperties = extraProperties
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c *CreateSmsSendToolDto) MarshalJSON() ([]byte, error) {
-	type embed CreateSmsSendToolDto
-	var marshaler = struct {
-		embed
-		Type string `json:"type"`
-	}{
-		embed: embed(*c),
-		Type:  "sms",
-	}
-	return json.Marshal(marshaler)
-}
-
-func (c *CreateSmsSendToolDto) String() string {
-	if len(c.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(c); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", c)
-}
-
-type CreateSmsSendToolDtoMessagesItem struct {
-	ToolMessageStart    *ToolMessageStart
-	ToolMessageComplete *ToolMessageComplete
-	ToolMessageFailed   *ToolMessageFailed
-	ToolMessageDelayed  *ToolMessageDelayed
-
-	typ string
-}
-
-func (c *CreateSmsSendToolDtoMessagesItem) GetToolMessageStart() *ToolMessageStart {
-	if c == nil {
-		return nil
-	}
-	return c.ToolMessageStart
-}
-
-func (c *CreateSmsSendToolDtoMessagesItem) GetToolMessageComplete() *ToolMessageComplete {
-	if c == nil {
-		return nil
-	}
-	return c.ToolMessageComplete
-}
-
-func (c *CreateSmsSendToolDtoMessagesItem) GetToolMessageFailed() *ToolMessageFailed {
-	if c == nil {
-		return nil
-	}
-	return c.ToolMessageFailed
-}
-
-func (c *CreateSmsSendToolDtoMessagesItem) GetToolMessageDelayed() *ToolMessageDelayed {
-	if c == nil {
-		return nil
-	}
-	return c.ToolMessageDelayed
-}
-
-func (c *CreateSmsSendToolDtoMessagesItem) UnmarshalJSON(data []byte) error {
-	valueToolMessageStart := new(ToolMessageStart)
-	if err := json.Unmarshal(data, &valueToolMessageStart); err == nil {
-		c.typ = "ToolMessageStart"
-		c.ToolMessageStart = valueToolMessageStart
-		return nil
-	}
-	valueToolMessageComplete := new(ToolMessageComplete)
-	if err := json.Unmarshal(data, &valueToolMessageComplete); err == nil {
-		c.typ = "ToolMessageComplete"
-		c.ToolMessageComplete = valueToolMessageComplete
-		return nil
-	}
-	valueToolMessageFailed := new(ToolMessageFailed)
-	if err := json.Unmarshal(data, &valueToolMessageFailed); err == nil {
-		c.typ = "ToolMessageFailed"
-		c.ToolMessageFailed = valueToolMessageFailed
-		return nil
-	}
-	valueToolMessageDelayed := new(ToolMessageDelayed)
-	if err := json.Unmarshal(data, &valueToolMessageDelayed); err == nil {
-		c.typ = "ToolMessageDelayed"
-		c.ToolMessageDelayed = valueToolMessageDelayed
-		return nil
-	}
-	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
-}
-
-func (c CreateSmsSendToolDtoMessagesItem) MarshalJSON() ([]byte, error) {
-	if c.typ == "ToolMessageStart" || c.ToolMessageStart != nil {
-		return json.Marshal(c.ToolMessageStart)
-	}
-	if c.typ == "ToolMessageComplete" || c.ToolMessageComplete != nil {
-		return json.Marshal(c.ToolMessageComplete)
-	}
-	if c.typ == "ToolMessageFailed" || c.ToolMessageFailed != nil {
-		return json.Marshal(c.ToolMessageFailed)
-	}
-	if c.typ == "ToolMessageDelayed" || c.ToolMessageDelayed != nil {
-		return json.Marshal(c.ToolMessageDelayed)
-	}
-	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
-}
-
-type CreateSmsSendToolDtoMessagesItemVisitor interface {
-	VisitToolMessageStart(*ToolMessageStart) error
-	VisitToolMessageComplete(*ToolMessageComplete) error
-	VisitToolMessageFailed(*ToolMessageFailed) error
-	VisitToolMessageDelayed(*ToolMessageDelayed) error
-}
-
-func (c *CreateSmsSendToolDtoMessagesItem) Accept(visitor CreateSmsSendToolDtoMessagesItemVisitor) error {
-	if c.typ == "ToolMessageStart" || c.ToolMessageStart != nil {
-		return visitor.VisitToolMessageStart(c.ToolMessageStart)
-	}
-	if c.typ == "ToolMessageComplete" || c.ToolMessageComplete != nil {
-		return visitor.VisitToolMessageComplete(c.ToolMessageComplete)
-	}
-	if c.typ == "ToolMessageFailed" || c.ToolMessageFailed != nil {
-		return visitor.VisitToolMessageFailed(c.ToolMessageFailed)
-	}
-	if c.typ == "ToolMessageDelayed" || c.ToolMessageDelayed != nil {
-		return visitor.VisitToolMessageDelayed(c.ToolMessageDelayed)
-	}
-	return fmt.Errorf("type %T does not include a non-empty union type", c)
-}
-
-type CreateTextEditorToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
-	// These are the messages that will be spoken to the user as the tool is running.
-	//
-	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-	Messages []*CreateTextEditorToolDtoMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
-	// The sub type of tool.
-	// The name of the tool, fixed to 'str_replace_editor'
-	// This is the function definition of the tool.
-	//
-	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
-	//
-	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
-	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server  *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_   string
-	subType string
-	name    string
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (c *CreateTextEditorToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
-}
-
-func (c *CreateTextEditorToolDto) GetMessages() []*CreateTextEditorToolDtoMessagesItem {
-	if c == nil {
-		return nil
-	}
-	return c.Messages
-}
-
-func (c *CreateTextEditorToolDto) GetFunction() *OpenAiFunction {
-	if c == nil {
-		return nil
-	}
-	return c.Function
-}
-
-func (c *CreateTextEditorToolDto) GetServer() *Server {
-	if c == nil {
-		return nil
-	}
-	return c.Server
-}
-
-func (c *CreateTextEditorToolDto) Type() string {
-	return c.type_
-}
-
-func (c *CreateTextEditorToolDto) SubType() string {
-	return c.subType
-}
-
-func (c *CreateTextEditorToolDto) Name() string {
-	return c.name
-}
-
-func (c *CreateTextEditorToolDto) GetExtraProperties() map[string]interface{} {
-	return c.extraProperties
-}
-
-func (c *CreateTextEditorToolDto) UnmarshalJSON(data []byte) error {
-	type embed CreateTextEditorToolDto
-	var unmarshaler = struct {
-		embed
-		Type    string `json:"type"`
-		SubType string `json:"subType"`
-		Name    string `json:"name"`
-	}{
-		embed: embed(*c),
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
-		return err
-	}
-	*c = CreateTextEditorToolDto(unmarshaler.embed)
-	if unmarshaler.Type != "textEditor" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", c, "textEditor", unmarshaler.Type)
-	}
-	c.type_ = unmarshaler.Type
-	if unmarshaler.SubType != "text_editor_20241022" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", c, "text_editor_20241022", unmarshaler.SubType)
-	}
-	c.subType = unmarshaler.SubType
-	if unmarshaler.Name != "str_replace_editor" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", c, "str_replace_editor", unmarshaler.Name)
-	}
-	c.name = unmarshaler.Name
-	extraProperties, err := internal.ExtractExtraProperties(data, *c, "type", "subType", "name")
-	if err != nil {
-		return err
-	}
-	c.extraProperties = extraProperties
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c *CreateTextEditorToolDto) MarshalJSON() ([]byte, error) {
-	type embed CreateTextEditorToolDto
-	var marshaler = struct {
-		embed
-		Type    string `json:"type"`
-		SubType string `json:"subType"`
-		Name    string `json:"name"`
-	}{
-		embed:   embed(*c),
-		Type:    "textEditor",
-		SubType: "text_editor_20241022",
-		Name:    "str_replace_editor",
-	}
-	return json.Marshal(marshaler)
-}
-
-func (c *CreateTextEditorToolDto) String() string {
-	if len(c.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(c); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", c)
-}
-
-type CreateTextEditorToolDtoMessagesItem struct {
-	ToolMessageStart    *ToolMessageStart
-	ToolMessageComplete *ToolMessageComplete
-	ToolMessageFailed   *ToolMessageFailed
-	ToolMessageDelayed  *ToolMessageDelayed
-
-	typ string
-}
-
-func (c *CreateTextEditorToolDtoMessagesItem) GetToolMessageStart() *ToolMessageStart {
-	if c == nil {
-		return nil
-	}
-	return c.ToolMessageStart
-}
-
-func (c *CreateTextEditorToolDtoMessagesItem) GetToolMessageComplete() *ToolMessageComplete {
-	if c == nil {
-		return nil
-	}
-	return c.ToolMessageComplete
-}
-
-func (c *CreateTextEditorToolDtoMessagesItem) GetToolMessageFailed() *ToolMessageFailed {
-	if c == nil {
-		return nil
-	}
-	return c.ToolMessageFailed
-}
-
-func (c *CreateTextEditorToolDtoMessagesItem) GetToolMessageDelayed() *ToolMessageDelayed {
-	if c == nil {
-		return nil
-	}
-	return c.ToolMessageDelayed
-}
-
-func (c *CreateTextEditorToolDtoMessagesItem) UnmarshalJSON(data []byte) error {
-	valueToolMessageStart := new(ToolMessageStart)
-	if err := json.Unmarshal(data, &valueToolMessageStart); err == nil {
-		c.typ = "ToolMessageStart"
-		c.ToolMessageStart = valueToolMessageStart
-		return nil
-	}
-	valueToolMessageComplete := new(ToolMessageComplete)
-	if err := json.Unmarshal(data, &valueToolMessageComplete); err == nil {
-		c.typ = "ToolMessageComplete"
-		c.ToolMessageComplete = valueToolMessageComplete
-		return nil
-	}
-	valueToolMessageFailed := new(ToolMessageFailed)
-	if err := json.Unmarshal(data, &valueToolMessageFailed); err == nil {
-		c.typ = "ToolMessageFailed"
-		c.ToolMessageFailed = valueToolMessageFailed
-		return nil
-	}
-	valueToolMessageDelayed := new(ToolMessageDelayed)
-	if err := json.Unmarshal(data, &valueToolMessageDelayed); err == nil {
-		c.typ = "ToolMessageDelayed"
-		c.ToolMessageDelayed = valueToolMessageDelayed
-		return nil
-	}
-	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
-}
-
-func (c CreateTextEditorToolDtoMessagesItem) MarshalJSON() ([]byte, error) {
-	if c.typ == "ToolMessageStart" || c.ToolMessageStart != nil {
-		return json.Marshal(c.ToolMessageStart)
-	}
-	if c.typ == "ToolMessageComplete" || c.ToolMessageComplete != nil {
-		return json.Marshal(c.ToolMessageComplete)
-	}
-	if c.typ == "ToolMessageFailed" || c.ToolMessageFailed != nil {
-		return json.Marshal(c.ToolMessageFailed)
-	}
-	if c.typ == "ToolMessageDelayed" || c.ToolMessageDelayed != nil {
-		return json.Marshal(c.ToolMessageDelayed)
-	}
-	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
-}
-
-type CreateTextEditorToolDtoMessagesItemVisitor interface {
-	VisitToolMessageStart(*ToolMessageStart) error
-	VisitToolMessageComplete(*ToolMessageComplete) error
-	VisitToolMessageFailed(*ToolMessageFailed) error
-	VisitToolMessageDelayed(*ToolMessageDelayed) error
-}
-
-func (c *CreateTextEditorToolDtoMessagesItem) Accept(visitor CreateTextEditorToolDtoMessagesItemVisitor) error {
 	if c.typ == "ToolMessageStart" || c.ToolMessageStart != nil {
 		return visitor.VisitToolMessageStart(c.ToolMessageStart)
 	}
@@ -3126,6 +2377,1116 @@ func (g *GhlToolMessagesItem) Accept(visitor GhlToolMessagesItemVisitor) error {
 	return fmt.Errorf("type %T does not include a non-empty union type", g)
 }
 
+type GhlToolMetadata struct {
+	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
+	LocationId *string `json:"locationId,omitempty" url:"locationId,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (g *GhlToolMetadata) GetWorkflowId() *string {
+	if g == nil {
+		return nil
+	}
+	return g.WorkflowId
+}
+
+func (g *GhlToolMetadata) GetLocationId() *string {
+	if g == nil {
+		return nil
+	}
+	return g.LocationId
+}
+
+func (g *GhlToolMetadata) GetExtraProperties() map[string]interface{} {
+	return g.extraProperties
+}
+
+func (g *GhlToolMetadata) UnmarshalJSON(data []byte) error {
+	type unmarshaler GhlToolMetadata
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*g = GhlToolMetadata(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *g)
+	if err != nil {
+		return err
+	}
+	g.extraProperties = extraProperties
+	g.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (g *GhlToolMetadata) String() string {
+	if len(g.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(g.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(g); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", g)
+}
+
+type GoHighLevelCalendarAvailabilityTool struct {
+	// This determines if the tool is async.
+	//
+	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+	//
+	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+	//
+	// Defaults to synchronous (`false`).
+	Async *bool `json:"async,omitempty" url:"async,omitempty"`
+	// These are the messages that will be spoken to the user as the tool is running.
+	//
+	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+	Messages []*GoHighLevelCalendarAvailabilityToolMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
+	// This is the unique identifier for the tool.
+	Id string `json:"id" url:"id"`
+	// This is the unique identifier for the organization that this tool belongs to.
+	OrgId string `json:"orgId" url:"orgId"`
+	// This is the ISO 8601 date-time string of when the tool was created.
+	CreatedAt time.Time `json:"createdAt" url:"createdAt"`
+	// This is the ISO 8601 date-time string of when the tool was last updated.
+	UpdatedAt time.Time `json:"updatedAt" url:"updatedAt"`
+	// This is the function definition of the tool.
+	//
+	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+	//
+	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
+	// This is the server that will be hit when this tool is requested by the model.
+	//
+	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+	//
+	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
+	type_  string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (g *GoHighLevelCalendarAvailabilityTool) GetAsync() *bool {
+	if g == nil {
+		return nil
+	}
+	return g.Async
+}
+
+func (g *GoHighLevelCalendarAvailabilityTool) GetMessages() []*GoHighLevelCalendarAvailabilityToolMessagesItem {
+	if g == nil {
+		return nil
+	}
+	return g.Messages
+}
+
+func (g *GoHighLevelCalendarAvailabilityTool) GetId() string {
+	if g == nil {
+		return ""
+	}
+	return g.Id
+}
+
+func (g *GoHighLevelCalendarAvailabilityTool) GetOrgId() string {
+	if g == nil {
+		return ""
+	}
+	return g.OrgId
+}
+
+func (g *GoHighLevelCalendarAvailabilityTool) GetCreatedAt() time.Time {
+	if g == nil {
+		return time.Time{}
+	}
+	return g.CreatedAt
+}
+
+func (g *GoHighLevelCalendarAvailabilityTool) GetUpdatedAt() time.Time {
+	if g == nil {
+		return time.Time{}
+	}
+	return g.UpdatedAt
+}
+
+func (g *GoHighLevelCalendarAvailabilityTool) GetFunction() *OpenAiFunction {
+	if g == nil {
+		return nil
+	}
+	return g.Function
+}
+
+func (g *GoHighLevelCalendarAvailabilityTool) GetServer() *Server {
+	if g == nil {
+		return nil
+	}
+	return g.Server
+}
+
+func (g *GoHighLevelCalendarAvailabilityTool) Type() string {
+	return g.type_
+}
+
+func (g *GoHighLevelCalendarAvailabilityTool) GetExtraProperties() map[string]interface{} {
+	return g.extraProperties
+}
+
+func (g *GoHighLevelCalendarAvailabilityTool) UnmarshalJSON(data []byte) error {
+	type embed GoHighLevelCalendarAvailabilityTool
+	var unmarshaler = struct {
+		embed
+		CreatedAt *internal.DateTime `json:"createdAt"`
+		UpdatedAt *internal.DateTime `json:"updatedAt"`
+		Type      string             `json:"type"`
+	}{
+		embed: embed(*g),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*g = GoHighLevelCalendarAvailabilityTool(unmarshaler.embed)
+	g.CreatedAt = unmarshaler.CreatedAt.Time()
+	g.UpdatedAt = unmarshaler.UpdatedAt.Time()
+	if unmarshaler.Type != "gohighlevel.calendar.availability.check" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", g, "gohighlevel.calendar.availability.check", unmarshaler.Type)
+	}
+	g.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *g, "type")
+	if err != nil {
+		return err
+	}
+	g.extraProperties = extraProperties
+	g.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (g *GoHighLevelCalendarAvailabilityTool) MarshalJSON() ([]byte, error) {
+	type embed GoHighLevelCalendarAvailabilityTool
+	var marshaler = struct {
+		embed
+		CreatedAt *internal.DateTime `json:"createdAt"`
+		UpdatedAt *internal.DateTime `json:"updatedAt"`
+		Type      string             `json:"type"`
+	}{
+		embed:     embed(*g),
+		CreatedAt: internal.NewDateTime(g.CreatedAt),
+		UpdatedAt: internal.NewDateTime(g.UpdatedAt),
+		Type:      "gohighlevel.calendar.availability.check",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (g *GoHighLevelCalendarAvailabilityTool) String() string {
+	if len(g.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(g.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(g); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", g)
+}
+
+type GoHighLevelCalendarAvailabilityToolMessagesItem struct {
+	ToolMessageStart    *ToolMessageStart
+	ToolMessageComplete *ToolMessageComplete
+	ToolMessageFailed   *ToolMessageFailed
+	ToolMessageDelayed  *ToolMessageDelayed
+
+	typ string
+}
+
+func (g *GoHighLevelCalendarAvailabilityToolMessagesItem) GetToolMessageStart() *ToolMessageStart {
+	if g == nil {
+		return nil
+	}
+	return g.ToolMessageStart
+}
+
+func (g *GoHighLevelCalendarAvailabilityToolMessagesItem) GetToolMessageComplete() *ToolMessageComplete {
+	if g == nil {
+		return nil
+	}
+	return g.ToolMessageComplete
+}
+
+func (g *GoHighLevelCalendarAvailabilityToolMessagesItem) GetToolMessageFailed() *ToolMessageFailed {
+	if g == nil {
+		return nil
+	}
+	return g.ToolMessageFailed
+}
+
+func (g *GoHighLevelCalendarAvailabilityToolMessagesItem) GetToolMessageDelayed() *ToolMessageDelayed {
+	if g == nil {
+		return nil
+	}
+	return g.ToolMessageDelayed
+}
+
+func (g *GoHighLevelCalendarAvailabilityToolMessagesItem) UnmarshalJSON(data []byte) error {
+	valueToolMessageStart := new(ToolMessageStart)
+	if err := json.Unmarshal(data, &valueToolMessageStart); err == nil {
+		g.typ = "ToolMessageStart"
+		g.ToolMessageStart = valueToolMessageStart
+		return nil
+	}
+	valueToolMessageComplete := new(ToolMessageComplete)
+	if err := json.Unmarshal(data, &valueToolMessageComplete); err == nil {
+		g.typ = "ToolMessageComplete"
+		g.ToolMessageComplete = valueToolMessageComplete
+		return nil
+	}
+	valueToolMessageFailed := new(ToolMessageFailed)
+	if err := json.Unmarshal(data, &valueToolMessageFailed); err == nil {
+		g.typ = "ToolMessageFailed"
+		g.ToolMessageFailed = valueToolMessageFailed
+		return nil
+	}
+	valueToolMessageDelayed := new(ToolMessageDelayed)
+	if err := json.Unmarshal(data, &valueToolMessageDelayed); err == nil {
+		g.typ = "ToolMessageDelayed"
+		g.ToolMessageDelayed = valueToolMessageDelayed
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, g)
+}
+
+func (g GoHighLevelCalendarAvailabilityToolMessagesItem) MarshalJSON() ([]byte, error) {
+	if g.typ == "ToolMessageStart" || g.ToolMessageStart != nil {
+		return json.Marshal(g.ToolMessageStart)
+	}
+	if g.typ == "ToolMessageComplete" || g.ToolMessageComplete != nil {
+		return json.Marshal(g.ToolMessageComplete)
+	}
+	if g.typ == "ToolMessageFailed" || g.ToolMessageFailed != nil {
+		return json.Marshal(g.ToolMessageFailed)
+	}
+	if g.typ == "ToolMessageDelayed" || g.ToolMessageDelayed != nil {
+		return json.Marshal(g.ToolMessageDelayed)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", g)
+}
+
+type GoHighLevelCalendarAvailabilityToolMessagesItemVisitor interface {
+	VisitToolMessageStart(*ToolMessageStart) error
+	VisitToolMessageComplete(*ToolMessageComplete) error
+	VisitToolMessageFailed(*ToolMessageFailed) error
+	VisitToolMessageDelayed(*ToolMessageDelayed) error
+}
+
+func (g *GoHighLevelCalendarAvailabilityToolMessagesItem) Accept(visitor GoHighLevelCalendarAvailabilityToolMessagesItemVisitor) error {
+	if g.typ == "ToolMessageStart" || g.ToolMessageStart != nil {
+		return visitor.VisitToolMessageStart(g.ToolMessageStart)
+	}
+	if g.typ == "ToolMessageComplete" || g.ToolMessageComplete != nil {
+		return visitor.VisitToolMessageComplete(g.ToolMessageComplete)
+	}
+	if g.typ == "ToolMessageFailed" || g.ToolMessageFailed != nil {
+		return visitor.VisitToolMessageFailed(g.ToolMessageFailed)
+	}
+	if g.typ == "ToolMessageDelayed" || g.ToolMessageDelayed != nil {
+		return visitor.VisitToolMessageDelayed(g.ToolMessageDelayed)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", g)
+}
+
+type GoHighLevelCalendarEventCreateTool struct {
+	// This determines if the tool is async.
+	//
+	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+	//
+	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+	//
+	// Defaults to synchronous (`false`).
+	Async *bool `json:"async,omitempty" url:"async,omitempty"`
+	// These are the messages that will be spoken to the user as the tool is running.
+	//
+	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+	Messages []*GoHighLevelCalendarEventCreateToolMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
+	// This is the unique identifier for the tool.
+	Id string `json:"id" url:"id"`
+	// This is the unique identifier for the organization that this tool belongs to.
+	OrgId string `json:"orgId" url:"orgId"`
+	// This is the ISO 8601 date-time string of when the tool was created.
+	CreatedAt time.Time `json:"createdAt" url:"createdAt"`
+	// This is the ISO 8601 date-time string of when the tool was last updated.
+	UpdatedAt time.Time `json:"updatedAt" url:"updatedAt"`
+	// This is the function definition of the tool.
+	//
+	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+	//
+	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
+	// This is the server that will be hit when this tool is requested by the model.
+	//
+	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+	//
+	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
+	type_  string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (g *GoHighLevelCalendarEventCreateTool) GetAsync() *bool {
+	if g == nil {
+		return nil
+	}
+	return g.Async
+}
+
+func (g *GoHighLevelCalendarEventCreateTool) GetMessages() []*GoHighLevelCalendarEventCreateToolMessagesItem {
+	if g == nil {
+		return nil
+	}
+	return g.Messages
+}
+
+func (g *GoHighLevelCalendarEventCreateTool) GetId() string {
+	if g == nil {
+		return ""
+	}
+	return g.Id
+}
+
+func (g *GoHighLevelCalendarEventCreateTool) GetOrgId() string {
+	if g == nil {
+		return ""
+	}
+	return g.OrgId
+}
+
+func (g *GoHighLevelCalendarEventCreateTool) GetCreatedAt() time.Time {
+	if g == nil {
+		return time.Time{}
+	}
+	return g.CreatedAt
+}
+
+func (g *GoHighLevelCalendarEventCreateTool) GetUpdatedAt() time.Time {
+	if g == nil {
+		return time.Time{}
+	}
+	return g.UpdatedAt
+}
+
+func (g *GoHighLevelCalendarEventCreateTool) GetFunction() *OpenAiFunction {
+	if g == nil {
+		return nil
+	}
+	return g.Function
+}
+
+func (g *GoHighLevelCalendarEventCreateTool) GetServer() *Server {
+	if g == nil {
+		return nil
+	}
+	return g.Server
+}
+
+func (g *GoHighLevelCalendarEventCreateTool) Type() string {
+	return g.type_
+}
+
+func (g *GoHighLevelCalendarEventCreateTool) GetExtraProperties() map[string]interface{} {
+	return g.extraProperties
+}
+
+func (g *GoHighLevelCalendarEventCreateTool) UnmarshalJSON(data []byte) error {
+	type embed GoHighLevelCalendarEventCreateTool
+	var unmarshaler = struct {
+		embed
+		CreatedAt *internal.DateTime `json:"createdAt"`
+		UpdatedAt *internal.DateTime `json:"updatedAt"`
+		Type      string             `json:"type"`
+	}{
+		embed: embed(*g),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*g = GoHighLevelCalendarEventCreateTool(unmarshaler.embed)
+	g.CreatedAt = unmarshaler.CreatedAt.Time()
+	g.UpdatedAt = unmarshaler.UpdatedAt.Time()
+	if unmarshaler.Type != "gohighlevel.calendar.event.create" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", g, "gohighlevel.calendar.event.create", unmarshaler.Type)
+	}
+	g.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *g, "type")
+	if err != nil {
+		return err
+	}
+	g.extraProperties = extraProperties
+	g.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (g *GoHighLevelCalendarEventCreateTool) MarshalJSON() ([]byte, error) {
+	type embed GoHighLevelCalendarEventCreateTool
+	var marshaler = struct {
+		embed
+		CreatedAt *internal.DateTime `json:"createdAt"`
+		UpdatedAt *internal.DateTime `json:"updatedAt"`
+		Type      string             `json:"type"`
+	}{
+		embed:     embed(*g),
+		CreatedAt: internal.NewDateTime(g.CreatedAt),
+		UpdatedAt: internal.NewDateTime(g.UpdatedAt),
+		Type:      "gohighlevel.calendar.event.create",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (g *GoHighLevelCalendarEventCreateTool) String() string {
+	if len(g.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(g.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(g); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", g)
+}
+
+type GoHighLevelCalendarEventCreateToolMessagesItem struct {
+	ToolMessageStart    *ToolMessageStart
+	ToolMessageComplete *ToolMessageComplete
+	ToolMessageFailed   *ToolMessageFailed
+	ToolMessageDelayed  *ToolMessageDelayed
+
+	typ string
+}
+
+func (g *GoHighLevelCalendarEventCreateToolMessagesItem) GetToolMessageStart() *ToolMessageStart {
+	if g == nil {
+		return nil
+	}
+	return g.ToolMessageStart
+}
+
+func (g *GoHighLevelCalendarEventCreateToolMessagesItem) GetToolMessageComplete() *ToolMessageComplete {
+	if g == nil {
+		return nil
+	}
+	return g.ToolMessageComplete
+}
+
+func (g *GoHighLevelCalendarEventCreateToolMessagesItem) GetToolMessageFailed() *ToolMessageFailed {
+	if g == nil {
+		return nil
+	}
+	return g.ToolMessageFailed
+}
+
+func (g *GoHighLevelCalendarEventCreateToolMessagesItem) GetToolMessageDelayed() *ToolMessageDelayed {
+	if g == nil {
+		return nil
+	}
+	return g.ToolMessageDelayed
+}
+
+func (g *GoHighLevelCalendarEventCreateToolMessagesItem) UnmarshalJSON(data []byte) error {
+	valueToolMessageStart := new(ToolMessageStart)
+	if err := json.Unmarshal(data, &valueToolMessageStart); err == nil {
+		g.typ = "ToolMessageStart"
+		g.ToolMessageStart = valueToolMessageStart
+		return nil
+	}
+	valueToolMessageComplete := new(ToolMessageComplete)
+	if err := json.Unmarshal(data, &valueToolMessageComplete); err == nil {
+		g.typ = "ToolMessageComplete"
+		g.ToolMessageComplete = valueToolMessageComplete
+		return nil
+	}
+	valueToolMessageFailed := new(ToolMessageFailed)
+	if err := json.Unmarshal(data, &valueToolMessageFailed); err == nil {
+		g.typ = "ToolMessageFailed"
+		g.ToolMessageFailed = valueToolMessageFailed
+		return nil
+	}
+	valueToolMessageDelayed := new(ToolMessageDelayed)
+	if err := json.Unmarshal(data, &valueToolMessageDelayed); err == nil {
+		g.typ = "ToolMessageDelayed"
+		g.ToolMessageDelayed = valueToolMessageDelayed
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, g)
+}
+
+func (g GoHighLevelCalendarEventCreateToolMessagesItem) MarshalJSON() ([]byte, error) {
+	if g.typ == "ToolMessageStart" || g.ToolMessageStart != nil {
+		return json.Marshal(g.ToolMessageStart)
+	}
+	if g.typ == "ToolMessageComplete" || g.ToolMessageComplete != nil {
+		return json.Marshal(g.ToolMessageComplete)
+	}
+	if g.typ == "ToolMessageFailed" || g.ToolMessageFailed != nil {
+		return json.Marshal(g.ToolMessageFailed)
+	}
+	if g.typ == "ToolMessageDelayed" || g.ToolMessageDelayed != nil {
+		return json.Marshal(g.ToolMessageDelayed)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", g)
+}
+
+type GoHighLevelCalendarEventCreateToolMessagesItemVisitor interface {
+	VisitToolMessageStart(*ToolMessageStart) error
+	VisitToolMessageComplete(*ToolMessageComplete) error
+	VisitToolMessageFailed(*ToolMessageFailed) error
+	VisitToolMessageDelayed(*ToolMessageDelayed) error
+}
+
+func (g *GoHighLevelCalendarEventCreateToolMessagesItem) Accept(visitor GoHighLevelCalendarEventCreateToolMessagesItemVisitor) error {
+	if g.typ == "ToolMessageStart" || g.ToolMessageStart != nil {
+		return visitor.VisitToolMessageStart(g.ToolMessageStart)
+	}
+	if g.typ == "ToolMessageComplete" || g.ToolMessageComplete != nil {
+		return visitor.VisitToolMessageComplete(g.ToolMessageComplete)
+	}
+	if g.typ == "ToolMessageFailed" || g.ToolMessageFailed != nil {
+		return visitor.VisitToolMessageFailed(g.ToolMessageFailed)
+	}
+	if g.typ == "ToolMessageDelayed" || g.ToolMessageDelayed != nil {
+		return visitor.VisitToolMessageDelayed(g.ToolMessageDelayed)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", g)
+}
+
+type GoHighLevelContactCreateTool struct {
+	// This determines if the tool is async.
+	//
+	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+	//
+	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+	//
+	// Defaults to synchronous (`false`).
+	Async *bool `json:"async,omitempty" url:"async,omitempty"`
+	// These are the messages that will be spoken to the user as the tool is running.
+	//
+	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+	Messages []*GoHighLevelContactCreateToolMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
+	// This is the unique identifier for the tool.
+	Id string `json:"id" url:"id"`
+	// This is the unique identifier for the organization that this tool belongs to.
+	OrgId string `json:"orgId" url:"orgId"`
+	// This is the ISO 8601 date-time string of when the tool was created.
+	CreatedAt time.Time `json:"createdAt" url:"createdAt"`
+	// This is the ISO 8601 date-time string of when the tool was last updated.
+	UpdatedAt time.Time `json:"updatedAt" url:"updatedAt"`
+	// This is the function definition of the tool.
+	//
+	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+	//
+	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
+	// This is the server that will be hit when this tool is requested by the model.
+	//
+	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+	//
+	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
+	type_  string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (g *GoHighLevelContactCreateTool) GetAsync() *bool {
+	if g == nil {
+		return nil
+	}
+	return g.Async
+}
+
+func (g *GoHighLevelContactCreateTool) GetMessages() []*GoHighLevelContactCreateToolMessagesItem {
+	if g == nil {
+		return nil
+	}
+	return g.Messages
+}
+
+func (g *GoHighLevelContactCreateTool) GetId() string {
+	if g == nil {
+		return ""
+	}
+	return g.Id
+}
+
+func (g *GoHighLevelContactCreateTool) GetOrgId() string {
+	if g == nil {
+		return ""
+	}
+	return g.OrgId
+}
+
+func (g *GoHighLevelContactCreateTool) GetCreatedAt() time.Time {
+	if g == nil {
+		return time.Time{}
+	}
+	return g.CreatedAt
+}
+
+func (g *GoHighLevelContactCreateTool) GetUpdatedAt() time.Time {
+	if g == nil {
+		return time.Time{}
+	}
+	return g.UpdatedAt
+}
+
+func (g *GoHighLevelContactCreateTool) GetFunction() *OpenAiFunction {
+	if g == nil {
+		return nil
+	}
+	return g.Function
+}
+
+func (g *GoHighLevelContactCreateTool) GetServer() *Server {
+	if g == nil {
+		return nil
+	}
+	return g.Server
+}
+
+func (g *GoHighLevelContactCreateTool) Type() string {
+	return g.type_
+}
+
+func (g *GoHighLevelContactCreateTool) GetExtraProperties() map[string]interface{} {
+	return g.extraProperties
+}
+
+func (g *GoHighLevelContactCreateTool) UnmarshalJSON(data []byte) error {
+	type embed GoHighLevelContactCreateTool
+	var unmarshaler = struct {
+		embed
+		CreatedAt *internal.DateTime `json:"createdAt"`
+		UpdatedAt *internal.DateTime `json:"updatedAt"`
+		Type      string             `json:"type"`
+	}{
+		embed: embed(*g),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*g = GoHighLevelContactCreateTool(unmarshaler.embed)
+	g.CreatedAt = unmarshaler.CreatedAt.Time()
+	g.UpdatedAt = unmarshaler.UpdatedAt.Time()
+	if unmarshaler.Type != "gohighlevel.contact.create" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", g, "gohighlevel.contact.create", unmarshaler.Type)
+	}
+	g.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *g, "type")
+	if err != nil {
+		return err
+	}
+	g.extraProperties = extraProperties
+	g.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (g *GoHighLevelContactCreateTool) MarshalJSON() ([]byte, error) {
+	type embed GoHighLevelContactCreateTool
+	var marshaler = struct {
+		embed
+		CreatedAt *internal.DateTime `json:"createdAt"`
+		UpdatedAt *internal.DateTime `json:"updatedAt"`
+		Type      string             `json:"type"`
+	}{
+		embed:     embed(*g),
+		CreatedAt: internal.NewDateTime(g.CreatedAt),
+		UpdatedAt: internal.NewDateTime(g.UpdatedAt),
+		Type:      "gohighlevel.contact.create",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (g *GoHighLevelContactCreateTool) String() string {
+	if len(g.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(g.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(g); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", g)
+}
+
+type GoHighLevelContactCreateToolMessagesItem struct {
+	ToolMessageStart    *ToolMessageStart
+	ToolMessageComplete *ToolMessageComplete
+	ToolMessageFailed   *ToolMessageFailed
+	ToolMessageDelayed  *ToolMessageDelayed
+
+	typ string
+}
+
+func (g *GoHighLevelContactCreateToolMessagesItem) GetToolMessageStart() *ToolMessageStart {
+	if g == nil {
+		return nil
+	}
+	return g.ToolMessageStart
+}
+
+func (g *GoHighLevelContactCreateToolMessagesItem) GetToolMessageComplete() *ToolMessageComplete {
+	if g == nil {
+		return nil
+	}
+	return g.ToolMessageComplete
+}
+
+func (g *GoHighLevelContactCreateToolMessagesItem) GetToolMessageFailed() *ToolMessageFailed {
+	if g == nil {
+		return nil
+	}
+	return g.ToolMessageFailed
+}
+
+func (g *GoHighLevelContactCreateToolMessagesItem) GetToolMessageDelayed() *ToolMessageDelayed {
+	if g == nil {
+		return nil
+	}
+	return g.ToolMessageDelayed
+}
+
+func (g *GoHighLevelContactCreateToolMessagesItem) UnmarshalJSON(data []byte) error {
+	valueToolMessageStart := new(ToolMessageStart)
+	if err := json.Unmarshal(data, &valueToolMessageStart); err == nil {
+		g.typ = "ToolMessageStart"
+		g.ToolMessageStart = valueToolMessageStart
+		return nil
+	}
+	valueToolMessageComplete := new(ToolMessageComplete)
+	if err := json.Unmarshal(data, &valueToolMessageComplete); err == nil {
+		g.typ = "ToolMessageComplete"
+		g.ToolMessageComplete = valueToolMessageComplete
+		return nil
+	}
+	valueToolMessageFailed := new(ToolMessageFailed)
+	if err := json.Unmarshal(data, &valueToolMessageFailed); err == nil {
+		g.typ = "ToolMessageFailed"
+		g.ToolMessageFailed = valueToolMessageFailed
+		return nil
+	}
+	valueToolMessageDelayed := new(ToolMessageDelayed)
+	if err := json.Unmarshal(data, &valueToolMessageDelayed); err == nil {
+		g.typ = "ToolMessageDelayed"
+		g.ToolMessageDelayed = valueToolMessageDelayed
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, g)
+}
+
+func (g GoHighLevelContactCreateToolMessagesItem) MarshalJSON() ([]byte, error) {
+	if g.typ == "ToolMessageStart" || g.ToolMessageStart != nil {
+		return json.Marshal(g.ToolMessageStart)
+	}
+	if g.typ == "ToolMessageComplete" || g.ToolMessageComplete != nil {
+		return json.Marshal(g.ToolMessageComplete)
+	}
+	if g.typ == "ToolMessageFailed" || g.ToolMessageFailed != nil {
+		return json.Marshal(g.ToolMessageFailed)
+	}
+	if g.typ == "ToolMessageDelayed" || g.ToolMessageDelayed != nil {
+		return json.Marshal(g.ToolMessageDelayed)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", g)
+}
+
+type GoHighLevelContactCreateToolMessagesItemVisitor interface {
+	VisitToolMessageStart(*ToolMessageStart) error
+	VisitToolMessageComplete(*ToolMessageComplete) error
+	VisitToolMessageFailed(*ToolMessageFailed) error
+	VisitToolMessageDelayed(*ToolMessageDelayed) error
+}
+
+func (g *GoHighLevelContactCreateToolMessagesItem) Accept(visitor GoHighLevelContactCreateToolMessagesItemVisitor) error {
+	if g.typ == "ToolMessageStart" || g.ToolMessageStart != nil {
+		return visitor.VisitToolMessageStart(g.ToolMessageStart)
+	}
+	if g.typ == "ToolMessageComplete" || g.ToolMessageComplete != nil {
+		return visitor.VisitToolMessageComplete(g.ToolMessageComplete)
+	}
+	if g.typ == "ToolMessageFailed" || g.ToolMessageFailed != nil {
+		return visitor.VisitToolMessageFailed(g.ToolMessageFailed)
+	}
+	if g.typ == "ToolMessageDelayed" || g.ToolMessageDelayed != nil {
+		return visitor.VisitToolMessageDelayed(g.ToolMessageDelayed)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", g)
+}
+
+type GoHighLevelContactGetTool struct {
+	// This determines if the tool is async.
+	//
+	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+	//
+	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+	//
+	// Defaults to synchronous (`false`).
+	Async *bool `json:"async,omitempty" url:"async,omitempty"`
+	// These are the messages that will be spoken to the user as the tool is running.
+	//
+	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+	Messages []*GoHighLevelContactGetToolMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
+	// This is the unique identifier for the tool.
+	Id string `json:"id" url:"id"`
+	// This is the unique identifier for the organization that this tool belongs to.
+	OrgId string `json:"orgId" url:"orgId"`
+	// This is the ISO 8601 date-time string of when the tool was created.
+	CreatedAt time.Time `json:"createdAt" url:"createdAt"`
+	// This is the ISO 8601 date-time string of when the tool was last updated.
+	UpdatedAt time.Time `json:"updatedAt" url:"updatedAt"`
+	// This is the function definition of the tool.
+	//
+	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+	//
+	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
+	// This is the server that will be hit when this tool is requested by the model.
+	//
+	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+	//
+	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
+	type_  string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (g *GoHighLevelContactGetTool) GetAsync() *bool {
+	if g == nil {
+		return nil
+	}
+	return g.Async
+}
+
+func (g *GoHighLevelContactGetTool) GetMessages() []*GoHighLevelContactGetToolMessagesItem {
+	if g == nil {
+		return nil
+	}
+	return g.Messages
+}
+
+func (g *GoHighLevelContactGetTool) GetId() string {
+	if g == nil {
+		return ""
+	}
+	return g.Id
+}
+
+func (g *GoHighLevelContactGetTool) GetOrgId() string {
+	if g == nil {
+		return ""
+	}
+	return g.OrgId
+}
+
+func (g *GoHighLevelContactGetTool) GetCreatedAt() time.Time {
+	if g == nil {
+		return time.Time{}
+	}
+	return g.CreatedAt
+}
+
+func (g *GoHighLevelContactGetTool) GetUpdatedAt() time.Time {
+	if g == nil {
+		return time.Time{}
+	}
+	return g.UpdatedAt
+}
+
+func (g *GoHighLevelContactGetTool) GetFunction() *OpenAiFunction {
+	if g == nil {
+		return nil
+	}
+	return g.Function
+}
+
+func (g *GoHighLevelContactGetTool) GetServer() *Server {
+	if g == nil {
+		return nil
+	}
+	return g.Server
+}
+
+func (g *GoHighLevelContactGetTool) Type() string {
+	return g.type_
+}
+
+func (g *GoHighLevelContactGetTool) GetExtraProperties() map[string]interface{} {
+	return g.extraProperties
+}
+
+func (g *GoHighLevelContactGetTool) UnmarshalJSON(data []byte) error {
+	type embed GoHighLevelContactGetTool
+	var unmarshaler = struct {
+		embed
+		CreatedAt *internal.DateTime `json:"createdAt"`
+		UpdatedAt *internal.DateTime `json:"updatedAt"`
+		Type      string             `json:"type"`
+	}{
+		embed: embed(*g),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*g = GoHighLevelContactGetTool(unmarshaler.embed)
+	g.CreatedAt = unmarshaler.CreatedAt.Time()
+	g.UpdatedAt = unmarshaler.UpdatedAt.Time()
+	if unmarshaler.Type != "gohighlevel.contact.get" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", g, "gohighlevel.contact.get", unmarshaler.Type)
+	}
+	g.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *g, "type")
+	if err != nil {
+		return err
+	}
+	g.extraProperties = extraProperties
+	g.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (g *GoHighLevelContactGetTool) MarshalJSON() ([]byte, error) {
+	type embed GoHighLevelContactGetTool
+	var marshaler = struct {
+		embed
+		CreatedAt *internal.DateTime `json:"createdAt"`
+		UpdatedAt *internal.DateTime `json:"updatedAt"`
+		Type      string             `json:"type"`
+	}{
+		embed:     embed(*g),
+		CreatedAt: internal.NewDateTime(g.CreatedAt),
+		UpdatedAt: internal.NewDateTime(g.UpdatedAt),
+		Type:      "gohighlevel.contact.get",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (g *GoHighLevelContactGetTool) String() string {
+	if len(g.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(g.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(g); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", g)
+}
+
+type GoHighLevelContactGetToolMessagesItem struct {
+	ToolMessageStart    *ToolMessageStart
+	ToolMessageComplete *ToolMessageComplete
+	ToolMessageFailed   *ToolMessageFailed
+	ToolMessageDelayed  *ToolMessageDelayed
+
+	typ string
+}
+
+func (g *GoHighLevelContactGetToolMessagesItem) GetToolMessageStart() *ToolMessageStart {
+	if g == nil {
+		return nil
+	}
+	return g.ToolMessageStart
+}
+
+func (g *GoHighLevelContactGetToolMessagesItem) GetToolMessageComplete() *ToolMessageComplete {
+	if g == nil {
+		return nil
+	}
+	return g.ToolMessageComplete
+}
+
+func (g *GoHighLevelContactGetToolMessagesItem) GetToolMessageFailed() *ToolMessageFailed {
+	if g == nil {
+		return nil
+	}
+	return g.ToolMessageFailed
+}
+
+func (g *GoHighLevelContactGetToolMessagesItem) GetToolMessageDelayed() *ToolMessageDelayed {
+	if g == nil {
+		return nil
+	}
+	return g.ToolMessageDelayed
+}
+
+func (g *GoHighLevelContactGetToolMessagesItem) UnmarshalJSON(data []byte) error {
+	valueToolMessageStart := new(ToolMessageStart)
+	if err := json.Unmarshal(data, &valueToolMessageStart); err == nil {
+		g.typ = "ToolMessageStart"
+		g.ToolMessageStart = valueToolMessageStart
+		return nil
+	}
+	valueToolMessageComplete := new(ToolMessageComplete)
+	if err := json.Unmarshal(data, &valueToolMessageComplete); err == nil {
+		g.typ = "ToolMessageComplete"
+		g.ToolMessageComplete = valueToolMessageComplete
+		return nil
+	}
+	valueToolMessageFailed := new(ToolMessageFailed)
+	if err := json.Unmarshal(data, &valueToolMessageFailed); err == nil {
+		g.typ = "ToolMessageFailed"
+		g.ToolMessageFailed = valueToolMessageFailed
+		return nil
+	}
+	valueToolMessageDelayed := new(ToolMessageDelayed)
+	if err := json.Unmarshal(data, &valueToolMessageDelayed); err == nil {
+		g.typ = "ToolMessageDelayed"
+		g.ToolMessageDelayed = valueToolMessageDelayed
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, g)
+}
+
+func (g GoHighLevelContactGetToolMessagesItem) MarshalJSON() ([]byte, error) {
+	if g.typ == "ToolMessageStart" || g.ToolMessageStart != nil {
+		return json.Marshal(g.ToolMessageStart)
+	}
+	if g.typ == "ToolMessageComplete" || g.ToolMessageComplete != nil {
+		return json.Marshal(g.ToolMessageComplete)
+	}
+	if g.typ == "ToolMessageFailed" || g.ToolMessageFailed != nil {
+		return json.Marshal(g.ToolMessageFailed)
+	}
+	if g.typ == "ToolMessageDelayed" || g.ToolMessageDelayed != nil {
+		return json.Marshal(g.ToolMessageDelayed)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", g)
+}
+
+type GoHighLevelContactGetToolMessagesItemVisitor interface {
+	VisitToolMessageStart(*ToolMessageStart) error
+	VisitToolMessageComplete(*ToolMessageComplete) error
+	VisitToolMessageFailed(*ToolMessageFailed) error
+	VisitToolMessageDelayed(*ToolMessageDelayed) error
+}
+
+func (g *GoHighLevelContactGetToolMessagesItem) Accept(visitor GoHighLevelContactGetToolMessagesItemVisitor) error {
+	if g.typ == "ToolMessageStart" || g.ToolMessageStart != nil {
+		return visitor.VisitToolMessageStart(g.ToolMessageStart)
+	}
+	if g.typ == "ToolMessageComplete" || g.ToolMessageComplete != nil {
+		return visitor.VisitToolMessageComplete(g.ToolMessageComplete)
+	}
+	if g.typ == "ToolMessageFailed" || g.ToolMessageFailed != nil {
+		return visitor.VisitToolMessageFailed(g.ToolMessageFailed)
+	}
+	if g.typ == "ToolMessageDelayed" || g.ToolMessageDelayed != nil {
+		return visitor.VisitToolMessageDelayed(g.ToolMessageDelayed)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", g)
+}
+
 type GoogleCalendarCheckAvailabilityTool struct {
 	// This determines if the tool is async.
 	//
@@ -4188,6 +4549,60 @@ func (m *MakeToolMessagesItem) Accept(visitor MakeToolMessagesItemVisitor) error
 		return visitor.VisitToolMessageDelayed(m.ToolMessageDelayed)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", m)
+}
+
+type MakeToolMetadata struct {
+	ScenarioId    *float64 `json:"scenarioId,omitempty" url:"scenarioId,omitempty"`
+	TriggerHookId *float64 `json:"triggerHookId,omitempty" url:"triggerHookId,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (m *MakeToolMetadata) GetScenarioId() *float64 {
+	if m == nil {
+		return nil
+	}
+	return m.ScenarioId
+}
+
+func (m *MakeToolMetadata) GetTriggerHookId() *float64 {
+	if m == nil {
+		return nil
+	}
+	return m.TriggerHookId
+}
+
+func (m *MakeToolMetadata) GetExtraProperties() map[string]interface{} {
+	return m.extraProperties
+}
+
+func (m *MakeToolMetadata) UnmarshalJSON(data []byte) error {
+	type unmarshaler MakeToolMetadata
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*m = MakeToolMetadata(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *m)
+	if err != nil {
+		return err
+	}
+	m.extraProperties = extraProperties
+	m.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (m *MakeToolMetadata) String() string {
+	if len(m.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(m); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", m)
 }
 
 type McpTool struct {
@@ -5255,7 +5670,7 @@ func (s *SlackSendMessageToolMessagesItem) Accept(visitor SlackSendMessageToolMe
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
-type SmsSendTool struct {
+type SmsTool struct {
 	// This determines if the tool is async.
 	//
 	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
@@ -5267,7 +5682,7 @@ type SmsSendTool struct {
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-	Messages []*SmsSendToolMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
+	Messages []*SmsToolMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
 	// This is the unique identifier for the tool.
 	Id string `json:"id" url:"id"`
 	// This is the unique identifier for the organization that this tool belongs to.
@@ -5294,72 +5709,72 @@ type SmsSendTool struct {
 	rawJSON         json.RawMessage
 }
 
-func (s *SmsSendTool) GetAsync() *bool {
+func (s *SmsTool) GetAsync() *bool {
 	if s == nil {
 		return nil
 	}
 	return s.Async
 }
 
-func (s *SmsSendTool) GetMessages() []*SmsSendToolMessagesItem {
+func (s *SmsTool) GetMessages() []*SmsToolMessagesItem {
 	if s == nil {
 		return nil
 	}
 	return s.Messages
 }
 
-func (s *SmsSendTool) GetId() string {
+func (s *SmsTool) GetId() string {
 	if s == nil {
 		return ""
 	}
 	return s.Id
 }
 
-func (s *SmsSendTool) GetOrgId() string {
+func (s *SmsTool) GetOrgId() string {
 	if s == nil {
 		return ""
 	}
 	return s.OrgId
 }
 
-func (s *SmsSendTool) GetCreatedAt() time.Time {
+func (s *SmsTool) GetCreatedAt() time.Time {
 	if s == nil {
 		return time.Time{}
 	}
 	return s.CreatedAt
 }
 
-func (s *SmsSendTool) GetUpdatedAt() time.Time {
+func (s *SmsTool) GetUpdatedAt() time.Time {
 	if s == nil {
 		return time.Time{}
 	}
 	return s.UpdatedAt
 }
 
-func (s *SmsSendTool) GetFunction() *OpenAiFunction {
+func (s *SmsTool) GetFunction() *OpenAiFunction {
 	if s == nil {
 		return nil
 	}
 	return s.Function
 }
 
-func (s *SmsSendTool) GetServer() *Server {
+func (s *SmsTool) GetServer() *Server {
 	if s == nil {
 		return nil
 	}
 	return s.Server
 }
 
-func (s *SmsSendTool) Type() string {
+func (s *SmsTool) Type() string {
 	return s.type_
 }
 
-func (s *SmsSendTool) GetExtraProperties() map[string]interface{} {
+func (s *SmsTool) GetExtraProperties() map[string]interface{} {
 	return s.extraProperties
 }
 
-func (s *SmsSendTool) UnmarshalJSON(data []byte) error {
-	type embed SmsSendTool
+func (s *SmsTool) UnmarshalJSON(data []byte) error {
+	type embed SmsTool
 	var unmarshaler = struct {
 		embed
 		CreatedAt *internal.DateTime `json:"createdAt"`
@@ -5371,7 +5786,7 @@ func (s *SmsSendTool) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &unmarshaler); err != nil {
 		return err
 	}
-	*s = SmsSendTool(unmarshaler.embed)
+	*s = SmsTool(unmarshaler.embed)
 	s.CreatedAt = unmarshaler.CreatedAt.Time()
 	s.UpdatedAt = unmarshaler.UpdatedAt.Time()
 	if unmarshaler.Type != "sms" {
@@ -5387,8 +5802,8 @@ func (s *SmsSendTool) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (s *SmsSendTool) MarshalJSON() ([]byte, error) {
-	type embed SmsSendTool
+func (s *SmsTool) MarshalJSON() ([]byte, error) {
+	type embed SmsTool
 	var marshaler = struct {
 		embed
 		CreatedAt *internal.DateTime `json:"createdAt"`
@@ -5403,7 +5818,7 @@ func (s *SmsSendTool) MarshalJSON() ([]byte, error) {
 	return json.Marshal(marshaler)
 }
 
-func (s *SmsSendTool) String() string {
+func (s *SmsTool) String() string {
 	if len(s.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
 			return value
@@ -5415,7 +5830,7 @@ func (s *SmsSendTool) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
-type SmsSendToolMessagesItem struct {
+type SmsToolMessagesItem struct {
 	ToolMessageStart    *ToolMessageStart
 	ToolMessageComplete *ToolMessageComplete
 	ToolMessageFailed   *ToolMessageFailed
@@ -5424,35 +5839,35 @@ type SmsSendToolMessagesItem struct {
 	typ string
 }
 
-func (s *SmsSendToolMessagesItem) GetToolMessageStart() *ToolMessageStart {
+func (s *SmsToolMessagesItem) GetToolMessageStart() *ToolMessageStart {
 	if s == nil {
 		return nil
 	}
 	return s.ToolMessageStart
 }
 
-func (s *SmsSendToolMessagesItem) GetToolMessageComplete() *ToolMessageComplete {
+func (s *SmsToolMessagesItem) GetToolMessageComplete() *ToolMessageComplete {
 	if s == nil {
 		return nil
 	}
 	return s.ToolMessageComplete
 }
 
-func (s *SmsSendToolMessagesItem) GetToolMessageFailed() *ToolMessageFailed {
+func (s *SmsToolMessagesItem) GetToolMessageFailed() *ToolMessageFailed {
 	if s == nil {
 		return nil
 	}
 	return s.ToolMessageFailed
 }
 
-func (s *SmsSendToolMessagesItem) GetToolMessageDelayed() *ToolMessageDelayed {
+func (s *SmsToolMessagesItem) GetToolMessageDelayed() *ToolMessageDelayed {
 	if s == nil {
 		return nil
 	}
 	return s.ToolMessageDelayed
 }
 
-func (s *SmsSendToolMessagesItem) UnmarshalJSON(data []byte) error {
+func (s *SmsToolMessagesItem) UnmarshalJSON(data []byte) error {
 	valueToolMessageStart := new(ToolMessageStart)
 	if err := json.Unmarshal(data, &valueToolMessageStart); err == nil {
 		s.typ = "ToolMessageStart"
@@ -5480,7 +5895,7 @@ func (s *SmsSendToolMessagesItem) UnmarshalJSON(data []byte) error {
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
 }
 
-func (s SmsSendToolMessagesItem) MarshalJSON() ([]byte, error) {
+func (s SmsToolMessagesItem) MarshalJSON() ([]byte, error) {
 	if s.typ == "ToolMessageStart" || s.ToolMessageStart != nil {
 		return json.Marshal(s.ToolMessageStart)
 	}
@@ -5496,14 +5911,14 @@ func (s SmsSendToolMessagesItem) MarshalJSON() ([]byte, error) {
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
-type SmsSendToolMessagesItemVisitor interface {
+type SmsToolMessagesItemVisitor interface {
 	VisitToolMessageStart(*ToolMessageStart) error
 	VisitToolMessageComplete(*ToolMessageComplete) error
 	VisitToolMessageFailed(*ToolMessageFailed) error
 	VisitToolMessageDelayed(*ToolMessageDelayed) error
 }
 
-func (s *SmsSendToolMessagesItem) Accept(visitor SmsSendToolMessagesItemVisitor) error {
+func (s *SmsToolMessagesItem) Accept(visitor SmsToolMessagesItemVisitor) error {
 	if s.typ == "ToolMessageStart" || s.ToolMessageStart != nil {
 		return visitor.VisitToolMessageStart(s.ToolMessageStart)
 	}
@@ -5980,7 +6395,6 @@ func (t *TransferCallTool) String() string {
 
 type TransferCallToolDestinationsItem struct {
 	TransferDestinationAssistant *TransferDestinationAssistant
-	TransferDestinationStep      *TransferDestinationStep
 	TransferDestinationNumber    *TransferDestinationNumber
 	TransferDestinationSip       *TransferDestinationSip
 
@@ -5992,13 +6406,6 @@ func (t *TransferCallToolDestinationsItem) GetTransferDestinationAssistant() *Tr
 		return nil
 	}
 	return t.TransferDestinationAssistant
-}
-
-func (t *TransferCallToolDestinationsItem) GetTransferDestinationStep() *TransferDestinationStep {
-	if t == nil {
-		return nil
-	}
-	return t.TransferDestinationStep
 }
 
 func (t *TransferCallToolDestinationsItem) GetTransferDestinationNumber() *TransferDestinationNumber {
@@ -6022,12 +6429,6 @@ func (t *TransferCallToolDestinationsItem) UnmarshalJSON(data []byte) error {
 		t.TransferDestinationAssistant = valueTransferDestinationAssistant
 		return nil
 	}
-	valueTransferDestinationStep := new(TransferDestinationStep)
-	if err := json.Unmarshal(data, &valueTransferDestinationStep); err == nil {
-		t.typ = "TransferDestinationStep"
-		t.TransferDestinationStep = valueTransferDestinationStep
-		return nil
-	}
 	valueTransferDestinationNumber := new(TransferDestinationNumber)
 	if err := json.Unmarshal(data, &valueTransferDestinationNumber); err == nil {
 		t.typ = "TransferDestinationNumber"
@@ -6047,9 +6448,6 @@ func (t TransferCallToolDestinationsItem) MarshalJSON() ([]byte, error) {
 	if t.typ == "TransferDestinationAssistant" || t.TransferDestinationAssistant != nil {
 		return json.Marshal(t.TransferDestinationAssistant)
 	}
-	if t.typ == "TransferDestinationStep" || t.TransferDestinationStep != nil {
-		return json.Marshal(t.TransferDestinationStep)
-	}
 	if t.typ == "TransferDestinationNumber" || t.TransferDestinationNumber != nil {
 		return json.Marshal(t.TransferDestinationNumber)
 	}
@@ -6061,7 +6459,6 @@ func (t TransferCallToolDestinationsItem) MarshalJSON() ([]byte, error) {
 
 type TransferCallToolDestinationsItemVisitor interface {
 	VisitTransferDestinationAssistant(*TransferDestinationAssistant) error
-	VisitTransferDestinationStep(*TransferDestinationStep) error
 	VisitTransferDestinationNumber(*TransferDestinationNumber) error
 	VisitTransferDestinationSip(*TransferDestinationSip) error
 }
@@ -6069,9 +6466,6 @@ type TransferCallToolDestinationsItemVisitor interface {
 func (t *TransferCallToolDestinationsItem) Accept(visitor TransferCallToolDestinationsItemVisitor) error {
 	if t.typ == "TransferDestinationAssistant" || t.TransferDestinationAssistant != nil {
 		return visitor.VisitTransferDestinationAssistant(t.TransferDestinationAssistant)
-	}
-	if t.typ == "TransferDestinationStep" || t.TransferDestinationStep != nil {
-		return visitor.VisitTransferDestinationStep(t.TransferDestinationStep)
 	}
 	if t.typ == "TransferDestinationNumber" || t.TransferDestinationNumber != nil {
 		return visitor.VisitTransferDestinationNumber(t.TransferDestinationNumber)
@@ -7378,6 +7772,782 @@ type UpdateGhlToolDtoMessagesItemVisitor interface {
 }
 
 func (u *UpdateGhlToolDtoMessagesItem) Accept(visitor UpdateGhlToolDtoMessagesItemVisitor) error {
+	if u.typ == "ToolMessageStart" || u.ToolMessageStart != nil {
+		return visitor.VisitToolMessageStart(u.ToolMessageStart)
+	}
+	if u.typ == "ToolMessageComplete" || u.ToolMessageComplete != nil {
+		return visitor.VisitToolMessageComplete(u.ToolMessageComplete)
+	}
+	if u.typ == "ToolMessageFailed" || u.ToolMessageFailed != nil {
+		return visitor.VisitToolMessageFailed(u.ToolMessageFailed)
+	}
+	if u.typ == "ToolMessageDelayed" || u.ToolMessageDelayed != nil {
+		return visitor.VisitToolMessageDelayed(u.ToolMessageDelayed)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", u)
+}
+
+type UpdateGoHighLevelCalendarAvailabilityToolDto struct {
+	// This determines if the tool is async.
+	//
+	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+	//
+	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+	//
+	// Defaults to synchronous (`false`).
+	Async *bool `json:"async,omitempty" url:"async,omitempty"`
+	// These are the messages that will be spoken to the user as the tool is running.
+	//
+	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+	Messages []*UpdateGoHighLevelCalendarAvailabilityToolDtoMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
+	// This is the function definition of the tool.
+	//
+	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+	//
+	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
+	// This is the server that will be hit when this tool is requested by the model.
+	//
+	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+	//
+	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (u *UpdateGoHighLevelCalendarAvailabilityToolDto) GetAsync() *bool {
+	if u == nil {
+		return nil
+	}
+	return u.Async
+}
+
+func (u *UpdateGoHighLevelCalendarAvailabilityToolDto) GetMessages() []*UpdateGoHighLevelCalendarAvailabilityToolDtoMessagesItem {
+	if u == nil {
+		return nil
+	}
+	return u.Messages
+}
+
+func (u *UpdateGoHighLevelCalendarAvailabilityToolDto) GetFunction() *OpenAiFunction {
+	if u == nil {
+		return nil
+	}
+	return u.Function
+}
+
+func (u *UpdateGoHighLevelCalendarAvailabilityToolDto) GetServer() *Server {
+	if u == nil {
+		return nil
+	}
+	return u.Server
+}
+
+func (u *UpdateGoHighLevelCalendarAvailabilityToolDto) GetExtraProperties() map[string]interface{} {
+	return u.extraProperties
+}
+
+func (u *UpdateGoHighLevelCalendarAvailabilityToolDto) UnmarshalJSON(data []byte) error {
+	type unmarshaler UpdateGoHighLevelCalendarAvailabilityToolDto
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*u = UpdateGoHighLevelCalendarAvailabilityToolDto(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *u)
+	if err != nil {
+		return err
+	}
+	u.extraProperties = extraProperties
+	u.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (u *UpdateGoHighLevelCalendarAvailabilityToolDto) String() string {
+	if len(u.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(u); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", u)
+}
+
+type UpdateGoHighLevelCalendarAvailabilityToolDtoMessagesItem struct {
+	ToolMessageStart    *ToolMessageStart
+	ToolMessageComplete *ToolMessageComplete
+	ToolMessageFailed   *ToolMessageFailed
+	ToolMessageDelayed  *ToolMessageDelayed
+
+	typ string
+}
+
+func (u *UpdateGoHighLevelCalendarAvailabilityToolDtoMessagesItem) GetToolMessageStart() *ToolMessageStart {
+	if u == nil {
+		return nil
+	}
+	return u.ToolMessageStart
+}
+
+func (u *UpdateGoHighLevelCalendarAvailabilityToolDtoMessagesItem) GetToolMessageComplete() *ToolMessageComplete {
+	if u == nil {
+		return nil
+	}
+	return u.ToolMessageComplete
+}
+
+func (u *UpdateGoHighLevelCalendarAvailabilityToolDtoMessagesItem) GetToolMessageFailed() *ToolMessageFailed {
+	if u == nil {
+		return nil
+	}
+	return u.ToolMessageFailed
+}
+
+func (u *UpdateGoHighLevelCalendarAvailabilityToolDtoMessagesItem) GetToolMessageDelayed() *ToolMessageDelayed {
+	if u == nil {
+		return nil
+	}
+	return u.ToolMessageDelayed
+}
+
+func (u *UpdateGoHighLevelCalendarAvailabilityToolDtoMessagesItem) UnmarshalJSON(data []byte) error {
+	valueToolMessageStart := new(ToolMessageStart)
+	if err := json.Unmarshal(data, &valueToolMessageStart); err == nil {
+		u.typ = "ToolMessageStart"
+		u.ToolMessageStart = valueToolMessageStart
+		return nil
+	}
+	valueToolMessageComplete := new(ToolMessageComplete)
+	if err := json.Unmarshal(data, &valueToolMessageComplete); err == nil {
+		u.typ = "ToolMessageComplete"
+		u.ToolMessageComplete = valueToolMessageComplete
+		return nil
+	}
+	valueToolMessageFailed := new(ToolMessageFailed)
+	if err := json.Unmarshal(data, &valueToolMessageFailed); err == nil {
+		u.typ = "ToolMessageFailed"
+		u.ToolMessageFailed = valueToolMessageFailed
+		return nil
+	}
+	valueToolMessageDelayed := new(ToolMessageDelayed)
+	if err := json.Unmarshal(data, &valueToolMessageDelayed); err == nil {
+		u.typ = "ToolMessageDelayed"
+		u.ToolMessageDelayed = valueToolMessageDelayed
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, u)
+}
+
+func (u UpdateGoHighLevelCalendarAvailabilityToolDtoMessagesItem) MarshalJSON() ([]byte, error) {
+	if u.typ == "ToolMessageStart" || u.ToolMessageStart != nil {
+		return json.Marshal(u.ToolMessageStart)
+	}
+	if u.typ == "ToolMessageComplete" || u.ToolMessageComplete != nil {
+		return json.Marshal(u.ToolMessageComplete)
+	}
+	if u.typ == "ToolMessageFailed" || u.ToolMessageFailed != nil {
+		return json.Marshal(u.ToolMessageFailed)
+	}
+	if u.typ == "ToolMessageDelayed" || u.ToolMessageDelayed != nil {
+		return json.Marshal(u.ToolMessageDelayed)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", u)
+}
+
+type UpdateGoHighLevelCalendarAvailabilityToolDtoMessagesItemVisitor interface {
+	VisitToolMessageStart(*ToolMessageStart) error
+	VisitToolMessageComplete(*ToolMessageComplete) error
+	VisitToolMessageFailed(*ToolMessageFailed) error
+	VisitToolMessageDelayed(*ToolMessageDelayed) error
+}
+
+func (u *UpdateGoHighLevelCalendarAvailabilityToolDtoMessagesItem) Accept(visitor UpdateGoHighLevelCalendarAvailabilityToolDtoMessagesItemVisitor) error {
+	if u.typ == "ToolMessageStart" || u.ToolMessageStart != nil {
+		return visitor.VisitToolMessageStart(u.ToolMessageStart)
+	}
+	if u.typ == "ToolMessageComplete" || u.ToolMessageComplete != nil {
+		return visitor.VisitToolMessageComplete(u.ToolMessageComplete)
+	}
+	if u.typ == "ToolMessageFailed" || u.ToolMessageFailed != nil {
+		return visitor.VisitToolMessageFailed(u.ToolMessageFailed)
+	}
+	if u.typ == "ToolMessageDelayed" || u.ToolMessageDelayed != nil {
+		return visitor.VisitToolMessageDelayed(u.ToolMessageDelayed)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", u)
+}
+
+type UpdateGoHighLevelCalendarEventCreateToolDto struct {
+	// This determines if the tool is async.
+	//
+	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+	//
+	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+	//
+	// Defaults to synchronous (`false`).
+	Async *bool `json:"async,omitempty" url:"async,omitempty"`
+	// These are the messages that will be spoken to the user as the tool is running.
+	//
+	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+	Messages []*UpdateGoHighLevelCalendarEventCreateToolDtoMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
+	// This is the function definition of the tool.
+	//
+	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+	//
+	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
+	// This is the server that will be hit when this tool is requested by the model.
+	//
+	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+	//
+	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (u *UpdateGoHighLevelCalendarEventCreateToolDto) GetAsync() *bool {
+	if u == nil {
+		return nil
+	}
+	return u.Async
+}
+
+func (u *UpdateGoHighLevelCalendarEventCreateToolDto) GetMessages() []*UpdateGoHighLevelCalendarEventCreateToolDtoMessagesItem {
+	if u == nil {
+		return nil
+	}
+	return u.Messages
+}
+
+func (u *UpdateGoHighLevelCalendarEventCreateToolDto) GetFunction() *OpenAiFunction {
+	if u == nil {
+		return nil
+	}
+	return u.Function
+}
+
+func (u *UpdateGoHighLevelCalendarEventCreateToolDto) GetServer() *Server {
+	if u == nil {
+		return nil
+	}
+	return u.Server
+}
+
+func (u *UpdateGoHighLevelCalendarEventCreateToolDto) GetExtraProperties() map[string]interface{} {
+	return u.extraProperties
+}
+
+func (u *UpdateGoHighLevelCalendarEventCreateToolDto) UnmarshalJSON(data []byte) error {
+	type unmarshaler UpdateGoHighLevelCalendarEventCreateToolDto
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*u = UpdateGoHighLevelCalendarEventCreateToolDto(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *u)
+	if err != nil {
+		return err
+	}
+	u.extraProperties = extraProperties
+	u.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (u *UpdateGoHighLevelCalendarEventCreateToolDto) String() string {
+	if len(u.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(u); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", u)
+}
+
+type UpdateGoHighLevelCalendarEventCreateToolDtoMessagesItem struct {
+	ToolMessageStart    *ToolMessageStart
+	ToolMessageComplete *ToolMessageComplete
+	ToolMessageFailed   *ToolMessageFailed
+	ToolMessageDelayed  *ToolMessageDelayed
+
+	typ string
+}
+
+func (u *UpdateGoHighLevelCalendarEventCreateToolDtoMessagesItem) GetToolMessageStart() *ToolMessageStart {
+	if u == nil {
+		return nil
+	}
+	return u.ToolMessageStart
+}
+
+func (u *UpdateGoHighLevelCalendarEventCreateToolDtoMessagesItem) GetToolMessageComplete() *ToolMessageComplete {
+	if u == nil {
+		return nil
+	}
+	return u.ToolMessageComplete
+}
+
+func (u *UpdateGoHighLevelCalendarEventCreateToolDtoMessagesItem) GetToolMessageFailed() *ToolMessageFailed {
+	if u == nil {
+		return nil
+	}
+	return u.ToolMessageFailed
+}
+
+func (u *UpdateGoHighLevelCalendarEventCreateToolDtoMessagesItem) GetToolMessageDelayed() *ToolMessageDelayed {
+	if u == nil {
+		return nil
+	}
+	return u.ToolMessageDelayed
+}
+
+func (u *UpdateGoHighLevelCalendarEventCreateToolDtoMessagesItem) UnmarshalJSON(data []byte) error {
+	valueToolMessageStart := new(ToolMessageStart)
+	if err := json.Unmarshal(data, &valueToolMessageStart); err == nil {
+		u.typ = "ToolMessageStart"
+		u.ToolMessageStart = valueToolMessageStart
+		return nil
+	}
+	valueToolMessageComplete := new(ToolMessageComplete)
+	if err := json.Unmarshal(data, &valueToolMessageComplete); err == nil {
+		u.typ = "ToolMessageComplete"
+		u.ToolMessageComplete = valueToolMessageComplete
+		return nil
+	}
+	valueToolMessageFailed := new(ToolMessageFailed)
+	if err := json.Unmarshal(data, &valueToolMessageFailed); err == nil {
+		u.typ = "ToolMessageFailed"
+		u.ToolMessageFailed = valueToolMessageFailed
+		return nil
+	}
+	valueToolMessageDelayed := new(ToolMessageDelayed)
+	if err := json.Unmarshal(data, &valueToolMessageDelayed); err == nil {
+		u.typ = "ToolMessageDelayed"
+		u.ToolMessageDelayed = valueToolMessageDelayed
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, u)
+}
+
+func (u UpdateGoHighLevelCalendarEventCreateToolDtoMessagesItem) MarshalJSON() ([]byte, error) {
+	if u.typ == "ToolMessageStart" || u.ToolMessageStart != nil {
+		return json.Marshal(u.ToolMessageStart)
+	}
+	if u.typ == "ToolMessageComplete" || u.ToolMessageComplete != nil {
+		return json.Marshal(u.ToolMessageComplete)
+	}
+	if u.typ == "ToolMessageFailed" || u.ToolMessageFailed != nil {
+		return json.Marshal(u.ToolMessageFailed)
+	}
+	if u.typ == "ToolMessageDelayed" || u.ToolMessageDelayed != nil {
+		return json.Marshal(u.ToolMessageDelayed)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", u)
+}
+
+type UpdateGoHighLevelCalendarEventCreateToolDtoMessagesItemVisitor interface {
+	VisitToolMessageStart(*ToolMessageStart) error
+	VisitToolMessageComplete(*ToolMessageComplete) error
+	VisitToolMessageFailed(*ToolMessageFailed) error
+	VisitToolMessageDelayed(*ToolMessageDelayed) error
+}
+
+func (u *UpdateGoHighLevelCalendarEventCreateToolDtoMessagesItem) Accept(visitor UpdateGoHighLevelCalendarEventCreateToolDtoMessagesItemVisitor) error {
+	if u.typ == "ToolMessageStart" || u.ToolMessageStart != nil {
+		return visitor.VisitToolMessageStart(u.ToolMessageStart)
+	}
+	if u.typ == "ToolMessageComplete" || u.ToolMessageComplete != nil {
+		return visitor.VisitToolMessageComplete(u.ToolMessageComplete)
+	}
+	if u.typ == "ToolMessageFailed" || u.ToolMessageFailed != nil {
+		return visitor.VisitToolMessageFailed(u.ToolMessageFailed)
+	}
+	if u.typ == "ToolMessageDelayed" || u.ToolMessageDelayed != nil {
+		return visitor.VisitToolMessageDelayed(u.ToolMessageDelayed)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", u)
+}
+
+type UpdateGoHighLevelContactCreateToolDto struct {
+	// This determines if the tool is async.
+	//
+	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+	//
+	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+	//
+	// Defaults to synchronous (`false`).
+	Async *bool `json:"async,omitempty" url:"async,omitempty"`
+	// These are the messages that will be spoken to the user as the tool is running.
+	//
+	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+	Messages []*UpdateGoHighLevelContactCreateToolDtoMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
+	// This is the function definition of the tool.
+	//
+	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+	//
+	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
+	// This is the server that will be hit when this tool is requested by the model.
+	//
+	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+	//
+	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (u *UpdateGoHighLevelContactCreateToolDto) GetAsync() *bool {
+	if u == nil {
+		return nil
+	}
+	return u.Async
+}
+
+func (u *UpdateGoHighLevelContactCreateToolDto) GetMessages() []*UpdateGoHighLevelContactCreateToolDtoMessagesItem {
+	if u == nil {
+		return nil
+	}
+	return u.Messages
+}
+
+func (u *UpdateGoHighLevelContactCreateToolDto) GetFunction() *OpenAiFunction {
+	if u == nil {
+		return nil
+	}
+	return u.Function
+}
+
+func (u *UpdateGoHighLevelContactCreateToolDto) GetServer() *Server {
+	if u == nil {
+		return nil
+	}
+	return u.Server
+}
+
+func (u *UpdateGoHighLevelContactCreateToolDto) GetExtraProperties() map[string]interface{} {
+	return u.extraProperties
+}
+
+func (u *UpdateGoHighLevelContactCreateToolDto) UnmarshalJSON(data []byte) error {
+	type unmarshaler UpdateGoHighLevelContactCreateToolDto
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*u = UpdateGoHighLevelContactCreateToolDto(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *u)
+	if err != nil {
+		return err
+	}
+	u.extraProperties = extraProperties
+	u.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (u *UpdateGoHighLevelContactCreateToolDto) String() string {
+	if len(u.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(u); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", u)
+}
+
+type UpdateGoHighLevelContactCreateToolDtoMessagesItem struct {
+	ToolMessageStart    *ToolMessageStart
+	ToolMessageComplete *ToolMessageComplete
+	ToolMessageFailed   *ToolMessageFailed
+	ToolMessageDelayed  *ToolMessageDelayed
+
+	typ string
+}
+
+func (u *UpdateGoHighLevelContactCreateToolDtoMessagesItem) GetToolMessageStart() *ToolMessageStart {
+	if u == nil {
+		return nil
+	}
+	return u.ToolMessageStart
+}
+
+func (u *UpdateGoHighLevelContactCreateToolDtoMessagesItem) GetToolMessageComplete() *ToolMessageComplete {
+	if u == nil {
+		return nil
+	}
+	return u.ToolMessageComplete
+}
+
+func (u *UpdateGoHighLevelContactCreateToolDtoMessagesItem) GetToolMessageFailed() *ToolMessageFailed {
+	if u == nil {
+		return nil
+	}
+	return u.ToolMessageFailed
+}
+
+func (u *UpdateGoHighLevelContactCreateToolDtoMessagesItem) GetToolMessageDelayed() *ToolMessageDelayed {
+	if u == nil {
+		return nil
+	}
+	return u.ToolMessageDelayed
+}
+
+func (u *UpdateGoHighLevelContactCreateToolDtoMessagesItem) UnmarshalJSON(data []byte) error {
+	valueToolMessageStart := new(ToolMessageStart)
+	if err := json.Unmarshal(data, &valueToolMessageStart); err == nil {
+		u.typ = "ToolMessageStart"
+		u.ToolMessageStart = valueToolMessageStart
+		return nil
+	}
+	valueToolMessageComplete := new(ToolMessageComplete)
+	if err := json.Unmarshal(data, &valueToolMessageComplete); err == nil {
+		u.typ = "ToolMessageComplete"
+		u.ToolMessageComplete = valueToolMessageComplete
+		return nil
+	}
+	valueToolMessageFailed := new(ToolMessageFailed)
+	if err := json.Unmarshal(data, &valueToolMessageFailed); err == nil {
+		u.typ = "ToolMessageFailed"
+		u.ToolMessageFailed = valueToolMessageFailed
+		return nil
+	}
+	valueToolMessageDelayed := new(ToolMessageDelayed)
+	if err := json.Unmarshal(data, &valueToolMessageDelayed); err == nil {
+		u.typ = "ToolMessageDelayed"
+		u.ToolMessageDelayed = valueToolMessageDelayed
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, u)
+}
+
+func (u UpdateGoHighLevelContactCreateToolDtoMessagesItem) MarshalJSON() ([]byte, error) {
+	if u.typ == "ToolMessageStart" || u.ToolMessageStart != nil {
+		return json.Marshal(u.ToolMessageStart)
+	}
+	if u.typ == "ToolMessageComplete" || u.ToolMessageComplete != nil {
+		return json.Marshal(u.ToolMessageComplete)
+	}
+	if u.typ == "ToolMessageFailed" || u.ToolMessageFailed != nil {
+		return json.Marshal(u.ToolMessageFailed)
+	}
+	if u.typ == "ToolMessageDelayed" || u.ToolMessageDelayed != nil {
+		return json.Marshal(u.ToolMessageDelayed)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", u)
+}
+
+type UpdateGoHighLevelContactCreateToolDtoMessagesItemVisitor interface {
+	VisitToolMessageStart(*ToolMessageStart) error
+	VisitToolMessageComplete(*ToolMessageComplete) error
+	VisitToolMessageFailed(*ToolMessageFailed) error
+	VisitToolMessageDelayed(*ToolMessageDelayed) error
+}
+
+func (u *UpdateGoHighLevelContactCreateToolDtoMessagesItem) Accept(visitor UpdateGoHighLevelContactCreateToolDtoMessagesItemVisitor) error {
+	if u.typ == "ToolMessageStart" || u.ToolMessageStart != nil {
+		return visitor.VisitToolMessageStart(u.ToolMessageStart)
+	}
+	if u.typ == "ToolMessageComplete" || u.ToolMessageComplete != nil {
+		return visitor.VisitToolMessageComplete(u.ToolMessageComplete)
+	}
+	if u.typ == "ToolMessageFailed" || u.ToolMessageFailed != nil {
+		return visitor.VisitToolMessageFailed(u.ToolMessageFailed)
+	}
+	if u.typ == "ToolMessageDelayed" || u.ToolMessageDelayed != nil {
+		return visitor.VisitToolMessageDelayed(u.ToolMessageDelayed)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", u)
+}
+
+type UpdateGoHighLevelContactGetToolDto struct {
+	// This determines if the tool is async.
+	//
+	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+	//
+	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+	//
+	// Defaults to synchronous (`false`).
+	Async *bool `json:"async,omitempty" url:"async,omitempty"`
+	// These are the messages that will be spoken to the user as the tool is running.
+	//
+	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+	Messages []*UpdateGoHighLevelContactGetToolDtoMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
+	// This is the function definition of the tool.
+	//
+	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+	//
+	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
+	// This is the server that will be hit when this tool is requested by the model.
+	//
+	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+	//
+	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (u *UpdateGoHighLevelContactGetToolDto) GetAsync() *bool {
+	if u == nil {
+		return nil
+	}
+	return u.Async
+}
+
+func (u *UpdateGoHighLevelContactGetToolDto) GetMessages() []*UpdateGoHighLevelContactGetToolDtoMessagesItem {
+	if u == nil {
+		return nil
+	}
+	return u.Messages
+}
+
+func (u *UpdateGoHighLevelContactGetToolDto) GetFunction() *OpenAiFunction {
+	if u == nil {
+		return nil
+	}
+	return u.Function
+}
+
+func (u *UpdateGoHighLevelContactGetToolDto) GetServer() *Server {
+	if u == nil {
+		return nil
+	}
+	return u.Server
+}
+
+func (u *UpdateGoHighLevelContactGetToolDto) GetExtraProperties() map[string]interface{} {
+	return u.extraProperties
+}
+
+func (u *UpdateGoHighLevelContactGetToolDto) UnmarshalJSON(data []byte) error {
+	type unmarshaler UpdateGoHighLevelContactGetToolDto
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*u = UpdateGoHighLevelContactGetToolDto(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *u)
+	if err != nil {
+		return err
+	}
+	u.extraProperties = extraProperties
+	u.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (u *UpdateGoHighLevelContactGetToolDto) String() string {
+	if len(u.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(u); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", u)
+}
+
+type UpdateGoHighLevelContactGetToolDtoMessagesItem struct {
+	ToolMessageStart    *ToolMessageStart
+	ToolMessageComplete *ToolMessageComplete
+	ToolMessageFailed   *ToolMessageFailed
+	ToolMessageDelayed  *ToolMessageDelayed
+
+	typ string
+}
+
+func (u *UpdateGoHighLevelContactGetToolDtoMessagesItem) GetToolMessageStart() *ToolMessageStart {
+	if u == nil {
+		return nil
+	}
+	return u.ToolMessageStart
+}
+
+func (u *UpdateGoHighLevelContactGetToolDtoMessagesItem) GetToolMessageComplete() *ToolMessageComplete {
+	if u == nil {
+		return nil
+	}
+	return u.ToolMessageComplete
+}
+
+func (u *UpdateGoHighLevelContactGetToolDtoMessagesItem) GetToolMessageFailed() *ToolMessageFailed {
+	if u == nil {
+		return nil
+	}
+	return u.ToolMessageFailed
+}
+
+func (u *UpdateGoHighLevelContactGetToolDtoMessagesItem) GetToolMessageDelayed() *ToolMessageDelayed {
+	if u == nil {
+		return nil
+	}
+	return u.ToolMessageDelayed
+}
+
+func (u *UpdateGoHighLevelContactGetToolDtoMessagesItem) UnmarshalJSON(data []byte) error {
+	valueToolMessageStart := new(ToolMessageStart)
+	if err := json.Unmarshal(data, &valueToolMessageStart); err == nil {
+		u.typ = "ToolMessageStart"
+		u.ToolMessageStart = valueToolMessageStart
+		return nil
+	}
+	valueToolMessageComplete := new(ToolMessageComplete)
+	if err := json.Unmarshal(data, &valueToolMessageComplete); err == nil {
+		u.typ = "ToolMessageComplete"
+		u.ToolMessageComplete = valueToolMessageComplete
+		return nil
+	}
+	valueToolMessageFailed := new(ToolMessageFailed)
+	if err := json.Unmarshal(data, &valueToolMessageFailed); err == nil {
+		u.typ = "ToolMessageFailed"
+		u.ToolMessageFailed = valueToolMessageFailed
+		return nil
+	}
+	valueToolMessageDelayed := new(ToolMessageDelayed)
+	if err := json.Unmarshal(data, &valueToolMessageDelayed); err == nil {
+		u.typ = "ToolMessageDelayed"
+		u.ToolMessageDelayed = valueToolMessageDelayed
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, u)
+}
+
+func (u UpdateGoHighLevelContactGetToolDtoMessagesItem) MarshalJSON() ([]byte, error) {
+	if u.typ == "ToolMessageStart" || u.ToolMessageStart != nil {
+		return json.Marshal(u.ToolMessageStart)
+	}
+	if u.typ == "ToolMessageComplete" || u.ToolMessageComplete != nil {
+		return json.Marshal(u.ToolMessageComplete)
+	}
+	if u.typ == "ToolMessageFailed" || u.ToolMessageFailed != nil {
+		return json.Marshal(u.ToolMessageFailed)
+	}
+	if u.typ == "ToolMessageDelayed" || u.ToolMessageDelayed != nil {
+		return json.Marshal(u.ToolMessageDelayed)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", u)
+}
+
+type UpdateGoHighLevelContactGetToolDtoMessagesItemVisitor interface {
+	VisitToolMessageStart(*ToolMessageStart) error
+	VisitToolMessageComplete(*ToolMessageComplete) error
+	VisitToolMessageFailed(*ToolMessageFailed) error
+	VisitToolMessageDelayed(*ToolMessageDelayed) error
+}
+
+func (u *UpdateGoHighLevelContactGetToolDtoMessagesItem) Accept(visitor UpdateGoHighLevelContactGetToolDtoMessagesItemVisitor) error {
 	if u.typ == "ToolMessageStart" || u.ToolMessageStart != nil {
 		return visitor.VisitToolMessageStart(u.ToolMessageStart)
 	}
@@ -8962,7 +10132,7 @@ func (u *UpdateSlackSendMessageToolDtoMessagesItem) Accept(visitor UpdateSlackSe
 	return fmt.Errorf("type %T does not include a non-empty union type", u)
 }
 
-type UpdateSmsSendToolDto struct {
+type UpdateSmsToolDto struct {
 	// This determines if the tool is async.
 	//
 	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
@@ -8974,7 +10144,7 @@ type UpdateSmsSendToolDto struct {
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-	Messages []*UpdateSmsSendToolDtoMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
+	Messages []*UpdateSmsToolDtoMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
 	// This is the function definition of the tool.
 	//
 	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
@@ -8992,45 +10162,45 @@ type UpdateSmsSendToolDto struct {
 	rawJSON         json.RawMessage
 }
 
-func (u *UpdateSmsSendToolDto) GetAsync() *bool {
+func (u *UpdateSmsToolDto) GetAsync() *bool {
 	if u == nil {
 		return nil
 	}
 	return u.Async
 }
 
-func (u *UpdateSmsSendToolDto) GetMessages() []*UpdateSmsSendToolDtoMessagesItem {
+func (u *UpdateSmsToolDto) GetMessages() []*UpdateSmsToolDtoMessagesItem {
 	if u == nil {
 		return nil
 	}
 	return u.Messages
 }
 
-func (u *UpdateSmsSendToolDto) GetFunction() *OpenAiFunction {
+func (u *UpdateSmsToolDto) GetFunction() *OpenAiFunction {
 	if u == nil {
 		return nil
 	}
 	return u.Function
 }
 
-func (u *UpdateSmsSendToolDto) GetServer() *Server {
+func (u *UpdateSmsToolDto) GetServer() *Server {
 	if u == nil {
 		return nil
 	}
 	return u.Server
 }
 
-func (u *UpdateSmsSendToolDto) GetExtraProperties() map[string]interface{} {
+func (u *UpdateSmsToolDto) GetExtraProperties() map[string]interface{} {
 	return u.extraProperties
 }
 
-func (u *UpdateSmsSendToolDto) UnmarshalJSON(data []byte) error {
-	type unmarshaler UpdateSmsSendToolDto
+func (u *UpdateSmsToolDto) UnmarshalJSON(data []byte) error {
+	type unmarshaler UpdateSmsToolDto
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*u = UpdateSmsSendToolDto(value)
+	*u = UpdateSmsToolDto(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *u)
 	if err != nil {
 		return err
@@ -9040,7 +10210,7 @@ func (u *UpdateSmsSendToolDto) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (u *UpdateSmsSendToolDto) String() string {
+func (u *UpdateSmsToolDto) String() string {
 	if len(u.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
 			return value
@@ -9052,7 +10222,7 @@ func (u *UpdateSmsSendToolDto) String() string {
 	return fmt.Sprintf("%#v", u)
 }
 
-type UpdateSmsSendToolDtoMessagesItem struct {
+type UpdateSmsToolDtoMessagesItem struct {
 	ToolMessageStart    *ToolMessageStart
 	ToolMessageComplete *ToolMessageComplete
 	ToolMessageFailed   *ToolMessageFailed
@@ -9061,35 +10231,35 @@ type UpdateSmsSendToolDtoMessagesItem struct {
 	typ string
 }
 
-func (u *UpdateSmsSendToolDtoMessagesItem) GetToolMessageStart() *ToolMessageStart {
+func (u *UpdateSmsToolDtoMessagesItem) GetToolMessageStart() *ToolMessageStart {
 	if u == nil {
 		return nil
 	}
 	return u.ToolMessageStart
 }
 
-func (u *UpdateSmsSendToolDtoMessagesItem) GetToolMessageComplete() *ToolMessageComplete {
+func (u *UpdateSmsToolDtoMessagesItem) GetToolMessageComplete() *ToolMessageComplete {
 	if u == nil {
 		return nil
 	}
 	return u.ToolMessageComplete
 }
 
-func (u *UpdateSmsSendToolDtoMessagesItem) GetToolMessageFailed() *ToolMessageFailed {
+func (u *UpdateSmsToolDtoMessagesItem) GetToolMessageFailed() *ToolMessageFailed {
 	if u == nil {
 		return nil
 	}
 	return u.ToolMessageFailed
 }
 
-func (u *UpdateSmsSendToolDtoMessagesItem) GetToolMessageDelayed() *ToolMessageDelayed {
+func (u *UpdateSmsToolDtoMessagesItem) GetToolMessageDelayed() *ToolMessageDelayed {
 	if u == nil {
 		return nil
 	}
 	return u.ToolMessageDelayed
 }
 
-func (u *UpdateSmsSendToolDtoMessagesItem) UnmarshalJSON(data []byte) error {
+func (u *UpdateSmsToolDtoMessagesItem) UnmarshalJSON(data []byte) error {
 	valueToolMessageStart := new(ToolMessageStart)
 	if err := json.Unmarshal(data, &valueToolMessageStart); err == nil {
 		u.typ = "ToolMessageStart"
@@ -9117,7 +10287,7 @@ func (u *UpdateSmsSendToolDtoMessagesItem) UnmarshalJSON(data []byte) error {
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, u)
 }
 
-func (u UpdateSmsSendToolDtoMessagesItem) MarshalJSON() ([]byte, error) {
+func (u UpdateSmsToolDtoMessagesItem) MarshalJSON() ([]byte, error) {
 	if u.typ == "ToolMessageStart" || u.ToolMessageStart != nil {
 		return json.Marshal(u.ToolMessageStart)
 	}
@@ -9133,14 +10303,14 @@ func (u UpdateSmsSendToolDtoMessagesItem) MarshalJSON() ([]byte, error) {
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", u)
 }
 
-type UpdateSmsSendToolDtoMessagesItemVisitor interface {
+type UpdateSmsToolDtoMessagesItemVisitor interface {
 	VisitToolMessageStart(*ToolMessageStart) error
 	VisitToolMessageComplete(*ToolMessageComplete) error
 	VisitToolMessageFailed(*ToolMessageFailed) error
 	VisitToolMessageDelayed(*ToolMessageDelayed) error
 }
 
-func (u *UpdateSmsSendToolDtoMessagesItem) Accept(visitor UpdateSmsSendToolDtoMessagesItemVisitor) error {
+func (u *UpdateSmsToolDtoMessagesItem) Accept(visitor UpdateSmsToolDtoMessagesItemVisitor) error {
 	if u.typ == "ToolMessageStart" || u.ToolMessageStart != nil {
 		return visitor.VisitToolMessageStart(u.ToolMessageStart)
 	}
@@ -9455,7 +10625,6 @@ func (u *UpdateTransferCallToolDto) String() string {
 
 type UpdateTransferCallToolDtoDestinationsItem struct {
 	TransferDestinationAssistant *TransferDestinationAssistant
-	TransferDestinationStep      *TransferDestinationStep
 	TransferDestinationNumber    *TransferDestinationNumber
 	TransferDestinationSip       *TransferDestinationSip
 
@@ -9467,13 +10636,6 @@ func (u *UpdateTransferCallToolDtoDestinationsItem) GetTransferDestinationAssist
 		return nil
 	}
 	return u.TransferDestinationAssistant
-}
-
-func (u *UpdateTransferCallToolDtoDestinationsItem) GetTransferDestinationStep() *TransferDestinationStep {
-	if u == nil {
-		return nil
-	}
-	return u.TransferDestinationStep
 }
 
 func (u *UpdateTransferCallToolDtoDestinationsItem) GetTransferDestinationNumber() *TransferDestinationNumber {
@@ -9497,12 +10659,6 @@ func (u *UpdateTransferCallToolDtoDestinationsItem) UnmarshalJSON(data []byte) e
 		u.TransferDestinationAssistant = valueTransferDestinationAssistant
 		return nil
 	}
-	valueTransferDestinationStep := new(TransferDestinationStep)
-	if err := json.Unmarshal(data, &valueTransferDestinationStep); err == nil {
-		u.typ = "TransferDestinationStep"
-		u.TransferDestinationStep = valueTransferDestinationStep
-		return nil
-	}
 	valueTransferDestinationNumber := new(TransferDestinationNumber)
 	if err := json.Unmarshal(data, &valueTransferDestinationNumber); err == nil {
 		u.typ = "TransferDestinationNumber"
@@ -9522,9 +10678,6 @@ func (u UpdateTransferCallToolDtoDestinationsItem) MarshalJSON() ([]byte, error)
 	if u.typ == "TransferDestinationAssistant" || u.TransferDestinationAssistant != nil {
 		return json.Marshal(u.TransferDestinationAssistant)
 	}
-	if u.typ == "TransferDestinationStep" || u.TransferDestinationStep != nil {
-		return json.Marshal(u.TransferDestinationStep)
-	}
 	if u.typ == "TransferDestinationNumber" || u.TransferDestinationNumber != nil {
 		return json.Marshal(u.TransferDestinationNumber)
 	}
@@ -9536,7 +10689,6 @@ func (u UpdateTransferCallToolDtoDestinationsItem) MarshalJSON() ([]byte, error)
 
 type UpdateTransferCallToolDtoDestinationsItemVisitor interface {
 	VisitTransferDestinationAssistant(*TransferDestinationAssistant) error
-	VisitTransferDestinationStep(*TransferDestinationStep) error
 	VisitTransferDestinationNumber(*TransferDestinationNumber) error
 	VisitTransferDestinationSip(*TransferDestinationSip) error
 }
@@ -9544,9 +10696,6 @@ type UpdateTransferCallToolDtoDestinationsItemVisitor interface {
 func (u *UpdateTransferCallToolDtoDestinationsItem) Accept(visitor UpdateTransferCallToolDtoDestinationsItemVisitor) error {
 	if u.typ == "TransferDestinationAssistant" || u.TransferDestinationAssistant != nil {
 		return visitor.VisitTransferDestinationAssistant(u.TransferDestinationAssistant)
-	}
-	if u.typ == "TransferDestinationStep" || u.TransferDestinationStep != nil {
-		return visitor.VisitTransferDestinationStep(u.TransferDestinationStep)
 	}
 	if u.typ == "TransferDestinationNumber" || u.TransferDestinationNumber != nil {
 		return visitor.VisitTransferDestinationNumber(u.TransferDestinationNumber)
@@ -9677,8 +10826,12 @@ type ToolsCreateRequest struct {
 	CreateGoogleSheetsRowAppendToolDto           *CreateGoogleSheetsRowAppendToolDto
 	CreateGoogleCalendarCheckAvailabilityToolDto *CreateGoogleCalendarCheckAvailabilityToolDto
 	CreateSlackSendMessageToolDto                *CreateSlackSendMessageToolDto
-	CreateSmsSendToolDto                         *CreateSmsSendToolDto
+	CreateSmsToolDto                             *CreateSmsToolDto
 	CreateMcpToolDto                             *CreateMcpToolDto
+	CreateGoHighLevelCalendarAvailabilityToolDto *CreateGoHighLevelCalendarAvailabilityToolDto
+	CreateGoHighLevelCalendarEventCreateToolDto  *CreateGoHighLevelCalendarEventCreateToolDto
+	CreateGoHighLevelContactCreateToolDto        *CreateGoHighLevelContactCreateToolDto
+	CreateGoHighLevelContactGetToolDto           *CreateGoHighLevelContactGetToolDto
 
 	typ string
 }
@@ -9788,11 +10941,11 @@ func (t *ToolsCreateRequest) GetCreateSlackSendMessageToolDto() *CreateSlackSend
 	return t.CreateSlackSendMessageToolDto
 }
 
-func (t *ToolsCreateRequest) GetCreateSmsSendToolDto() *CreateSmsSendToolDto {
+func (t *ToolsCreateRequest) GetCreateSmsToolDto() *CreateSmsToolDto {
 	if t == nil {
 		return nil
 	}
-	return t.CreateSmsSendToolDto
+	return t.CreateSmsToolDto
 }
 
 func (t *ToolsCreateRequest) GetCreateMcpToolDto() *CreateMcpToolDto {
@@ -9800,6 +10953,34 @@ func (t *ToolsCreateRequest) GetCreateMcpToolDto() *CreateMcpToolDto {
 		return nil
 	}
 	return t.CreateMcpToolDto
+}
+
+func (t *ToolsCreateRequest) GetCreateGoHighLevelCalendarAvailabilityToolDto() *CreateGoHighLevelCalendarAvailabilityToolDto {
+	if t == nil {
+		return nil
+	}
+	return t.CreateGoHighLevelCalendarAvailabilityToolDto
+}
+
+func (t *ToolsCreateRequest) GetCreateGoHighLevelCalendarEventCreateToolDto() *CreateGoHighLevelCalendarEventCreateToolDto {
+	if t == nil {
+		return nil
+	}
+	return t.CreateGoHighLevelCalendarEventCreateToolDto
+}
+
+func (t *ToolsCreateRequest) GetCreateGoHighLevelContactCreateToolDto() *CreateGoHighLevelContactCreateToolDto {
+	if t == nil {
+		return nil
+	}
+	return t.CreateGoHighLevelContactCreateToolDto
+}
+
+func (t *ToolsCreateRequest) GetCreateGoHighLevelContactGetToolDto() *CreateGoHighLevelContactGetToolDto {
+	if t == nil {
+		return nil
+	}
+	return t.CreateGoHighLevelContactGetToolDto
 }
 
 func (t *ToolsCreateRequest) UnmarshalJSON(data []byte) error {
@@ -9893,16 +11074,40 @@ func (t *ToolsCreateRequest) UnmarshalJSON(data []byte) error {
 		t.CreateSlackSendMessageToolDto = valueCreateSlackSendMessageToolDto
 		return nil
 	}
-	valueCreateSmsSendToolDto := new(CreateSmsSendToolDto)
-	if err := json.Unmarshal(data, &valueCreateSmsSendToolDto); err == nil {
-		t.typ = "CreateSmsSendToolDto"
-		t.CreateSmsSendToolDto = valueCreateSmsSendToolDto
+	valueCreateSmsToolDto := new(CreateSmsToolDto)
+	if err := json.Unmarshal(data, &valueCreateSmsToolDto); err == nil {
+		t.typ = "CreateSmsToolDto"
+		t.CreateSmsToolDto = valueCreateSmsToolDto
 		return nil
 	}
 	valueCreateMcpToolDto := new(CreateMcpToolDto)
 	if err := json.Unmarshal(data, &valueCreateMcpToolDto); err == nil {
 		t.typ = "CreateMcpToolDto"
 		t.CreateMcpToolDto = valueCreateMcpToolDto
+		return nil
+	}
+	valueCreateGoHighLevelCalendarAvailabilityToolDto := new(CreateGoHighLevelCalendarAvailabilityToolDto)
+	if err := json.Unmarshal(data, &valueCreateGoHighLevelCalendarAvailabilityToolDto); err == nil {
+		t.typ = "CreateGoHighLevelCalendarAvailabilityToolDto"
+		t.CreateGoHighLevelCalendarAvailabilityToolDto = valueCreateGoHighLevelCalendarAvailabilityToolDto
+		return nil
+	}
+	valueCreateGoHighLevelCalendarEventCreateToolDto := new(CreateGoHighLevelCalendarEventCreateToolDto)
+	if err := json.Unmarshal(data, &valueCreateGoHighLevelCalendarEventCreateToolDto); err == nil {
+		t.typ = "CreateGoHighLevelCalendarEventCreateToolDto"
+		t.CreateGoHighLevelCalendarEventCreateToolDto = valueCreateGoHighLevelCalendarEventCreateToolDto
+		return nil
+	}
+	valueCreateGoHighLevelContactCreateToolDto := new(CreateGoHighLevelContactCreateToolDto)
+	if err := json.Unmarshal(data, &valueCreateGoHighLevelContactCreateToolDto); err == nil {
+		t.typ = "CreateGoHighLevelContactCreateToolDto"
+		t.CreateGoHighLevelContactCreateToolDto = valueCreateGoHighLevelContactCreateToolDto
+		return nil
+	}
+	valueCreateGoHighLevelContactGetToolDto := new(CreateGoHighLevelContactGetToolDto)
+	if err := json.Unmarshal(data, &valueCreateGoHighLevelContactGetToolDto); err == nil {
+		t.typ = "CreateGoHighLevelContactGetToolDto"
+		t.CreateGoHighLevelContactGetToolDto = valueCreateGoHighLevelContactGetToolDto
 		return nil
 	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, t)
@@ -9954,11 +11159,23 @@ func (t ToolsCreateRequest) MarshalJSON() ([]byte, error) {
 	if t.typ == "CreateSlackSendMessageToolDto" || t.CreateSlackSendMessageToolDto != nil {
 		return json.Marshal(t.CreateSlackSendMessageToolDto)
 	}
-	if t.typ == "CreateSmsSendToolDto" || t.CreateSmsSendToolDto != nil {
-		return json.Marshal(t.CreateSmsSendToolDto)
+	if t.typ == "CreateSmsToolDto" || t.CreateSmsToolDto != nil {
+		return json.Marshal(t.CreateSmsToolDto)
 	}
 	if t.typ == "CreateMcpToolDto" || t.CreateMcpToolDto != nil {
 		return json.Marshal(t.CreateMcpToolDto)
+	}
+	if t.typ == "CreateGoHighLevelCalendarAvailabilityToolDto" || t.CreateGoHighLevelCalendarAvailabilityToolDto != nil {
+		return json.Marshal(t.CreateGoHighLevelCalendarAvailabilityToolDto)
+	}
+	if t.typ == "CreateGoHighLevelCalendarEventCreateToolDto" || t.CreateGoHighLevelCalendarEventCreateToolDto != nil {
+		return json.Marshal(t.CreateGoHighLevelCalendarEventCreateToolDto)
+	}
+	if t.typ == "CreateGoHighLevelContactCreateToolDto" || t.CreateGoHighLevelContactCreateToolDto != nil {
+		return json.Marshal(t.CreateGoHighLevelContactCreateToolDto)
+	}
+	if t.typ == "CreateGoHighLevelContactGetToolDto" || t.CreateGoHighLevelContactGetToolDto != nil {
+		return json.Marshal(t.CreateGoHighLevelContactGetToolDto)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", t)
 }
@@ -9979,8 +11196,12 @@ type ToolsCreateRequestVisitor interface {
 	VisitCreateGoogleSheetsRowAppendToolDto(*CreateGoogleSheetsRowAppendToolDto) error
 	VisitCreateGoogleCalendarCheckAvailabilityToolDto(*CreateGoogleCalendarCheckAvailabilityToolDto) error
 	VisitCreateSlackSendMessageToolDto(*CreateSlackSendMessageToolDto) error
-	VisitCreateSmsSendToolDto(*CreateSmsSendToolDto) error
+	VisitCreateSmsToolDto(*CreateSmsToolDto) error
 	VisitCreateMcpToolDto(*CreateMcpToolDto) error
+	VisitCreateGoHighLevelCalendarAvailabilityToolDto(*CreateGoHighLevelCalendarAvailabilityToolDto) error
+	VisitCreateGoHighLevelCalendarEventCreateToolDto(*CreateGoHighLevelCalendarEventCreateToolDto) error
+	VisitCreateGoHighLevelContactCreateToolDto(*CreateGoHighLevelContactCreateToolDto) error
+	VisitCreateGoHighLevelContactGetToolDto(*CreateGoHighLevelContactGetToolDto) error
 }
 
 func (t *ToolsCreateRequest) Accept(visitor ToolsCreateRequestVisitor) error {
@@ -10029,11 +11250,23 @@ func (t *ToolsCreateRequest) Accept(visitor ToolsCreateRequestVisitor) error {
 	if t.typ == "CreateSlackSendMessageToolDto" || t.CreateSlackSendMessageToolDto != nil {
 		return visitor.VisitCreateSlackSendMessageToolDto(t.CreateSlackSendMessageToolDto)
 	}
-	if t.typ == "CreateSmsSendToolDto" || t.CreateSmsSendToolDto != nil {
-		return visitor.VisitCreateSmsSendToolDto(t.CreateSmsSendToolDto)
+	if t.typ == "CreateSmsToolDto" || t.CreateSmsToolDto != nil {
+		return visitor.VisitCreateSmsToolDto(t.CreateSmsToolDto)
 	}
 	if t.typ == "CreateMcpToolDto" || t.CreateMcpToolDto != nil {
 		return visitor.VisitCreateMcpToolDto(t.CreateMcpToolDto)
+	}
+	if t.typ == "CreateGoHighLevelCalendarAvailabilityToolDto" || t.CreateGoHighLevelCalendarAvailabilityToolDto != nil {
+		return visitor.VisitCreateGoHighLevelCalendarAvailabilityToolDto(t.CreateGoHighLevelCalendarAvailabilityToolDto)
+	}
+	if t.typ == "CreateGoHighLevelCalendarEventCreateToolDto" || t.CreateGoHighLevelCalendarEventCreateToolDto != nil {
+		return visitor.VisitCreateGoHighLevelCalendarEventCreateToolDto(t.CreateGoHighLevelCalendarEventCreateToolDto)
+	}
+	if t.typ == "CreateGoHighLevelContactCreateToolDto" || t.CreateGoHighLevelContactCreateToolDto != nil {
+		return visitor.VisitCreateGoHighLevelContactCreateToolDto(t.CreateGoHighLevelContactCreateToolDto)
+	}
+	if t.typ == "CreateGoHighLevelContactGetToolDto" || t.CreateGoHighLevelContactGetToolDto != nil {
+		return visitor.VisitCreateGoHighLevelContactGetToolDto(t.CreateGoHighLevelContactGetToolDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", t)
 }
@@ -10054,8 +11287,12 @@ type ToolsCreateResponse struct {
 	GoogleSheetsRowAppendTool           *GoogleSheetsRowAppendTool
 	GoogleCalendarCheckAvailabilityTool *GoogleCalendarCheckAvailabilityTool
 	SlackSendMessageTool                *SlackSendMessageTool
-	SmsSendTool                         *SmsSendTool
+	SmsTool                             *SmsTool
 	McpTool                             *McpTool
+	GoHighLevelCalendarAvailabilityTool *GoHighLevelCalendarAvailabilityTool
+	GoHighLevelCalendarEventCreateTool  *GoHighLevelCalendarEventCreateTool
+	GoHighLevelContactCreateTool        *GoHighLevelContactCreateTool
+	GoHighLevelContactGetTool           *GoHighLevelContactGetTool
 
 	typ string
 }
@@ -10165,11 +11402,11 @@ func (t *ToolsCreateResponse) GetSlackSendMessageTool() *SlackSendMessageTool {
 	return t.SlackSendMessageTool
 }
 
-func (t *ToolsCreateResponse) GetSmsSendTool() *SmsSendTool {
+func (t *ToolsCreateResponse) GetSmsTool() *SmsTool {
 	if t == nil {
 		return nil
 	}
-	return t.SmsSendTool
+	return t.SmsTool
 }
 
 func (t *ToolsCreateResponse) GetMcpTool() *McpTool {
@@ -10177,6 +11414,34 @@ func (t *ToolsCreateResponse) GetMcpTool() *McpTool {
 		return nil
 	}
 	return t.McpTool
+}
+
+func (t *ToolsCreateResponse) GetGoHighLevelCalendarAvailabilityTool() *GoHighLevelCalendarAvailabilityTool {
+	if t == nil {
+		return nil
+	}
+	return t.GoHighLevelCalendarAvailabilityTool
+}
+
+func (t *ToolsCreateResponse) GetGoHighLevelCalendarEventCreateTool() *GoHighLevelCalendarEventCreateTool {
+	if t == nil {
+		return nil
+	}
+	return t.GoHighLevelCalendarEventCreateTool
+}
+
+func (t *ToolsCreateResponse) GetGoHighLevelContactCreateTool() *GoHighLevelContactCreateTool {
+	if t == nil {
+		return nil
+	}
+	return t.GoHighLevelContactCreateTool
+}
+
+func (t *ToolsCreateResponse) GetGoHighLevelContactGetTool() *GoHighLevelContactGetTool {
+	if t == nil {
+		return nil
+	}
+	return t.GoHighLevelContactGetTool
 }
 
 func (t *ToolsCreateResponse) UnmarshalJSON(data []byte) error {
@@ -10270,16 +11535,40 @@ func (t *ToolsCreateResponse) UnmarshalJSON(data []byte) error {
 		t.SlackSendMessageTool = valueSlackSendMessageTool
 		return nil
 	}
-	valueSmsSendTool := new(SmsSendTool)
-	if err := json.Unmarshal(data, &valueSmsSendTool); err == nil {
-		t.typ = "SmsSendTool"
-		t.SmsSendTool = valueSmsSendTool
+	valueSmsTool := new(SmsTool)
+	if err := json.Unmarshal(data, &valueSmsTool); err == nil {
+		t.typ = "SmsTool"
+		t.SmsTool = valueSmsTool
 		return nil
 	}
 	valueMcpTool := new(McpTool)
 	if err := json.Unmarshal(data, &valueMcpTool); err == nil {
 		t.typ = "McpTool"
 		t.McpTool = valueMcpTool
+		return nil
+	}
+	valueGoHighLevelCalendarAvailabilityTool := new(GoHighLevelCalendarAvailabilityTool)
+	if err := json.Unmarshal(data, &valueGoHighLevelCalendarAvailabilityTool); err == nil {
+		t.typ = "GoHighLevelCalendarAvailabilityTool"
+		t.GoHighLevelCalendarAvailabilityTool = valueGoHighLevelCalendarAvailabilityTool
+		return nil
+	}
+	valueGoHighLevelCalendarEventCreateTool := new(GoHighLevelCalendarEventCreateTool)
+	if err := json.Unmarshal(data, &valueGoHighLevelCalendarEventCreateTool); err == nil {
+		t.typ = "GoHighLevelCalendarEventCreateTool"
+		t.GoHighLevelCalendarEventCreateTool = valueGoHighLevelCalendarEventCreateTool
+		return nil
+	}
+	valueGoHighLevelContactCreateTool := new(GoHighLevelContactCreateTool)
+	if err := json.Unmarshal(data, &valueGoHighLevelContactCreateTool); err == nil {
+		t.typ = "GoHighLevelContactCreateTool"
+		t.GoHighLevelContactCreateTool = valueGoHighLevelContactCreateTool
+		return nil
+	}
+	valueGoHighLevelContactGetTool := new(GoHighLevelContactGetTool)
+	if err := json.Unmarshal(data, &valueGoHighLevelContactGetTool); err == nil {
+		t.typ = "GoHighLevelContactGetTool"
+		t.GoHighLevelContactGetTool = valueGoHighLevelContactGetTool
 		return nil
 	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, t)
@@ -10331,11 +11620,23 @@ func (t ToolsCreateResponse) MarshalJSON() ([]byte, error) {
 	if t.typ == "SlackSendMessageTool" || t.SlackSendMessageTool != nil {
 		return json.Marshal(t.SlackSendMessageTool)
 	}
-	if t.typ == "SmsSendTool" || t.SmsSendTool != nil {
-		return json.Marshal(t.SmsSendTool)
+	if t.typ == "SmsTool" || t.SmsTool != nil {
+		return json.Marshal(t.SmsTool)
 	}
 	if t.typ == "McpTool" || t.McpTool != nil {
 		return json.Marshal(t.McpTool)
+	}
+	if t.typ == "GoHighLevelCalendarAvailabilityTool" || t.GoHighLevelCalendarAvailabilityTool != nil {
+		return json.Marshal(t.GoHighLevelCalendarAvailabilityTool)
+	}
+	if t.typ == "GoHighLevelCalendarEventCreateTool" || t.GoHighLevelCalendarEventCreateTool != nil {
+		return json.Marshal(t.GoHighLevelCalendarEventCreateTool)
+	}
+	if t.typ == "GoHighLevelContactCreateTool" || t.GoHighLevelContactCreateTool != nil {
+		return json.Marshal(t.GoHighLevelContactCreateTool)
+	}
+	if t.typ == "GoHighLevelContactGetTool" || t.GoHighLevelContactGetTool != nil {
+		return json.Marshal(t.GoHighLevelContactGetTool)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", t)
 }
@@ -10356,8 +11657,12 @@ type ToolsCreateResponseVisitor interface {
 	VisitGoogleSheetsRowAppendTool(*GoogleSheetsRowAppendTool) error
 	VisitGoogleCalendarCheckAvailabilityTool(*GoogleCalendarCheckAvailabilityTool) error
 	VisitSlackSendMessageTool(*SlackSendMessageTool) error
-	VisitSmsSendTool(*SmsSendTool) error
+	VisitSmsTool(*SmsTool) error
 	VisitMcpTool(*McpTool) error
+	VisitGoHighLevelCalendarAvailabilityTool(*GoHighLevelCalendarAvailabilityTool) error
+	VisitGoHighLevelCalendarEventCreateTool(*GoHighLevelCalendarEventCreateTool) error
+	VisitGoHighLevelContactCreateTool(*GoHighLevelContactCreateTool) error
+	VisitGoHighLevelContactGetTool(*GoHighLevelContactGetTool) error
 }
 
 func (t *ToolsCreateResponse) Accept(visitor ToolsCreateResponseVisitor) error {
@@ -10406,11 +11711,23 @@ func (t *ToolsCreateResponse) Accept(visitor ToolsCreateResponseVisitor) error {
 	if t.typ == "SlackSendMessageTool" || t.SlackSendMessageTool != nil {
 		return visitor.VisitSlackSendMessageTool(t.SlackSendMessageTool)
 	}
-	if t.typ == "SmsSendTool" || t.SmsSendTool != nil {
-		return visitor.VisitSmsSendTool(t.SmsSendTool)
+	if t.typ == "SmsTool" || t.SmsTool != nil {
+		return visitor.VisitSmsTool(t.SmsTool)
 	}
 	if t.typ == "McpTool" || t.McpTool != nil {
 		return visitor.VisitMcpTool(t.McpTool)
+	}
+	if t.typ == "GoHighLevelCalendarAvailabilityTool" || t.GoHighLevelCalendarAvailabilityTool != nil {
+		return visitor.VisitGoHighLevelCalendarAvailabilityTool(t.GoHighLevelCalendarAvailabilityTool)
+	}
+	if t.typ == "GoHighLevelCalendarEventCreateTool" || t.GoHighLevelCalendarEventCreateTool != nil {
+		return visitor.VisitGoHighLevelCalendarEventCreateTool(t.GoHighLevelCalendarEventCreateTool)
+	}
+	if t.typ == "GoHighLevelContactCreateTool" || t.GoHighLevelContactCreateTool != nil {
+		return visitor.VisitGoHighLevelContactCreateTool(t.GoHighLevelContactCreateTool)
+	}
+	if t.typ == "GoHighLevelContactGetTool" || t.GoHighLevelContactGetTool != nil {
+		return visitor.VisitGoHighLevelContactGetTool(t.GoHighLevelContactGetTool)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", t)
 }
@@ -10431,8 +11748,12 @@ type ToolsDeleteResponse struct {
 	GoogleSheetsRowAppendTool           *GoogleSheetsRowAppendTool
 	GoogleCalendarCheckAvailabilityTool *GoogleCalendarCheckAvailabilityTool
 	SlackSendMessageTool                *SlackSendMessageTool
-	SmsSendTool                         *SmsSendTool
+	SmsTool                             *SmsTool
 	McpTool                             *McpTool
+	GoHighLevelCalendarAvailabilityTool *GoHighLevelCalendarAvailabilityTool
+	GoHighLevelCalendarEventCreateTool  *GoHighLevelCalendarEventCreateTool
+	GoHighLevelContactCreateTool        *GoHighLevelContactCreateTool
+	GoHighLevelContactGetTool           *GoHighLevelContactGetTool
 
 	typ string
 }
@@ -10542,11 +11863,11 @@ func (t *ToolsDeleteResponse) GetSlackSendMessageTool() *SlackSendMessageTool {
 	return t.SlackSendMessageTool
 }
 
-func (t *ToolsDeleteResponse) GetSmsSendTool() *SmsSendTool {
+func (t *ToolsDeleteResponse) GetSmsTool() *SmsTool {
 	if t == nil {
 		return nil
 	}
-	return t.SmsSendTool
+	return t.SmsTool
 }
 
 func (t *ToolsDeleteResponse) GetMcpTool() *McpTool {
@@ -10554,6 +11875,34 @@ func (t *ToolsDeleteResponse) GetMcpTool() *McpTool {
 		return nil
 	}
 	return t.McpTool
+}
+
+func (t *ToolsDeleteResponse) GetGoHighLevelCalendarAvailabilityTool() *GoHighLevelCalendarAvailabilityTool {
+	if t == nil {
+		return nil
+	}
+	return t.GoHighLevelCalendarAvailabilityTool
+}
+
+func (t *ToolsDeleteResponse) GetGoHighLevelCalendarEventCreateTool() *GoHighLevelCalendarEventCreateTool {
+	if t == nil {
+		return nil
+	}
+	return t.GoHighLevelCalendarEventCreateTool
+}
+
+func (t *ToolsDeleteResponse) GetGoHighLevelContactCreateTool() *GoHighLevelContactCreateTool {
+	if t == nil {
+		return nil
+	}
+	return t.GoHighLevelContactCreateTool
+}
+
+func (t *ToolsDeleteResponse) GetGoHighLevelContactGetTool() *GoHighLevelContactGetTool {
+	if t == nil {
+		return nil
+	}
+	return t.GoHighLevelContactGetTool
 }
 
 func (t *ToolsDeleteResponse) UnmarshalJSON(data []byte) error {
@@ -10647,16 +11996,40 @@ func (t *ToolsDeleteResponse) UnmarshalJSON(data []byte) error {
 		t.SlackSendMessageTool = valueSlackSendMessageTool
 		return nil
 	}
-	valueSmsSendTool := new(SmsSendTool)
-	if err := json.Unmarshal(data, &valueSmsSendTool); err == nil {
-		t.typ = "SmsSendTool"
-		t.SmsSendTool = valueSmsSendTool
+	valueSmsTool := new(SmsTool)
+	if err := json.Unmarshal(data, &valueSmsTool); err == nil {
+		t.typ = "SmsTool"
+		t.SmsTool = valueSmsTool
 		return nil
 	}
 	valueMcpTool := new(McpTool)
 	if err := json.Unmarshal(data, &valueMcpTool); err == nil {
 		t.typ = "McpTool"
 		t.McpTool = valueMcpTool
+		return nil
+	}
+	valueGoHighLevelCalendarAvailabilityTool := new(GoHighLevelCalendarAvailabilityTool)
+	if err := json.Unmarshal(data, &valueGoHighLevelCalendarAvailabilityTool); err == nil {
+		t.typ = "GoHighLevelCalendarAvailabilityTool"
+		t.GoHighLevelCalendarAvailabilityTool = valueGoHighLevelCalendarAvailabilityTool
+		return nil
+	}
+	valueGoHighLevelCalendarEventCreateTool := new(GoHighLevelCalendarEventCreateTool)
+	if err := json.Unmarshal(data, &valueGoHighLevelCalendarEventCreateTool); err == nil {
+		t.typ = "GoHighLevelCalendarEventCreateTool"
+		t.GoHighLevelCalendarEventCreateTool = valueGoHighLevelCalendarEventCreateTool
+		return nil
+	}
+	valueGoHighLevelContactCreateTool := new(GoHighLevelContactCreateTool)
+	if err := json.Unmarshal(data, &valueGoHighLevelContactCreateTool); err == nil {
+		t.typ = "GoHighLevelContactCreateTool"
+		t.GoHighLevelContactCreateTool = valueGoHighLevelContactCreateTool
+		return nil
+	}
+	valueGoHighLevelContactGetTool := new(GoHighLevelContactGetTool)
+	if err := json.Unmarshal(data, &valueGoHighLevelContactGetTool); err == nil {
+		t.typ = "GoHighLevelContactGetTool"
+		t.GoHighLevelContactGetTool = valueGoHighLevelContactGetTool
 		return nil
 	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, t)
@@ -10708,11 +12081,23 @@ func (t ToolsDeleteResponse) MarshalJSON() ([]byte, error) {
 	if t.typ == "SlackSendMessageTool" || t.SlackSendMessageTool != nil {
 		return json.Marshal(t.SlackSendMessageTool)
 	}
-	if t.typ == "SmsSendTool" || t.SmsSendTool != nil {
-		return json.Marshal(t.SmsSendTool)
+	if t.typ == "SmsTool" || t.SmsTool != nil {
+		return json.Marshal(t.SmsTool)
 	}
 	if t.typ == "McpTool" || t.McpTool != nil {
 		return json.Marshal(t.McpTool)
+	}
+	if t.typ == "GoHighLevelCalendarAvailabilityTool" || t.GoHighLevelCalendarAvailabilityTool != nil {
+		return json.Marshal(t.GoHighLevelCalendarAvailabilityTool)
+	}
+	if t.typ == "GoHighLevelCalendarEventCreateTool" || t.GoHighLevelCalendarEventCreateTool != nil {
+		return json.Marshal(t.GoHighLevelCalendarEventCreateTool)
+	}
+	if t.typ == "GoHighLevelContactCreateTool" || t.GoHighLevelContactCreateTool != nil {
+		return json.Marshal(t.GoHighLevelContactCreateTool)
+	}
+	if t.typ == "GoHighLevelContactGetTool" || t.GoHighLevelContactGetTool != nil {
+		return json.Marshal(t.GoHighLevelContactGetTool)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", t)
 }
@@ -10733,8 +12118,12 @@ type ToolsDeleteResponseVisitor interface {
 	VisitGoogleSheetsRowAppendTool(*GoogleSheetsRowAppendTool) error
 	VisitGoogleCalendarCheckAvailabilityTool(*GoogleCalendarCheckAvailabilityTool) error
 	VisitSlackSendMessageTool(*SlackSendMessageTool) error
-	VisitSmsSendTool(*SmsSendTool) error
+	VisitSmsTool(*SmsTool) error
 	VisitMcpTool(*McpTool) error
+	VisitGoHighLevelCalendarAvailabilityTool(*GoHighLevelCalendarAvailabilityTool) error
+	VisitGoHighLevelCalendarEventCreateTool(*GoHighLevelCalendarEventCreateTool) error
+	VisitGoHighLevelContactCreateTool(*GoHighLevelContactCreateTool) error
+	VisitGoHighLevelContactGetTool(*GoHighLevelContactGetTool) error
 }
 
 func (t *ToolsDeleteResponse) Accept(visitor ToolsDeleteResponseVisitor) error {
@@ -10783,11 +12172,23 @@ func (t *ToolsDeleteResponse) Accept(visitor ToolsDeleteResponseVisitor) error {
 	if t.typ == "SlackSendMessageTool" || t.SlackSendMessageTool != nil {
 		return visitor.VisitSlackSendMessageTool(t.SlackSendMessageTool)
 	}
-	if t.typ == "SmsSendTool" || t.SmsSendTool != nil {
-		return visitor.VisitSmsSendTool(t.SmsSendTool)
+	if t.typ == "SmsTool" || t.SmsTool != nil {
+		return visitor.VisitSmsTool(t.SmsTool)
 	}
 	if t.typ == "McpTool" || t.McpTool != nil {
 		return visitor.VisitMcpTool(t.McpTool)
+	}
+	if t.typ == "GoHighLevelCalendarAvailabilityTool" || t.GoHighLevelCalendarAvailabilityTool != nil {
+		return visitor.VisitGoHighLevelCalendarAvailabilityTool(t.GoHighLevelCalendarAvailabilityTool)
+	}
+	if t.typ == "GoHighLevelCalendarEventCreateTool" || t.GoHighLevelCalendarEventCreateTool != nil {
+		return visitor.VisitGoHighLevelCalendarEventCreateTool(t.GoHighLevelCalendarEventCreateTool)
+	}
+	if t.typ == "GoHighLevelContactCreateTool" || t.GoHighLevelContactCreateTool != nil {
+		return visitor.VisitGoHighLevelContactCreateTool(t.GoHighLevelContactCreateTool)
+	}
+	if t.typ == "GoHighLevelContactGetTool" || t.GoHighLevelContactGetTool != nil {
+		return visitor.VisitGoHighLevelContactGetTool(t.GoHighLevelContactGetTool)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", t)
 }
@@ -10808,8 +12209,12 @@ type ToolsGetResponse struct {
 	GoogleSheetsRowAppendTool           *GoogleSheetsRowAppendTool
 	GoogleCalendarCheckAvailabilityTool *GoogleCalendarCheckAvailabilityTool
 	SlackSendMessageTool                *SlackSendMessageTool
-	SmsSendTool                         *SmsSendTool
+	SmsTool                             *SmsTool
 	McpTool                             *McpTool
+	GoHighLevelCalendarAvailabilityTool *GoHighLevelCalendarAvailabilityTool
+	GoHighLevelCalendarEventCreateTool  *GoHighLevelCalendarEventCreateTool
+	GoHighLevelContactCreateTool        *GoHighLevelContactCreateTool
+	GoHighLevelContactGetTool           *GoHighLevelContactGetTool
 
 	typ string
 }
@@ -10919,11 +12324,11 @@ func (t *ToolsGetResponse) GetSlackSendMessageTool() *SlackSendMessageTool {
 	return t.SlackSendMessageTool
 }
 
-func (t *ToolsGetResponse) GetSmsSendTool() *SmsSendTool {
+func (t *ToolsGetResponse) GetSmsTool() *SmsTool {
 	if t == nil {
 		return nil
 	}
-	return t.SmsSendTool
+	return t.SmsTool
 }
 
 func (t *ToolsGetResponse) GetMcpTool() *McpTool {
@@ -10931,6 +12336,34 @@ func (t *ToolsGetResponse) GetMcpTool() *McpTool {
 		return nil
 	}
 	return t.McpTool
+}
+
+func (t *ToolsGetResponse) GetGoHighLevelCalendarAvailabilityTool() *GoHighLevelCalendarAvailabilityTool {
+	if t == nil {
+		return nil
+	}
+	return t.GoHighLevelCalendarAvailabilityTool
+}
+
+func (t *ToolsGetResponse) GetGoHighLevelCalendarEventCreateTool() *GoHighLevelCalendarEventCreateTool {
+	if t == nil {
+		return nil
+	}
+	return t.GoHighLevelCalendarEventCreateTool
+}
+
+func (t *ToolsGetResponse) GetGoHighLevelContactCreateTool() *GoHighLevelContactCreateTool {
+	if t == nil {
+		return nil
+	}
+	return t.GoHighLevelContactCreateTool
+}
+
+func (t *ToolsGetResponse) GetGoHighLevelContactGetTool() *GoHighLevelContactGetTool {
+	if t == nil {
+		return nil
+	}
+	return t.GoHighLevelContactGetTool
 }
 
 func (t *ToolsGetResponse) UnmarshalJSON(data []byte) error {
@@ -11024,16 +12457,40 @@ func (t *ToolsGetResponse) UnmarshalJSON(data []byte) error {
 		t.SlackSendMessageTool = valueSlackSendMessageTool
 		return nil
 	}
-	valueSmsSendTool := new(SmsSendTool)
-	if err := json.Unmarshal(data, &valueSmsSendTool); err == nil {
-		t.typ = "SmsSendTool"
-		t.SmsSendTool = valueSmsSendTool
+	valueSmsTool := new(SmsTool)
+	if err := json.Unmarshal(data, &valueSmsTool); err == nil {
+		t.typ = "SmsTool"
+		t.SmsTool = valueSmsTool
 		return nil
 	}
 	valueMcpTool := new(McpTool)
 	if err := json.Unmarshal(data, &valueMcpTool); err == nil {
 		t.typ = "McpTool"
 		t.McpTool = valueMcpTool
+		return nil
+	}
+	valueGoHighLevelCalendarAvailabilityTool := new(GoHighLevelCalendarAvailabilityTool)
+	if err := json.Unmarshal(data, &valueGoHighLevelCalendarAvailabilityTool); err == nil {
+		t.typ = "GoHighLevelCalendarAvailabilityTool"
+		t.GoHighLevelCalendarAvailabilityTool = valueGoHighLevelCalendarAvailabilityTool
+		return nil
+	}
+	valueGoHighLevelCalendarEventCreateTool := new(GoHighLevelCalendarEventCreateTool)
+	if err := json.Unmarshal(data, &valueGoHighLevelCalendarEventCreateTool); err == nil {
+		t.typ = "GoHighLevelCalendarEventCreateTool"
+		t.GoHighLevelCalendarEventCreateTool = valueGoHighLevelCalendarEventCreateTool
+		return nil
+	}
+	valueGoHighLevelContactCreateTool := new(GoHighLevelContactCreateTool)
+	if err := json.Unmarshal(data, &valueGoHighLevelContactCreateTool); err == nil {
+		t.typ = "GoHighLevelContactCreateTool"
+		t.GoHighLevelContactCreateTool = valueGoHighLevelContactCreateTool
+		return nil
+	}
+	valueGoHighLevelContactGetTool := new(GoHighLevelContactGetTool)
+	if err := json.Unmarshal(data, &valueGoHighLevelContactGetTool); err == nil {
+		t.typ = "GoHighLevelContactGetTool"
+		t.GoHighLevelContactGetTool = valueGoHighLevelContactGetTool
 		return nil
 	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, t)
@@ -11085,11 +12542,23 @@ func (t ToolsGetResponse) MarshalJSON() ([]byte, error) {
 	if t.typ == "SlackSendMessageTool" || t.SlackSendMessageTool != nil {
 		return json.Marshal(t.SlackSendMessageTool)
 	}
-	if t.typ == "SmsSendTool" || t.SmsSendTool != nil {
-		return json.Marshal(t.SmsSendTool)
+	if t.typ == "SmsTool" || t.SmsTool != nil {
+		return json.Marshal(t.SmsTool)
 	}
 	if t.typ == "McpTool" || t.McpTool != nil {
 		return json.Marshal(t.McpTool)
+	}
+	if t.typ == "GoHighLevelCalendarAvailabilityTool" || t.GoHighLevelCalendarAvailabilityTool != nil {
+		return json.Marshal(t.GoHighLevelCalendarAvailabilityTool)
+	}
+	if t.typ == "GoHighLevelCalendarEventCreateTool" || t.GoHighLevelCalendarEventCreateTool != nil {
+		return json.Marshal(t.GoHighLevelCalendarEventCreateTool)
+	}
+	if t.typ == "GoHighLevelContactCreateTool" || t.GoHighLevelContactCreateTool != nil {
+		return json.Marshal(t.GoHighLevelContactCreateTool)
+	}
+	if t.typ == "GoHighLevelContactGetTool" || t.GoHighLevelContactGetTool != nil {
+		return json.Marshal(t.GoHighLevelContactGetTool)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", t)
 }
@@ -11110,8 +12579,12 @@ type ToolsGetResponseVisitor interface {
 	VisitGoogleSheetsRowAppendTool(*GoogleSheetsRowAppendTool) error
 	VisitGoogleCalendarCheckAvailabilityTool(*GoogleCalendarCheckAvailabilityTool) error
 	VisitSlackSendMessageTool(*SlackSendMessageTool) error
-	VisitSmsSendTool(*SmsSendTool) error
+	VisitSmsTool(*SmsTool) error
 	VisitMcpTool(*McpTool) error
+	VisitGoHighLevelCalendarAvailabilityTool(*GoHighLevelCalendarAvailabilityTool) error
+	VisitGoHighLevelCalendarEventCreateTool(*GoHighLevelCalendarEventCreateTool) error
+	VisitGoHighLevelContactCreateTool(*GoHighLevelContactCreateTool) error
+	VisitGoHighLevelContactGetTool(*GoHighLevelContactGetTool) error
 }
 
 func (t *ToolsGetResponse) Accept(visitor ToolsGetResponseVisitor) error {
@@ -11160,11 +12633,23 @@ func (t *ToolsGetResponse) Accept(visitor ToolsGetResponseVisitor) error {
 	if t.typ == "SlackSendMessageTool" || t.SlackSendMessageTool != nil {
 		return visitor.VisitSlackSendMessageTool(t.SlackSendMessageTool)
 	}
-	if t.typ == "SmsSendTool" || t.SmsSendTool != nil {
-		return visitor.VisitSmsSendTool(t.SmsSendTool)
+	if t.typ == "SmsTool" || t.SmsTool != nil {
+		return visitor.VisitSmsTool(t.SmsTool)
 	}
 	if t.typ == "McpTool" || t.McpTool != nil {
 		return visitor.VisitMcpTool(t.McpTool)
+	}
+	if t.typ == "GoHighLevelCalendarAvailabilityTool" || t.GoHighLevelCalendarAvailabilityTool != nil {
+		return visitor.VisitGoHighLevelCalendarAvailabilityTool(t.GoHighLevelCalendarAvailabilityTool)
+	}
+	if t.typ == "GoHighLevelCalendarEventCreateTool" || t.GoHighLevelCalendarEventCreateTool != nil {
+		return visitor.VisitGoHighLevelCalendarEventCreateTool(t.GoHighLevelCalendarEventCreateTool)
+	}
+	if t.typ == "GoHighLevelContactCreateTool" || t.GoHighLevelContactCreateTool != nil {
+		return visitor.VisitGoHighLevelContactCreateTool(t.GoHighLevelContactCreateTool)
+	}
+	if t.typ == "GoHighLevelContactGetTool" || t.GoHighLevelContactGetTool != nil {
+		return visitor.VisitGoHighLevelContactGetTool(t.GoHighLevelContactGetTool)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", t)
 }
@@ -11185,8 +12670,12 @@ type ToolsListResponseItem struct {
 	GoogleSheetsRowAppendTool           *GoogleSheetsRowAppendTool
 	GoogleCalendarCheckAvailabilityTool *GoogleCalendarCheckAvailabilityTool
 	SlackSendMessageTool                *SlackSendMessageTool
-	SmsSendTool                         *SmsSendTool
+	SmsTool                             *SmsTool
 	McpTool                             *McpTool
+	GoHighLevelCalendarAvailabilityTool *GoHighLevelCalendarAvailabilityTool
+	GoHighLevelCalendarEventCreateTool  *GoHighLevelCalendarEventCreateTool
+	GoHighLevelContactCreateTool        *GoHighLevelContactCreateTool
+	GoHighLevelContactGetTool           *GoHighLevelContactGetTool
 
 	typ string
 }
@@ -11296,11 +12785,11 @@ func (t *ToolsListResponseItem) GetSlackSendMessageTool() *SlackSendMessageTool 
 	return t.SlackSendMessageTool
 }
 
-func (t *ToolsListResponseItem) GetSmsSendTool() *SmsSendTool {
+func (t *ToolsListResponseItem) GetSmsTool() *SmsTool {
 	if t == nil {
 		return nil
 	}
-	return t.SmsSendTool
+	return t.SmsTool
 }
 
 func (t *ToolsListResponseItem) GetMcpTool() *McpTool {
@@ -11308,6 +12797,34 @@ func (t *ToolsListResponseItem) GetMcpTool() *McpTool {
 		return nil
 	}
 	return t.McpTool
+}
+
+func (t *ToolsListResponseItem) GetGoHighLevelCalendarAvailabilityTool() *GoHighLevelCalendarAvailabilityTool {
+	if t == nil {
+		return nil
+	}
+	return t.GoHighLevelCalendarAvailabilityTool
+}
+
+func (t *ToolsListResponseItem) GetGoHighLevelCalendarEventCreateTool() *GoHighLevelCalendarEventCreateTool {
+	if t == nil {
+		return nil
+	}
+	return t.GoHighLevelCalendarEventCreateTool
+}
+
+func (t *ToolsListResponseItem) GetGoHighLevelContactCreateTool() *GoHighLevelContactCreateTool {
+	if t == nil {
+		return nil
+	}
+	return t.GoHighLevelContactCreateTool
+}
+
+func (t *ToolsListResponseItem) GetGoHighLevelContactGetTool() *GoHighLevelContactGetTool {
+	if t == nil {
+		return nil
+	}
+	return t.GoHighLevelContactGetTool
 }
 
 func (t *ToolsListResponseItem) UnmarshalJSON(data []byte) error {
@@ -11401,16 +12918,40 @@ func (t *ToolsListResponseItem) UnmarshalJSON(data []byte) error {
 		t.SlackSendMessageTool = valueSlackSendMessageTool
 		return nil
 	}
-	valueSmsSendTool := new(SmsSendTool)
-	if err := json.Unmarshal(data, &valueSmsSendTool); err == nil {
-		t.typ = "SmsSendTool"
-		t.SmsSendTool = valueSmsSendTool
+	valueSmsTool := new(SmsTool)
+	if err := json.Unmarshal(data, &valueSmsTool); err == nil {
+		t.typ = "SmsTool"
+		t.SmsTool = valueSmsTool
 		return nil
 	}
 	valueMcpTool := new(McpTool)
 	if err := json.Unmarshal(data, &valueMcpTool); err == nil {
 		t.typ = "McpTool"
 		t.McpTool = valueMcpTool
+		return nil
+	}
+	valueGoHighLevelCalendarAvailabilityTool := new(GoHighLevelCalendarAvailabilityTool)
+	if err := json.Unmarshal(data, &valueGoHighLevelCalendarAvailabilityTool); err == nil {
+		t.typ = "GoHighLevelCalendarAvailabilityTool"
+		t.GoHighLevelCalendarAvailabilityTool = valueGoHighLevelCalendarAvailabilityTool
+		return nil
+	}
+	valueGoHighLevelCalendarEventCreateTool := new(GoHighLevelCalendarEventCreateTool)
+	if err := json.Unmarshal(data, &valueGoHighLevelCalendarEventCreateTool); err == nil {
+		t.typ = "GoHighLevelCalendarEventCreateTool"
+		t.GoHighLevelCalendarEventCreateTool = valueGoHighLevelCalendarEventCreateTool
+		return nil
+	}
+	valueGoHighLevelContactCreateTool := new(GoHighLevelContactCreateTool)
+	if err := json.Unmarshal(data, &valueGoHighLevelContactCreateTool); err == nil {
+		t.typ = "GoHighLevelContactCreateTool"
+		t.GoHighLevelContactCreateTool = valueGoHighLevelContactCreateTool
+		return nil
+	}
+	valueGoHighLevelContactGetTool := new(GoHighLevelContactGetTool)
+	if err := json.Unmarshal(data, &valueGoHighLevelContactGetTool); err == nil {
+		t.typ = "GoHighLevelContactGetTool"
+		t.GoHighLevelContactGetTool = valueGoHighLevelContactGetTool
 		return nil
 	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, t)
@@ -11462,11 +13003,23 @@ func (t ToolsListResponseItem) MarshalJSON() ([]byte, error) {
 	if t.typ == "SlackSendMessageTool" || t.SlackSendMessageTool != nil {
 		return json.Marshal(t.SlackSendMessageTool)
 	}
-	if t.typ == "SmsSendTool" || t.SmsSendTool != nil {
-		return json.Marshal(t.SmsSendTool)
+	if t.typ == "SmsTool" || t.SmsTool != nil {
+		return json.Marshal(t.SmsTool)
 	}
 	if t.typ == "McpTool" || t.McpTool != nil {
 		return json.Marshal(t.McpTool)
+	}
+	if t.typ == "GoHighLevelCalendarAvailabilityTool" || t.GoHighLevelCalendarAvailabilityTool != nil {
+		return json.Marshal(t.GoHighLevelCalendarAvailabilityTool)
+	}
+	if t.typ == "GoHighLevelCalendarEventCreateTool" || t.GoHighLevelCalendarEventCreateTool != nil {
+		return json.Marshal(t.GoHighLevelCalendarEventCreateTool)
+	}
+	if t.typ == "GoHighLevelContactCreateTool" || t.GoHighLevelContactCreateTool != nil {
+		return json.Marshal(t.GoHighLevelContactCreateTool)
+	}
+	if t.typ == "GoHighLevelContactGetTool" || t.GoHighLevelContactGetTool != nil {
+		return json.Marshal(t.GoHighLevelContactGetTool)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", t)
 }
@@ -11487,8 +13040,12 @@ type ToolsListResponseItemVisitor interface {
 	VisitGoogleSheetsRowAppendTool(*GoogleSheetsRowAppendTool) error
 	VisitGoogleCalendarCheckAvailabilityTool(*GoogleCalendarCheckAvailabilityTool) error
 	VisitSlackSendMessageTool(*SlackSendMessageTool) error
-	VisitSmsSendTool(*SmsSendTool) error
+	VisitSmsTool(*SmsTool) error
 	VisitMcpTool(*McpTool) error
+	VisitGoHighLevelCalendarAvailabilityTool(*GoHighLevelCalendarAvailabilityTool) error
+	VisitGoHighLevelCalendarEventCreateTool(*GoHighLevelCalendarEventCreateTool) error
+	VisitGoHighLevelContactCreateTool(*GoHighLevelContactCreateTool) error
+	VisitGoHighLevelContactGetTool(*GoHighLevelContactGetTool) error
 }
 
 func (t *ToolsListResponseItem) Accept(visitor ToolsListResponseItemVisitor) error {
@@ -11537,11 +13094,23 @@ func (t *ToolsListResponseItem) Accept(visitor ToolsListResponseItemVisitor) err
 	if t.typ == "SlackSendMessageTool" || t.SlackSendMessageTool != nil {
 		return visitor.VisitSlackSendMessageTool(t.SlackSendMessageTool)
 	}
-	if t.typ == "SmsSendTool" || t.SmsSendTool != nil {
-		return visitor.VisitSmsSendTool(t.SmsSendTool)
+	if t.typ == "SmsTool" || t.SmsTool != nil {
+		return visitor.VisitSmsTool(t.SmsTool)
 	}
 	if t.typ == "McpTool" || t.McpTool != nil {
 		return visitor.VisitMcpTool(t.McpTool)
+	}
+	if t.typ == "GoHighLevelCalendarAvailabilityTool" || t.GoHighLevelCalendarAvailabilityTool != nil {
+		return visitor.VisitGoHighLevelCalendarAvailabilityTool(t.GoHighLevelCalendarAvailabilityTool)
+	}
+	if t.typ == "GoHighLevelCalendarEventCreateTool" || t.GoHighLevelCalendarEventCreateTool != nil {
+		return visitor.VisitGoHighLevelCalendarEventCreateTool(t.GoHighLevelCalendarEventCreateTool)
+	}
+	if t.typ == "GoHighLevelContactCreateTool" || t.GoHighLevelContactCreateTool != nil {
+		return visitor.VisitGoHighLevelContactCreateTool(t.GoHighLevelContactCreateTool)
+	}
+	if t.typ == "GoHighLevelContactGetTool" || t.GoHighLevelContactGetTool != nil {
+		return visitor.VisitGoHighLevelContactGetTool(t.GoHighLevelContactGetTool)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", t)
 }
@@ -11562,8 +13131,12 @@ type ToolsUpdateRequest struct {
 	UpdateGoogleSheetsRowAppendToolDto           *UpdateGoogleSheetsRowAppendToolDto
 	UpdateGoogleCalendarCheckAvailabilityToolDto *UpdateGoogleCalendarCheckAvailabilityToolDto
 	UpdateSlackSendMessageToolDto                *UpdateSlackSendMessageToolDto
-	UpdateSmsSendToolDto                         *UpdateSmsSendToolDto
+	UpdateSmsToolDto                             *UpdateSmsToolDto
 	UpdateMcpToolDto                             *UpdateMcpToolDto
+	UpdateGoHighLevelCalendarAvailabilityToolDto *UpdateGoHighLevelCalendarAvailabilityToolDto
+	UpdateGoHighLevelCalendarEventCreateToolDto  *UpdateGoHighLevelCalendarEventCreateToolDto
+	UpdateGoHighLevelContactCreateToolDto        *UpdateGoHighLevelContactCreateToolDto
+	UpdateGoHighLevelContactGetToolDto           *UpdateGoHighLevelContactGetToolDto
 
 	typ string
 }
@@ -11673,11 +13246,11 @@ func (t *ToolsUpdateRequest) GetUpdateSlackSendMessageToolDto() *UpdateSlackSend
 	return t.UpdateSlackSendMessageToolDto
 }
 
-func (t *ToolsUpdateRequest) GetUpdateSmsSendToolDto() *UpdateSmsSendToolDto {
+func (t *ToolsUpdateRequest) GetUpdateSmsToolDto() *UpdateSmsToolDto {
 	if t == nil {
 		return nil
 	}
-	return t.UpdateSmsSendToolDto
+	return t.UpdateSmsToolDto
 }
 
 func (t *ToolsUpdateRequest) GetUpdateMcpToolDto() *UpdateMcpToolDto {
@@ -11685,6 +13258,34 @@ func (t *ToolsUpdateRequest) GetUpdateMcpToolDto() *UpdateMcpToolDto {
 		return nil
 	}
 	return t.UpdateMcpToolDto
+}
+
+func (t *ToolsUpdateRequest) GetUpdateGoHighLevelCalendarAvailabilityToolDto() *UpdateGoHighLevelCalendarAvailabilityToolDto {
+	if t == nil {
+		return nil
+	}
+	return t.UpdateGoHighLevelCalendarAvailabilityToolDto
+}
+
+func (t *ToolsUpdateRequest) GetUpdateGoHighLevelCalendarEventCreateToolDto() *UpdateGoHighLevelCalendarEventCreateToolDto {
+	if t == nil {
+		return nil
+	}
+	return t.UpdateGoHighLevelCalendarEventCreateToolDto
+}
+
+func (t *ToolsUpdateRequest) GetUpdateGoHighLevelContactCreateToolDto() *UpdateGoHighLevelContactCreateToolDto {
+	if t == nil {
+		return nil
+	}
+	return t.UpdateGoHighLevelContactCreateToolDto
+}
+
+func (t *ToolsUpdateRequest) GetUpdateGoHighLevelContactGetToolDto() *UpdateGoHighLevelContactGetToolDto {
+	if t == nil {
+		return nil
+	}
+	return t.UpdateGoHighLevelContactGetToolDto
 }
 
 func (t *ToolsUpdateRequest) UnmarshalJSON(data []byte) error {
@@ -11778,16 +13379,40 @@ func (t *ToolsUpdateRequest) UnmarshalJSON(data []byte) error {
 		t.UpdateSlackSendMessageToolDto = valueUpdateSlackSendMessageToolDto
 		return nil
 	}
-	valueUpdateSmsSendToolDto := new(UpdateSmsSendToolDto)
-	if err := json.Unmarshal(data, &valueUpdateSmsSendToolDto); err == nil {
-		t.typ = "UpdateSmsSendToolDto"
-		t.UpdateSmsSendToolDto = valueUpdateSmsSendToolDto
+	valueUpdateSmsToolDto := new(UpdateSmsToolDto)
+	if err := json.Unmarshal(data, &valueUpdateSmsToolDto); err == nil {
+		t.typ = "UpdateSmsToolDto"
+		t.UpdateSmsToolDto = valueUpdateSmsToolDto
 		return nil
 	}
 	valueUpdateMcpToolDto := new(UpdateMcpToolDto)
 	if err := json.Unmarshal(data, &valueUpdateMcpToolDto); err == nil {
 		t.typ = "UpdateMcpToolDto"
 		t.UpdateMcpToolDto = valueUpdateMcpToolDto
+		return nil
+	}
+	valueUpdateGoHighLevelCalendarAvailabilityToolDto := new(UpdateGoHighLevelCalendarAvailabilityToolDto)
+	if err := json.Unmarshal(data, &valueUpdateGoHighLevelCalendarAvailabilityToolDto); err == nil {
+		t.typ = "UpdateGoHighLevelCalendarAvailabilityToolDto"
+		t.UpdateGoHighLevelCalendarAvailabilityToolDto = valueUpdateGoHighLevelCalendarAvailabilityToolDto
+		return nil
+	}
+	valueUpdateGoHighLevelCalendarEventCreateToolDto := new(UpdateGoHighLevelCalendarEventCreateToolDto)
+	if err := json.Unmarshal(data, &valueUpdateGoHighLevelCalendarEventCreateToolDto); err == nil {
+		t.typ = "UpdateGoHighLevelCalendarEventCreateToolDto"
+		t.UpdateGoHighLevelCalendarEventCreateToolDto = valueUpdateGoHighLevelCalendarEventCreateToolDto
+		return nil
+	}
+	valueUpdateGoHighLevelContactCreateToolDto := new(UpdateGoHighLevelContactCreateToolDto)
+	if err := json.Unmarshal(data, &valueUpdateGoHighLevelContactCreateToolDto); err == nil {
+		t.typ = "UpdateGoHighLevelContactCreateToolDto"
+		t.UpdateGoHighLevelContactCreateToolDto = valueUpdateGoHighLevelContactCreateToolDto
+		return nil
+	}
+	valueUpdateGoHighLevelContactGetToolDto := new(UpdateGoHighLevelContactGetToolDto)
+	if err := json.Unmarshal(data, &valueUpdateGoHighLevelContactGetToolDto); err == nil {
+		t.typ = "UpdateGoHighLevelContactGetToolDto"
+		t.UpdateGoHighLevelContactGetToolDto = valueUpdateGoHighLevelContactGetToolDto
 		return nil
 	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, t)
@@ -11839,11 +13464,23 @@ func (t ToolsUpdateRequest) MarshalJSON() ([]byte, error) {
 	if t.typ == "UpdateSlackSendMessageToolDto" || t.UpdateSlackSendMessageToolDto != nil {
 		return json.Marshal(t.UpdateSlackSendMessageToolDto)
 	}
-	if t.typ == "UpdateSmsSendToolDto" || t.UpdateSmsSendToolDto != nil {
-		return json.Marshal(t.UpdateSmsSendToolDto)
+	if t.typ == "UpdateSmsToolDto" || t.UpdateSmsToolDto != nil {
+		return json.Marshal(t.UpdateSmsToolDto)
 	}
 	if t.typ == "UpdateMcpToolDto" || t.UpdateMcpToolDto != nil {
 		return json.Marshal(t.UpdateMcpToolDto)
+	}
+	if t.typ == "UpdateGoHighLevelCalendarAvailabilityToolDto" || t.UpdateGoHighLevelCalendarAvailabilityToolDto != nil {
+		return json.Marshal(t.UpdateGoHighLevelCalendarAvailabilityToolDto)
+	}
+	if t.typ == "UpdateGoHighLevelCalendarEventCreateToolDto" || t.UpdateGoHighLevelCalendarEventCreateToolDto != nil {
+		return json.Marshal(t.UpdateGoHighLevelCalendarEventCreateToolDto)
+	}
+	if t.typ == "UpdateGoHighLevelContactCreateToolDto" || t.UpdateGoHighLevelContactCreateToolDto != nil {
+		return json.Marshal(t.UpdateGoHighLevelContactCreateToolDto)
+	}
+	if t.typ == "UpdateGoHighLevelContactGetToolDto" || t.UpdateGoHighLevelContactGetToolDto != nil {
+		return json.Marshal(t.UpdateGoHighLevelContactGetToolDto)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", t)
 }
@@ -11864,8 +13501,12 @@ type ToolsUpdateRequestVisitor interface {
 	VisitUpdateGoogleSheetsRowAppendToolDto(*UpdateGoogleSheetsRowAppendToolDto) error
 	VisitUpdateGoogleCalendarCheckAvailabilityToolDto(*UpdateGoogleCalendarCheckAvailabilityToolDto) error
 	VisitUpdateSlackSendMessageToolDto(*UpdateSlackSendMessageToolDto) error
-	VisitUpdateSmsSendToolDto(*UpdateSmsSendToolDto) error
+	VisitUpdateSmsToolDto(*UpdateSmsToolDto) error
 	VisitUpdateMcpToolDto(*UpdateMcpToolDto) error
+	VisitUpdateGoHighLevelCalendarAvailabilityToolDto(*UpdateGoHighLevelCalendarAvailabilityToolDto) error
+	VisitUpdateGoHighLevelCalendarEventCreateToolDto(*UpdateGoHighLevelCalendarEventCreateToolDto) error
+	VisitUpdateGoHighLevelContactCreateToolDto(*UpdateGoHighLevelContactCreateToolDto) error
+	VisitUpdateGoHighLevelContactGetToolDto(*UpdateGoHighLevelContactGetToolDto) error
 }
 
 func (t *ToolsUpdateRequest) Accept(visitor ToolsUpdateRequestVisitor) error {
@@ -11914,11 +13555,23 @@ func (t *ToolsUpdateRequest) Accept(visitor ToolsUpdateRequestVisitor) error {
 	if t.typ == "UpdateSlackSendMessageToolDto" || t.UpdateSlackSendMessageToolDto != nil {
 		return visitor.VisitUpdateSlackSendMessageToolDto(t.UpdateSlackSendMessageToolDto)
 	}
-	if t.typ == "UpdateSmsSendToolDto" || t.UpdateSmsSendToolDto != nil {
-		return visitor.VisitUpdateSmsSendToolDto(t.UpdateSmsSendToolDto)
+	if t.typ == "UpdateSmsToolDto" || t.UpdateSmsToolDto != nil {
+		return visitor.VisitUpdateSmsToolDto(t.UpdateSmsToolDto)
 	}
 	if t.typ == "UpdateMcpToolDto" || t.UpdateMcpToolDto != nil {
 		return visitor.VisitUpdateMcpToolDto(t.UpdateMcpToolDto)
+	}
+	if t.typ == "UpdateGoHighLevelCalendarAvailabilityToolDto" || t.UpdateGoHighLevelCalendarAvailabilityToolDto != nil {
+		return visitor.VisitUpdateGoHighLevelCalendarAvailabilityToolDto(t.UpdateGoHighLevelCalendarAvailabilityToolDto)
+	}
+	if t.typ == "UpdateGoHighLevelCalendarEventCreateToolDto" || t.UpdateGoHighLevelCalendarEventCreateToolDto != nil {
+		return visitor.VisitUpdateGoHighLevelCalendarEventCreateToolDto(t.UpdateGoHighLevelCalendarEventCreateToolDto)
+	}
+	if t.typ == "UpdateGoHighLevelContactCreateToolDto" || t.UpdateGoHighLevelContactCreateToolDto != nil {
+		return visitor.VisitUpdateGoHighLevelContactCreateToolDto(t.UpdateGoHighLevelContactCreateToolDto)
+	}
+	if t.typ == "UpdateGoHighLevelContactGetToolDto" || t.UpdateGoHighLevelContactGetToolDto != nil {
+		return visitor.VisitUpdateGoHighLevelContactGetToolDto(t.UpdateGoHighLevelContactGetToolDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", t)
 }
@@ -11939,8 +13592,12 @@ type ToolsUpdateResponse struct {
 	GoogleSheetsRowAppendTool           *GoogleSheetsRowAppendTool
 	GoogleCalendarCheckAvailabilityTool *GoogleCalendarCheckAvailabilityTool
 	SlackSendMessageTool                *SlackSendMessageTool
-	SmsSendTool                         *SmsSendTool
+	SmsTool                             *SmsTool
 	McpTool                             *McpTool
+	GoHighLevelCalendarAvailabilityTool *GoHighLevelCalendarAvailabilityTool
+	GoHighLevelCalendarEventCreateTool  *GoHighLevelCalendarEventCreateTool
+	GoHighLevelContactCreateTool        *GoHighLevelContactCreateTool
+	GoHighLevelContactGetTool           *GoHighLevelContactGetTool
 
 	typ string
 }
@@ -12050,11 +13707,11 @@ func (t *ToolsUpdateResponse) GetSlackSendMessageTool() *SlackSendMessageTool {
 	return t.SlackSendMessageTool
 }
 
-func (t *ToolsUpdateResponse) GetSmsSendTool() *SmsSendTool {
+func (t *ToolsUpdateResponse) GetSmsTool() *SmsTool {
 	if t == nil {
 		return nil
 	}
-	return t.SmsSendTool
+	return t.SmsTool
 }
 
 func (t *ToolsUpdateResponse) GetMcpTool() *McpTool {
@@ -12062,6 +13719,34 @@ func (t *ToolsUpdateResponse) GetMcpTool() *McpTool {
 		return nil
 	}
 	return t.McpTool
+}
+
+func (t *ToolsUpdateResponse) GetGoHighLevelCalendarAvailabilityTool() *GoHighLevelCalendarAvailabilityTool {
+	if t == nil {
+		return nil
+	}
+	return t.GoHighLevelCalendarAvailabilityTool
+}
+
+func (t *ToolsUpdateResponse) GetGoHighLevelCalendarEventCreateTool() *GoHighLevelCalendarEventCreateTool {
+	if t == nil {
+		return nil
+	}
+	return t.GoHighLevelCalendarEventCreateTool
+}
+
+func (t *ToolsUpdateResponse) GetGoHighLevelContactCreateTool() *GoHighLevelContactCreateTool {
+	if t == nil {
+		return nil
+	}
+	return t.GoHighLevelContactCreateTool
+}
+
+func (t *ToolsUpdateResponse) GetGoHighLevelContactGetTool() *GoHighLevelContactGetTool {
+	if t == nil {
+		return nil
+	}
+	return t.GoHighLevelContactGetTool
 }
 
 func (t *ToolsUpdateResponse) UnmarshalJSON(data []byte) error {
@@ -12155,16 +13840,40 @@ func (t *ToolsUpdateResponse) UnmarshalJSON(data []byte) error {
 		t.SlackSendMessageTool = valueSlackSendMessageTool
 		return nil
 	}
-	valueSmsSendTool := new(SmsSendTool)
-	if err := json.Unmarshal(data, &valueSmsSendTool); err == nil {
-		t.typ = "SmsSendTool"
-		t.SmsSendTool = valueSmsSendTool
+	valueSmsTool := new(SmsTool)
+	if err := json.Unmarshal(data, &valueSmsTool); err == nil {
+		t.typ = "SmsTool"
+		t.SmsTool = valueSmsTool
 		return nil
 	}
 	valueMcpTool := new(McpTool)
 	if err := json.Unmarshal(data, &valueMcpTool); err == nil {
 		t.typ = "McpTool"
 		t.McpTool = valueMcpTool
+		return nil
+	}
+	valueGoHighLevelCalendarAvailabilityTool := new(GoHighLevelCalendarAvailabilityTool)
+	if err := json.Unmarshal(data, &valueGoHighLevelCalendarAvailabilityTool); err == nil {
+		t.typ = "GoHighLevelCalendarAvailabilityTool"
+		t.GoHighLevelCalendarAvailabilityTool = valueGoHighLevelCalendarAvailabilityTool
+		return nil
+	}
+	valueGoHighLevelCalendarEventCreateTool := new(GoHighLevelCalendarEventCreateTool)
+	if err := json.Unmarshal(data, &valueGoHighLevelCalendarEventCreateTool); err == nil {
+		t.typ = "GoHighLevelCalendarEventCreateTool"
+		t.GoHighLevelCalendarEventCreateTool = valueGoHighLevelCalendarEventCreateTool
+		return nil
+	}
+	valueGoHighLevelContactCreateTool := new(GoHighLevelContactCreateTool)
+	if err := json.Unmarshal(data, &valueGoHighLevelContactCreateTool); err == nil {
+		t.typ = "GoHighLevelContactCreateTool"
+		t.GoHighLevelContactCreateTool = valueGoHighLevelContactCreateTool
+		return nil
+	}
+	valueGoHighLevelContactGetTool := new(GoHighLevelContactGetTool)
+	if err := json.Unmarshal(data, &valueGoHighLevelContactGetTool); err == nil {
+		t.typ = "GoHighLevelContactGetTool"
+		t.GoHighLevelContactGetTool = valueGoHighLevelContactGetTool
 		return nil
 	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, t)
@@ -12216,11 +13925,23 @@ func (t ToolsUpdateResponse) MarshalJSON() ([]byte, error) {
 	if t.typ == "SlackSendMessageTool" || t.SlackSendMessageTool != nil {
 		return json.Marshal(t.SlackSendMessageTool)
 	}
-	if t.typ == "SmsSendTool" || t.SmsSendTool != nil {
-		return json.Marshal(t.SmsSendTool)
+	if t.typ == "SmsTool" || t.SmsTool != nil {
+		return json.Marshal(t.SmsTool)
 	}
 	if t.typ == "McpTool" || t.McpTool != nil {
 		return json.Marshal(t.McpTool)
+	}
+	if t.typ == "GoHighLevelCalendarAvailabilityTool" || t.GoHighLevelCalendarAvailabilityTool != nil {
+		return json.Marshal(t.GoHighLevelCalendarAvailabilityTool)
+	}
+	if t.typ == "GoHighLevelCalendarEventCreateTool" || t.GoHighLevelCalendarEventCreateTool != nil {
+		return json.Marshal(t.GoHighLevelCalendarEventCreateTool)
+	}
+	if t.typ == "GoHighLevelContactCreateTool" || t.GoHighLevelContactCreateTool != nil {
+		return json.Marshal(t.GoHighLevelContactCreateTool)
+	}
+	if t.typ == "GoHighLevelContactGetTool" || t.GoHighLevelContactGetTool != nil {
+		return json.Marshal(t.GoHighLevelContactGetTool)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", t)
 }
@@ -12241,8 +13962,12 @@ type ToolsUpdateResponseVisitor interface {
 	VisitGoogleSheetsRowAppendTool(*GoogleSheetsRowAppendTool) error
 	VisitGoogleCalendarCheckAvailabilityTool(*GoogleCalendarCheckAvailabilityTool) error
 	VisitSlackSendMessageTool(*SlackSendMessageTool) error
-	VisitSmsSendTool(*SmsSendTool) error
+	VisitSmsTool(*SmsTool) error
 	VisitMcpTool(*McpTool) error
+	VisitGoHighLevelCalendarAvailabilityTool(*GoHighLevelCalendarAvailabilityTool) error
+	VisitGoHighLevelCalendarEventCreateTool(*GoHighLevelCalendarEventCreateTool) error
+	VisitGoHighLevelContactCreateTool(*GoHighLevelContactCreateTool) error
+	VisitGoHighLevelContactGetTool(*GoHighLevelContactGetTool) error
 }
 
 func (t *ToolsUpdateResponse) Accept(visitor ToolsUpdateResponseVisitor) error {
@@ -12291,11 +14016,23 @@ func (t *ToolsUpdateResponse) Accept(visitor ToolsUpdateResponseVisitor) error {
 	if t.typ == "SlackSendMessageTool" || t.SlackSendMessageTool != nil {
 		return visitor.VisitSlackSendMessageTool(t.SlackSendMessageTool)
 	}
-	if t.typ == "SmsSendTool" || t.SmsSendTool != nil {
-		return visitor.VisitSmsSendTool(t.SmsSendTool)
+	if t.typ == "SmsTool" || t.SmsTool != nil {
+		return visitor.VisitSmsTool(t.SmsTool)
 	}
 	if t.typ == "McpTool" || t.McpTool != nil {
 		return visitor.VisitMcpTool(t.McpTool)
+	}
+	if t.typ == "GoHighLevelCalendarAvailabilityTool" || t.GoHighLevelCalendarAvailabilityTool != nil {
+		return visitor.VisitGoHighLevelCalendarAvailabilityTool(t.GoHighLevelCalendarAvailabilityTool)
+	}
+	if t.typ == "GoHighLevelCalendarEventCreateTool" || t.GoHighLevelCalendarEventCreateTool != nil {
+		return visitor.VisitGoHighLevelCalendarEventCreateTool(t.GoHighLevelCalendarEventCreateTool)
+	}
+	if t.typ == "GoHighLevelContactCreateTool" || t.GoHighLevelContactCreateTool != nil {
+		return visitor.VisitGoHighLevelContactCreateTool(t.GoHighLevelContactCreateTool)
+	}
+	if t.typ == "GoHighLevelContactGetTool" || t.GoHighLevelContactGetTool != nil {
+		return visitor.VisitGoHighLevelContactGetTool(t.GoHighLevelContactGetTool)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", t)
 }

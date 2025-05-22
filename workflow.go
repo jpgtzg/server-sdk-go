@@ -144,1006 +144,250 @@ func (w *Workflow) String() string {
 
 // These are the options for the workflow's LLM.
 type WorkflowModel struct {
-	AnthropicModel    *AnthropicModel
-	AnyscaleModel     *AnyscaleModel
-	CerebrasModel     *CerebrasModel
-	CustomLlmModel    *CustomLlmModel
-	DeepInfraModel    *DeepInfraModel
-	DeepSeekModel     *DeepSeekModel
-	GoogleModel       *GoogleModel
-	GroqModel         *GroqModel
-	InflectionAiModel *InflectionAiModel
-	OpenAiModel       *OpenAiModel
-	OpenRouterModel   *OpenRouterModel
-	PerplexityAiModel *PerplexityAiModel
-	TogetherAiModel   *TogetherAiModel
-	XaiModel          *XaiModel
+	WorkflowOpenAiModel    *WorkflowOpenAiModel
+	WorkflowAnthropicModel *WorkflowAnthropicModel
 
 	typ string
 }
 
-func (w *WorkflowModel) GetAnthropicModel() *AnthropicModel {
+func (w *WorkflowModel) GetWorkflowOpenAiModel() *WorkflowOpenAiModel {
 	if w == nil {
 		return nil
 	}
-	return w.AnthropicModel
+	return w.WorkflowOpenAiModel
 }
 
-func (w *WorkflowModel) GetAnyscaleModel() *AnyscaleModel {
+func (w *WorkflowModel) GetWorkflowAnthropicModel() *WorkflowAnthropicModel {
 	if w == nil {
 		return nil
 	}
-	return w.AnyscaleModel
-}
-
-func (w *WorkflowModel) GetCerebrasModel() *CerebrasModel {
-	if w == nil {
-		return nil
-	}
-	return w.CerebrasModel
-}
-
-func (w *WorkflowModel) GetCustomLlmModel() *CustomLlmModel {
-	if w == nil {
-		return nil
-	}
-	return w.CustomLlmModel
-}
-
-func (w *WorkflowModel) GetDeepInfraModel() *DeepInfraModel {
-	if w == nil {
-		return nil
-	}
-	return w.DeepInfraModel
-}
-
-func (w *WorkflowModel) GetDeepSeekModel() *DeepSeekModel {
-	if w == nil {
-		return nil
-	}
-	return w.DeepSeekModel
-}
-
-func (w *WorkflowModel) GetGoogleModel() *GoogleModel {
-	if w == nil {
-		return nil
-	}
-	return w.GoogleModel
-}
-
-func (w *WorkflowModel) GetGroqModel() *GroqModel {
-	if w == nil {
-		return nil
-	}
-	return w.GroqModel
-}
-
-func (w *WorkflowModel) GetInflectionAiModel() *InflectionAiModel {
-	if w == nil {
-		return nil
-	}
-	return w.InflectionAiModel
-}
-
-func (w *WorkflowModel) GetOpenAiModel() *OpenAiModel {
-	if w == nil {
-		return nil
-	}
-	return w.OpenAiModel
-}
-
-func (w *WorkflowModel) GetOpenRouterModel() *OpenRouterModel {
-	if w == nil {
-		return nil
-	}
-	return w.OpenRouterModel
-}
-
-func (w *WorkflowModel) GetPerplexityAiModel() *PerplexityAiModel {
-	if w == nil {
-		return nil
-	}
-	return w.PerplexityAiModel
-}
-
-func (w *WorkflowModel) GetTogetherAiModel() *TogetherAiModel {
-	if w == nil {
-		return nil
-	}
-	return w.TogetherAiModel
-}
-
-func (w *WorkflowModel) GetXaiModel() *XaiModel {
-	if w == nil {
-		return nil
-	}
-	return w.XaiModel
+	return w.WorkflowAnthropicModel
 }
 
 func (w *WorkflowModel) UnmarshalJSON(data []byte) error {
-	valueAnthropicModel := new(AnthropicModel)
-	if err := json.Unmarshal(data, &valueAnthropicModel); err == nil {
-		w.typ = "AnthropicModel"
-		w.AnthropicModel = valueAnthropicModel
+	valueWorkflowOpenAiModel := new(WorkflowOpenAiModel)
+	if err := json.Unmarshal(data, &valueWorkflowOpenAiModel); err == nil {
+		w.typ = "WorkflowOpenAiModel"
+		w.WorkflowOpenAiModel = valueWorkflowOpenAiModel
 		return nil
 	}
-	valueAnyscaleModel := new(AnyscaleModel)
-	if err := json.Unmarshal(data, &valueAnyscaleModel); err == nil {
-		w.typ = "AnyscaleModel"
-		w.AnyscaleModel = valueAnyscaleModel
-		return nil
-	}
-	valueCerebrasModel := new(CerebrasModel)
-	if err := json.Unmarshal(data, &valueCerebrasModel); err == nil {
-		w.typ = "CerebrasModel"
-		w.CerebrasModel = valueCerebrasModel
-		return nil
-	}
-	valueCustomLlmModel := new(CustomLlmModel)
-	if err := json.Unmarshal(data, &valueCustomLlmModel); err == nil {
-		w.typ = "CustomLlmModel"
-		w.CustomLlmModel = valueCustomLlmModel
-		return nil
-	}
-	valueDeepInfraModel := new(DeepInfraModel)
-	if err := json.Unmarshal(data, &valueDeepInfraModel); err == nil {
-		w.typ = "DeepInfraModel"
-		w.DeepInfraModel = valueDeepInfraModel
-		return nil
-	}
-	valueDeepSeekModel := new(DeepSeekModel)
-	if err := json.Unmarshal(data, &valueDeepSeekModel); err == nil {
-		w.typ = "DeepSeekModel"
-		w.DeepSeekModel = valueDeepSeekModel
-		return nil
-	}
-	valueGoogleModel := new(GoogleModel)
-	if err := json.Unmarshal(data, &valueGoogleModel); err == nil {
-		w.typ = "GoogleModel"
-		w.GoogleModel = valueGoogleModel
-		return nil
-	}
-	valueGroqModel := new(GroqModel)
-	if err := json.Unmarshal(data, &valueGroqModel); err == nil {
-		w.typ = "GroqModel"
-		w.GroqModel = valueGroqModel
-		return nil
-	}
-	valueInflectionAiModel := new(InflectionAiModel)
-	if err := json.Unmarshal(data, &valueInflectionAiModel); err == nil {
-		w.typ = "InflectionAiModel"
-		w.InflectionAiModel = valueInflectionAiModel
-		return nil
-	}
-	valueOpenAiModel := new(OpenAiModel)
-	if err := json.Unmarshal(data, &valueOpenAiModel); err == nil {
-		w.typ = "OpenAiModel"
-		w.OpenAiModel = valueOpenAiModel
-		return nil
-	}
-	valueOpenRouterModel := new(OpenRouterModel)
-	if err := json.Unmarshal(data, &valueOpenRouterModel); err == nil {
-		w.typ = "OpenRouterModel"
-		w.OpenRouterModel = valueOpenRouterModel
-		return nil
-	}
-	valuePerplexityAiModel := new(PerplexityAiModel)
-	if err := json.Unmarshal(data, &valuePerplexityAiModel); err == nil {
-		w.typ = "PerplexityAiModel"
-		w.PerplexityAiModel = valuePerplexityAiModel
-		return nil
-	}
-	valueTogetherAiModel := new(TogetherAiModel)
-	if err := json.Unmarshal(data, &valueTogetherAiModel); err == nil {
-		w.typ = "TogetherAiModel"
-		w.TogetherAiModel = valueTogetherAiModel
-		return nil
-	}
-	valueXaiModel := new(XaiModel)
-	if err := json.Unmarshal(data, &valueXaiModel); err == nil {
-		w.typ = "XaiModel"
-		w.XaiModel = valueXaiModel
+	valueWorkflowAnthropicModel := new(WorkflowAnthropicModel)
+	if err := json.Unmarshal(data, &valueWorkflowAnthropicModel); err == nil {
+		w.typ = "WorkflowAnthropicModel"
+		w.WorkflowAnthropicModel = valueWorkflowAnthropicModel
 		return nil
 	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, w)
 }
 
 func (w WorkflowModel) MarshalJSON() ([]byte, error) {
-	if w.typ == "AnthropicModel" || w.AnthropicModel != nil {
-		return json.Marshal(w.AnthropicModel)
+	if w.typ == "WorkflowOpenAiModel" || w.WorkflowOpenAiModel != nil {
+		return json.Marshal(w.WorkflowOpenAiModel)
 	}
-	if w.typ == "AnyscaleModel" || w.AnyscaleModel != nil {
-		return json.Marshal(w.AnyscaleModel)
-	}
-	if w.typ == "CerebrasModel" || w.CerebrasModel != nil {
-		return json.Marshal(w.CerebrasModel)
-	}
-	if w.typ == "CustomLlmModel" || w.CustomLlmModel != nil {
-		return json.Marshal(w.CustomLlmModel)
-	}
-	if w.typ == "DeepInfraModel" || w.DeepInfraModel != nil {
-		return json.Marshal(w.DeepInfraModel)
-	}
-	if w.typ == "DeepSeekModel" || w.DeepSeekModel != nil {
-		return json.Marshal(w.DeepSeekModel)
-	}
-	if w.typ == "GoogleModel" || w.GoogleModel != nil {
-		return json.Marshal(w.GoogleModel)
-	}
-	if w.typ == "GroqModel" || w.GroqModel != nil {
-		return json.Marshal(w.GroqModel)
-	}
-	if w.typ == "InflectionAiModel" || w.InflectionAiModel != nil {
-		return json.Marshal(w.InflectionAiModel)
-	}
-	if w.typ == "OpenAiModel" || w.OpenAiModel != nil {
-		return json.Marshal(w.OpenAiModel)
-	}
-	if w.typ == "OpenRouterModel" || w.OpenRouterModel != nil {
-		return json.Marshal(w.OpenRouterModel)
-	}
-	if w.typ == "PerplexityAiModel" || w.PerplexityAiModel != nil {
-		return json.Marshal(w.PerplexityAiModel)
-	}
-	if w.typ == "TogetherAiModel" || w.TogetherAiModel != nil {
-		return json.Marshal(w.TogetherAiModel)
-	}
-	if w.typ == "XaiModel" || w.XaiModel != nil {
-		return json.Marshal(w.XaiModel)
+	if w.typ == "WorkflowAnthropicModel" || w.WorkflowAnthropicModel != nil {
+		return json.Marshal(w.WorkflowAnthropicModel)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", w)
 }
 
 type WorkflowModelVisitor interface {
-	VisitAnthropicModel(*AnthropicModel) error
-	VisitAnyscaleModel(*AnyscaleModel) error
-	VisitCerebrasModel(*CerebrasModel) error
-	VisitCustomLlmModel(*CustomLlmModel) error
-	VisitDeepInfraModel(*DeepInfraModel) error
-	VisitDeepSeekModel(*DeepSeekModel) error
-	VisitGoogleModel(*GoogleModel) error
-	VisitGroqModel(*GroqModel) error
-	VisitInflectionAiModel(*InflectionAiModel) error
-	VisitOpenAiModel(*OpenAiModel) error
-	VisitOpenRouterModel(*OpenRouterModel) error
-	VisitPerplexityAiModel(*PerplexityAiModel) error
-	VisitTogetherAiModel(*TogetherAiModel) error
-	VisitXaiModel(*XaiModel) error
+	VisitWorkflowOpenAiModel(*WorkflowOpenAiModel) error
+	VisitWorkflowAnthropicModel(*WorkflowAnthropicModel) error
 }
 
 func (w *WorkflowModel) Accept(visitor WorkflowModelVisitor) error {
-	if w.typ == "AnthropicModel" || w.AnthropicModel != nil {
-		return visitor.VisitAnthropicModel(w.AnthropicModel)
+	if w.typ == "WorkflowOpenAiModel" || w.WorkflowOpenAiModel != nil {
+		return visitor.VisitWorkflowOpenAiModel(w.WorkflowOpenAiModel)
 	}
-	if w.typ == "AnyscaleModel" || w.AnyscaleModel != nil {
-		return visitor.VisitAnyscaleModel(w.AnyscaleModel)
-	}
-	if w.typ == "CerebrasModel" || w.CerebrasModel != nil {
-		return visitor.VisitCerebrasModel(w.CerebrasModel)
-	}
-	if w.typ == "CustomLlmModel" || w.CustomLlmModel != nil {
-		return visitor.VisitCustomLlmModel(w.CustomLlmModel)
-	}
-	if w.typ == "DeepInfraModel" || w.DeepInfraModel != nil {
-		return visitor.VisitDeepInfraModel(w.DeepInfraModel)
-	}
-	if w.typ == "DeepSeekModel" || w.DeepSeekModel != nil {
-		return visitor.VisitDeepSeekModel(w.DeepSeekModel)
-	}
-	if w.typ == "GoogleModel" || w.GoogleModel != nil {
-		return visitor.VisitGoogleModel(w.GoogleModel)
-	}
-	if w.typ == "GroqModel" || w.GroqModel != nil {
-		return visitor.VisitGroqModel(w.GroqModel)
-	}
-	if w.typ == "InflectionAiModel" || w.InflectionAiModel != nil {
-		return visitor.VisitInflectionAiModel(w.InflectionAiModel)
-	}
-	if w.typ == "OpenAiModel" || w.OpenAiModel != nil {
-		return visitor.VisitOpenAiModel(w.OpenAiModel)
-	}
-	if w.typ == "OpenRouterModel" || w.OpenRouterModel != nil {
-		return visitor.VisitOpenRouterModel(w.OpenRouterModel)
-	}
-	if w.typ == "PerplexityAiModel" || w.PerplexityAiModel != nil {
-		return visitor.VisitPerplexityAiModel(w.PerplexityAiModel)
-	}
-	if w.typ == "TogetherAiModel" || w.TogetherAiModel != nil {
-		return visitor.VisitTogetherAiModel(w.TogetherAiModel)
-	}
-	if w.typ == "XaiModel" || w.XaiModel != nil {
-		return visitor.VisitXaiModel(w.XaiModel)
+	if w.typ == "WorkflowAnthropicModel" || w.WorkflowAnthropicModel != nil {
+		return visitor.VisitWorkflowAnthropicModel(w.WorkflowAnthropicModel)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", w)
 }
 
 type WorkflowNodesItem struct {
-	Start        *Start
-	Assistant    *Assistant
-	Say          *Say
-	Gather       *Gather
-	ApiRequest   *ApiRequest
-	Hangup       *Hangup
-	Transfer     *Transfer
-	Conversation *Conversation
+	ConversationNode *ConversationNode
+	ToolNode         *ToolNode
 
 	typ string
 }
 
-func (w *WorkflowNodesItem) GetStart() *Start {
+func (w *WorkflowNodesItem) GetConversationNode() *ConversationNode {
 	if w == nil {
 		return nil
 	}
-	return w.Start
+	return w.ConversationNode
 }
 
-func (w *WorkflowNodesItem) GetAssistant() *Assistant {
+func (w *WorkflowNodesItem) GetToolNode() *ToolNode {
 	if w == nil {
 		return nil
 	}
-	return w.Assistant
-}
-
-func (w *WorkflowNodesItem) GetSay() *Say {
-	if w == nil {
-		return nil
-	}
-	return w.Say
-}
-
-func (w *WorkflowNodesItem) GetGather() *Gather {
-	if w == nil {
-		return nil
-	}
-	return w.Gather
-}
-
-func (w *WorkflowNodesItem) GetApiRequest() *ApiRequest {
-	if w == nil {
-		return nil
-	}
-	return w.ApiRequest
-}
-
-func (w *WorkflowNodesItem) GetHangup() *Hangup {
-	if w == nil {
-		return nil
-	}
-	return w.Hangup
-}
-
-func (w *WorkflowNodesItem) GetTransfer() *Transfer {
-	if w == nil {
-		return nil
-	}
-	return w.Transfer
-}
-
-func (w *WorkflowNodesItem) GetConversation() *Conversation {
-	if w == nil {
-		return nil
-	}
-	return w.Conversation
+	return w.ToolNode
 }
 
 func (w *WorkflowNodesItem) UnmarshalJSON(data []byte) error {
-	valueStart := new(Start)
-	if err := json.Unmarshal(data, &valueStart); err == nil {
-		w.typ = "Start"
-		w.Start = valueStart
+	valueConversationNode := new(ConversationNode)
+	if err := json.Unmarshal(data, &valueConversationNode); err == nil {
+		w.typ = "ConversationNode"
+		w.ConversationNode = valueConversationNode
 		return nil
 	}
-	valueAssistant := new(Assistant)
-	if err := json.Unmarshal(data, &valueAssistant); err == nil {
-		w.typ = "Assistant"
-		w.Assistant = valueAssistant
-		return nil
-	}
-	valueSay := new(Say)
-	if err := json.Unmarshal(data, &valueSay); err == nil {
-		w.typ = "Say"
-		w.Say = valueSay
-		return nil
-	}
-	valueGather := new(Gather)
-	if err := json.Unmarshal(data, &valueGather); err == nil {
-		w.typ = "Gather"
-		w.Gather = valueGather
-		return nil
-	}
-	valueApiRequest := new(ApiRequest)
-	if err := json.Unmarshal(data, &valueApiRequest); err == nil {
-		w.typ = "ApiRequest"
-		w.ApiRequest = valueApiRequest
-		return nil
-	}
-	valueHangup := new(Hangup)
-	if err := json.Unmarshal(data, &valueHangup); err == nil {
-		w.typ = "Hangup"
-		w.Hangup = valueHangup
-		return nil
-	}
-	valueTransfer := new(Transfer)
-	if err := json.Unmarshal(data, &valueTransfer); err == nil {
-		w.typ = "Transfer"
-		w.Transfer = valueTransfer
-		return nil
-	}
-	valueConversation := new(Conversation)
-	if err := json.Unmarshal(data, &valueConversation); err == nil {
-		w.typ = "Conversation"
-		w.Conversation = valueConversation
+	valueToolNode := new(ToolNode)
+	if err := json.Unmarshal(data, &valueToolNode); err == nil {
+		w.typ = "ToolNode"
+		w.ToolNode = valueToolNode
 		return nil
 	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, w)
 }
 
 func (w WorkflowNodesItem) MarshalJSON() ([]byte, error) {
-	if w.typ == "Start" || w.Start != nil {
-		return json.Marshal(w.Start)
+	if w.typ == "ConversationNode" || w.ConversationNode != nil {
+		return json.Marshal(w.ConversationNode)
 	}
-	if w.typ == "Assistant" || w.Assistant != nil {
-		return json.Marshal(w.Assistant)
-	}
-	if w.typ == "Say" || w.Say != nil {
-		return json.Marshal(w.Say)
-	}
-	if w.typ == "Gather" || w.Gather != nil {
-		return json.Marshal(w.Gather)
-	}
-	if w.typ == "ApiRequest" || w.ApiRequest != nil {
-		return json.Marshal(w.ApiRequest)
-	}
-	if w.typ == "Hangup" || w.Hangup != nil {
-		return json.Marshal(w.Hangup)
-	}
-	if w.typ == "Transfer" || w.Transfer != nil {
-		return json.Marshal(w.Transfer)
-	}
-	if w.typ == "Conversation" || w.Conversation != nil {
-		return json.Marshal(w.Conversation)
+	if w.typ == "ToolNode" || w.ToolNode != nil {
+		return json.Marshal(w.ToolNode)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", w)
 }
 
 type WorkflowNodesItemVisitor interface {
-	VisitStart(*Start) error
-	VisitAssistant(*Assistant) error
-	VisitSay(*Say) error
-	VisitGather(*Gather) error
-	VisitApiRequest(*ApiRequest) error
-	VisitHangup(*Hangup) error
-	VisitTransfer(*Transfer) error
-	VisitConversation(*Conversation) error
+	VisitConversationNode(*ConversationNode) error
+	VisitToolNode(*ToolNode) error
 }
 
 func (w *WorkflowNodesItem) Accept(visitor WorkflowNodesItemVisitor) error {
-	if w.typ == "Start" || w.Start != nil {
-		return visitor.VisitStart(w.Start)
+	if w.typ == "ConversationNode" || w.ConversationNode != nil {
+		return visitor.VisitConversationNode(w.ConversationNode)
 	}
-	if w.typ == "Assistant" || w.Assistant != nil {
-		return visitor.VisitAssistant(w.Assistant)
-	}
-	if w.typ == "Say" || w.Say != nil {
-		return visitor.VisitSay(w.Say)
-	}
-	if w.typ == "Gather" || w.Gather != nil {
-		return visitor.VisitGather(w.Gather)
-	}
-	if w.typ == "ApiRequest" || w.ApiRequest != nil {
-		return visitor.VisitApiRequest(w.ApiRequest)
-	}
-	if w.typ == "Hangup" || w.Hangup != nil {
-		return visitor.VisitHangup(w.Hangup)
-	}
-	if w.typ == "Transfer" || w.Transfer != nil {
-		return visitor.VisitTransfer(w.Transfer)
-	}
-	if w.typ == "Conversation" || w.Conversation != nil {
-		return visitor.VisitConversation(w.Conversation)
+	if w.typ == "ToolNode" || w.ToolNode != nil {
+		return visitor.VisitToolNode(w.ToolNode)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", w)
 }
 
 // These are the options for the workflow's LLM.
 type UpdateWorkflowDtoModel struct {
-	AnthropicModel    *AnthropicModel
-	AnyscaleModel     *AnyscaleModel
-	CerebrasModel     *CerebrasModel
-	CustomLlmModel    *CustomLlmModel
-	DeepInfraModel    *DeepInfraModel
-	DeepSeekModel     *DeepSeekModel
-	GoogleModel       *GoogleModel
-	GroqModel         *GroqModel
-	InflectionAiModel *InflectionAiModel
-	OpenAiModel       *OpenAiModel
-	OpenRouterModel   *OpenRouterModel
-	PerplexityAiModel *PerplexityAiModel
-	TogetherAiModel   *TogetherAiModel
-	XaiModel          *XaiModel
+	WorkflowOpenAiModel    *WorkflowOpenAiModel
+	WorkflowAnthropicModel *WorkflowAnthropicModel
 
 	typ string
 }
 
-func (u *UpdateWorkflowDtoModel) GetAnthropicModel() *AnthropicModel {
+func (u *UpdateWorkflowDtoModel) GetWorkflowOpenAiModel() *WorkflowOpenAiModel {
 	if u == nil {
 		return nil
 	}
-	return u.AnthropicModel
+	return u.WorkflowOpenAiModel
 }
 
-func (u *UpdateWorkflowDtoModel) GetAnyscaleModel() *AnyscaleModel {
+func (u *UpdateWorkflowDtoModel) GetWorkflowAnthropicModel() *WorkflowAnthropicModel {
 	if u == nil {
 		return nil
 	}
-	return u.AnyscaleModel
-}
-
-func (u *UpdateWorkflowDtoModel) GetCerebrasModel() *CerebrasModel {
-	if u == nil {
-		return nil
-	}
-	return u.CerebrasModel
-}
-
-func (u *UpdateWorkflowDtoModel) GetCustomLlmModel() *CustomLlmModel {
-	if u == nil {
-		return nil
-	}
-	return u.CustomLlmModel
-}
-
-func (u *UpdateWorkflowDtoModel) GetDeepInfraModel() *DeepInfraModel {
-	if u == nil {
-		return nil
-	}
-	return u.DeepInfraModel
-}
-
-func (u *UpdateWorkflowDtoModel) GetDeepSeekModel() *DeepSeekModel {
-	if u == nil {
-		return nil
-	}
-	return u.DeepSeekModel
-}
-
-func (u *UpdateWorkflowDtoModel) GetGoogleModel() *GoogleModel {
-	if u == nil {
-		return nil
-	}
-	return u.GoogleModel
-}
-
-func (u *UpdateWorkflowDtoModel) GetGroqModel() *GroqModel {
-	if u == nil {
-		return nil
-	}
-	return u.GroqModel
-}
-
-func (u *UpdateWorkflowDtoModel) GetInflectionAiModel() *InflectionAiModel {
-	if u == nil {
-		return nil
-	}
-	return u.InflectionAiModel
-}
-
-func (u *UpdateWorkflowDtoModel) GetOpenAiModel() *OpenAiModel {
-	if u == nil {
-		return nil
-	}
-	return u.OpenAiModel
-}
-
-func (u *UpdateWorkflowDtoModel) GetOpenRouterModel() *OpenRouterModel {
-	if u == nil {
-		return nil
-	}
-	return u.OpenRouterModel
-}
-
-func (u *UpdateWorkflowDtoModel) GetPerplexityAiModel() *PerplexityAiModel {
-	if u == nil {
-		return nil
-	}
-	return u.PerplexityAiModel
-}
-
-func (u *UpdateWorkflowDtoModel) GetTogetherAiModel() *TogetherAiModel {
-	if u == nil {
-		return nil
-	}
-	return u.TogetherAiModel
-}
-
-func (u *UpdateWorkflowDtoModel) GetXaiModel() *XaiModel {
-	if u == nil {
-		return nil
-	}
-	return u.XaiModel
+	return u.WorkflowAnthropicModel
 }
 
 func (u *UpdateWorkflowDtoModel) UnmarshalJSON(data []byte) error {
-	valueAnthropicModel := new(AnthropicModel)
-	if err := json.Unmarshal(data, &valueAnthropicModel); err == nil {
-		u.typ = "AnthropicModel"
-		u.AnthropicModel = valueAnthropicModel
+	valueWorkflowOpenAiModel := new(WorkflowOpenAiModel)
+	if err := json.Unmarshal(data, &valueWorkflowOpenAiModel); err == nil {
+		u.typ = "WorkflowOpenAiModel"
+		u.WorkflowOpenAiModel = valueWorkflowOpenAiModel
 		return nil
 	}
-	valueAnyscaleModel := new(AnyscaleModel)
-	if err := json.Unmarshal(data, &valueAnyscaleModel); err == nil {
-		u.typ = "AnyscaleModel"
-		u.AnyscaleModel = valueAnyscaleModel
-		return nil
-	}
-	valueCerebrasModel := new(CerebrasModel)
-	if err := json.Unmarshal(data, &valueCerebrasModel); err == nil {
-		u.typ = "CerebrasModel"
-		u.CerebrasModel = valueCerebrasModel
-		return nil
-	}
-	valueCustomLlmModel := new(CustomLlmModel)
-	if err := json.Unmarshal(data, &valueCustomLlmModel); err == nil {
-		u.typ = "CustomLlmModel"
-		u.CustomLlmModel = valueCustomLlmModel
-		return nil
-	}
-	valueDeepInfraModel := new(DeepInfraModel)
-	if err := json.Unmarshal(data, &valueDeepInfraModel); err == nil {
-		u.typ = "DeepInfraModel"
-		u.DeepInfraModel = valueDeepInfraModel
-		return nil
-	}
-	valueDeepSeekModel := new(DeepSeekModel)
-	if err := json.Unmarshal(data, &valueDeepSeekModel); err == nil {
-		u.typ = "DeepSeekModel"
-		u.DeepSeekModel = valueDeepSeekModel
-		return nil
-	}
-	valueGoogleModel := new(GoogleModel)
-	if err := json.Unmarshal(data, &valueGoogleModel); err == nil {
-		u.typ = "GoogleModel"
-		u.GoogleModel = valueGoogleModel
-		return nil
-	}
-	valueGroqModel := new(GroqModel)
-	if err := json.Unmarshal(data, &valueGroqModel); err == nil {
-		u.typ = "GroqModel"
-		u.GroqModel = valueGroqModel
-		return nil
-	}
-	valueInflectionAiModel := new(InflectionAiModel)
-	if err := json.Unmarshal(data, &valueInflectionAiModel); err == nil {
-		u.typ = "InflectionAiModel"
-		u.InflectionAiModel = valueInflectionAiModel
-		return nil
-	}
-	valueOpenAiModel := new(OpenAiModel)
-	if err := json.Unmarshal(data, &valueOpenAiModel); err == nil {
-		u.typ = "OpenAiModel"
-		u.OpenAiModel = valueOpenAiModel
-		return nil
-	}
-	valueOpenRouterModel := new(OpenRouterModel)
-	if err := json.Unmarshal(data, &valueOpenRouterModel); err == nil {
-		u.typ = "OpenRouterModel"
-		u.OpenRouterModel = valueOpenRouterModel
-		return nil
-	}
-	valuePerplexityAiModel := new(PerplexityAiModel)
-	if err := json.Unmarshal(data, &valuePerplexityAiModel); err == nil {
-		u.typ = "PerplexityAiModel"
-		u.PerplexityAiModel = valuePerplexityAiModel
-		return nil
-	}
-	valueTogetherAiModel := new(TogetherAiModel)
-	if err := json.Unmarshal(data, &valueTogetherAiModel); err == nil {
-		u.typ = "TogetherAiModel"
-		u.TogetherAiModel = valueTogetherAiModel
-		return nil
-	}
-	valueXaiModel := new(XaiModel)
-	if err := json.Unmarshal(data, &valueXaiModel); err == nil {
-		u.typ = "XaiModel"
-		u.XaiModel = valueXaiModel
+	valueWorkflowAnthropicModel := new(WorkflowAnthropicModel)
+	if err := json.Unmarshal(data, &valueWorkflowAnthropicModel); err == nil {
+		u.typ = "WorkflowAnthropicModel"
+		u.WorkflowAnthropicModel = valueWorkflowAnthropicModel
 		return nil
 	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, u)
 }
 
 func (u UpdateWorkflowDtoModel) MarshalJSON() ([]byte, error) {
-	if u.typ == "AnthropicModel" || u.AnthropicModel != nil {
-		return json.Marshal(u.AnthropicModel)
+	if u.typ == "WorkflowOpenAiModel" || u.WorkflowOpenAiModel != nil {
+		return json.Marshal(u.WorkflowOpenAiModel)
 	}
-	if u.typ == "AnyscaleModel" || u.AnyscaleModel != nil {
-		return json.Marshal(u.AnyscaleModel)
-	}
-	if u.typ == "CerebrasModel" || u.CerebrasModel != nil {
-		return json.Marshal(u.CerebrasModel)
-	}
-	if u.typ == "CustomLlmModel" || u.CustomLlmModel != nil {
-		return json.Marshal(u.CustomLlmModel)
-	}
-	if u.typ == "DeepInfraModel" || u.DeepInfraModel != nil {
-		return json.Marshal(u.DeepInfraModel)
-	}
-	if u.typ == "DeepSeekModel" || u.DeepSeekModel != nil {
-		return json.Marshal(u.DeepSeekModel)
-	}
-	if u.typ == "GoogleModel" || u.GoogleModel != nil {
-		return json.Marshal(u.GoogleModel)
-	}
-	if u.typ == "GroqModel" || u.GroqModel != nil {
-		return json.Marshal(u.GroqModel)
-	}
-	if u.typ == "InflectionAiModel" || u.InflectionAiModel != nil {
-		return json.Marshal(u.InflectionAiModel)
-	}
-	if u.typ == "OpenAiModel" || u.OpenAiModel != nil {
-		return json.Marshal(u.OpenAiModel)
-	}
-	if u.typ == "OpenRouterModel" || u.OpenRouterModel != nil {
-		return json.Marshal(u.OpenRouterModel)
-	}
-	if u.typ == "PerplexityAiModel" || u.PerplexityAiModel != nil {
-		return json.Marshal(u.PerplexityAiModel)
-	}
-	if u.typ == "TogetherAiModel" || u.TogetherAiModel != nil {
-		return json.Marshal(u.TogetherAiModel)
-	}
-	if u.typ == "XaiModel" || u.XaiModel != nil {
-		return json.Marshal(u.XaiModel)
+	if u.typ == "WorkflowAnthropicModel" || u.WorkflowAnthropicModel != nil {
+		return json.Marshal(u.WorkflowAnthropicModel)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", u)
 }
 
 type UpdateWorkflowDtoModelVisitor interface {
-	VisitAnthropicModel(*AnthropicModel) error
-	VisitAnyscaleModel(*AnyscaleModel) error
-	VisitCerebrasModel(*CerebrasModel) error
-	VisitCustomLlmModel(*CustomLlmModel) error
-	VisitDeepInfraModel(*DeepInfraModel) error
-	VisitDeepSeekModel(*DeepSeekModel) error
-	VisitGoogleModel(*GoogleModel) error
-	VisitGroqModel(*GroqModel) error
-	VisitInflectionAiModel(*InflectionAiModel) error
-	VisitOpenAiModel(*OpenAiModel) error
-	VisitOpenRouterModel(*OpenRouterModel) error
-	VisitPerplexityAiModel(*PerplexityAiModel) error
-	VisitTogetherAiModel(*TogetherAiModel) error
-	VisitXaiModel(*XaiModel) error
+	VisitWorkflowOpenAiModel(*WorkflowOpenAiModel) error
+	VisitWorkflowAnthropicModel(*WorkflowAnthropicModel) error
 }
 
 func (u *UpdateWorkflowDtoModel) Accept(visitor UpdateWorkflowDtoModelVisitor) error {
-	if u.typ == "AnthropicModel" || u.AnthropicModel != nil {
-		return visitor.VisitAnthropicModel(u.AnthropicModel)
+	if u.typ == "WorkflowOpenAiModel" || u.WorkflowOpenAiModel != nil {
+		return visitor.VisitWorkflowOpenAiModel(u.WorkflowOpenAiModel)
 	}
-	if u.typ == "AnyscaleModel" || u.AnyscaleModel != nil {
-		return visitor.VisitAnyscaleModel(u.AnyscaleModel)
-	}
-	if u.typ == "CerebrasModel" || u.CerebrasModel != nil {
-		return visitor.VisitCerebrasModel(u.CerebrasModel)
-	}
-	if u.typ == "CustomLlmModel" || u.CustomLlmModel != nil {
-		return visitor.VisitCustomLlmModel(u.CustomLlmModel)
-	}
-	if u.typ == "DeepInfraModel" || u.DeepInfraModel != nil {
-		return visitor.VisitDeepInfraModel(u.DeepInfraModel)
-	}
-	if u.typ == "DeepSeekModel" || u.DeepSeekModel != nil {
-		return visitor.VisitDeepSeekModel(u.DeepSeekModel)
-	}
-	if u.typ == "GoogleModel" || u.GoogleModel != nil {
-		return visitor.VisitGoogleModel(u.GoogleModel)
-	}
-	if u.typ == "GroqModel" || u.GroqModel != nil {
-		return visitor.VisitGroqModel(u.GroqModel)
-	}
-	if u.typ == "InflectionAiModel" || u.InflectionAiModel != nil {
-		return visitor.VisitInflectionAiModel(u.InflectionAiModel)
-	}
-	if u.typ == "OpenAiModel" || u.OpenAiModel != nil {
-		return visitor.VisitOpenAiModel(u.OpenAiModel)
-	}
-	if u.typ == "OpenRouterModel" || u.OpenRouterModel != nil {
-		return visitor.VisitOpenRouterModel(u.OpenRouterModel)
-	}
-	if u.typ == "PerplexityAiModel" || u.PerplexityAiModel != nil {
-		return visitor.VisitPerplexityAiModel(u.PerplexityAiModel)
-	}
-	if u.typ == "TogetherAiModel" || u.TogetherAiModel != nil {
-		return visitor.VisitTogetherAiModel(u.TogetherAiModel)
-	}
-	if u.typ == "XaiModel" || u.XaiModel != nil {
-		return visitor.VisitXaiModel(u.XaiModel)
+	if u.typ == "WorkflowAnthropicModel" || u.WorkflowAnthropicModel != nil {
+		return visitor.VisitWorkflowAnthropicModel(u.WorkflowAnthropicModel)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", u)
 }
 
 type UpdateWorkflowDtoNodesItem struct {
-	Start        *Start
-	Assistant    *Assistant
-	Say          *Say
-	Gather       *Gather
-	ApiRequest   *ApiRequest
-	Hangup       *Hangup
-	Transfer     *Transfer
-	Conversation *Conversation
+	ConversationNode *ConversationNode
+	ToolNode         *ToolNode
 
 	typ string
 }
 
-func (u *UpdateWorkflowDtoNodesItem) GetStart() *Start {
+func (u *UpdateWorkflowDtoNodesItem) GetConversationNode() *ConversationNode {
 	if u == nil {
 		return nil
 	}
-	return u.Start
+	return u.ConversationNode
 }
 
-func (u *UpdateWorkflowDtoNodesItem) GetAssistant() *Assistant {
+func (u *UpdateWorkflowDtoNodesItem) GetToolNode() *ToolNode {
 	if u == nil {
 		return nil
 	}
-	return u.Assistant
-}
-
-func (u *UpdateWorkflowDtoNodesItem) GetSay() *Say {
-	if u == nil {
-		return nil
-	}
-	return u.Say
-}
-
-func (u *UpdateWorkflowDtoNodesItem) GetGather() *Gather {
-	if u == nil {
-		return nil
-	}
-	return u.Gather
-}
-
-func (u *UpdateWorkflowDtoNodesItem) GetApiRequest() *ApiRequest {
-	if u == nil {
-		return nil
-	}
-	return u.ApiRequest
-}
-
-func (u *UpdateWorkflowDtoNodesItem) GetHangup() *Hangup {
-	if u == nil {
-		return nil
-	}
-	return u.Hangup
-}
-
-func (u *UpdateWorkflowDtoNodesItem) GetTransfer() *Transfer {
-	if u == nil {
-		return nil
-	}
-	return u.Transfer
-}
-
-func (u *UpdateWorkflowDtoNodesItem) GetConversation() *Conversation {
-	if u == nil {
-		return nil
-	}
-	return u.Conversation
+	return u.ToolNode
 }
 
 func (u *UpdateWorkflowDtoNodesItem) UnmarshalJSON(data []byte) error {
-	valueStart := new(Start)
-	if err := json.Unmarshal(data, &valueStart); err == nil {
-		u.typ = "Start"
-		u.Start = valueStart
+	valueConversationNode := new(ConversationNode)
+	if err := json.Unmarshal(data, &valueConversationNode); err == nil {
+		u.typ = "ConversationNode"
+		u.ConversationNode = valueConversationNode
 		return nil
 	}
-	valueAssistant := new(Assistant)
-	if err := json.Unmarshal(data, &valueAssistant); err == nil {
-		u.typ = "Assistant"
-		u.Assistant = valueAssistant
-		return nil
-	}
-	valueSay := new(Say)
-	if err := json.Unmarshal(data, &valueSay); err == nil {
-		u.typ = "Say"
-		u.Say = valueSay
-		return nil
-	}
-	valueGather := new(Gather)
-	if err := json.Unmarshal(data, &valueGather); err == nil {
-		u.typ = "Gather"
-		u.Gather = valueGather
-		return nil
-	}
-	valueApiRequest := new(ApiRequest)
-	if err := json.Unmarshal(data, &valueApiRequest); err == nil {
-		u.typ = "ApiRequest"
-		u.ApiRequest = valueApiRequest
-		return nil
-	}
-	valueHangup := new(Hangup)
-	if err := json.Unmarshal(data, &valueHangup); err == nil {
-		u.typ = "Hangup"
-		u.Hangup = valueHangup
-		return nil
-	}
-	valueTransfer := new(Transfer)
-	if err := json.Unmarshal(data, &valueTransfer); err == nil {
-		u.typ = "Transfer"
-		u.Transfer = valueTransfer
-		return nil
-	}
-	valueConversation := new(Conversation)
-	if err := json.Unmarshal(data, &valueConversation); err == nil {
-		u.typ = "Conversation"
-		u.Conversation = valueConversation
+	valueToolNode := new(ToolNode)
+	if err := json.Unmarshal(data, &valueToolNode); err == nil {
+		u.typ = "ToolNode"
+		u.ToolNode = valueToolNode
 		return nil
 	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, u)
 }
 
 func (u UpdateWorkflowDtoNodesItem) MarshalJSON() ([]byte, error) {
-	if u.typ == "Start" || u.Start != nil {
-		return json.Marshal(u.Start)
+	if u.typ == "ConversationNode" || u.ConversationNode != nil {
+		return json.Marshal(u.ConversationNode)
 	}
-	if u.typ == "Assistant" || u.Assistant != nil {
-		return json.Marshal(u.Assistant)
-	}
-	if u.typ == "Say" || u.Say != nil {
-		return json.Marshal(u.Say)
-	}
-	if u.typ == "Gather" || u.Gather != nil {
-		return json.Marshal(u.Gather)
-	}
-	if u.typ == "ApiRequest" || u.ApiRequest != nil {
-		return json.Marshal(u.ApiRequest)
-	}
-	if u.typ == "Hangup" || u.Hangup != nil {
-		return json.Marshal(u.Hangup)
-	}
-	if u.typ == "Transfer" || u.Transfer != nil {
-		return json.Marshal(u.Transfer)
-	}
-	if u.typ == "Conversation" || u.Conversation != nil {
-		return json.Marshal(u.Conversation)
+	if u.typ == "ToolNode" || u.ToolNode != nil {
+		return json.Marshal(u.ToolNode)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", u)
 }
 
 type UpdateWorkflowDtoNodesItemVisitor interface {
-	VisitStart(*Start) error
-	VisitAssistant(*Assistant) error
-	VisitSay(*Say) error
-	VisitGather(*Gather) error
-	VisitApiRequest(*ApiRequest) error
-	VisitHangup(*Hangup) error
-	VisitTransfer(*Transfer) error
-	VisitConversation(*Conversation) error
+	VisitConversationNode(*ConversationNode) error
+	VisitToolNode(*ToolNode) error
 }
 
 func (u *UpdateWorkflowDtoNodesItem) Accept(visitor UpdateWorkflowDtoNodesItemVisitor) error {
-	if u.typ == "Start" || u.Start != nil {
-		return visitor.VisitStart(u.Start)
+	if u.typ == "ConversationNode" || u.ConversationNode != nil {
+		return visitor.VisitConversationNode(u.ConversationNode)
 	}
-	if u.typ == "Assistant" || u.Assistant != nil {
-		return visitor.VisitAssistant(u.Assistant)
-	}
-	if u.typ == "Say" || u.Say != nil {
-		return visitor.VisitSay(u.Say)
-	}
-	if u.typ == "Gather" || u.Gather != nil {
-		return visitor.VisitGather(u.Gather)
-	}
-	if u.typ == "ApiRequest" || u.ApiRequest != nil {
-		return visitor.VisitApiRequest(u.ApiRequest)
-	}
-	if u.typ == "Hangup" || u.Hangup != nil {
-		return visitor.VisitHangup(u.Hangup)
-	}
-	if u.typ == "Transfer" || u.Transfer != nil {
-		return visitor.VisitTransfer(u.Transfer)
-	}
-	if u.typ == "Conversation" || u.Conversation != nil {
-		return visitor.VisitConversation(u.Conversation)
+	if u.typ == "ToolNode" || u.ToolNode != nil {
+		return visitor.VisitToolNode(u.ToolNode)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", u)
 }
