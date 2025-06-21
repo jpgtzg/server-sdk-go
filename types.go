@@ -148,6 +148,10 @@ func (a *AiEdgeCondition) String() string {
 }
 
 type AnalysisPlan struct {
+	// The minimum number of messages required to run the analysis plan.
+	// If the number of messages is less than this, analysis will be skipped.
+	// @default 2
+	MinMessagesThreshold *float64 `json:"minMessagesThreshold,omitempty" url:"minMessagesThreshold,omitempty"`
 	// This is the plan for generating the summary of the call. This outputs to `call.analysis.summary`.
 	SummaryPlan *SummaryPlan `json:"summaryPlan,omitempty" url:"summaryPlan,omitempty"`
 	// This is the plan for generating the structured data from the call. This outputs to `call.analysis.structuredData`.
@@ -159,6 +163,13 @@ type AnalysisPlan struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (a *AnalysisPlan) GetMinMessagesThreshold() *float64 {
+	if a == nil {
+		return nil
+	}
+	return a.MinMessagesThreshold
 }
 
 func (a *AnalysisPlan) GetSummaryPlan() *SummaryPlan {
@@ -536,6 +547,8 @@ const (
 	AnthropicModelModelClaude35Sonnet20241022 AnthropicModelModel = "claude-3-5-sonnet-20241022"
 	AnthropicModelModelClaude35Haiku20241022  AnthropicModelModel = "claude-3-5-haiku-20241022"
 	AnthropicModelModelClaude37Sonnet20250219 AnthropicModelModel = "claude-3-7-sonnet-20250219"
+	AnthropicModelModelClaudeOpus420250514    AnthropicModelModel = "claude-opus-4-20250514"
+	AnthropicModelModelClaudeSonnet420250514  AnthropicModelModel = "claude-sonnet-4-20250514"
 )
 
 func NewAnthropicModelModelFromString(s string) (AnthropicModelModel, error) {
@@ -554,6 +567,10 @@ func NewAnthropicModelModelFromString(s string) (AnthropicModelModel, error) {
 		return AnthropicModelModelClaude35Haiku20241022, nil
 	case "claude-3-7-sonnet-20250219":
 		return AnthropicModelModelClaude37Sonnet20250219, nil
+	case "claude-opus-4-20250514":
+		return AnthropicModelModelClaudeOpus420250514, nil
+	case "claude-sonnet-4-20250514":
+		return AnthropicModelModelClaudeSonnet420250514, nil
 	}
 	var t AnthropicModelModel
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -1786,6 +1803,10 @@ type Artifact struct {
 	Transcript *string `json:"transcript,omitempty" url:"transcript,omitempty"`
 	// This is the packet capture url for the call. This is only available for `phone` type calls where phone number's provider is `vapi` or `byo-phone-number`.
 	PcapUrl *string `json:"pcapUrl,omitempty" url:"pcapUrl,omitempty"`
+	// This is the history of workflow nodes that were executed during the call.
+	Nodes []*NodeArtifact `json:"nodes,omitempty" url:"nodes,omitempty"`
+	// This is the state of variables at the end of the workflow execution.
+	Variables map[string]interface{} `json:"variables,omitempty" url:"variables,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -1852,6 +1873,20 @@ func (a *Artifact) GetPcapUrl() *string {
 		return nil
 	}
 	return a.PcapUrl
+}
+
+func (a *Artifact) GetNodes() []*NodeArtifact {
+	if a == nil {
+		return nil
+	}
+	return a.Nodes
+}
+
+func (a *Artifact) GetVariables() map[string]interface{} {
+	if a == nil {
+		return nil
+	}
+	return a.Variables
 }
 
 func (a *Artifact) GetExtraProperties() map[string]interface{} {
@@ -2305,6 +2340,30 @@ type AssemblyAiTranscriber struct {
 	//
 	// @default 0.4
 	ConfidenceThreshold *float64 `json:"confidenceThreshold,omitempty" url:"confidenceThreshold,omitempty"`
+	// Uses Assembly AI's new Universal Streaming API. See: https://www.assemblyai.com/docs/speech-to-text/universal-streaming
+	//
+	// @default false
+	EnableUniversalStreamingApi *bool `json:"enableUniversalStreamingApi,omitempty" url:"enableUniversalStreamingApi,omitempty"`
+	// This enables formatting of transcripts. Only used when `enableUniversalStreamingApi` is true.
+	//
+	// @default false
+	FormatTurns *bool `json:"formatTurns,omitempty" url:"formatTurns,omitempty"`
+	// The confidence threshold to use when determining if the end of a turn has been reached. Only used when `enableUniversalStreamingApi` is true.
+	//
+	// @default 0.7
+	EndOfTurnConfidenceThreshold *float64 `json:"endOfTurnConfidenceThreshold,omitempty" url:"endOfTurnConfidenceThreshold,omitempty"`
+	// The minimum amount of silence in milliseconds required to detect end of turn when confident. Only used when `enableUniversalStreamingApi` is true.
+	//
+	// @default 160
+	MinEndOfTurnSilenceWhenConfident *float64 `json:"minEndOfTurnSilenceWhenConfident,omitempty" url:"minEndOfTurnSilenceWhenConfident,omitempty"`
+	// The maximum wait time for word finalization. Only used when `enableUniversalStreamingApi` is true.
+	//
+	// @default 160
+	WordFinalizationMaxWaitTime *float64 `json:"wordFinalizationMaxWaitTime,omitempty" url:"wordFinalizationMaxWaitTime,omitempty"`
+	// The maximum amount of silence in milliseconds allowed in a turn before end of turn is triggered. Only used when `enableUniversalStreamingApi` is true.
+	//
+	// @default 400
+	MaxTurnSilence *float64 `json:"maxTurnSilence,omitempty" url:"maxTurnSilence,omitempty"`
 	// The WebSocket URL that the transcriber connects to.
 	RealtimeUrl *string `json:"realtimeUrl,omitempty" url:"realtimeUrl,omitempty"`
 	// Add up to 2500 characters of custom vocabulary.
@@ -2327,6 +2386,48 @@ func (a *AssemblyAiTranscriber) GetConfidenceThreshold() *float64 {
 		return nil
 	}
 	return a.ConfidenceThreshold
+}
+
+func (a *AssemblyAiTranscriber) GetEnableUniversalStreamingApi() *bool {
+	if a == nil {
+		return nil
+	}
+	return a.EnableUniversalStreamingApi
+}
+
+func (a *AssemblyAiTranscriber) GetFormatTurns() *bool {
+	if a == nil {
+		return nil
+	}
+	return a.FormatTurns
+}
+
+func (a *AssemblyAiTranscriber) GetEndOfTurnConfidenceThreshold() *float64 {
+	if a == nil {
+		return nil
+	}
+	return a.EndOfTurnConfidenceThreshold
+}
+
+func (a *AssemblyAiTranscriber) GetMinEndOfTurnSilenceWhenConfident() *float64 {
+	if a == nil {
+		return nil
+	}
+	return a.MinEndOfTurnSilenceWhenConfident
+}
+
+func (a *AssemblyAiTranscriber) GetWordFinalizationMaxWaitTime() *float64 {
+	if a == nil {
+		return nil
+	}
+	return a.WordFinalizationMaxWaitTime
+}
+
+func (a *AssemblyAiTranscriber) GetMaxTurnSilence() *float64 {
+	if a == nil {
+		return nil
+	}
+	return a.MaxTurnSilence
 }
 
 func (a *AssemblyAiTranscriber) GetRealtimeUrl() *string {
@@ -3075,6 +3176,107 @@ func (a *AssistantHookFilter) String() string {
 	return fmt.Sprintf("%#v", a)
 }
 
+type AssistantMessage struct {
+	// This is the role of the message author
+	// This is the content of the assistant message
+	Content *string `json:"content,omitempty" url:"content,omitempty"`
+	// This is the refusal message generated by the model
+	Refusal *string `json:"refusal,omitempty" url:"refusal,omitempty"`
+	// This is the tool calls generated by the model
+	ToolCalls []*ToolCall `json:"tool_calls,omitempty" url:"tool_calls,omitempty"`
+	// This is an optional name for the participant
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	role string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (a *AssistantMessage) GetContent() *string {
+	if a == nil {
+		return nil
+	}
+	return a.Content
+}
+
+func (a *AssistantMessage) GetRefusal() *string {
+	if a == nil {
+		return nil
+	}
+	return a.Refusal
+}
+
+func (a *AssistantMessage) GetToolCalls() []*ToolCall {
+	if a == nil {
+		return nil
+	}
+	return a.ToolCalls
+}
+
+func (a *AssistantMessage) GetName() *string {
+	if a == nil {
+		return nil
+	}
+	return a.Name
+}
+
+func (a *AssistantMessage) Role() string {
+	return a.role
+}
+
+func (a *AssistantMessage) GetExtraProperties() map[string]interface{} {
+	return a.extraProperties
+}
+
+func (a *AssistantMessage) UnmarshalJSON(data []byte) error {
+	type embed AssistantMessage
+	var unmarshaler = struct {
+		embed
+		Role string `json:"role"`
+	}{
+		embed: embed(*a),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*a = AssistantMessage(unmarshaler.embed)
+	if unmarshaler.Role != "assistant" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", a, "assistant", unmarshaler.Role)
+	}
+	a.role = unmarshaler.Role
+	extraProperties, err := internal.ExtractExtraProperties(data, *a, "role")
+	if err != nil {
+		return err
+	}
+	a.extraProperties = extraProperties
+	a.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (a *AssistantMessage) MarshalJSON() ([]byte, error) {
+	type embed AssistantMessage
+	var marshaler = struct {
+		embed
+		Role string `json:"role"`
+	}{
+		embed: embed(*a),
+		Role:  "assistant",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (a *AssistantMessage) String() string {
+	if len(a.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(a); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", a)
+}
+
 type AssistantOverrides struct {
 	// These are the options for the assistant's transcriber.
 	Transcriber *AssistantOverridesTranscriber `json:"transcriber,omitempty" url:"transcriber,omitempty"`
@@ -3129,8 +3331,9 @@ type AssistantOverrides struct {
 	ModelOutputInMessagesEnabled *bool `json:"modelOutputInMessagesEnabled,omitempty" url:"modelOutputInMessagesEnabled,omitempty"`
 	// These are the configurations to be passed to the transport providers of assistant's calls, like Twilio. You can store multiple configurations for different transport providers. For a call, only the configuration matching the call transport provider is used.
 	TransportConfigurations []*TransportConfigurationTwilio `json:"transportConfigurations,omitempty" url:"transportConfigurations,omitempty"`
-	// This is the plan for observability configuration of assistant's calls.
-	// Currently supports Langfuse for tracing and monitoring.
+	// This is the plan for observability of assistant's calls.
+	//
+	// Currently, only Langfuse is supported.
 	ObservabilityPlan *LangfuseObservabilityPlan `json:"observabilityPlan,omitempty" url:"observabilityPlan,omitempty"`
 	// These are dynamic credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials.
 	Credentials []*AssistantOverridesCredentialsItem `json:"credentials,omitempty" url:"credentials,omitempty"`
@@ -3162,11 +3365,21 @@ type AssistantOverrides struct {
 	CompliancePlan *CompliancePlan `json:"compliancePlan,omitempty" url:"compliancePlan,omitempty"`
 	// This is for metadata you want to store on the assistant.
 	Metadata map[string]interface{} `json:"metadata,omitempty" url:"metadata,omitempty"`
+	// This enables filtering of noise and background speech while the user is talking.
+	//
+	// Features:
+	// - Smart denoising using Krisp
+	// - Fourier denoising
+	//
+	// Smart denoising can be combined with or used independently of Fourier denoising.
+	//
+	// Order of precedence:
+	// - Smart denoising
+	// - Fourier denoising
+	BackgroundSpeechDenoisingPlan *BackgroundSpeechDenoisingPlan `json:"backgroundSpeechDenoisingPlan,omitempty" url:"backgroundSpeechDenoisingPlan,omitempty"`
 	// This is the plan for analysis of assistant's calls. Stored in `call.analysis`.
 	AnalysisPlan *AnalysisPlan `json:"analysisPlan,omitempty" url:"analysisPlan,omitempty"`
 	// This is the plan for artifacts generated during assistant's calls. Stored in `call.artifact`.
-	//
-	// Note: `recordingEnabled` is currently at the root level. It will be moved to `artifactPlan` in the future, but will remain backwards compatible.
 	ArtifactPlan *ArtifactPlan `json:"artifactPlan,omitempty" url:"artifactPlan,omitempty"`
 	// This is the plan for static predefined messages that can be spoken by the assistant during the call, like `idleMessages`.
 	//
@@ -3193,8 +3406,6 @@ type AssistantOverrides struct {
 	// Usage:
 	// - To enable live listening of the assistant's calls, set `monitorPlan.listenEnabled` to `true`.
 	// - To enable live control of the assistant's calls, set `monitorPlan.controlEnabled` to `true`.
-	//
-	// Note, `serverMessages`, `clientMessages`, `serverUrl` and `serverUrlSecret` are currently at the root level but will be moved to `monitorPlan` in the future. Will remain backwards compatible
 	MonitorPlan *MonitorPlan `json:"monitorPlan,omitempty" url:"monitorPlan,omitempty"`
 	// These are the credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can provide a subset using this.
 	CredentialIds []string `json:"credentialIds,omitempty" url:"credentialIds,omitempty"`
@@ -3385,6 +3596,13 @@ func (a *AssistantOverrides) GetMetadata() map[string]interface{} {
 		return nil
 	}
 	return a.Metadata
+}
+
+func (a *AssistantOverrides) GetBackgroundSpeechDenoisingPlan() *BackgroundSpeechDenoisingPlan {
+	if a == nil {
+		return nil
+	}
+	return a.BackgroundSpeechDenoisingPlan
 }
 
 func (a *AssistantOverrides) GetAnalysisPlan() *AnalysisPlan {
@@ -5173,6 +5391,7 @@ type AssistantOverridesTranscriber struct {
 	SpeechmaticsTranscriber *SpeechmaticsTranscriber
 	TalkscriberTranscriber  *TalkscriberTranscriber
 	OpenAiTranscriber       *OpenAiTranscriber
+	CartesiaTranscriber     *CartesiaTranscriber
 
 	typ string
 }
@@ -5247,6 +5466,13 @@ func (a *AssistantOverridesTranscriber) GetOpenAiTranscriber() *OpenAiTranscribe
 	return a.OpenAiTranscriber
 }
 
+func (a *AssistantOverridesTranscriber) GetCartesiaTranscriber() *CartesiaTranscriber {
+	if a == nil {
+		return nil
+	}
+	return a.CartesiaTranscriber
+}
+
 func (a *AssistantOverridesTranscriber) UnmarshalJSON(data []byte) error {
 	valueAssemblyAiTranscriber := new(AssemblyAiTranscriber)
 	if err := json.Unmarshal(data, &valueAssemblyAiTranscriber); err == nil {
@@ -5308,6 +5534,12 @@ func (a *AssistantOverridesTranscriber) UnmarshalJSON(data []byte) error {
 		a.OpenAiTranscriber = valueOpenAiTranscriber
 		return nil
 	}
+	valueCartesiaTranscriber := new(CartesiaTranscriber)
+	if err := json.Unmarshal(data, &valueCartesiaTranscriber); err == nil {
+		a.typ = "CartesiaTranscriber"
+		a.CartesiaTranscriber = valueCartesiaTranscriber
+		return nil
+	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, a)
 }
 
@@ -5342,6 +5574,9 @@ func (a AssistantOverridesTranscriber) MarshalJSON() ([]byte, error) {
 	if a.typ == "OpenAiTranscriber" || a.OpenAiTranscriber != nil {
 		return json.Marshal(a.OpenAiTranscriber)
 	}
+	if a.typ == "CartesiaTranscriber" || a.CartesiaTranscriber != nil {
+		return json.Marshal(a.CartesiaTranscriber)
+	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", a)
 }
 
@@ -5356,6 +5591,7 @@ type AssistantOverridesTranscriberVisitor interface {
 	VisitSpeechmaticsTranscriber(*SpeechmaticsTranscriber) error
 	VisitTalkscriberTranscriber(*TalkscriberTranscriber) error
 	VisitOpenAiTranscriber(*OpenAiTranscriber) error
+	VisitCartesiaTranscriber(*CartesiaTranscriber) error
 }
 
 func (a *AssistantOverridesTranscriber) Accept(visitor AssistantOverridesTranscriberVisitor) error {
@@ -5388,6 +5624,9 @@ func (a *AssistantOverridesTranscriber) Accept(visitor AssistantOverridesTranscr
 	}
 	if a.typ == "OpenAiTranscriber" || a.OpenAiTranscriber != nil {
 		return visitor.VisitOpenAiTranscriber(a.OpenAiTranscriber)
+	}
+	if a.typ == "CartesiaTranscriber" || a.CartesiaTranscriber != nil {
+		return visitor.VisitCartesiaTranscriber(a.CartesiaTranscriber)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", a)
 }
@@ -6131,6 +6370,8 @@ type AzureCredential struct {
 	Region *AzureCredentialRegion `json:"region,omitempty" url:"region,omitempty"`
 	// This is not returned in the API.
 	ApiKey *string `json:"apiKey,omitempty" url:"apiKey,omitempty"`
+	// This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+	FallbackIndex *float64 `json:"fallbackIndex,omitempty" url:"fallbackIndex,omitempty"`
 	// This is the unique identifier for the credential.
 	Id string `json:"id" url:"id"`
 	// This is the unique identifier for the org that this credential belongs to.
@@ -6168,6 +6409,13 @@ func (a *AzureCredential) GetApiKey() *string {
 		return nil
 	}
 	return a.ApiKey
+}
+
+func (a *AzureCredential) GetFallbackIndex() *float64 {
+	if a == nil {
+		return nil
+	}
+	return a.FallbackIndex
 }
 
 func (a *AzureCredential) GetId() string {
@@ -7382,6 +7630,64 @@ func (a AzureVoiceIdEnum) Ptr() *AzureVoiceIdEnum {
 	return &a
 }
 
+type BackgroundSpeechDenoisingPlan struct {
+	// Whether smart denoising using Krisp is enabled.
+	SmartDenoisingPlan *SmartDenoisingPlan `json:"smartDenoisingPlan,omitempty" url:"smartDenoisingPlan,omitempty"`
+	// Whether Fourier denoising is enabled. Note that this is experimental and may not work as expected.
+	//
+	// This can be combined with smart denoising, and will be run afterwards.
+	FourierDenoisingPlan *FourierDenoisingPlan `json:"fourierDenoisingPlan,omitempty" url:"fourierDenoisingPlan,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (b *BackgroundSpeechDenoisingPlan) GetSmartDenoisingPlan() *SmartDenoisingPlan {
+	if b == nil {
+		return nil
+	}
+	return b.SmartDenoisingPlan
+}
+
+func (b *BackgroundSpeechDenoisingPlan) GetFourierDenoisingPlan() *FourierDenoisingPlan {
+	if b == nil {
+		return nil
+	}
+	return b.FourierDenoisingPlan
+}
+
+func (b *BackgroundSpeechDenoisingPlan) GetExtraProperties() map[string]interface{} {
+	return b.extraProperties
+}
+
+func (b *BackgroundSpeechDenoisingPlan) UnmarshalJSON(data []byte) error {
+	type unmarshaler BackgroundSpeechDenoisingPlan
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*b = BackgroundSpeechDenoisingPlan(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *b)
+	if err != nil {
+		return err
+	}
+	b.extraProperties = extraProperties
+	b.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (b *BackgroundSpeechDenoisingPlan) String() string {
+	if len(b.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(b.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(b); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", b)
+}
+
 type BackoffPlan struct {
 	// This is the type of backoff plan to use. Defaults to fixed.
 	//
@@ -7452,20 +7758,22 @@ func (b *BackoffPlan) String() string {
 }
 
 type BashToolWithToolCall struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
 	Messages []*BashToolWithToolCallMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
 	// The type of tool. "bash" for Bash tool.
 	// The sub type of tool.
+	//
+	//	This is the server where a `tool-calls` webhook will be sent.
+	//
+	//	Notes:
+	//	- Webhook is sent to this server when a tool call is made.
+	//	- Webhook contains the call, assistant, and phone number objects.
+	//	- Webhook contains the variables set on the assistant.
+	//	- Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+	//	- Webhook expects a response with tool call result.
+	Server   *Server   `json:"server,omitempty" url:"server,omitempty"`
 	ToolCall *ToolCall `json:"toolCall,omitempty" url:"toolCall,omitempty"`
 	// The name of the tool, fixed to 'bash'
 	// This is the function definition of the tool.
@@ -7474,25 +7782,12 @@ type BashToolWithToolCall struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server  *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_   string
-	subType string
-	name    string
+	type_    string
+	subType  string
+	name     string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (b *BashToolWithToolCall) GetAsync() *bool {
-	if b == nil {
-		return nil
-	}
-	return b.Async
 }
 
 func (b *BashToolWithToolCall) GetMessages() []*BashToolWithToolCallMessagesItem {
@@ -7500,6 +7795,13 @@ func (b *BashToolWithToolCall) GetMessages() []*BashToolWithToolCallMessagesItem
 		return nil
 	}
 	return b.Messages
+}
+
+func (b *BashToolWithToolCall) GetServer() *Server {
+	if b == nil {
+		return nil
+	}
+	return b.Server
 }
 
 func (b *BashToolWithToolCall) GetToolCall() *ToolCall {
@@ -7514,13 +7816,6 @@ func (b *BashToolWithToolCall) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return b.Function
-}
-
-func (b *BashToolWithToolCall) GetServer() *Server {
-	if b == nil {
-		return nil
-	}
-	return b.Server
 }
 
 func (b *BashToolWithToolCall) Type() string {
@@ -7945,6 +8240,8 @@ type BucketPlan struct {
 	// Usage:
 	// - If `credential.type` is `aws`, then this is required.
 	// - If `credential.type` is `gcp`, then this is optional since GCP allows buckets to be accessed without a region but region is required for data residency requirements. Read here: https://cloud.google.com/storage/docs/request-endpoints
+	//
+	// This overrides the `credential.region` field if it is provided.
 	Region *string `json:"region,omitempty" url:"region,omitempty"`
 	// This is the path where call artifacts will be stored.
 	//
@@ -8794,6 +9091,659 @@ func (c *CartesiaSpeedControl) Accept(visitor CartesiaSpeedControlVisitor) error
 		return visitor.VisitDouble(c.Double)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type CartesiaTranscriber struct {
+	Model    *string                      `json:"model,omitempty" url:"model,omitempty"`
+	Language *CartesiaTranscriberLanguage `json:"language,omitempty" url:"language,omitempty"`
+	// This is the plan for voice provider fallbacks in the event that the primary voice provider fails.
+	FallbackPlan *FallbackTranscriberPlan `json:"fallbackPlan,omitempty" url:"fallbackPlan,omitempty"`
+	provider     string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CartesiaTranscriber) GetLanguage() *CartesiaTranscriberLanguage {
+	if c == nil {
+		return nil
+	}
+	return c.Language
+}
+
+func (c *CartesiaTranscriber) GetFallbackPlan() *FallbackTranscriberPlan {
+	if c == nil {
+		return nil
+	}
+	return c.FallbackPlan
+}
+
+func (c *CartesiaTranscriber) Provider() string {
+	return c.provider
+}
+
+func (c *CartesiaTranscriber) GetExtraProperties() map[string]interface{} {
+	return c.extraProperties
+}
+
+func (c *CartesiaTranscriber) UnmarshalJSON(data []byte) error {
+	type embed CartesiaTranscriber
+	var unmarshaler = struct {
+		embed
+		Provider string `json:"provider"`
+	}{
+		embed: embed(*c),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*c = CartesiaTranscriber(unmarshaler.embed)
+	if unmarshaler.Provider != "cartesia" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", c, "cartesia", unmarshaler.Provider)
+	}
+	c.provider = unmarshaler.Provider
+	extraProperties, err := internal.ExtractExtraProperties(data, *c, "provider")
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CartesiaTranscriber) MarshalJSON() ([]byte, error) {
+	type embed CartesiaTranscriber
+	var marshaler = struct {
+		embed
+		Provider string `json:"provider"`
+	}{
+		embed:    embed(*c),
+		Provider: "cartesia",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (c *CartesiaTranscriber) String() string {
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+type CartesiaTranscriberLanguage string
+
+const (
+	CartesiaTranscriberLanguageAa  CartesiaTranscriberLanguage = "aa"
+	CartesiaTranscriberLanguageAb  CartesiaTranscriberLanguage = "ab"
+	CartesiaTranscriberLanguageAe  CartesiaTranscriberLanguage = "ae"
+	CartesiaTranscriberLanguageAf  CartesiaTranscriberLanguage = "af"
+	CartesiaTranscriberLanguageAk  CartesiaTranscriberLanguage = "ak"
+	CartesiaTranscriberLanguageAm  CartesiaTranscriberLanguage = "am"
+	CartesiaTranscriberLanguageAn  CartesiaTranscriberLanguage = "an"
+	CartesiaTranscriberLanguageAr  CartesiaTranscriberLanguage = "ar"
+	CartesiaTranscriberLanguageAs  CartesiaTranscriberLanguage = "as"
+	CartesiaTranscriberLanguageAv  CartesiaTranscriberLanguage = "av"
+	CartesiaTranscriberLanguageAy  CartesiaTranscriberLanguage = "ay"
+	CartesiaTranscriberLanguageAz  CartesiaTranscriberLanguage = "az"
+	CartesiaTranscriberLanguageBa  CartesiaTranscriberLanguage = "ba"
+	CartesiaTranscriberLanguageBe  CartesiaTranscriberLanguage = "be"
+	CartesiaTranscriberLanguageBg  CartesiaTranscriberLanguage = "bg"
+	CartesiaTranscriberLanguageBh  CartesiaTranscriberLanguage = "bh"
+	CartesiaTranscriberLanguageBi  CartesiaTranscriberLanguage = "bi"
+	CartesiaTranscriberLanguageBm  CartesiaTranscriberLanguage = "bm"
+	CartesiaTranscriberLanguageBn  CartesiaTranscriberLanguage = "bn"
+	CartesiaTranscriberLanguageBo  CartesiaTranscriberLanguage = "bo"
+	CartesiaTranscriberLanguageBr  CartesiaTranscriberLanguage = "br"
+	CartesiaTranscriberLanguageBs  CartesiaTranscriberLanguage = "bs"
+	CartesiaTranscriberLanguageCa  CartesiaTranscriberLanguage = "ca"
+	CartesiaTranscriberLanguageCe  CartesiaTranscriberLanguage = "ce"
+	CartesiaTranscriberLanguageCh  CartesiaTranscriberLanguage = "ch"
+	CartesiaTranscriberLanguageCo  CartesiaTranscriberLanguage = "co"
+	CartesiaTranscriberLanguageCr  CartesiaTranscriberLanguage = "cr"
+	CartesiaTranscriberLanguageCs  CartesiaTranscriberLanguage = "cs"
+	CartesiaTranscriberLanguageCu  CartesiaTranscriberLanguage = "cu"
+	CartesiaTranscriberLanguageCv  CartesiaTranscriberLanguage = "cv"
+	CartesiaTranscriberLanguageCy  CartesiaTranscriberLanguage = "cy"
+	CartesiaTranscriberLanguageDa  CartesiaTranscriberLanguage = "da"
+	CartesiaTranscriberLanguageDe  CartesiaTranscriberLanguage = "de"
+	CartesiaTranscriberLanguageDv  CartesiaTranscriberLanguage = "dv"
+	CartesiaTranscriberLanguageDz  CartesiaTranscriberLanguage = "dz"
+	CartesiaTranscriberLanguageEe  CartesiaTranscriberLanguage = "ee"
+	CartesiaTranscriberLanguageEl  CartesiaTranscriberLanguage = "el"
+	CartesiaTranscriberLanguageEn  CartesiaTranscriberLanguage = "en"
+	CartesiaTranscriberLanguageEo  CartesiaTranscriberLanguage = "eo"
+	CartesiaTranscriberLanguageEs  CartesiaTranscriberLanguage = "es"
+	CartesiaTranscriberLanguageEt  CartesiaTranscriberLanguage = "et"
+	CartesiaTranscriberLanguageEu  CartesiaTranscriberLanguage = "eu"
+	CartesiaTranscriberLanguageFa  CartesiaTranscriberLanguage = "fa"
+	CartesiaTranscriberLanguageFf  CartesiaTranscriberLanguage = "ff"
+	CartesiaTranscriberLanguageFi  CartesiaTranscriberLanguage = "fi"
+	CartesiaTranscriberLanguageFj  CartesiaTranscriberLanguage = "fj"
+	CartesiaTranscriberLanguageFo  CartesiaTranscriberLanguage = "fo"
+	CartesiaTranscriberLanguageFr  CartesiaTranscriberLanguage = "fr"
+	CartesiaTranscriberLanguageFy  CartesiaTranscriberLanguage = "fy"
+	CartesiaTranscriberLanguageGa  CartesiaTranscriberLanguage = "ga"
+	CartesiaTranscriberLanguageGd  CartesiaTranscriberLanguage = "gd"
+	CartesiaTranscriberLanguageGl  CartesiaTranscriberLanguage = "gl"
+	CartesiaTranscriberLanguageGn  CartesiaTranscriberLanguage = "gn"
+	CartesiaTranscriberLanguageGu  CartesiaTranscriberLanguage = "gu"
+	CartesiaTranscriberLanguageGv  CartesiaTranscriberLanguage = "gv"
+	CartesiaTranscriberLanguageHa  CartesiaTranscriberLanguage = "ha"
+	CartesiaTranscriberLanguageHe  CartesiaTranscriberLanguage = "he"
+	CartesiaTranscriberLanguageHi  CartesiaTranscriberLanguage = "hi"
+	CartesiaTranscriberLanguageHo  CartesiaTranscriberLanguage = "ho"
+	CartesiaTranscriberLanguageHr  CartesiaTranscriberLanguage = "hr"
+	CartesiaTranscriberLanguageHt  CartesiaTranscriberLanguage = "ht"
+	CartesiaTranscriberLanguageHu  CartesiaTranscriberLanguage = "hu"
+	CartesiaTranscriberLanguageHy  CartesiaTranscriberLanguage = "hy"
+	CartesiaTranscriberLanguageHz  CartesiaTranscriberLanguage = "hz"
+	CartesiaTranscriberLanguageIa  CartesiaTranscriberLanguage = "ia"
+	CartesiaTranscriberLanguageId  CartesiaTranscriberLanguage = "id"
+	CartesiaTranscriberLanguageIe  CartesiaTranscriberLanguage = "ie"
+	CartesiaTranscriberLanguageIg  CartesiaTranscriberLanguage = "ig"
+	CartesiaTranscriberLanguageIi  CartesiaTranscriberLanguage = "ii"
+	CartesiaTranscriberLanguageIk  CartesiaTranscriberLanguage = "ik"
+	CartesiaTranscriberLanguageIo  CartesiaTranscriberLanguage = "io"
+	CartesiaTranscriberLanguageIs  CartesiaTranscriberLanguage = "is"
+	CartesiaTranscriberLanguageIt  CartesiaTranscriberLanguage = "it"
+	CartesiaTranscriberLanguageIu  CartesiaTranscriberLanguage = "iu"
+	CartesiaTranscriberLanguageJa  CartesiaTranscriberLanguage = "ja"
+	CartesiaTranscriberLanguageJv  CartesiaTranscriberLanguage = "jv"
+	CartesiaTranscriberLanguageKa  CartesiaTranscriberLanguage = "ka"
+	CartesiaTranscriberLanguageKg  CartesiaTranscriberLanguage = "kg"
+	CartesiaTranscriberLanguageKi  CartesiaTranscriberLanguage = "ki"
+	CartesiaTranscriberLanguageKj  CartesiaTranscriberLanguage = "kj"
+	CartesiaTranscriberLanguageKk  CartesiaTranscriberLanguage = "kk"
+	CartesiaTranscriberLanguageKl  CartesiaTranscriberLanguage = "kl"
+	CartesiaTranscriberLanguageKm  CartesiaTranscriberLanguage = "km"
+	CartesiaTranscriberLanguageKn  CartesiaTranscriberLanguage = "kn"
+	CartesiaTranscriberLanguageKo  CartesiaTranscriberLanguage = "ko"
+	CartesiaTranscriberLanguageKr  CartesiaTranscriberLanguage = "kr"
+	CartesiaTranscriberLanguageKs  CartesiaTranscriberLanguage = "ks"
+	CartesiaTranscriberLanguageKu  CartesiaTranscriberLanguage = "ku"
+	CartesiaTranscriberLanguageKv  CartesiaTranscriberLanguage = "kv"
+	CartesiaTranscriberLanguageKw  CartesiaTranscriberLanguage = "kw"
+	CartesiaTranscriberLanguageKy  CartesiaTranscriberLanguage = "ky"
+	CartesiaTranscriberLanguageLa  CartesiaTranscriberLanguage = "la"
+	CartesiaTranscriberLanguageLb  CartesiaTranscriberLanguage = "lb"
+	CartesiaTranscriberLanguageLg  CartesiaTranscriberLanguage = "lg"
+	CartesiaTranscriberLanguageLi  CartesiaTranscriberLanguage = "li"
+	CartesiaTranscriberLanguageLn  CartesiaTranscriberLanguage = "ln"
+	CartesiaTranscriberLanguageLo  CartesiaTranscriberLanguage = "lo"
+	CartesiaTranscriberLanguageLt  CartesiaTranscriberLanguage = "lt"
+	CartesiaTranscriberLanguageLu  CartesiaTranscriberLanguage = "lu"
+	CartesiaTranscriberLanguageLv  CartesiaTranscriberLanguage = "lv"
+	CartesiaTranscriberLanguageMg  CartesiaTranscriberLanguage = "mg"
+	CartesiaTranscriberLanguageMh  CartesiaTranscriberLanguage = "mh"
+	CartesiaTranscriberLanguageMi  CartesiaTranscriberLanguage = "mi"
+	CartesiaTranscriberLanguageMk  CartesiaTranscriberLanguage = "mk"
+	CartesiaTranscriberLanguageMl  CartesiaTranscriberLanguage = "ml"
+	CartesiaTranscriberLanguageMn  CartesiaTranscriberLanguage = "mn"
+	CartesiaTranscriberLanguageMr  CartesiaTranscriberLanguage = "mr"
+	CartesiaTranscriberLanguageMs  CartesiaTranscriberLanguage = "ms"
+	CartesiaTranscriberLanguageMt  CartesiaTranscriberLanguage = "mt"
+	CartesiaTranscriberLanguageMy  CartesiaTranscriberLanguage = "my"
+	CartesiaTranscriberLanguageNa  CartesiaTranscriberLanguage = "na"
+	CartesiaTranscriberLanguageNb  CartesiaTranscriberLanguage = "nb"
+	CartesiaTranscriberLanguageNd  CartesiaTranscriberLanguage = "nd"
+	CartesiaTranscriberLanguageNe  CartesiaTranscriberLanguage = "ne"
+	CartesiaTranscriberLanguageNg  CartesiaTranscriberLanguage = "ng"
+	CartesiaTranscriberLanguageNl  CartesiaTranscriberLanguage = "nl"
+	CartesiaTranscriberLanguageNn  CartesiaTranscriberLanguage = "nn"
+	CartesiaTranscriberLanguageNo  CartesiaTranscriberLanguage = "no"
+	CartesiaTranscriberLanguageNr  CartesiaTranscriberLanguage = "nr"
+	CartesiaTranscriberLanguageNv  CartesiaTranscriberLanguage = "nv"
+	CartesiaTranscriberLanguageNy  CartesiaTranscriberLanguage = "ny"
+	CartesiaTranscriberLanguageOc  CartesiaTranscriberLanguage = "oc"
+	CartesiaTranscriberLanguageOj  CartesiaTranscriberLanguage = "oj"
+	CartesiaTranscriberLanguageOm  CartesiaTranscriberLanguage = "om"
+	CartesiaTranscriberLanguageOr  CartesiaTranscriberLanguage = "or"
+	CartesiaTranscriberLanguageOs  CartesiaTranscriberLanguage = "os"
+	CartesiaTranscriberLanguagePa  CartesiaTranscriberLanguage = "pa"
+	CartesiaTranscriberLanguagePi  CartesiaTranscriberLanguage = "pi"
+	CartesiaTranscriberLanguagePl  CartesiaTranscriberLanguage = "pl"
+	CartesiaTranscriberLanguagePs  CartesiaTranscriberLanguage = "ps"
+	CartesiaTranscriberLanguagePt  CartesiaTranscriberLanguage = "pt"
+	CartesiaTranscriberLanguageQu  CartesiaTranscriberLanguage = "qu"
+	CartesiaTranscriberLanguageRm  CartesiaTranscriberLanguage = "rm"
+	CartesiaTranscriberLanguageRn  CartesiaTranscriberLanguage = "rn"
+	CartesiaTranscriberLanguageRo  CartesiaTranscriberLanguage = "ro"
+	CartesiaTranscriberLanguageRu  CartesiaTranscriberLanguage = "ru"
+	CartesiaTranscriberLanguageRw  CartesiaTranscriberLanguage = "rw"
+	CartesiaTranscriberLanguageSa  CartesiaTranscriberLanguage = "sa"
+	CartesiaTranscriberLanguageSc  CartesiaTranscriberLanguage = "sc"
+	CartesiaTranscriberLanguageSd  CartesiaTranscriberLanguage = "sd"
+	CartesiaTranscriberLanguageSe  CartesiaTranscriberLanguage = "se"
+	CartesiaTranscriberLanguageSg  CartesiaTranscriberLanguage = "sg"
+	CartesiaTranscriberLanguageSi  CartesiaTranscriberLanguage = "si"
+	CartesiaTranscriberLanguageSk  CartesiaTranscriberLanguage = "sk"
+	CartesiaTranscriberLanguageSl  CartesiaTranscriberLanguage = "sl"
+	CartesiaTranscriberLanguageSm  CartesiaTranscriberLanguage = "sm"
+	CartesiaTranscriberLanguageSn  CartesiaTranscriberLanguage = "sn"
+	CartesiaTranscriberLanguageSo  CartesiaTranscriberLanguage = "so"
+	CartesiaTranscriberLanguageSq  CartesiaTranscriberLanguage = "sq"
+	CartesiaTranscriberLanguageSr  CartesiaTranscriberLanguage = "sr"
+	CartesiaTranscriberLanguageSs  CartesiaTranscriberLanguage = "ss"
+	CartesiaTranscriberLanguageSt  CartesiaTranscriberLanguage = "st"
+	CartesiaTranscriberLanguageSu  CartesiaTranscriberLanguage = "su"
+	CartesiaTranscriberLanguageSv  CartesiaTranscriberLanguage = "sv"
+	CartesiaTranscriberLanguageSw  CartesiaTranscriberLanguage = "sw"
+	CartesiaTranscriberLanguageTa  CartesiaTranscriberLanguage = "ta"
+	CartesiaTranscriberLanguageTe  CartesiaTranscriberLanguage = "te"
+	CartesiaTranscriberLanguageTg  CartesiaTranscriberLanguage = "tg"
+	CartesiaTranscriberLanguageTh  CartesiaTranscriberLanguage = "th"
+	CartesiaTranscriberLanguageTi  CartesiaTranscriberLanguage = "ti"
+	CartesiaTranscriberLanguageTk  CartesiaTranscriberLanguage = "tk"
+	CartesiaTranscriberLanguageTl  CartesiaTranscriberLanguage = "tl"
+	CartesiaTranscriberLanguageTn  CartesiaTranscriberLanguage = "tn"
+	CartesiaTranscriberLanguageTo  CartesiaTranscriberLanguage = "to"
+	CartesiaTranscriberLanguageTr  CartesiaTranscriberLanguage = "tr"
+	CartesiaTranscriberLanguageTs  CartesiaTranscriberLanguage = "ts"
+	CartesiaTranscriberLanguageTt  CartesiaTranscriberLanguage = "tt"
+	CartesiaTranscriberLanguageTw  CartesiaTranscriberLanguage = "tw"
+	CartesiaTranscriberLanguageTy  CartesiaTranscriberLanguage = "ty"
+	CartesiaTranscriberLanguageUg  CartesiaTranscriberLanguage = "ug"
+	CartesiaTranscriberLanguageUk  CartesiaTranscriberLanguage = "uk"
+	CartesiaTranscriberLanguageUr  CartesiaTranscriberLanguage = "ur"
+	CartesiaTranscriberLanguageUz  CartesiaTranscriberLanguage = "uz"
+	CartesiaTranscriberLanguageVe  CartesiaTranscriberLanguage = "ve"
+	CartesiaTranscriberLanguageVi  CartesiaTranscriberLanguage = "vi"
+	CartesiaTranscriberLanguageVo  CartesiaTranscriberLanguage = "vo"
+	CartesiaTranscriberLanguageWa  CartesiaTranscriberLanguage = "wa"
+	CartesiaTranscriberLanguageWo  CartesiaTranscriberLanguage = "wo"
+	CartesiaTranscriberLanguageXh  CartesiaTranscriberLanguage = "xh"
+	CartesiaTranscriberLanguageYi  CartesiaTranscriberLanguage = "yi"
+	CartesiaTranscriberLanguageYue CartesiaTranscriberLanguage = "yue"
+	CartesiaTranscriberLanguageYo  CartesiaTranscriberLanguage = "yo"
+	CartesiaTranscriberLanguageZa  CartesiaTranscriberLanguage = "za"
+	CartesiaTranscriberLanguageZh  CartesiaTranscriberLanguage = "zh"
+	CartesiaTranscriberLanguageZu  CartesiaTranscriberLanguage = "zu"
+)
+
+func NewCartesiaTranscriberLanguageFromString(s string) (CartesiaTranscriberLanguage, error) {
+	switch s {
+	case "aa":
+		return CartesiaTranscriberLanguageAa, nil
+	case "ab":
+		return CartesiaTranscriberLanguageAb, nil
+	case "ae":
+		return CartesiaTranscriberLanguageAe, nil
+	case "af":
+		return CartesiaTranscriberLanguageAf, nil
+	case "ak":
+		return CartesiaTranscriberLanguageAk, nil
+	case "am":
+		return CartesiaTranscriberLanguageAm, nil
+	case "an":
+		return CartesiaTranscriberLanguageAn, nil
+	case "ar":
+		return CartesiaTranscriberLanguageAr, nil
+	case "as":
+		return CartesiaTranscriberLanguageAs, nil
+	case "av":
+		return CartesiaTranscriberLanguageAv, nil
+	case "ay":
+		return CartesiaTranscriberLanguageAy, nil
+	case "az":
+		return CartesiaTranscriberLanguageAz, nil
+	case "ba":
+		return CartesiaTranscriberLanguageBa, nil
+	case "be":
+		return CartesiaTranscriberLanguageBe, nil
+	case "bg":
+		return CartesiaTranscriberLanguageBg, nil
+	case "bh":
+		return CartesiaTranscriberLanguageBh, nil
+	case "bi":
+		return CartesiaTranscriberLanguageBi, nil
+	case "bm":
+		return CartesiaTranscriberLanguageBm, nil
+	case "bn":
+		return CartesiaTranscriberLanguageBn, nil
+	case "bo":
+		return CartesiaTranscriberLanguageBo, nil
+	case "br":
+		return CartesiaTranscriberLanguageBr, nil
+	case "bs":
+		return CartesiaTranscriberLanguageBs, nil
+	case "ca":
+		return CartesiaTranscriberLanguageCa, nil
+	case "ce":
+		return CartesiaTranscriberLanguageCe, nil
+	case "ch":
+		return CartesiaTranscriberLanguageCh, nil
+	case "co":
+		return CartesiaTranscriberLanguageCo, nil
+	case "cr":
+		return CartesiaTranscriberLanguageCr, nil
+	case "cs":
+		return CartesiaTranscriberLanguageCs, nil
+	case "cu":
+		return CartesiaTranscriberLanguageCu, nil
+	case "cv":
+		return CartesiaTranscriberLanguageCv, nil
+	case "cy":
+		return CartesiaTranscriberLanguageCy, nil
+	case "da":
+		return CartesiaTranscriberLanguageDa, nil
+	case "de":
+		return CartesiaTranscriberLanguageDe, nil
+	case "dv":
+		return CartesiaTranscriberLanguageDv, nil
+	case "dz":
+		return CartesiaTranscriberLanguageDz, nil
+	case "ee":
+		return CartesiaTranscriberLanguageEe, nil
+	case "el":
+		return CartesiaTranscriberLanguageEl, nil
+	case "en":
+		return CartesiaTranscriberLanguageEn, nil
+	case "eo":
+		return CartesiaTranscriberLanguageEo, nil
+	case "es":
+		return CartesiaTranscriberLanguageEs, nil
+	case "et":
+		return CartesiaTranscriberLanguageEt, nil
+	case "eu":
+		return CartesiaTranscriberLanguageEu, nil
+	case "fa":
+		return CartesiaTranscriberLanguageFa, nil
+	case "ff":
+		return CartesiaTranscriberLanguageFf, nil
+	case "fi":
+		return CartesiaTranscriberLanguageFi, nil
+	case "fj":
+		return CartesiaTranscriberLanguageFj, nil
+	case "fo":
+		return CartesiaTranscriberLanguageFo, nil
+	case "fr":
+		return CartesiaTranscriberLanguageFr, nil
+	case "fy":
+		return CartesiaTranscriberLanguageFy, nil
+	case "ga":
+		return CartesiaTranscriberLanguageGa, nil
+	case "gd":
+		return CartesiaTranscriberLanguageGd, nil
+	case "gl":
+		return CartesiaTranscriberLanguageGl, nil
+	case "gn":
+		return CartesiaTranscriberLanguageGn, nil
+	case "gu":
+		return CartesiaTranscriberLanguageGu, nil
+	case "gv":
+		return CartesiaTranscriberLanguageGv, nil
+	case "ha":
+		return CartesiaTranscriberLanguageHa, nil
+	case "he":
+		return CartesiaTranscriberLanguageHe, nil
+	case "hi":
+		return CartesiaTranscriberLanguageHi, nil
+	case "ho":
+		return CartesiaTranscriberLanguageHo, nil
+	case "hr":
+		return CartesiaTranscriberLanguageHr, nil
+	case "ht":
+		return CartesiaTranscriberLanguageHt, nil
+	case "hu":
+		return CartesiaTranscriberLanguageHu, nil
+	case "hy":
+		return CartesiaTranscriberLanguageHy, nil
+	case "hz":
+		return CartesiaTranscriberLanguageHz, nil
+	case "ia":
+		return CartesiaTranscriberLanguageIa, nil
+	case "id":
+		return CartesiaTranscriberLanguageId, nil
+	case "ie":
+		return CartesiaTranscriberLanguageIe, nil
+	case "ig":
+		return CartesiaTranscriberLanguageIg, nil
+	case "ii":
+		return CartesiaTranscriberLanguageIi, nil
+	case "ik":
+		return CartesiaTranscriberLanguageIk, nil
+	case "io":
+		return CartesiaTranscriberLanguageIo, nil
+	case "is":
+		return CartesiaTranscriberLanguageIs, nil
+	case "it":
+		return CartesiaTranscriberLanguageIt, nil
+	case "iu":
+		return CartesiaTranscriberLanguageIu, nil
+	case "ja":
+		return CartesiaTranscriberLanguageJa, nil
+	case "jv":
+		return CartesiaTranscriberLanguageJv, nil
+	case "ka":
+		return CartesiaTranscriberLanguageKa, nil
+	case "kg":
+		return CartesiaTranscriberLanguageKg, nil
+	case "ki":
+		return CartesiaTranscriberLanguageKi, nil
+	case "kj":
+		return CartesiaTranscriberLanguageKj, nil
+	case "kk":
+		return CartesiaTranscriberLanguageKk, nil
+	case "kl":
+		return CartesiaTranscriberLanguageKl, nil
+	case "km":
+		return CartesiaTranscriberLanguageKm, nil
+	case "kn":
+		return CartesiaTranscriberLanguageKn, nil
+	case "ko":
+		return CartesiaTranscriberLanguageKo, nil
+	case "kr":
+		return CartesiaTranscriberLanguageKr, nil
+	case "ks":
+		return CartesiaTranscriberLanguageKs, nil
+	case "ku":
+		return CartesiaTranscriberLanguageKu, nil
+	case "kv":
+		return CartesiaTranscriberLanguageKv, nil
+	case "kw":
+		return CartesiaTranscriberLanguageKw, nil
+	case "ky":
+		return CartesiaTranscriberLanguageKy, nil
+	case "la":
+		return CartesiaTranscriberLanguageLa, nil
+	case "lb":
+		return CartesiaTranscriberLanguageLb, nil
+	case "lg":
+		return CartesiaTranscriberLanguageLg, nil
+	case "li":
+		return CartesiaTranscriberLanguageLi, nil
+	case "ln":
+		return CartesiaTranscriberLanguageLn, nil
+	case "lo":
+		return CartesiaTranscriberLanguageLo, nil
+	case "lt":
+		return CartesiaTranscriberLanguageLt, nil
+	case "lu":
+		return CartesiaTranscriberLanguageLu, nil
+	case "lv":
+		return CartesiaTranscriberLanguageLv, nil
+	case "mg":
+		return CartesiaTranscriberLanguageMg, nil
+	case "mh":
+		return CartesiaTranscriberLanguageMh, nil
+	case "mi":
+		return CartesiaTranscriberLanguageMi, nil
+	case "mk":
+		return CartesiaTranscriberLanguageMk, nil
+	case "ml":
+		return CartesiaTranscriberLanguageMl, nil
+	case "mn":
+		return CartesiaTranscriberLanguageMn, nil
+	case "mr":
+		return CartesiaTranscriberLanguageMr, nil
+	case "ms":
+		return CartesiaTranscriberLanguageMs, nil
+	case "mt":
+		return CartesiaTranscriberLanguageMt, nil
+	case "my":
+		return CartesiaTranscriberLanguageMy, nil
+	case "na":
+		return CartesiaTranscriberLanguageNa, nil
+	case "nb":
+		return CartesiaTranscriberLanguageNb, nil
+	case "nd":
+		return CartesiaTranscriberLanguageNd, nil
+	case "ne":
+		return CartesiaTranscriberLanguageNe, nil
+	case "ng":
+		return CartesiaTranscriberLanguageNg, nil
+	case "nl":
+		return CartesiaTranscriberLanguageNl, nil
+	case "nn":
+		return CartesiaTranscriberLanguageNn, nil
+	case "no":
+		return CartesiaTranscriberLanguageNo, nil
+	case "nr":
+		return CartesiaTranscriberLanguageNr, nil
+	case "nv":
+		return CartesiaTranscriberLanguageNv, nil
+	case "ny":
+		return CartesiaTranscriberLanguageNy, nil
+	case "oc":
+		return CartesiaTranscriberLanguageOc, nil
+	case "oj":
+		return CartesiaTranscriberLanguageOj, nil
+	case "om":
+		return CartesiaTranscriberLanguageOm, nil
+	case "or":
+		return CartesiaTranscriberLanguageOr, nil
+	case "os":
+		return CartesiaTranscriberLanguageOs, nil
+	case "pa":
+		return CartesiaTranscriberLanguagePa, nil
+	case "pi":
+		return CartesiaTranscriberLanguagePi, nil
+	case "pl":
+		return CartesiaTranscriberLanguagePl, nil
+	case "ps":
+		return CartesiaTranscriberLanguagePs, nil
+	case "pt":
+		return CartesiaTranscriberLanguagePt, nil
+	case "qu":
+		return CartesiaTranscriberLanguageQu, nil
+	case "rm":
+		return CartesiaTranscriberLanguageRm, nil
+	case "rn":
+		return CartesiaTranscriberLanguageRn, nil
+	case "ro":
+		return CartesiaTranscriberLanguageRo, nil
+	case "ru":
+		return CartesiaTranscriberLanguageRu, nil
+	case "rw":
+		return CartesiaTranscriberLanguageRw, nil
+	case "sa":
+		return CartesiaTranscriberLanguageSa, nil
+	case "sc":
+		return CartesiaTranscriberLanguageSc, nil
+	case "sd":
+		return CartesiaTranscriberLanguageSd, nil
+	case "se":
+		return CartesiaTranscriberLanguageSe, nil
+	case "sg":
+		return CartesiaTranscriberLanguageSg, nil
+	case "si":
+		return CartesiaTranscriberLanguageSi, nil
+	case "sk":
+		return CartesiaTranscriberLanguageSk, nil
+	case "sl":
+		return CartesiaTranscriberLanguageSl, nil
+	case "sm":
+		return CartesiaTranscriberLanguageSm, nil
+	case "sn":
+		return CartesiaTranscriberLanguageSn, nil
+	case "so":
+		return CartesiaTranscriberLanguageSo, nil
+	case "sq":
+		return CartesiaTranscriberLanguageSq, nil
+	case "sr":
+		return CartesiaTranscriberLanguageSr, nil
+	case "ss":
+		return CartesiaTranscriberLanguageSs, nil
+	case "st":
+		return CartesiaTranscriberLanguageSt, nil
+	case "su":
+		return CartesiaTranscriberLanguageSu, nil
+	case "sv":
+		return CartesiaTranscriberLanguageSv, nil
+	case "sw":
+		return CartesiaTranscriberLanguageSw, nil
+	case "ta":
+		return CartesiaTranscriberLanguageTa, nil
+	case "te":
+		return CartesiaTranscriberLanguageTe, nil
+	case "tg":
+		return CartesiaTranscriberLanguageTg, nil
+	case "th":
+		return CartesiaTranscriberLanguageTh, nil
+	case "ti":
+		return CartesiaTranscriberLanguageTi, nil
+	case "tk":
+		return CartesiaTranscriberLanguageTk, nil
+	case "tl":
+		return CartesiaTranscriberLanguageTl, nil
+	case "tn":
+		return CartesiaTranscriberLanguageTn, nil
+	case "to":
+		return CartesiaTranscriberLanguageTo, nil
+	case "tr":
+		return CartesiaTranscriberLanguageTr, nil
+	case "ts":
+		return CartesiaTranscriberLanguageTs, nil
+	case "tt":
+		return CartesiaTranscriberLanguageTt, nil
+	case "tw":
+		return CartesiaTranscriberLanguageTw, nil
+	case "ty":
+		return CartesiaTranscriberLanguageTy, nil
+	case "ug":
+		return CartesiaTranscriberLanguageUg, nil
+	case "uk":
+		return CartesiaTranscriberLanguageUk, nil
+	case "ur":
+		return CartesiaTranscriberLanguageUr, nil
+	case "uz":
+		return CartesiaTranscriberLanguageUz, nil
+	case "ve":
+		return CartesiaTranscriberLanguageVe, nil
+	case "vi":
+		return CartesiaTranscriberLanguageVi, nil
+	case "vo":
+		return CartesiaTranscriberLanguageVo, nil
+	case "wa":
+		return CartesiaTranscriberLanguageWa, nil
+	case "wo":
+		return CartesiaTranscriberLanguageWo, nil
+	case "xh":
+		return CartesiaTranscriberLanguageXh, nil
+	case "yi":
+		return CartesiaTranscriberLanguageYi, nil
+	case "yue":
+		return CartesiaTranscriberLanguageYue, nil
+	case "yo":
+		return CartesiaTranscriberLanguageYo, nil
+	case "za":
+		return CartesiaTranscriberLanguageZa, nil
+	case "zh":
+		return CartesiaTranscriberLanguageZh, nil
+	case "zu":
+		return CartesiaTranscriberLanguageZu, nil
+	}
+	var t CartesiaTranscriberLanguage
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (c CartesiaTranscriberLanguage) Ptr() *CartesiaTranscriberLanguage {
+	return &c
 }
 
 type CartesiaVoice struct {
@@ -9752,245 +10702,6 @@ func (c *CerebrasModelToolsItem) Accept(visitor CerebrasModelToolsItemVisitor) e
 	return fmt.Errorf("type %T does not include a non-empty union type", c)
 }
 
-type ChatCompletionMessageMetadata struct {
-	TaskName   string                 `json:"taskName" url:"taskName"`
-	TaskType   string                 `json:"taskType" url:"taskType"`
-	TaskOutput string                 `json:"taskOutput" url:"taskOutput"`
-	TaskState  map[string]interface{} `json:"taskState,omitempty" url:"taskState,omitempty"`
-	NodeTrace  []string               `json:"nodeTrace,omitempty" url:"nodeTrace,omitempty"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (c *ChatCompletionMessageMetadata) GetTaskName() string {
-	if c == nil {
-		return ""
-	}
-	return c.TaskName
-}
-
-func (c *ChatCompletionMessageMetadata) GetTaskType() string {
-	if c == nil {
-		return ""
-	}
-	return c.TaskType
-}
-
-func (c *ChatCompletionMessageMetadata) GetTaskOutput() string {
-	if c == nil {
-		return ""
-	}
-	return c.TaskOutput
-}
-
-func (c *ChatCompletionMessageMetadata) GetTaskState() map[string]interface{} {
-	if c == nil {
-		return nil
-	}
-	return c.TaskState
-}
-
-func (c *ChatCompletionMessageMetadata) GetNodeTrace() []string {
-	if c == nil {
-		return nil
-	}
-	return c.NodeTrace
-}
-
-func (c *ChatCompletionMessageMetadata) GetExtraProperties() map[string]interface{} {
-	return c.extraProperties
-}
-
-func (c *ChatCompletionMessageMetadata) UnmarshalJSON(data []byte) error {
-	type unmarshaler ChatCompletionMessageMetadata
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*c = ChatCompletionMessageMetadata(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *c)
-	if err != nil {
-		return err
-	}
-	c.extraProperties = extraProperties
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c *ChatCompletionMessageMetadata) String() string {
-	if len(c.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(c); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", c)
-}
-
-type ChatCompletionMessageWorkflows struct {
-	Role     map[string]interface{}         `json:"role,omitempty" url:"role,omitempty"`
-	Content  *string                        `json:"content,omitempty" url:"content,omitempty"`
-	Metadata *ChatCompletionMessageMetadata `json:"metadata,omitempty" url:"metadata,omitempty"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (c *ChatCompletionMessageWorkflows) GetRole() map[string]interface{} {
-	if c == nil {
-		return nil
-	}
-	return c.Role
-}
-
-func (c *ChatCompletionMessageWorkflows) GetContent() *string {
-	if c == nil {
-		return nil
-	}
-	return c.Content
-}
-
-func (c *ChatCompletionMessageWorkflows) GetMetadata() *ChatCompletionMessageMetadata {
-	if c == nil {
-		return nil
-	}
-	return c.Metadata
-}
-
-func (c *ChatCompletionMessageWorkflows) GetExtraProperties() map[string]interface{} {
-	return c.extraProperties
-}
-
-func (c *ChatCompletionMessageWorkflows) UnmarshalJSON(data []byte) error {
-	type unmarshaler ChatCompletionMessageWorkflows
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*c = ChatCompletionMessageWorkflows(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *c)
-	if err != nil {
-		return err
-	}
-	c.extraProperties = extraProperties
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c *ChatCompletionMessageWorkflows) String() string {
-	if len(c.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(c); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", c)
-}
-
-type ChatCompletionsDto struct {
-	Messages   []*ChatCompletionMessageWorkflows `json:"messages,omitempty" url:"messages,omitempty"`
-	WorkflowId *string                           `json:"workflowId,omitempty" url:"workflowId,omitempty"`
-	Workflow   *CreateWorkflowDto                `json:"workflow,omitempty" url:"workflow,omitempty"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (c *ChatCompletionsDto) GetMessages() []*ChatCompletionMessageWorkflows {
-	if c == nil {
-		return nil
-	}
-	return c.Messages
-}
-
-func (c *ChatCompletionsDto) GetWorkflowId() *string {
-	if c == nil {
-		return nil
-	}
-	return c.WorkflowId
-}
-
-func (c *ChatCompletionsDto) GetWorkflow() *CreateWorkflowDto {
-	if c == nil {
-		return nil
-	}
-	return c.Workflow
-}
-
-func (c *ChatCompletionsDto) GetExtraProperties() map[string]interface{} {
-	return c.extraProperties
-}
-
-func (c *ChatCompletionsDto) UnmarshalJSON(data []byte) error {
-	type unmarshaler ChatCompletionsDto
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*c = ChatCompletionsDto(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *c)
-	if err != nil {
-		return err
-	}
-	c.extraProperties = extraProperties
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c *ChatCompletionsDto) String() string {
-	if len(c.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(c); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", c)
-}
-
-type ChatServiceResponse struct {
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (c *ChatServiceResponse) GetExtraProperties() map[string]interface{} {
-	return c.extraProperties
-}
-
-func (c *ChatServiceResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler ChatServiceResponse
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*c = ChatServiceResponse(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *c)
-	if err != nil {
-		return err
-	}
-	c.extraProperties = extraProperties
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c *ChatServiceResponse) String() string {
-	if len(c.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(c); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", c)
-}
-
 type ChunkPlan struct {
 	// This determines whether the model output is chunked before being sent to the voice provider. Default `true`.
 	//
@@ -10518,15 +11229,26 @@ func (c *ClientInboundMessageMessage) Accept(visitor ClientInboundMessageMessage
 type ClientInboundMessageSay struct {
 	// This is the type of the message. Send "say" message to make the assistant say something.
 	Type *string `json:"type,omitempty" url:"type,omitempty"`
+	// This is the flag for whether the message should replace existing assistant speech.
+	//
+	// @default false
+	InterruptAssistantEnabled *bool `json:"interruptAssistantEnabled,omitempty" url:"interruptAssistantEnabled,omitempty"`
 	// This is the content to say.
 	Content *string `json:"content,omitempty" url:"content,omitempty"`
 	// This is the flag to end call after content is spoken.
 	EndCallAfterSpoken *bool `json:"endCallAfterSpoken,omitempty" url:"endCallAfterSpoken,omitempty"`
-	// This is the flag for whether the message is interruptible.
+	// This is the flag for whether the message is interruptible by the user.
 	InterruptionsEnabled *bool `json:"interruptionsEnabled,omitempty" url:"interruptionsEnabled,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (c *ClientInboundMessageSay) GetInterruptAssistantEnabled() *bool {
+	if c == nil {
+		return nil
+	}
+	return c.InterruptAssistantEnabled
 }
 
 func (c *ClientInboundMessageSay) GetContent() *string {
@@ -14860,6 +15582,8 @@ type CloudflareCredential struct {
 	ApiKey *string `json:"apiKey,omitempty" url:"apiKey,omitempty"`
 	// Cloudflare Account Email.
 	AccountEmail *string `json:"accountEmail,omitempty" url:"accountEmail,omitempty"`
+	// This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+	FallbackIndex *float64 `json:"fallbackIndex,omitempty" url:"fallbackIndex,omitempty"`
 	// This is the unique identifier for the credential.
 	Id string `json:"id" url:"id"`
 	// This is the unique identifier for the org that this credential belongs to.
@@ -14897,6 +15621,13 @@ func (c *CloudflareCredential) GetAccountEmail() *string {
 		return nil
 	}
 	return c.AccountEmail
+}
+
+func (c *CloudflareCredential) GetFallbackIndex() *float64 {
+	if c == nil {
+		return nil
+	}
+	return c.FallbackIndex
 }
 
 func (c *CloudflareCredential) GetId() string {
@@ -15154,20 +15885,22 @@ func (c *CompliancePlan) String() string {
 }
 
 type ComputerToolWithToolCall struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
 	Messages []*ComputerToolWithToolCallMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
 	// The type of tool. "computer" for Computer tool.
 	// The sub type of tool.
+	//
+	//	This is the server where a `tool-calls` webhook will be sent.
+	//
+	//	Notes:
+	//	- Webhook is sent to this server when a tool call is made.
+	//	- Webhook contains the call, assistant, and phone number objects.
+	//	- Webhook contains the variables set on the assistant.
+	//	- Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+	//	- Webhook expects a response with tool call result.
+	Server   *Server   `json:"server,omitempty" url:"server,omitempty"`
 	ToolCall *ToolCall `json:"toolCall,omitempty" url:"toolCall,omitempty"`
 	// The name of the tool, fixed to 'computer'
 	// The display width in pixels
@@ -15182,25 +15915,12 @@ type ComputerToolWithToolCall struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server  *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_   string
-	subType string
-	name    string
+	type_    string
+	subType  string
+	name     string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *ComputerToolWithToolCall) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
 }
 
 func (c *ComputerToolWithToolCall) GetMessages() []*ComputerToolWithToolCallMessagesItem {
@@ -15208,6 +15928,13 @@ func (c *ComputerToolWithToolCall) GetMessages() []*ComputerToolWithToolCallMess
 		return nil
 	}
 	return c.Messages
+}
+
+func (c *ComputerToolWithToolCall) GetServer() *Server {
+	if c == nil {
+		return nil
+	}
+	return c.Server
 }
 
 func (c *ComputerToolWithToolCall) GetToolCall() *ToolCall {
@@ -15243,13 +15970,6 @@ func (c *ComputerToolWithToolCall) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return c.Function
-}
-
-func (c *ComputerToolWithToolCall) GetServer() *Server {
-	if c == nil {
-		return nil
-	}
-	return c.Server
 }
 
 func (c *ComputerToolWithToolCall) Type() string {
@@ -15544,11 +16264,17 @@ type ConversationNode struct {
 	// - Model will call a tool to exit this node.
 	// - Workflow will extract variables from the conversation.
 	// - Workflow continues.
-	// This is the model for the Conversation Task.
+	// This is the model for the node.
+	//
+	// This overrides `workflow.model`.
 	Model *ConversationNodeModel `json:"model,omitempty" url:"model,omitempty"`
-	// These are the options for the assistant's transcriber.
+	// This is the transcriber for the node.
+	//
+	// This overrides `workflow.transcriber`.
 	Transcriber *ConversationNodeTranscriber `json:"transcriber,omitempty" url:"transcriber,omitempty"`
-	// These are the options for the assistant's voice.
+	// This is the voice for the node.
+	//
+	// This overrides `workflow.voice`.
 	Voice  *ConversationNodeVoice `json:"voice,omitempty" url:"voice,omitempty"`
 	Prompt *string                `json:"prompt,omitempty" url:"prompt,omitempty"`
 	// This is the plan for the global node.
@@ -15686,10 +16412,13 @@ func (c *ConversationNode) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// This is the model for the Conversation Task.
+// This is the model for the node.
+//
+// This overrides `workflow.model`.
 type ConversationNodeModel struct {
 	WorkflowOpenAiModel    *WorkflowOpenAiModel
 	WorkflowAnthropicModel *WorkflowAnthropicModel
+	Unknown                interface{}
 
 	typ string
 }
@@ -15708,6 +16437,13 @@ func (c *ConversationNodeModel) GetWorkflowAnthropicModel() *WorkflowAnthropicMo
 	return c.WorkflowAnthropicModel
 }
 
+func (c *ConversationNodeModel) GetUnknown() interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.Unknown
+}
+
 func (c *ConversationNodeModel) UnmarshalJSON(data []byte) error {
 	valueWorkflowOpenAiModel := new(WorkflowOpenAiModel)
 	if err := json.Unmarshal(data, &valueWorkflowOpenAiModel); err == nil {
@@ -15721,6 +16457,12 @@ func (c *ConversationNodeModel) UnmarshalJSON(data []byte) error {
 		c.WorkflowAnthropicModel = valueWorkflowAnthropicModel
 		return nil
 	}
+	var valueUnknown interface{}
+	if err := json.Unmarshal(data, &valueUnknown); err == nil {
+		c.typ = "Unknown"
+		c.Unknown = valueUnknown
+		return nil
+	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
 }
 
@@ -15731,12 +16473,16 @@ func (c ConversationNodeModel) MarshalJSON() ([]byte, error) {
 	if c.typ == "WorkflowAnthropicModel" || c.WorkflowAnthropicModel != nil {
 		return json.Marshal(c.WorkflowAnthropicModel)
 	}
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return json.Marshal(c.Unknown)
+	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
 }
 
 type ConversationNodeModelVisitor interface {
 	VisitWorkflowOpenAiModel(*WorkflowOpenAiModel) error
 	VisitWorkflowAnthropicModel(*WorkflowAnthropicModel) error
+	VisitUnknown(interface{}) error
 }
 
 func (c *ConversationNodeModel) Accept(visitor ConversationNodeModelVisitor) error {
@@ -15746,10 +16492,15 @@ func (c *ConversationNodeModel) Accept(visitor ConversationNodeModelVisitor) err
 	if c.typ == "WorkflowAnthropicModel" || c.WorkflowAnthropicModel != nil {
 		return visitor.VisitWorkflowAnthropicModel(c.WorkflowAnthropicModel)
 	}
+	if c.typ == "Unknown" || c.Unknown != nil {
+		return visitor.VisitUnknown(c.Unknown)
+	}
 	return fmt.Errorf("type %T does not include a non-empty union type", c)
 }
 
-// These are the options for the assistant's transcriber.
+// This is the transcriber for the node.
+//
+// This overrides `workflow.transcriber`.
 type ConversationNodeTranscriber struct {
 	AssemblyAiTranscriber   *AssemblyAiTranscriber
 	AzureSpeechTranscriber  *AzureSpeechTranscriber
@@ -15761,6 +16512,7 @@ type ConversationNodeTranscriber struct {
 	SpeechmaticsTranscriber *SpeechmaticsTranscriber
 	TalkscriberTranscriber  *TalkscriberTranscriber
 	OpenAiTranscriber       *OpenAiTranscriber
+	CartesiaTranscriber     *CartesiaTranscriber
 
 	typ string
 }
@@ -15835,6 +16587,13 @@ func (c *ConversationNodeTranscriber) GetOpenAiTranscriber() *OpenAiTranscriber 
 	return c.OpenAiTranscriber
 }
 
+func (c *ConversationNodeTranscriber) GetCartesiaTranscriber() *CartesiaTranscriber {
+	if c == nil {
+		return nil
+	}
+	return c.CartesiaTranscriber
+}
+
 func (c *ConversationNodeTranscriber) UnmarshalJSON(data []byte) error {
 	valueAssemblyAiTranscriber := new(AssemblyAiTranscriber)
 	if err := json.Unmarshal(data, &valueAssemblyAiTranscriber); err == nil {
@@ -15896,6 +16655,12 @@ func (c *ConversationNodeTranscriber) UnmarshalJSON(data []byte) error {
 		c.OpenAiTranscriber = valueOpenAiTranscriber
 		return nil
 	}
+	valueCartesiaTranscriber := new(CartesiaTranscriber)
+	if err := json.Unmarshal(data, &valueCartesiaTranscriber); err == nil {
+		c.typ = "CartesiaTranscriber"
+		c.CartesiaTranscriber = valueCartesiaTranscriber
+		return nil
+	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
 }
 
@@ -15930,6 +16695,9 @@ func (c ConversationNodeTranscriber) MarshalJSON() ([]byte, error) {
 	if c.typ == "OpenAiTranscriber" || c.OpenAiTranscriber != nil {
 		return json.Marshal(c.OpenAiTranscriber)
 	}
+	if c.typ == "CartesiaTranscriber" || c.CartesiaTranscriber != nil {
+		return json.Marshal(c.CartesiaTranscriber)
+	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
 }
 
@@ -15944,6 +16712,7 @@ type ConversationNodeTranscriberVisitor interface {
 	VisitSpeechmaticsTranscriber(*SpeechmaticsTranscriber) error
 	VisitTalkscriberTranscriber(*TalkscriberTranscriber) error
 	VisitOpenAiTranscriber(*OpenAiTranscriber) error
+	VisitCartesiaTranscriber(*CartesiaTranscriber) error
 }
 
 func (c *ConversationNodeTranscriber) Accept(visitor ConversationNodeTranscriberVisitor) error {
@@ -15977,10 +16746,15 @@ func (c *ConversationNodeTranscriber) Accept(visitor ConversationNodeTranscriber
 	if c.typ == "OpenAiTranscriber" || c.OpenAiTranscriber != nil {
 		return visitor.VisitOpenAiTranscriber(c.OpenAiTranscriber)
 	}
+	if c.typ == "CartesiaTranscriber" || c.CartesiaTranscriber != nil {
+		return visitor.VisitCartesiaTranscriber(c.CartesiaTranscriber)
+	}
 	return fmt.Errorf("type %T does not include a non-empty union type", c)
 }
 
-// These are the options for the assistant's voice.
+// This is the voice for the node.
+//
+// This overrides `workflow.voice`.
 type ConversationNodeVoice struct {
 	AzureVoice      *AzureVoice
 	CartesiaVoice   *CartesiaVoice
@@ -16481,25 +17255,18 @@ func (c *CreateAnyscaleCredentialDto) String() string {
 }
 
 type CreateApiRequestToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
 	Messages []*CreateApiRequestToolDtoMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
-	// The type of tool. "apiRequest" for API request tool.
-	Method CreateApiRequestToolDtoMethod `json:"method" url:"method"`
+	Method   CreateApiRequestToolDtoMethod          `json:"method" url:"method"`
 	// This is the timeout in seconds for the request. Defaults to 20 seconds.
 	//
 	// @default 20
 	TimeoutSeconds *float64 `json:"timeoutSeconds,omitempty" url:"timeoutSeconds,omitempty"`
 	// This is the name of the tool. This will be passed to the model.
+	//
+	// Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 40.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the description of the tool. This will be passed to the model.
 	Description *string `json:"description,omitempty" url:"description,omitempty"`
@@ -16513,29 +17280,18 @@ type CreateApiRequestToolDto struct {
 	//
 	// @default undefined (the request will not be retried)
 	BackoffPlan *BackoffPlan `json:"backoffPlan,omitempty" url:"backoffPlan,omitempty"`
+	// This is the plan that controls the variable extraction from the tool's response.
+	VariableExtractionPlan *VariableExtractionPlan `json:"variableExtractionPlan,omitempty" url:"variableExtractionPlan,omitempty"`
 	// This is the function definition of the tool.
 	//
 	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateApiRequestToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
 }
 
 func (c *CreateApiRequestToolDto) GetMessages() []*CreateApiRequestToolDtoMessagesItem {
@@ -16601,18 +17357,18 @@ func (c *CreateApiRequestToolDto) GetBackoffPlan() *BackoffPlan {
 	return c.BackoffPlan
 }
 
+func (c *CreateApiRequestToolDto) GetVariableExtractionPlan() *VariableExtractionPlan {
+	if c == nil {
+		return nil
+	}
+	return c.VariableExtractionPlan
+}
+
 func (c *CreateApiRequestToolDto) GetFunction() *OpenAiFunction {
 	if c == nil {
 		return nil
 	}
 	return c.Function
-}
-
-func (c *CreateApiRequestToolDto) GetServer() *Server {
-	if c == nil {
-		return nil
-	}
-	return c.Server
 }
 
 func (c *CreateApiRequestToolDto) Type() string {
@@ -16934,8 +17690,9 @@ type CreateAssistantDto struct {
 	ModelOutputInMessagesEnabled *bool `json:"modelOutputInMessagesEnabled,omitempty" url:"modelOutputInMessagesEnabled,omitempty"`
 	// These are the configurations to be passed to the transport providers of assistant's calls, like Twilio. You can store multiple configurations for different transport providers. For a call, only the configuration matching the call transport provider is used.
 	TransportConfigurations []*TransportConfigurationTwilio `json:"transportConfigurations,omitempty" url:"transportConfigurations,omitempty"`
-	// This is the plan for observability configuration of assistant's calls.
-	// Currently supports Langfuse for tracing and monitoring.
+	// This is the plan for observability of assistant's calls.
+	//
+	// Currently, only Langfuse is supported.
 	ObservabilityPlan *LangfuseObservabilityPlan `json:"observabilityPlan,omitempty" url:"observabilityPlan,omitempty"`
 	// These are dynamic credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials.
 	Credentials []*CreateAssistantDtoCredentialsItem `json:"credentials,omitempty" url:"credentials,omitempty"`
@@ -16958,11 +17715,21 @@ type CreateAssistantDto struct {
 	CompliancePlan *CompliancePlan `json:"compliancePlan,omitempty" url:"compliancePlan,omitempty"`
 	// This is for metadata you want to store on the assistant.
 	Metadata map[string]interface{} `json:"metadata,omitempty" url:"metadata,omitempty"`
+	// This enables filtering of noise and background speech while the user is talking.
+	//
+	// Features:
+	// - Smart denoising using Krisp
+	// - Fourier denoising
+	//
+	// Smart denoising can be combined with or used independently of Fourier denoising.
+	//
+	// Order of precedence:
+	// - Smart denoising
+	// - Fourier denoising
+	BackgroundSpeechDenoisingPlan *BackgroundSpeechDenoisingPlan `json:"backgroundSpeechDenoisingPlan,omitempty" url:"backgroundSpeechDenoisingPlan,omitempty"`
 	// This is the plan for analysis of assistant's calls. Stored in `call.analysis`.
 	AnalysisPlan *AnalysisPlan `json:"analysisPlan,omitempty" url:"analysisPlan,omitempty"`
 	// This is the plan for artifacts generated during assistant's calls. Stored in `call.artifact`.
-	//
-	// Note: `recordingEnabled` is currently at the root level. It will be moved to `artifactPlan` in the future, but will remain backwards compatible.
 	ArtifactPlan *ArtifactPlan `json:"artifactPlan,omitempty" url:"artifactPlan,omitempty"`
 	// This is the plan for static predefined messages that can be spoken by the assistant during the call, like `idleMessages`.
 	//
@@ -16989,8 +17756,6 @@ type CreateAssistantDto struct {
 	// Usage:
 	// - To enable live listening of the assistant's calls, set `monitorPlan.listenEnabled` to `true`.
 	// - To enable live control of the assistant's calls, set `monitorPlan.controlEnabled` to `true`.
-	//
-	// Note, `serverMessages`, `clientMessages`, `serverUrl` and `serverUrlSecret` are currently at the root level but will be moved to `monitorPlan` in the future. Will remain backwards compatible
 	MonitorPlan *MonitorPlan `json:"monitorPlan,omitempty" url:"monitorPlan,omitempty"`
 	// These are the credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can provide a subset using this.
 	CredentialIds []string `json:"credentialIds,omitempty" url:"credentialIds,omitempty"`
@@ -17174,6 +17939,13 @@ func (c *CreateAssistantDto) GetMetadata() map[string]interface{} {
 		return nil
 	}
 	return c.Metadata
+}
+
+func (c *CreateAssistantDto) GetBackgroundSpeechDenoisingPlan() *BackgroundSpeechDenoisingPlan {
+	if c == nil {
+		return nil
+	}
+	return c.BackgroundSpeechDenoisingPlan
 }
 
 func (c *CreateAssistantDto) GetAnalysisPlan() *AnalysisPlan {
@@ -18962,6 +19734,7 @@ type CreateAssistantDtoTranscriber struct {
 	SpeechmaticsTranscriber *SpeechmaticsTranscriber
 	TalkscriberTranscriber  *TalkscriberTranscriber
 	OpenAiTranscriber       *OpenAiTranscriber
+	CartesiaTranscriber     *CartesiaTranscriber
 
 	typ string
 }
@@ -19036,6 +19809,13 @@ func (c *CreateAssistantDtoTranscriber) GetOpenAiTranscriber() *OpenAiTranscribe
 	return c.OpenAiTranscriber
 }
 
+func (c *CreateAssistantDtoTranscriber) GetCartesiaTranscriber() *CartesiaTranscriber {
+	if c == nil {
+		return nil
+	}
+	return c.CartesiaTranscriber
+}
+
 func (c *CreateAssistantDtoTranscriber) UnmarshalJSON(data []byte) error {
 	valueAssemblyAiTranscriber := new(AssemblyAiTranscriber)
 	if err := json.Unmarshal(data, &valueAssemblyAiTranscriber); err == nil {
@@ -19097,6 +19877,12 @@ func (c *CreateAssistantDtoTranscriber) UnmarshalJSON(data []byte) error {
 		c.OpenAiTranscriber = valueOpenAiTranscriber
 		return nil
 	}
+	valueCartesiaTranscriber := new(CartesiaTranscriber)
+	if err := json.Unmarshal(data, &valueCartesiaTranscriber); err == nil {
+		c.typ = "CartesiaTranscriber"
+		c.CartesiaTranscriber = valueCartesiaTranscriber
+		return nil
+	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
 }
 
@@ -19131,6 +19917,9 @@ func (c CreateAssistantDtoTranscriber) MarshalJSON() ([]byte, error) {
 	if c.typ == "OpenAiTranscriber" || c.OpenAiTranscriber != nil {
 		return json.Marshal(c.OpenAiTranscriber)
 	}
+	if c.typ == "CartesiaTranscriber" || c.CartesiaTranscriber != nil {
+		return json.Marshal(c.CartesiaTranscriber)
+	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
 }
 
@@ -19145,6 +19934,7 @@ type CreateAssistantDtoTranscriberVisitor interface {
 	VisitSpeechmaticsTranscriber(*SpeechmaticsTranscriber) error
 	VisitTalkscriberTranscriber(*TalkscriberTranscriber) error
 	VisitOpenAiTranscriber(*OpenAiTranscriber) error
+	VisitCartesiaTranscriber(*CartesiaTranscriber) error
 }
 
 func (c *CreateAssistantDtoTranscriber) Accept(visitor CreateAssistantDtoTranscriberVisitor) error {
@@ -19177,6 +19967,9 @@ func (c *CreateAssistantDtoTranscriber) Accept(visitor CreateAssistantDtoTranscr
 	}
 	if c.typ == "OpenAiTranscriber" || c.OpenAiTranscriber != nil {
 		return visitor.VisitOpenAiTranscriber(c.OpenAiTranscriber)
+	}
+	if c.typ == "CartesiaTranscriber" || c.CartesiaTranscriber != nil {
+		return visitor.VisitCartesiaTranscriber(c.CartesiaTranscriber)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", c)
 }
@@ -19631,6 +20424,8 @@ type CreateAzureCredentialDto struct {
 	Region *CreateAzureCredentialDtoRegion `json:"region,omitempty" url:"region,omitempty"`
 	// This is not returned in the API.
 	ApiKey *string `json:"apiKey,omitempty" url:"apiKey,omitempty"`
+	// This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+	FallbackIndex *float64 `json:"fallbackIndex,omitempty" url:"fallbackIndex,omitempty"`
 	// This is the bucket plan that can be provided to store call artifacts in Azure Blob Storage.
 	BucketPlan *AzureBlobStorageBucketPlan `json:"bucketPlan,omitempty" url:"bucketPlan,omitempty"`
 	// This is the name of credential. This is just for your reference.
@@ -19660,6 +20455,13 @@ func (c *CreateAzureCredentialDto) GetApiKey() *string {
 		return nil
 	}
 	return c.ApiKey
+}
+
+func (c *CreateAzureCredentialDto) GetFallbackIndex() *float64 {
+	if c == nil {
+		return nil
+	}
+	return c.FallbackIndex
 }
 
 func (c *CreateAzureCredentialDto) GetBucketPlan() *AzureBlobStorageBucketPlan {
@@ -20068,19 +20870,21 @@ func (c CreateAzureOpenAiCredentialDtoRegion) Ptr() *CreateAzureOpenAiCredential
 }
 
 type CreateBashToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
 	Messages []*CreateBashToolDtoMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
 	// The sub type of tool.
+	//
+	//	This is the server where a `tool-calls` webhook will be sent.
+	//
+	//	Notes:
+	//	- Webhook is sent to this server when a tool call is made.
+	//	- Webhook contains the call, assistant, and phone number objects.
+	//	- Webhook contains the variables set on the assistant.
+	//	- Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+	//	- Webhook expects a response with tool call result.
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 	// The name of the tool, fixed to 'bash'
 	// This is the function definition of the tool.
 	//
@@ -20088,25 +20892,12 @@ type CreateBashToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server  *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_   string
-	subType string
-	name    string
+	type_    string
+	subType  string
+	name     string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateBashToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
 }
 
 func (c *CreateBashToolDto) GetMessages() []*CreateBashToolDtoMessagesItem {
@@ -20116,18 +20907,18 @@ func (c *CreateBashToolDto) GetMessages() []*CreateBashToolDtoMessagesItem {
 	return c.Messages
 }
 
-func (c *CreateBashToolDto) GetFunction() *OpenAiFunction {
-	if c == nil {
-		return nil
-	}
-	return c.Function
-}
-
 func (c *CreateBashToolDto) GetServer() *Server {
 	if c == nil {
 		return nil
 	}
 	return c.Server
+}
+
+func (c *CreateBashToolDto) GetFunction() *OpenAiFunction {
+	if c == nil {
+		return nil
+	}
+	return c.Function
 }
 
 func (c *CreateBashToolDto) Type() string {
@@ -20616,6 +21407,8 @@ type CreateCloudflareCredentialDto struct {
 	ApiKey *string `json:"apiKey,omitempty" url:"apiKey,omitempty"`
 	// Cloudflare Account Email.
 	AccountEmail *string `json:"accountEmail,omitempty" url:"accountEmail,omitempty"`
+	// This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+	FallbackIndex *float64 `json:"fallbackIndex,omitempty" url:"fallbackIndex,omitempty"`
 	// This is the bucket plan that can be provided to store call artifacts in R2
 	BucketPlan *CloudflareR2BucketPlan `json:"bucketPlan,omitempty" url:"bucketPlan,omitempty"`
 	// This is the name of credential. This is just for your reference.
@@ -20645,6 +21438,13 @@ func (c *CreateCloudflareCredentialDto) GetAccountEmail() *string {
 		return nil
 	}
 	return c.AccountEmail
+}
+
+func (c *CreateCloudflareCredentialDto) GetFallbackIndex() *float64 {
+	if c == nil {
+		return nil
+	}
+	return c.FallbackIndex
 }
 
 func (c *CreateCloudflareCredentialDto) GetBucketPlan() *CloudflareR2BucketPlan {
@@ -20719,19 +21519,21 @@ func (c *CreateCloudflareCredentialDto) String() string {
 }
 
 type CreateComputerToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
 	Messages []*CreateComputerToolDtoMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
 	// The sub type of tool.
+	//
+	//	This is the server where a `tool-calls` webhook will be sent.
+	//
+	//	Notes:
+	//	- Webhook is sent to this server when a tool call is made.
+	//	- Webhook contains the call, assistant, and phone number objects.
+	//	- Webhook contains the variables set on the assistant.
+	//	- Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+	//	- Webhook expects a response with tool call result.
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 	// The name of the tool, fixed to 'computer'
 	// The display width in pixels
 	DisplayWidthPx float64 `json:"displayWidthPx" url:"displayWidthPx"`
@@ -20745,25 +21547,12 @@ type CreateComputerToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server  *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_   string
-	subType string
-	name    string
+	type_    string
+	subType  string
+	name     string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateComputerToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
 }
 
 func (c *CreateComputerToolDto) GetMessages() []*CreateComputerToolDtoMessagesItem {
@@ -20771,6 +21560,13 @@ func (c *CreateComputerToolDto) GetMessages() []*CreateComputerToolDtoMessagesIt
 		return nil
 	}
 	return c.Messages
+}
+
+func (c *CreateComputerToolDto) GetServer() *Server {
+	if c == nil {
+		return nil
+	}
+	return c.Server
 }
 
 func (c *CreateComputerToolDto) GetDisplayWidthPx() float64 {
@@ -20799,13 +21595,6 @@ func (c *CreateComputerToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return c.Function
-}
-
-func (c *CreateComputerToolDto) GetServer() *Server {
-	if c == nil {
-		return nil
-	}
-	return c.Server
 }
 
 func (c *CreateComputerToolDto) Type() string {
@@ -21195,6 +21984,109 @@ func (c *CreateCustomLlmCredentialDto) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
+type CreateCustomerDto struct {
+	// This is the flag to toggle the E164 check for the `number` field. This is an advanced property which should be used if you know your use case requires it.
+	//
+	// Use cases:
+	// - `false`: To allow non-E164 numbers like `+001234567890`, `1234`, or `abc`. This is useful for dialing out to non-E164 numbers on your SIP trunks.
+	// - `true` (default): To allow only E164 numbers like `+14155551234`. This is standard for PSTN calls.
+	//
+	// If `false`, the `number` is still required to only contain alphanumeric characters (regex: `/^\+?[a-zA-Z0-9]+$/`).
+	//
+	// @default true (E164 check is enabled)
+	NumberE164CheckEnabled *bool `json:"numberE164CheckEnabled,omitempty" url:"numberE164CheckEnabled,omitempty"`
+	// This is the extension that will be dialed after the call is answered.
+	Extension *string `json:"extension,omitempty" url:"extension,omitempty"`
+	// These are the overrides for the assistant's settings and template variables specific to this customer.
+	// This allows customization of the assistant's behavior for individual customers in batch calls.
+	AssistantOverrides *AssistantOverrides `json:"assistantOverrides,omitempty" url:"assistantOverrides,omitempty"`
+	// This is the number of the customer.
+	Number *string `json:"number,omitempty" url:"number,omitempty"`
+	// This is the SIP URI of the customer.
+	SipUri *string `json:"sipUri,omitempty" url:"sipUri,omitempty"`
+	// This is the name of the customer. This is just for your own reference.
+	//
+	// For SIP inbound calls, this is extracted from the `From` SIP header with format `"Display Name" <sip:username@domain>`.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CreateCustomerDto) GetNumberE164CheckEnabled() *bool {
+	if c == nil {
+		return nil
+	}
+	return c.NumberE164CheckEnabled
+}
+
+func (c *CreateCustomerDto) GetExtension() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Extension
+}
+
+func (c *CreateCustomerDto) GetAssistantOverrides() *AssistantOverrides {
+	if c == nil {
+		return nil
+	}
+	return c.AssistantOverrides
+}
+
+func (c *CreateCustomerDto) GetNumber() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Number
+}
+
+func (c *CreateCustomerDto) GetSipUri() *string {
+	if c == nil {
+		return nil
+	}
+	return c.SipUri
+}
+
+func (c *CreateCustomerDto) GetName() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Name
+}
+
+func (c *CreateCustomerDto) GetExtraProperties() map[string]interface{} {
+	return c.extraProperties
+}
+
+func (c *CreateCustomerDto) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateCustomerDto
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CreateCustomerDto(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CreateCustomerDto) String() string {
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
 type CreateDeepInfraCredentialDto struct {
 	// This is not returned in the API.
 	ApiKey string `json:"apiKey" url:"apiKey"`
@@ -21451,14 +22343,6 @@ func (c *CreateDeepgramCredentialDto) String() string {
 }
 
 type CreateDtmfToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -21469,23 +22353,10 @@ type CreateDtmfToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateDtmfToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
 }
 
 func (c *CreateDtmfToolDto) GetMessages() []*CreateDtmfToolDtoMessagesItem {
@@ -21500,13 +22371,6 @@ func (c *CreateDtmfToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return c.Function
-}
-
-func (c *CreateDtmfToolDto) GetServer() *Server {
-	if c == nil {
-		return nil
-	}
-	return c.Server
 }
 
 func (c *CreateDtmfToolDto) Type() string {
@@ -21753,14 +22617,6 @@ func (c *CreateElevenLabsCredentialDto) String() string {
 }
 
 type CreateEndCallToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -21771,23 +22627,10 @@ type CreateEndCallToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateEndCallToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
 }
 
 func (c *CreateEndCallToolDto) GetMessages() []*CreateEndCallToolDtoMessagesItem {
@@ -21802,13 +22645,6 @@ func (c *CreateEndCallToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return c.Function
-}
-
-func (c *CreateEndCallToolDto) GetServer() *Server {
-	if c == nil {
-		return nil
-	}
-	return c.Server
 }
 
 func (c *CreateEndCallToolDto) Type() string {
@@ -21973,41 +22809,37 @@ func (c *CreateEndCallToolDtoMessagesItem) Accept(visitor CreateEndCallToolDtoMe
 }
 
 type CreateFunctionToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
 	Messages []*CreateFunctionToolDtoMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
+	// This determines if the tool is async.
+	//
+	//	If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+	//
+	//	If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+	//
+	//	Defaults to synchronous (`false`).
+	Async *bool `json:"async,omitempty" url:"async,omitempty"`
+	// This is the server where a `tool-calls` webhook will be sent.
+	//
+	// Notes:
+	// - Webhook is sent to this server when a tool call is made.
+	// - Webhook contains the call, assistant, and phone number objects.
+	// - Webhook contains the variables set on the assistant.
+	// - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+	// - Webhook expects a response with tool call result.
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 	// This is the function definition of the tool.
 	//
 	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateFunctionToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
 }
 
 func (c *CreateFunctionToolDto) GetMessages() []*CreateFunctionToolDtoMessagesItem {
@@ -22017,11 +22849,11 @@ func (c *CreateFunctionToolDto) GetMessages() []*CreateFunctionToolDtoMessagesIt
 	return c.Messages
 }
 
-func (c *CreateFunctionToolDto) GetFunction() *OpenAiFunction {
+func (c *CreateFunctionToolDto) GetAsync() *bool {
 	if c == nil {
 		return nil
 	}
-	return c.Function
+	return c.Async
 }
 
 func (c *CreateFunctionToolDto) GetServer() *Server {
@@ -22029,6 +22861,13 @@ func (c *CreateFunctionToolDto) GetServer() *Server {
 		return nil
 	}
 	return c.Server
+}
+
+func (c *CreateFunctionToolDto) GetFunction() *OpenAiFunction {
+	if c == nil {
+		return nil
+	}
+	return c.Function
 }
 
 func (c *CreateFunctionToolDto) Type() string {
@@ -22193,11 +23032,14 @@ func (c *CreateFunctionToolDtoMessagesItem) Accept(visitor CreateFunctionToolDto
 }
 
 type CreateGcpCredentialDto struct {
+	// This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+	FallbackIndex *float64 `json:"fallbackIndex,omitempty" url:"fallbackIndex,omitempty"`
 	// This is the GCP key. This is the JSON that can be generated in the Google Cloud Console at https://console.cloud.google.com/iam-admin/serviceaccounts/details/<service-account-id>/keys.
 	//
 	// The schema is identical to the JSON that GCP outputs.
 	GcpKey *GcpKey `json:"gcpKey,omitempty" url:"gcpKey,omitempty"`
-	// This is the bucket plan that can be provided to store call artifacts in GCP.
+	// This is the region of the GCP resource.
+	Region     *string     `json:"region,omitempty" url:"region,omitempty"`
 	BucketPlan *BucketPlan `json:"bucketPlan,omitempty" url:"bucketPlan,omitempty"`
 	// This is the name of credential. This is just for your reference.
 	Name     *string `json:"name,omitempty" url:"name,omitempty"`
@@ -22207,11 +23049,25 @@ type CreateGcpCredentialDto struct {
 	rawJSON         json.RawMessage
 }
 
+func (c *CreateGcpCredentialDto) GetFallbackIndex() *float64 {
+	if c == nil {
+		return nil
+	}
+	return c.FallbackIndex
+}
+
 func (c *CreateGcpCredentialDto) GetGcpKey() *GcpKey {
 	if c == nil {
 		return nil
 	}
 	return c.GcpKey
+}
+
+func (c *CreateGcpCredentialDto) GetRegion() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Region
 }
 
 func (c *CreateGcpCredentialDto) GetBucketPlan() *BucketPlan {
@@ -22368,14 +23224,6 @@ func (c *CreateGladiaCredentialDto) String() string {
 }
 
 type CreateGoHighLevelCalendarAvailabilityToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -22386,23 +23234,10 @@ type CreateGoHighLevelCalendarAvailabilityToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateGoHighLevelCalendarAvailabilityToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
 }
 
 func (c *CreateGoHighLevelCalendarAvailabilityToolDto) GetMessages() []*CreateGoHighLevelCalendarAvailabilityToolDtoMessagesItem {
@@ -22417,13 +23252,6 @@ func (c *CreateGoHighLevelCalendarAvailabilityToolDto) GetFunction() *OpenAiFunc
 		return nil
 	}
 	return c.Function
-}
-
-func (c *CreateGoHighLevelCalendarAvailabilityToolDto) GetServer() *Server {
-	if c == nil {
-		return nil
-	}
-	return c.Server
 }
 
 func (c *CreateGoHighLevelCalendarAvailabilityToolDto) Type() string {
@@ -22588,14 +23416,6 @@ func (c *CreateGoHighLevelCalendarAvailabilityToolDtoMessagesItem) Accept(visito
 }
 
 type CreateGoHighLevelCalendarEventCreateToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -22606,23 +23426,10 @@ type CreateGoHighLevelCalendarEventCreateToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateGoHighLevelCalendarEventCreateToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
 }
 
 func (c *CreateGoHighLevelCalendarEventCreateToolDto) GetMessages() []*CreateGoHighLevelCalendarEventCreateToolDtoMessagesItem {
@@ -22637,13 +23444,6 @@ func (c *CreateGoHighLevelCalendarEventCreateToolDto) GetFunction() *OpenAiFunct
 		return nil
 	}
 	return c.Function
-}
-
-func (c *CreateGoHighLevelCalendarEventCreateToolDto) GetServer() *Server {
-	if c == nil {
-		return nil
-	}
-	return c.Server
 }
 
 func (c *CreateGoHighLevelCalendarEventCreateToolDto) Type() string {
@@ -22808,14 +23608,6 @@ func (c *CreateGoHighLevelCalendarEventCreateToolDtoMessagesItem) Accept(visitor
 }
 
 type CreateGoHighLevelContactCreateToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -22826,23 +23618,10 @@ type CreateGoHighLevelContactCreateToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateGoHighLevelContactCreateToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
 }
 
 func (c *CreateGoHighLevelContactCreateToolDto) GetMessages() []*CreateGoHighLevelContactCreateToolDtoMessagesItem {
@@ -22857,13 +23636,6 @@ func (c *CreateGoHighLevelContactCreateToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return c.Function
-}
-
-func (c *CreateGoHighLevelContactCreateToolDto) GetServer() *Server {
-	if c == nil {
-		return nil
-	}
-	return c.Server
 }
 
 func (c *CreateGoHighLevelContactCreateToolDto) Type() string {
@@ -23028,14 +23800,6 @@ func (c *CreateGoHighLevelContactCreateToolDtoMessagesItem) Accept(visitor Creat
 }
 
 type CreateGoHighLevelContactGetToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -23046,23 +23810,10 @@ type CreateGoHighLevelContactGetToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateGoHighLevelContactGetToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
 }
 
 func (c *CreateGoHighLevelContactGetToolDto) GetMessages() []*CreateGoHighLevelContactGetToolDtoMessagesItem {
@@ -23077,13 +23828,6 @@ func (c *CreateGoHighLevelContactGetToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return c.Function
-}
-
-func (c *CreateGoHighLevelContactGetToolDto) GetServer() *Server {
-	if c == nil {
-		return nil
-	}
-	return c.Server
 }
 
 func (c *CreateGoHighLevelContactGetToolDto) Type() string {
@@ -23412,14 +24156,6 @@ func (c *CreateGoHighLevelMcpCredentialDto) String() string {
 }
 
 type CreateGoogleCalendarCheckAvailabilityToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -23430,23 +24166,10 @@ type CreateGoogleCalendarCheckAvailabilityToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateGoogleCalendarCheckAvailabilityToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
 }
 
 func (c *CreateGoogleCalendarCheckAvailabilityToolDto) GetMessages() []*CreateGoogleCalendarCheckAvailabilityToolDtoMessagesItem {
@@ -23461,13 +24184,6 @@ func (c *CreateGoogleCalendarCheckAvailabilityToolDto) GetFunction() *OpenAiFunc
 		return nil
 	}
 	return c.Function
-}
-
-func (c *CreateGoogleCalendarCheckAvailabilityToolDto) GetServer() *Server {
-	if c == nil {
-		return nil
-	}
-	return c.Server
 }
 
 func (c *CreateGoogleCalendarCheckAvailabilityToolDto) Type() string {
@@ -23632,14 +24348,6 @@ func (c *CreateGoogleCalendarCheckAvailabilityToolDtoMessagesItem) Accept(visito
 }
 
 type CreateGoogleCalendarCreateEventToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -23650,23 +24358,10 @@ type CreateGoogleCalendarCreateEventToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateGoogleCalendarCreateEventToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
 }
 
 func (c *CreateGoogleCalendarCreateEventToolDto) GetMessages() []*CreateGoogleCalendarCreateEventToolDtoMessagesItem {
@@ -23681,13 +24376,6 @@ func (c *CreateGoogleCalendarCreateEventToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return c.Function
-}
-
-func (c *CreateGoogleCalendarCreateEventToolDto) GetServer() *Server {
-	if c == nil {
-		return nil
-	}
-	return c.Server
 }
 
 func (c *CreateGoogleCalendarCreateEventToolDto) Type() string {
@@ -24171,14 +24859,6 @@ func (c *CreateGoogleSheetsOAuth2AuthorizationCredentialDto) String() string {
 }
 
 type CreateGoogleSheetsRowAppendToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -24189,23 +24869,10 @@ type CreateGoogleSheetsRowAppendToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateGoogleSheetsRowAppendToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
 }
 
 func (c *CreateGoogleSheetsRowAppendToolDto) GetMessages() []*CreateGoogleSheetsRowAppendToolDtoMessagesItem {
@@ -24220,13 +24887,6 @@ func (c *CreateGoogleSheetsRowAppendToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return c.Function
-}
-
-func (c *CreateGoogleSheetsRowAppendToolDto) GetServer() *Server {
-	if c == nil {
-		return nil
-	}
-	return c.Server
 }
 
 func (c *CreateGoogleSheetsRowAppendToolDto) Type() string {
@@ -24919,41 +25579,29 @@ func (c *CreateMakeCredentialDto) String() string {
 }
 
 type CreateMcpToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
 	Messages []*CreateMcpToolDtoMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
+	// This is the server where a `tool-calls` webhook will be sent.
+	//
+	// Notes:
+	// - Webhook is sent to this server when a tool call is made.
+	// - Webhook contains the call, assistant, and phone number objects.
+	// - Webhook contains the variables set on the assistant.
+	// - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+	// - Webhook expects a response with tool call result.
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 	// This is the function definition of the tool.
 	//
 	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateMcpToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
 }
 
 func (c *CreateMcpToolDto) GetMessages() []*CreateMcpToolDtoMessagesItem {
@@ -24963,18 +25611,18 @@ func (c *CreateMcpToolDto) GetMessages() []*CreateMcpToolDtoMessagesItem {
 	return c.Messages
 }
 
-func (c *CreateMcpToolDto) GetFunction() *OpenAiFunction {
-	if c == nil {
-		return nil
-	}
-	return c.Function
-}
-
 func (c *CreateMcpToolDto) GetServer() *Server {
 	if c == nil {
 		return nil
 	}
 	return c.Server
+}
+
+func (c *CreateMcpToolDto) GetFunction() *OpenAiFunction {
+	if c == nil {
+		return nil
+	}
+	return c.Function
 }
 
 func (c *CreateMcpToolDto) Type() string {
@@ -25653,8 +26301,6 @@ type CreateOutboundCallDto struct {
 	// - Squad, use `squad` or `squadId`
 	// - Workflow, use `workflow` or `workflowId`
 	Squad *CreateSquadDto `json:"squad,omitempty" url:"squad,omitempty"`
-	// [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
-	//
 	// This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
 	//
 	// To start a call with:
@@ -25662,8 +26308,6 @@ type CreateOutboundCallDto struct {
 	// - Squad, use `squad` or `squadId`
 	// - Workflow, use `workflow` or `workflowId`
 	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
-	// [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
-	//
 	// This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
 	//
 	// To start a call with:
@@ -25671,6 +26315,8 @@ type CreateOutboundCallDto struct {
 	// - Squad, use `squad` or `squadId`
 	// - Workflow, use `workflow` or `workflowId`
 	Workflow *CreateWorkflowDto `json:"workflow,omitempty" url:"workflow,omitempty"`
+	// These are the overrides for the `workflow` or `workflowId`'s settings and template variables.
+	WorkflowOverrides *WorkflowOverrides `json:"workflowOverrides,omitempty" url:"workflowOverrides,omitempty"`
 	// This is the phone number that will be used for the call. To use a transient number, use `phoneNumber` instead.
 	//
 	// Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
@@ -25767,6 +26413,13 @@ func (c *CreateOutboundCallDto) GetWorkflow() *CreateWorkflowDto {
 		return nil
 	}
 	return c.Workflow
+}
+
+func (c *CreateOutboundCallDto) GetWorkflowOverrides() *WorkflowOverrides {
+	if c == nil {
+		return nil
+	}
+	return c.WorkflowOverrides
 }
 
 func (c *CreateOutboundCallDto) GetPhoneNumberId() *string {
@@ -26002,14 +26655,6 @@ func (c *CreatePlayHtCredentialDto) String() string {
 }
 
 type CreateQueryToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -26022,23 +26667,10 @@ type CreateQueryToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateQueryToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
 }
 
 func (c *CreateQueryToolDto) GetMessages() []*CreateQueryToolDtoMessagesItem {
@@ -26060,13 +26692,6 @@ func (c *CreateQueryToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return c.Function
-}
-
-func (c *CreateQueryToolDto) GetServer() *Server {
-	if c == nil {
-		return nil
-	}
-	return c.Server
 }
 
 func (c *CreateQueryToolDto) Type() string {
@@ -26405,6 +27030,8 @@ type CreateS3CredentialDto struct {
 	S3BucketName string `json:"s3BucketName" url:"s3BucketName"`
 	// The path prefix for the uploaded recording. Ex. "recordings/"
 	S3PathPrefix string `json:"s3PathPrefix" url:"s3PathPrefix"`
+	// This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+	FallbackIndex *float64 `json:"fallbackIndex,omitempty" url:"fallbackIndex,omitempty"`
 	// This is the name of credential. This is just for your reference.
 	Name     *string `json:"name,omitempty" url:"name,omitempty"`
 	provider string
@@ -26446,6 +27073,13 @@ func (c *CreateS3CredentialDto) GetS3PathPrefix() string {
 		return ""
 	}
 	return c.S3PathPrefix
+}
+
+func (c *CreateS3CredentialDto) GetFallbackIndex() *float64 {
+	if c == nil {
+		return nil
+	}
+	return c.FallbackIndex
 }
 
 func (c *CreateS3CredentialDto) GetName() *string {
@@ -26651,14 +27285,6 @@ func (c *CreateSlackOAuth2AuthorizationCredentialDto) String() string {
 }
 
 type CreateSlackSendMessageToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -26669,23 +27295,10 @@ type CreateSlackSendMessageToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateSlackSendMessageToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
 }
 
 func (c *CreateSlackSendMessageToolDto) GetMessages() []*CreateSlackSendMessageToolDtoMessagesItem {
@@ -26700,13 +27313,6 @@ func (c *CreateSlackSendMessageToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return c.Function
-}
-
-func (c *CreateSlackSendMessageToolDto) GetServer() *Server {
-	if c == nil {
-		return nil
-	}
-	return c.Server
 }
 
 func (c *CreateSlackSendMessageToolDto) Type() string {
@@ -26953,14 +27559,6 @@ func (c *CreateSmallestAiCredentialDto) String() string {
 }
 
 type CreateSmsToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -26971,23 +27569,10 @@ type CreateSmsToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateSmsToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
 }
 
 func (c *CreateSmsToolDto) GetMessages() []*CreateSmsToolDtoMessagesItem {
@@ -27002,13 +27587,6 @@ func (c *CreateSmsToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return c.Function
-}
-
-func (c *CreateSmsToolDto) GetServer() *Server {
-	if c == nil {
-		return nil
-	}
-	return c.Server
 }
 
 func (c *CreateSmsToolDto) Type() string {
@@ -27324,13 +27902,22 @@ func (c *CreateSquadDto) String() string {
 }
 
 type CreateSupabaseCredentialDto struct {
-	BucketPlan *SupabaseBucketPlan `json:"bucketPlan,omitempty" url:"bucketPlan,omitempty"`
+	// This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+	FallbackIndex *float64            `json:"fallbackIndex,omitempty" url:"fallbackIndex,omitempty"`
+	BucketPlan    *SupabaseBucketPlan `json:"bucketPlan,omitempty" url:"bucketPlan,omitempty"`
 	// This is the name of credential. This is just for your reference.
 	Name     *string `json:"name,omitempty" url:"name,omitempty"`
 	provider string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (c *CreateSupabaseCredentialDto) GetFallbackIndex() *float64 {
+	if c == nil {
+		return nil
+	}
+	return c.FallbackIndex
 }
 
 func (c *CreateSupabaseCredentialDto) GetBucketPlan() *SupabaseBucketPlan {
@@ -27487,19 +28074,21 @@ func (c *CreateTavusCredentialDto) String() string {
 }
 
 type CreateTextEditorToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
 	Messages []*CreateTextEditorToolDtoMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
 	// The sub type of tool.
+	//
+	//	This is the server where a `tool-calls` webhook will be sent.
+	//
+	//	Notes:
+	//	- Webhook is sent to this server when a tool call is made.
+	//	- Webhook contains the call, assistant, and phone number objects.
+	//	- Webhook contains the variables set on the assistant.
+	//	- Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+	//	- Webhook expects a response with tool call result.
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 	// The name of the tool, fixed to 'str_replace_editor'
 	// This is the function definition of the tool.
 	//
@@ -27507,25 +28096,12 @@ type CreateTextEditorToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server  *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_   string
-	subType string
-	name    string
+	type_    string
+	subType  string
+	name     string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateTextEditorToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
 }
 
 func (c *CreateTextEditorToolDto) GetMessages() []*CreateTextEditorToolDtoMessagesItem {
@@ -27535,18 +28111,18 @@ func (c *CreateTextEditorToolDto) GetMessages() []*CreateTextEditorToolDtoMessag
 	return c.Messages
 }
 
-func (c *CreateTextEditorToolDto) GetFunction() *OpenAiFunction {
-	if c == nil {
-		return nil
-	}
-	return c.Function
-}
-
 func (c *CreateTextEditorToolDto) GetServer() *Server {
 	if c == nil {
 		return nil
 	}
 	return c.Server
+}
+
+func (c *CreateTextEditorToolDto) GetFunction() *OpenAiFunction {
+	if c == nil {
+		return nil
+	}
+	return c.Function
 }
 
 func (c *CreateTextEditorToolDto) Type() string {
@@ -28691,14 +29267,6 @@ func (c CreateToolTemplateDtoVisibility) Ptr() *CreateToolTemplateDtoVisibility 
 }
 
 type CreateTransferCallToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -28711,23 +29279,10 @@ type CreateTransferCallToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateTransferCallToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
 }
 
 func (c *CreateTransferCallToolDto) GetMessages() []*CreateTransferCallToolDtoMessagesItem {
@@ -28749,13 +29304,6 @@ func (c *CreateTransferCallToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return c.Function
-}
-
-func (c *CreateTransferCallToolDto) GetServer() *Server {
-	if c == nil {
-		return nil
-	}
-	return c.Server
 }
 
 func (c *CreateTransferCallToolDto) Type() string {
@@ -29193,14 +29741,6 @@ func (c *CreateTwilioCredentialDto) String() string {
 }
 
 type CreateVoicemailToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -29212,23 +29752,10 @@ type CreateVoicemailToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateVoicemailToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
 }
 
 func (c *CreateVoicemailToolDto) GetMessages() []*CreateVoicemailToolDtoMessagesItem {
@@ -29243,13 +29770,6 @@ func (c *CreateVoicemailToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return c.Function
-}
-
-func (c *CreateVoicemailToolDto) GetServer() *Server {
-	if c == nil {
-		return nil
-	}
-	return c.Server
 }
 
 func (c *CreateVoicemailToolDto) Type() string {
@@ -29534,8 +30054,6 @@ type CreateWebCallDto struct {
 	// - Squad, use `squad` or `squadId`
 	// - Workflow, use `workflow` or `workflowId`
 	Squad *CreateSquadDto `json:"squad,omitempty" url:"squad,omitempty"`
-	// [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
-	//
 	// This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
 	//
 	// To start a call with:
@@ -29543,8 +30061,6 @@ type CreateWebCallDto struct {
 	// - Squad, use `squad` or `squadId`
 	// - Workflow, use `workflow` or `workflowId`
 	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
-	// [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
-	//
 	// This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
 	//
 	// To start a call with:
@@ -29552,6 +30068,8 @@ type CreateWebCallDto struct {
 	// - Squad, use `squad` or `squadId`
 	// - Workflow, use `workflow` or `workflowId`
 	Workflow *CreateWorkflowDto `json:"workflow,omitempty" url:"workflow,omitempty"`
+	// These are the overrides for the `workflow` or `workflowId`'s settings and template variables.
+	WorkflowOverrides *WorkflowOverrides `json:"workflowOverrides,omitempty" url:"workflowOverrides,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -29604,6 +30122,13 @@ func (c *CreateWebCallDto) GetWorkflow() *CreateWorkflowDto {
 		return nil
 	}
 	return c.Workflow
+}
+
+func (c *CreateWebCallDto) GetWorkflowOverrides() *WorkflowOverrides {
+	if c == nil {
+		return nil
+	}
+	return c.WorkflowOverrides
 }
 
 func (c *CreateWebCallDto) GetExtraProperties() map[string]interface{} {
@@ -29722,10 +30247,72 @@ func (c *CreateWebhookCredentialDto) String() string {
 
 type CreateWorkflowDto struct {
 	Nodes []*CreateWorkflowDtoNodesItem `json:"nodes,omitempty" url:"nodes,omitempty"`
-	// These are the options for the workflow's LLM.
-	Model *CreateWorkflowDtoModel `json:"model,omitempty" url:"model,omitempty"`
-	Name  string                  `json:"name" url:"name"`
-	Edges []*Edge                 `json:"edges,omitempty" url:"edges,omitempty"`
+	// This is the transcriber for the workflow.
+	//
+	// This can be overridden at node level using `nodes[n].transcriber`.
+	Transcriber *CreateWorkflowDtoTranscriber `json:"transcriber,omitempty" url:"transcriber,omitempty"`
+	// This is the voice for the workflow.
+	//
+	// This can be overridden at node level using `nodes[n].voice`.
+	Voice *CreateWorkflowDtoVoice `json:"voice,omitempty" url:"voice,omitempty"`
+	// This is the plan for observability of workflow's calls.
+	//
+	// Currently, only Langfuse is supported.
+	ObservabilityPlan *LangfuseObservabilityPlan `json:"observabilityPlan,omitempty" url:"observabilityPlan,omitempty"`
+	// These are dynamic credentials that will be used for the workflow calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials.
+	Credentials  []*CreateWorkflowDtoCredentialsItem `json:"credentials,omitempty" url:"credentials,omitempty"`
+	Name         string                              `json:"name" url:"name"`
+	Edges        []*Edge                             `json:"edges,omitempty" url:"edges,omitempty"`
+	GlobalPrompt *string                             `json:"globalPrompt,omitempty" url:"globalPrompt,omitempty"`
+	// This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
+	//
+	// The order of precedence is:
+	//
+	// 1. tool.server
+	// 2. workflow.server / assistant.server
+	// 3. phoneNumber.server
+	// 4. org.server
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
+	// This is the compliance plan for the workflow. It allows you to configure HIPAA and other compliance settings.
+	CompliancePlan *CompliancePlan `json:"compliancePlan,omitempty" url:"compliancePlan,omitempty"`
+	// This is the plan for analysis of workflow's calls. Stored in `call.analysis`.
+	AnalysisPlan *AnalysisPlan `json:"analysisPlan,omitempty" url:"analysisPlan,omitempty"`
+	// This is the plan for artifacts generated during workflow's calls. Stored in `call.artifact`.
+	ArtifactPlan *ArtifactPlan `json:"artifactPlan,omitempty" url:"artifactPlan,omitempty"`
+	// This is the plan for when the workflow nodes should start talking.
+	//
+	// You should configure this if you're running into these issues:
+	// - The assistant is too slow to start talking after the customer is done speaking.
+	// - The assistant is too fast to start talking after the customer is done speaking.
+	// - The assistant is so fast that it's actually interrupting the customer.
+	StartSpeakingPlan *StartSpeakingPlan `json:"startSpeakingPlan,omitempty" url:"startSpeakingPlan,omitempty"`
+	// This is the plan for when workflow nodes should stop talking on customer interruption.
+	//
+	// You should configure this if you're running into these issues:
+	// - The assistant is too slow to recognize customer's interruption.
+	// - The assistant is too fast to recognize customer's interruption.
+	// - The assistant is getting interrupted by phrases that are just acknowledgments.
+	// - The assistant is getting interrupted by background noises.
+	// - The assistant is not properly stopping -- it starts talking right after getting interrupted.
+	StopSpeakingPlan *StopSpeakingPlan `json:"stopSpeakingPlan,omitempty" url:"stopSpeakingPlan,omitempty"`
+	// This is the plan for real-time monitoring of the workflow's calls.
+	//
+	// Usage:
+	// - To enable live listening of the workflow's calls, set `monitorPlan.listenEnabled` to `true`.
+	// - To enable live control of the workflow's calls, set `monitorPlan.controlEnabled` to `true`.
+	MonitorPlan *MonitorPlan `json:"monitorPlan,omitempty" url:"monitorPlan,omitempty"`
+	// This enables filtering of noise and background speech while the user is talking.
+	//
+	// Features:
+	// - Smart denoising using Krisp
+	// - Fourier denoising
+	//
+	// Both can be used together. Order of precedence:
+	// - Smart denoising
+	// - Fourier denoising
+	BackgroundSpeechDenoisingPlan *BackgroundSpeechDenoisingPlan `json:"backgroundSpeechDenoisingPlan,omitempty" url:"backgroundSpeechDenoisingPlan,omitempty"`
+	// These are the credentials that will be used for the workflow calls. By default, all the credentials are available for use in the call but you can provide a subset using this.
+	CredentialIds []string `json:"credentialIds,omitempty" url:"credentialIds,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -29738,11 +30325,32 @@ func (c *CreateWorkflowDto) GetNodes() []*CreateWorkflowDtoNodesItem {
 	return c.Nodes
 }
 
-func (c *CreateWorkflowDto) GetModel() *CreateWorkflowDtoModel {
+func (c *CreateWorkflowDto) GetTranscriber() *CreateWorkflowDtoTranscriber {
 	if c == nil {
 		return nil
 	}
-	return c.Model
+	return c.Transcriber
+}
+
+func (c *CreateWorkflowDto) GetVoice() *CreateWorkflowDtoVoice {
+	if c == nil {
+		return nil
+	}
+	return c.Voice
+}
+
+func (c *CreateWorkflowDto) GetObservabilityPlan() *LangfuseObservabilityPlan {
+	if c == nil {
+		return nil
+	}
+	return c.ObservabilityPlan
+}
+
+func (c *CreateWorkflowDto) GetCredentials() []*CreateWorkflowDtoCredentialsItem {
+	if c == nil {
+		return nil
+	}
+	return c.Credentials
 }
 
 func (c *CreateWorkflowDto) GetName() string {
@@ -29757,6 +30365,76 @@ func (c *CreateWorkflowDto) GetEdges() []*Edge {
 		return nil
 	}
 	return c.Edges
+}
+
+func (c *CreateWorkflowDto) GetGlobalPrompt() *string {
+	if c == nil {
+		return nil
+	}
+	return c.GlobalPrompt
+}
+
+func (c *CreateWorkflowDto) GetServer() *Server {
+	if c == nil {
+		return nil
+	}
+	return c.Server
+}
+
+func (c *CreateWorkflowDto) GetCompliancePlan() *CompliancePlan {
+	if c == nil {
+		return nil
+	}
+	return c.CompliancePlan
+}
+
+func (c *CreateWorkflowDto) GetAnalysisPlan() *AnalysisPlan {
+	if c == nil {
+		return nil
+	}
+	return c.AnalysisPlan
+}
+
+func (c *CreateWorkflowDto) GetArtifactPlan() *ArtifactPlan {
+	if c == nil {
+		return nil
+	}
+	return c.ArtifactPlan
+}
+
+func (c *CreateWorkflowDto) GetStartSpeakingPlan() *StartSpeakingPlan {
+	if c == nil {
+		return nil
+	}
+	return c.StartSpeakingPlan
+}
+
+func (c *CreateWorkflowDto) GetStopSpeakingPlan() *StopSpeakingPlan {
+	if c == nil {
+		return nil
+	}
+	return c.StopSpeakingPlan
+}
+
+func (c *CreateWorkflowDto) GetMonitorPlan() *MonitorPlan {
+	if c == nil {
+		return nil
+	}
+	return c.MonitorPlan
+}
+
+func (c *CreateWorkflowDto) GetBackgroundSpeechDenoisingPlan() *BackgroundSpeechDenoisingPlan {
+	if c == nil {
+		return nil
+	}
+	return c.BackgroundSpeechDenoisingPlan
+}
+
+func (c *CreateWorkflowDto) GetCredentialIds() []string {
+	if c == nil {
+		return nil
+	}
+	return c.CredentialIds
 }
 
 func (c *CreateWorkflowDto) GetExtraProperties() map[string]interface{} {
@@ -29791,65 +30469,1030 @@ func (c *CreateWorkflowDto) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// These are the options for the workflow's LLM.
-type CreateWorkflowDtoModel struct {
-	WorkflowOpenAiModel    *WorkflowOpenAiModel
-	WorkflowAnthropicModel *WorkflowAnthropicModel
+type CreateWorkflowDtoCredentialsItem struct {
+	CreateElevenLabsCredentialDto                        *CreateElevenLabsCredentialDto
+	CreateAnthropicCredentialDto                         *CreateAnthropicCredentialDto
+	CreateAnyscaleCredentialDto                          *CreateAnyscaleCredentialDto
+	CreateAssemblyAiCredentialDto                        *CreateAssemblyAiCredentialDto
+	CreateAzureOpenAiCredentialDto                       *CreateAzureOpenAiCredentialDto
+	CreateAzureCredentialDto                             *CreateAzureCredentialDto
+	CreateByoSipTrunkCredentialDto                       *CreateByoSipTrunkCredentialDto
+	CreateCartesiaCredentialDto                          *CreateCartesiaCredentialDto
+	CreateCerebrasCredentialDto                          *CreateCerebrasCredentialDto
+	CreateCloudflareCredentialDto                        *CreateCloudflareCredentialDto
+	CreateCustomLlmCredentialDto                         *CreateCustomLlmCredentialDto
+	CreateDeepgramCredentialDto                          *CreateDeepgramCredentialDto
+	CreateDeepInfraCredentialDto                         *CreateDeepInfraCredentialDto
+	CreateDeepSeekCredentialDto                          *CreateDeepSeekCredentialDto
+	CreateGcpCredentialDto                               *CreateGcpCredentialDto
+	CreateGladiaCredentialDto                            *CreateGladiaCredentialDto
+	CreateGoHighLevelCredentialDto                       *CreateGoHighLevelCredentialDto
+	CreateGoogleCredentialDto                            *CreateGoogleCredentialDto
+	CreateGroqCredentialDto                              *CreateGroqCredentialDto
+	CreateInflectionAiCredentialDto                      *CreateInflectionAiCredentialDto
+	CreateLangfuseCredentialDto                          *CreateLangfuseCredentialDto
+	CreateLmntCredentialDto                              *CreateLmntCredentialDto
+	CreateMakeCredentialDto                              *CreateMakeCredentialDto
+	CreateOpenAiCredentialDto                            *CreateOpenAiCredentialDto
+	CreateOpenRouterCredentialDto                        *CreateOpenRouterCredentialDto
+	CreatePerplexityAiCredentialDto                      *CreatePerplexityAiCredentialDto
+	CreatePlayHtCredentialDto                            *CreatePlayHtCredentialDto
+	CreateRimeAiCredentialDto                            *CreateRimeAiCredentialDto
+	CreateRunpodCredentialDto                            *CreateRunpodCredentialDto
+	CreateS3CredentialDto                                *CreateS3CredentialDto
+	CreateSupabaseCredentialDto                          *CreateSupabaseCredentialDto
+	CreateSmallestAiCredentialDto                        *CreateSmallestAiCredentialDto
+	CreateTavusCredentialDto                             *CreateTavusCredentialDto
+	CreateTogetherAiCredentialDto                        *CreateTogetherAiCredentialDto
+	CreateTwilioCredentialDto                            *CreateTwilioCredentialDto
+	CreateVonageCredentialDto                            *CreateVonageCredentialDto
+	CreateWebhookCredentialDto                           *CreateWebhookCredentialDto
+	CreateXAiCredentialDto                               *CreateXAiCredentialDto
+	CreateNeuphonicCredentialDto                         *CreateNeuphonicCredentialDto
+	CreateHumeCredentialDto                              *CreateHumeCredentialDto
+	CreateMistralCredentialDto                           *CreateMistralCredentialDto
+	CreateSpeechmaticsCredentialDto                      *CreateSpeechmaticsCredentialDto
+	CreateTrieveCredentialDto                            *CreateTrieveCredentialDto
+	CreateGoogleCalendarOAuth2ClientCredentialDto        *CreateGoogleCalendarOAuth2ClientCredentialDto
+	CreateGoogleCalendarOAuth2AuthorizationCredentialDto *CreateGoogleCalendarOAuth2AuthorizationCredentialDto
+	CreateGoogleSheetsOAuth2AuthorizationCredentialDto   *CreateGoogleSheetsOAuth2AuthorizationCredentialDto
+	CreateSlackOAuth2AuthorizationCredentialDto          *CreateSlackOAuth2AuthorizationCredentialDto
+	CreateGoHighLevelMcpCredentialDto                    *CreateGoHighLevelMcpCredentialDto
 
 	typ string
 }
 
-func (c *CreateWorkflowDtoModel) GetWorkflowOpenAiModel() *WorkflowOpenAiModel {
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateElevenLabsCredentialDto() *CreateElevenLabsCredentialDto {
 	if c == nil {
 		return nil
 	}
-	return c.WorkflowOpenAiModel
+	return c.CreateElevenLabsCredentialDto
 }
 
-func (c *CreateWorkflowDtoModel) GetWorkflowAnthropicModel() *WorkflowAnthropicModel {
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateAnthropicCredentialDto() *CreateAnthropicCredentialDto {
 	if c == nil {
 		return nil
 	}
-	return c.WorkflowAnthropicModel
+	return c.CreateAnthropicCredentialDto
 }
 
-func (c *CreateWorkflowDtoModel) UnmarshalJSON(data []byte) error {
-	valueWorkflowOpenAiModel := new(WorkflowOpenAiModel)
-	if err := json.Unmarshal(data, &valueWorkflowOpenAiModel); err == nil {
-		c.typ = "WorkflowOpenAiModel"
-		c.WorkflowOpenAiModel = valueWorkflowOpenAiModel
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateAnyscaleCredentialDto() *CreateAnyscaleCredentialDto {
+	if c == nil {
 		return nil
 	}
-	valueWorkflowAnthropicModel := new(WorkflowAnthropicModel)
-	if err := json.Unmarshal(data, &valueWorkflowAnthropicModel); err == nil {
-		c.typ = "WorkflowAnthropicModel"
-		c.WorkflowAnthropicModel = valueWorkflowAnthropicModel
+	return c.CreateAnyscaleCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateAssemblyAiCredentialDto() *CreateAssemblyAiCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateAssemblyAiCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateAzureOpenAiCredentialDto() *CreateAzureOpenAiCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateAzureOpenAiCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateAzureCredentialDto() *CreateAzureCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateAzureCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateByoSipTrunkCredentialDto() *CreateByoSipTrunkCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateByoSipTrunkCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateCartesiaCredentialDto() *CreateCartesiaCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateCartesiaCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateCerebrasCredentialDto() *CreateCerebrasCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateCerebrasCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateCloudflareCredentialDto() *CreateCloudflareCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateCloudflareCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateCustomLlmCredentialDto() *CreateCustomLlmCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateCustomLlmCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateDeepgramCredentialDto() *CreateDeepgramCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateDeepgramCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateDeepInfraCredentialDto() *CreateDeepInfraCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateDeepInfraCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateDeepSeekCredentialDto() *CreateDeepSeekCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateDeepSeekCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateGcpCredentialDto() *CreateGcpCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateGcpCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateGladiaCredentialDto() *CreateGladiaCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateGladiaCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateGoHighLevelCredentialDto() *CreateGoHighLevelCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateGoHighLevelCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateGoogleCredentialDto() *CreateGoogleCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateGoogleCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateGroqCredentialDto() *CreateGroqCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateGroqCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateInflectionAiCredentialDto() *CreateInflectionAiCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateInflectionAiCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateLangfuseCredentialDto() *CreateLangfuseCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateLangfuseCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateLmntCredentialDto() *CreateLmntCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateLmntCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateMakeCredentialDto() *CreateMakeCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateMakeCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateOpenAiCredentialDto() *CreateOpenAiCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateOpenAiCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateOpenRouterCredentialDto() *CreateOpenRouterCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateOpenRouterCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreatePerplexityAiCredentialDto() *CreatePerplexityAiCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreatePerplexityAiCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreatePlayHtCredentialDto() *CreatePlayHtCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreatePlayHtCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateRimeAiCredentialDto() *CreateRimeAiCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateRimeAiCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateRunpodCredentialDto() *CreateRunpodCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateRunpodCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateS3CredentialDto() *CreateS3CredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateS3CredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateSupabaseCredentialDto() *CreateSupabaseCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateSupabaseCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateSmallestAiCredentialDto() *CreateSmallestAiCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateSmallestAiCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateTavusCredentialDto() *CreateTavusCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateTavusCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateTogetherAiCredentialDto() *CreateTogetherAiCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateTogetherAiCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateTwilioCredentialDto() *CreateTwilioCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateTwilioCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateVonageCredentialDto() *CreateVonageCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateVonageCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateWebhookCredentialDto() *CreateWebhookCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateWebhookCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateXAiCredentialDto() *CreateXAiCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateXAiCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateNeuphonicCredentialDto() *CreateNeuphonicCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateNeuphonicCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateHumeCredentialDto() *CreateHumeCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateHumeCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateMistralCredentialDto() *CreateMistralCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateMistralCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateSpeechmaticsCredentialDto() *CreateSpeechmaticsCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateSpeechmaticsCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateTrieveCredentialDto() *CreateTrieveCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateTrieveCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateGoogleCalendarOAuth2ClientCredentialDto() *CreateGoogleCalendarOAuth2ClientCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateGoogleCalendarOAuth2ClientCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateGoogleCalendarOAuth2AuthorizationCredentialDto() *CreateGoogleCalendarOAuth2AuthorizationCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateGoogleCalendarOAuth2AuthorizationCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateGoogleSheetsOAuth2AuthorizationCredentialDto() *CreateGoogleSheetsOAuth2AuthorizationCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateGoogleSheetsOAuth2AuthorizationCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateSlackOAuth2AuthorizationCredentialDto() *CreateSlackOAuth2AuthorizationCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateSlackOAuth2AuthorizationCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) GetCreateGoHighLevelMcpCredentialDto() *CreateGoHighLevelMcpCredentialDto {
+	if c == nil {
+		return nil
+	}
+	return c.CreateGoHighLevelMcpCredentialDto
+}
+
+func (c *CreateWorkflowDtoCredentialsItem) UnmarshalJSON(data []byte) error {
+	valueCreateElevenLabsCredentialDto := new(CreateElevenLabsCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateElevenLabsCredentialDto); err == nil {
+		c.typ = "CreateElevenLabsCredentialDto"
+		c.CreateElevenLabsCredentialDto = valueCreateElevenLabsCredentialDto
+		return nil
+	}
+	valueCreateAnthropicCredentialDto := new(CreateAnthropicCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateAnthropicCredentialDto); err == nil {
+		c.typ = "CreateAnthropicCredentialDto"
+		c.CreateAnthropicCredentialDto = valueCreateAnthropicCredentialDto
+		return nil
+	}
+	valueCreateAnyscaleCredentialDto := new(CreateAnyscaleCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateAnyscaleCredentialDto); err == nil {
+		c.typ = "CreateAnyscaleCredentialDto"
+		c.CreateAnyscaleCredentialDto = valueCreateAnyscaleCredentialDto
+		return nil
+	}
+	valueCreateAssemblyAiCredentialDto := new(CreateAssemblyAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateAssemblyAiCredentialDto); err == nil {
+		c.typ = "CreateAssemblyAiCredentialDto"
+		c.CreateAssemblyAiCredentialDto = valueCreateAssemblyAiCredentialDto
+		return nil
+	}
+	valueCreateAzureOpenAiCredentialDto := new(CreateAzureOpenAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateAzureOpenAiCredentialDto); err == nil {
+		c.typ = "CreateAzureOpenAiCredentialDto"
+		c.CreateAzureOpenAiCredentialDto = valueCreateAzureOpenAiCredentialDto
+		return nil
+	}
+	valueCreateAzureCredentialDto := new(CreateAzureCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateAzureCredentialDto); err == nil {
+		c.typ = "CreateAzureCredentialDto"
+		c.CreateAzureCredentialDto = valueCreateAzureCredentialDto
+		return nil
+	}
+	valueCreateByoSipTrunkCredentialDto := new(CreateByoSipTrunkCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateByoSipTrunkCredentialDto); err == nil {
+		c.typ = "CreateByoSipTrunkCredentialDto"
+		c.CreateByoSipTrunkCredentialDto = valueCreateByoSipTrunkCredentialDto
+		return nil
+	}
+	valueCreateCartesiaCredentialDto := new(CreateCartesiaCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateCartesiaCredentialDto); err == nil {
+		c.typ = "CreateCartesiaCredentialDto"
+		c.CreateCartesiaCredentialDto = valueCreateCartesiaCredentialDto
+		return nil
+	}
+	valueCreateCerebrasCredentialDto := new(CreateCerebrasCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateCerebrasCredentialDto); err == nil {
+		c.typ = "CreateCerebrasCredentialDto"
+		c.CreateCerebrasCredentialDto = valueCreateCerebrasCredentialDto
+		return nil
+	}
+	valueCreateCloudflareCredentialDto := new(CreateCloudflareCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateCloudflareCredentialDto); err == nil {
+		c.typ = "CreateCloudflareCredentialDto"
+		c.CreateCloudflareCredentialDto = valueCreateCloudflareCredentialDto
+		return nil
+	}
+	valueCreateCustomLlmCredentialDto := new(CreateCustomLlmCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateCustomLlmCredentialDto); err == nil {
+		c.typ = "CreateCustomLlmCredentialDto"
+		c.CreateCustomLlmCredentialDto = valueCreateCustomLlmCredentialDto
+		return nil
+	}
+	valueCreateDeepgramCredentialDto := new(CreateDeepgramCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateDeepgramCredentialDto); err == nil {
+		c.typ = "CreateDeepgramCredentialDto"
+		c.CreateDeepgramCredentialDto = valueCreateDeepgramCredentialDto
+		return nil
+	}
+	valueCreateDeepInfraCredentialDto := new(CreateDeepInfraCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateDeepInfraCredentialDto); err == nil {
+		c.typ = "CreateDeepInfraCredentialDto"
+		c.CreateDeepInfraCredentialDto = valueCreateDeepInfraCredentialDto
+		return nil
+	}
+	valueCreateDeepSeekCredentialDto := new(CreateDeepSeekCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateDeepSeekCredentialDto); err == nil {
+		c.typ = "CreateDeepSeekCredentialDto"
+		c.CreateDeepSeekCredentialDto = valueCreateDeepSeekCredentialDto
+		return nil
+	}
+	valueCreateGcpCredentialDto := new(CreateGcpCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGcpCredentialDto); err == nil {
+		c.typ = "CreateGcpCredentialDto"
+		c.CreateGcpCredentialDto = valueCreateGcpCredentialDto
+		return nil
+	}
+	valueCreateGladiaCredentialDto := new(CreateGladiaCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGladiaCredentialDto); err == nil {
+		c.typ = "CreateGladiaCredentialDto"
+		c.CreateGladiaCredentialDto = valueCreateGladiaCredentialDto
+		return nil
+	}
+	valueCreateGoHighLevelCredentialDto := new(CreateGoHighLevelCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoHighLevelCredentialDto); err == nil {
+		c.typ = "CreateGoHighLevelCredentialDto"
+		c.CreateGoHighLevelCredentialDto = valueCreateGoHighLevelCredentialDto
+		return nil
+	}
+	valueCreateGoogleCredentialDto := new(CreateGoogleCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoogleCredentialDto); err == nil {
+		c.typ = "CreateGoogleCredentialDto"
+		c.CreateGoogleCredentialDto = valueCreateGoogleCredentialDto
+		return nil
+	}
+	valueCreateGroqCredentialDto := new(CreateGroqCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGroqCredentialDto); err == nil {
+		c.typ = "CreateGroqCredentialDto"
+		c.CreateGroqCredentialDto = valueCreateGroqCredentialDto
+		return nil
+	}
+	valueCreateInflectionAiCredentialDto := new(CreateInflectionAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateInflectionAiCredentialDto); err == nil {
+		c.typ = "CreateInflectionAiCredentialDto"
+		c.CreateInflectionAiCredentialDto = valueCreateInflectionAiCredentialDto
+		return nil
+	}
+	valueCreateLangfuseCredentialDto := new(CreateLangfuseCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateLangfuseCredentialDto); err == nil {
+		c.typ = "CreateLangfuseCredentialDto"
+		c.CreateLangfuseCredentialDto = valueCreateLangfuseCredentialDto
+		return nil
+	}
+	valueCreateLmntCredentialDto := new(CreateLmntCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateLmntCredentialDto); err == nil {
+		c.typ = "CreateLmntCredentialDto"
+		c.CreateLmntCredentialDto = valueCreateLmntCredentialDto
+		return nil
+	}
+	valueCreateMakeCredentialDto := new(CreateMakeCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateMakeCredentialDto); err == nil {
+		c.typ = "CreateMakeCredentialDto"
+		c.CreateMakeCredentialDto = valueCreateMakeCredentialDto
+		return nil
+	}
+	valueCreateOpenAiCredentialDto := new(CreateOpenAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateOpenAiCredentialDto); err == nil {
+		c.typ = "CreateOpenAiCredentialDto"
+		c.CreateOpenAiCredentialDto = valueCreateOpenAiCredentialDto
+		return nil
+	}
+	valueCreateOpenRouterCredentialDto := new(CreateOpenRouterCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateOpenRouterCredentialDto); err == nil {
+		c.typ = "CreateOpenRouterCredentialDto"
+		c.CreateOpenRouterCredentialDto = valueCreateOpenRouterCredentialDto
+		return nil
+	}
+	valueCreatePerplexityAiCredentialDto := new(CreatePerplexityAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreatePerplexityAiCredentialDto); err == nil {
+		c.typ = "CreatePerplexityAiCredentialDto"
+		c.CreatePerplexityAiCredentialDto = valueCreatePerplexityAiCredentialDto
+		return nil
+	}
+	valueCreatePlayHtCredentialDto := new(CreatePlayHtCredentialDto)
+	if err := json.Unmarshal(data, &valueCreatePlayHtCredentialDto); err == nil {
+		c.typ = "CreatePlayHtCredentialDto"
+		c.CreatePlayHtCredentialDto = valueCreatePlayHtCredentialDto
+		return nil
+	}
+	valueCreateRimeAiCredentialDto := new(CreateRimeAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateRimeAiCredentialDto); err == nil {
+		c.typ = "CreateRimeAiCredentialDto"
+		c.CreateRimeAiCredentialDto = valueCreateRimeAiCredentialDto
+		return nil
+	}
+	valueCreateRunpodCredentialDto := new(CreateRunpodCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateRunpodCredentialDto); err == nil {
+		c.typ = "CreateRunpodCredentialDto"
+		c.CreateRunpodCredentialDto = valueCreateRunpodCredentialDto
+		return nil
+	}
+	valueCreateS3CredentialDto := new(CreateS3CredentialDto)
+	if err := json.Unmarshal(data, &valueCreateS3CredentialDto); err == nil {
+		c.typ = "CreateS3CredentialDto"
+		c.CreateS3CredentialDto = valueCreateS3CredentialDto
+		return nil
+	}
+	valueCreateSupabaseCredentialDto := new(CreateSupabaseCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateSupabaseCredentialDto); err == nil {
+		c.typ = "CreateSupabaseCredentialDto"
+		c.CreateSupabaseCredentialDto = valueCreateSupabaseCredentialDto
+		return nil
+	}
+	valueCreateSmallestAiCredentialDto := new(CreateSmallestAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateSmallestAiCredentialDto); err == nil {
+		c.typ = "CreateSmallestAiCredentialDto"
+		c.CreateSmallestAiCredentialDto = valueCreateSmallestAiCredentialDto
+		return nil
+	}
+	valueCreateTavusCredentialDto := new(CreateTavusCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateTavusCredentialDto); err == nil {
+		c.typ = "CreateTavusCredentialDto"
+		c.CreateTavusCredentialDto = valueCreateTavusCredentialDto
+		return nil
+	}
+	valueCreateTogetherAiCredentialDto := new(CreateTogetherAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateTogetherAiCredentialDto); err == nil {
+		c.typ = "CreateTogetherAiCredentialDto"
+		c.CreateTogetherAiCredentialDto = valueCreateTogetherAiCredentialDto
+		return nil
+	}
+	valueCreateTwilioCredentialDto := new(CreateTwilioCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateTwilioCredentialDto); err == nil {
+		c.typ = "CreateTwilioCredentialDto"
+		c.CreateTwilioCredentialDto = valueCreateTwilioCredentialDto
+		return nil
+	}
+	valueCreateVonageCredentialDto := new(CreateVonageCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateVonageCredentialDto); err == nil {
+		c.typ = "CreateVonageCredentialDto"
+		c.CreateVonageCredentialDto = valueCreateVonageCredentialDto
+		return nil
+	}
+	valueCreateWebhookCredentialDto := new(CreateWebhookCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateWebhookCredentialDto); err == nil {
+		c.typ = "CreateWebhookCredentialDto"
+		c.CreateWebhookCredentialDto = valueCreateWebhookCredentialDto
+		return nil
+	}
+	valueCreateXAiCredentialDto := new(CreateXAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateXAiCredentialDto); err == nil {
+		c.typ = "CreateXAiCredentialDto"
+		c.CreateXAiCredentialDto = valueCreateXAiCredentialDto
+		return nil
+	}
+	valueCreateNeuphonicCredentialDto := new(CreateNeuphonicCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateNeuphonicCredentialDto); err == nil {
+		c.typ = "CreateNeuphonicCredentialDto"
+		c.CreateNeuphonicCredentialDto = valueCreateNeuphonicCredentialDto
+		return nil
+	}
+	valueCreateHumeCredentialDto := new(CreateHumeCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateHumeCredentialDto); err == nil {
+		c.typ = "CreateHumeCredentialDto"
+		c.CreateHumeCredentialDto = valueCreateHumeCredentialDto
+		return nil
+	}
+	valueCreateMistralCredentialDto := new(CreateMistralCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateMistralCredentialDto); err == nil {
+		c.typ = "CreateMistralCredentialDto"
+		c.CreateMistralCredentialDto = valueCreateMistralCredentialDto
+		return nil
+	}
+	valueCreateSpeechmaticsCredentialDto := new(CreateSpeechmaticsCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateSpeechmaticsCredentialDto); err == nil {
+		c.typ = "CreateSpeechmaticsCredentialDto"
+		c.CreateSpeechmaticsCredentialDto = valueCreateSpeechmaticsCredentialDto
+		return nil
+	}
+	valueCreateTrieveCredentialDto := new(CreateTrieveCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateTrieveCredentialDto); err == nil {
+		c.typ = "CreateTrieveCredentialDto"
+		c.CreateTrieveCredentialDto = valueCreateTrieveCredentialDto
+		return nil
+	}
+	valueCreateGoogleCalendarOAuth2ClientCredentialDto := new(CreateGoogleCalendarOAuth2ClientCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoogleCalendarOAuth2ClientCredentialDto); err == nil {
+		c.typ = "CreateGoogleCalendarOAuth2ClientCredentialDto"
+		c.CreateGoogleCalendarOAuth2ClientCredentialDto = valueCreateGoogleCalendarOAuth2ClientCredentialDto
+		return nil
+	}
+	valueCreateGoogleCalendarOAuth2AuthorizationCredentialDto := new(CreateGoogleCalendarOAuth2AuthorizationCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoogleCalendarOAuth2AuthorizationCredentialDto); err == nil {
+		c.typ = "CreateGoogleCalendarOAuth2AuthorizationCredentialDto"
+		c.CreateGoogleCalendarOAuth2AuthorizationCredentialDto = valueCreateGoogleCalendarOAuth2AuthorizationCredentialDto
+		return nil
+	}
+	valueCreateGoogleSheetsOAuth2AuthorizationCredentialDto := new(CreateGoogleSheetsOAuth2AuthorizationCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoogleSheetsOAuth2AuthorizationCredentialDto); err == nil {
+		c.typ = "CreateGoogleSheetsOAuth2AuthorizationCredentialDto"
+		c.CreateGoogleSheetsOAuth2AuthorizationCredentialDto = valueCreateGoogleSheetsOAuth2AuthorizationCredentialDto
+		return nil
+	}
+	valueCreateSlackOAuth2AuthorizationCredentialDto := new(CreateSlackOAuth2AuthorizationCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateSlackOAuth2AuthorizationCredentialDto); err == nil {
+		c.typ = "CreateSlackOAuth2AuthorizationCredentialDto"
+		c.CreateSlackOAuth2AuthorizationCredentialDto = valueCreateSlackOAuth2AuthorizationCredentialDto
+		return nil
+	}
+	valueCreateGoHighLevelMcpCredentialDto := new(CreateGoHighLevelMcpCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoHighLevelMcpCredentialDto); err == nil {
+		c.typ = "CreateGoHighLevelMcpCredentialDto"
+		c.CreateGoHighLevelMcpCredentialDto = valueCreateGoHighLevelMcpCredentialDto
 		return nil
 	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
 }
 
-func (c CreateWorkflowDtoModel) MarshalJSON() ([]byte, error) {
-	if c.typ == "WorkflowOpenAiModel" || c.WorkflowOpenAiModel != nil {
-		return json.Marshal(c.WorkflowOpenAiModel)
+func (c CreateWorkflowDtoCredentialsItem) MarshalJSON() ([]byte, error) {
+	if c.typ == "CreateElevenLabsCredentialDto" || c.CreateElevenLabsCredentialDto != nil {
+		return json.Marshal(c.CreateElevenLabsCredentialDto)
 	}
-	if c.typ == "WorkflowAnthropicModel" || c.WorkflowAnthropicModel != nil {
-		return json.Marshal(c.WorkflowAnthropicModel)
+	if c.typ == "CreateAnthropicCredentialDto" || c.CreateAnthropicCredentialDto != nil {
+		return json.Marshal(c.CreateAnthropicCredentialDto)
+	}
+	if c.typ == "CreateAnyscaleCredentialDto" || c.CreateAnyscaleCredentialDto != nil {
+		return json.Marshal(c.CreateAnyscaleCredentialDto)
+	}
+	if c.typ == "CreateAssemblyAiCredentialDto" || c.CreateAssemblyAiCredentialDto != nil {
+		return json.Marshal(c.CreateAssemblyAiCredentialDto)
+	}
+	if c.typ == "CreateAzureOpenAiCredentialDto" || c.CreateAzureOpenAiCredentialDto != nil {
+		return json.Marshal(c.CreateAzureOpenAiCredentialDto)
+	}
+	if c.typ == "CreateAzureCredentialDto" || c.CreateAzureCredentialDto != nil {
+		return json.Marshal(c.CreateAzureCredentialDto)
+	}
+	if c.typ == "CreateByoSipTrunkCredentialDto" || c.CreateByoSipTrunkCredentialDto != nil {
+		return json.Marshal(c.CreateByoSipTrunkCredentialDto)
+	}
+	if c.typ == "CreateCartesiaCredentialDto" || c.CreateCartesiaCredentialDto != nil {
+		return json.Marshal(c.CreateCartesiaCredentialDto)
+	}
+	if c.typ == "CreateCerebrasCredentialDto" || c.CreateCerebrasCredentialDto != nil {
+		return json.Marshal(c.CreateCerebrasCredentialDto)
+	}
+	if c.typ == "CreateCloudflareCredentialDto" || c.CreateCloudflareCredentialDto != nil {
+		return json.Marshal(c.CreateCloudflareCredentialDto)
+	}
+	if c.typ == "CreateCustomLlmCredentialDto" || c.CreateCustomLlmCredentialDto != nil {
+		return json.Marshal(c.CreateCustomLlmCredentialDto)
+	}
+	if c.typ == "CreateDeepgramCredentialDto" || c.CreateDeepgramCredentialDto != nil {
+		return json.Marshal(c.CreateDeepgramCredentialDto)
+	}
+	if c.typ == "CreateDeepInfraCredentialDto" || c.CreateDeepInfraCredentialDto != nil {
+		return json.Marshal(c.CreateDeepInfraCredentialDto)
+	}
+	if c.typ == "CreateDeepSeekCredentialDto" || c.CreateDeepSeekCredentialDto != nil {
+		return json.Marshal(c.CreateDeepSeekCredentialDto)
+	}
+	if c.typ == "CreateGcpCredentialDto" || c.CreateGcpCredentialDto != nil {
+		return json.Marshal(c.CreateGcpCredentialDto)
+	}
+	if c.typ == "CreateGladiaCredentialDto" || c.CreateGladiaCredentialDto != nil {
+		return json.Marshal(c.CreateGladiaCredentialDto)
+	}
+	if c.typ == "CreateGoHighLevelCredentialDto" || c.CreateGoHighLevelCredentialDto != nil {
+		return json.Marshal(c.CreateGoHighLevelCredentialDto)
+	}
+	if c.typ == "CreateGoogleCredentialDto" || c.CreateGoogleCredentialDto != nil {
+		return json.Marshal(c.CreateGoogleCredentialDto)
+	}
+	if c.typ == "CreateGroqCredentialDto" || c.CreateGroqCredentialDto != nil {
+		return json.Marshal(c.CreateGroqCredentialDto)
+	}
+	if c.typ == "CreateInflectionAiCredentialDto" || c.CreateInflectionAiCredentialDto != nil {
+		return json.Marshal(c.CreateInflectionAiCredentialDto)
+	}
+	if c.typ == "CreateLangfuseCredentialDto" || c.CreateLangfuseCredentialDto != nil {
+		return json.Marshal(c.CreateLangfuseCredentialDto)
+	}
+	if c.typ == "CreateLmntCredentialDto" || c.CreateLmntCredentialDto != nil {
+		return json.Marshal(c.CreateLmntCredentialDto)
+	}
+	if c.typ == "CreateMakeCredentialDto" || c.CreateMakeCredentialDto != nil {
+		return json.Marshal(c.CreateMakeCredentialDto)
+	}
+	if c.typ == "CreateOpenAiCredentialDto" || c.CreateOpenAiCredentialDto != nil {
+		return json.Marshal(c.CreateOpenAiCredentialDto)
+	}
+	if c.typ == "CreateOpenRouterCredentialDto" || c.CreateOpenRouterCredentialDto != nil {
+		return json.Marshal(c.CreateOpenRouterCredentialDto)
+	}
+	if c.typ == "CreatePerplexityAiCredentialDto" || c.CreatePerplexityAiCredentialDto != nil {
+		return json.Marshal(c.CreatePerplexityAiCredentialDto)
+	}
+	if c.typ == "CreatePlayHtCredentialDto" || c.CreatePlayHtCredentialDto != nil {
+		return json.Marshal(c.CreatePlayHtCredentialDto)
+	}
+	if c.typ == "CreateRimeAiCredentialDto" || c.CreateRimeAiCredentialDto != nil {
+		return json.Marshal(c.CreateRimeAiCredentialDto)
+	}
+	if c.typ == "CreateRunpodCredentialDto" || c.CreateRunpodCredentialDto != nil {
+		return json.Marshal(c.CreateRunpodCredentialDto)
+	}
+	if c.typ == "CreateS3CredentialDto" || c.CreateS3CredentialDto != nil {
+		return json.Marshal(c.CreateS3CredentialDto)
+	}
+	if c.typ == "CreateSupabaseCredentialDto" || c.CreateSupabaseCredentialDto != nil {
+		return json.Marshal(c.CreateSupabaseCredentialDto)
+	}
+	if c.typ == "CreateSmallestAiCredentialDto" || c.CreateSmallestAiCredentialDto != nil {
+		return json.Marshal(c.CreateSmallestAiCredentialDto)
+	}
+	if c.typ == "CreateTavusCredentialDto" || c.CreateTavusCredentialDto != nil {
+		return json.Marshal(c.CreateTavusCredentialDto)
+	}
+	if c.typ == "CreateTogetherAiCredentialDto" || c.CreateTogetherAiCredentialDto != nil {
+		return json.Marshal(c.CreateTogetherAiCredentialDto)
+	}
+	if c.typ == "CreateTwilioCredentialDto" || c.CreateTwilioCredentialDto != nil {
+		return json.Marshal(c.CreateTwilioCredentialDto)
+	}
+	if c.typ == "CreateVonageCredentialDto" || c.CreateVonageCredentialDto != nil {
+		return json.Marshal(c.CreateVonageCredentialDto)
+	}
+	if c.typ == "CreateWebhookCredentialDto" || c.CreateWebhookCredentialDto != nil {
+		return json.Marshal(c.CreateWebhookCredentialDto)
+	}
+	if c.typ == "CreateXAiCredentialDto" || c.CreateXAiCredentialDto != nil {
+		return json.Marshal(c.CreateXAiCredentialDto)
+	}
+	if c.typ == "CreateNeuphonicCredentialDto" || c.CreateNeuphonicCredentialDto != nil {
+		return json.Marshal(c.CreateNeuphonicCredentialDto)
+	}
+	if c.typ == "CreateHumeCredentialDto" || c.CreateHumeCredentialDto != nil {
+		return json.Marshal(c.CreateHumeCredentialDto)
+	}
+	if c.typ == "CreateMistralCredentialDto" || c.CreateMistralCredentialDto != nil {
+		return json.Marshal(c.CreateMistralCredentialDto)
+	}
+	if c.typ == "CreateSpeechmaticsCredentialDto" || c.CreateSpeechmaticsCredentialDto != nil {
+		return json.Marshal(c.CreateSpeechmaticsCredentialDto)
+	}
+	if c.typ == "CreateTrieveCredentialDto" || c.CreateTrieveCredentialDto != nil {
+		return json.Marshal(c.CreateTrieveCredentialDto)
+	}
+	if c.typ == "CreateGoogleCalendarOAuth2ClientCredentialDto" || c.CreateGoogleCalendarOAuth2ClientCredentialDto != nil {
+		return json.Marshal(c.CreateGoogleCalendarOAuth2ClientCredentialDto)
+	}
+	if c.typ == "CreateGoogleCalendarOAuth2AuthorizationCredentialDto" || c.CreateGoogleCalendarOAuth2AuthorizationCredentialDto != nil {
+		return json.Marshal(c.CreateGoogleCalendarOAuth2AuthorizationCredentialDto)
+	}
+	if c.typ == "CreateGoogleSheetsOAuth2AuthorizationCredentialDto" || c.CreateGoogleSheetsOAuth2AuthorizationCredentialDto != nil {
+		return json.Marshal(c.CreateGoogleSheetsOAuth2AuthorizationCredentialDto)
+	}
+	if c.typ == "CreateSlackOAuth2AuthorizationCredentialDto" || c.CreateSlackOAuth2AuthorizationCredentialDto != nil {
+		return json.Marshal(c.CreateSlackOAuth2AuthorizationCredentialDto)
+	}
+	if c.typ == "CreateGoHighLevelMcpCredentialDto" || c.CreateGoHighLevelMcpCredentialDto != nil {
+		return json.Marshal(c.CreateGoHighLevelMcpCredentialDto)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
 }
 
-type CreateWorkflowDtoModelVisitor interface {
-	VisitWorkflowOpenAiModel(*WorkflowOpenAiModel) error
-	VisitWorkflowAnthropicModel(*WorkflowAnthropicModel) error
+type CreateWorkflowDtoCredentialsItemVisitor interface {
+	VisitCreateElevenLabsCredentialDto(*CreateElevenLabsCredentialDto) error
+	VisitCreateAnthropicCredentialDto(*CreateAnthropicCredentialDto) error
+	VisitCreateAnyscaleCredentialDto(*CreateAnyscaleCredentialDto) error
+	VisitCreateAssemblyAiCredentialDto(*CreateAssemblyAiCredentialDto) error
+	VisitCreateAzureOpenAiCredentialDto(*CreateAzureOpenAiCredentialDto) error
+	VisitCreateAzureCredentialDto(*CreateAzureCredentialDto) error
+	VisitCreateByoSipTrunkCredentialDto(*CreateByoSipTrunkCredentialDto) error
+	VisitCreateCartesiaCredentialDto(*CreateCartesiaCredentialDto) error
+	VisitCreateCerebrasCredentialDto(*CreateCerebrasCredentialDto) error
+	VisitCreateCloudflareCredentialDto(*CreateCloudflareCredentialDto) error
+	VisitCreateCustomLlmCredentialDto(*CreateCustomLlmCredentialDto) error
+	VisitCreateDeepgramCredentialDto(*CreateDeepgramCredentialDto) error
+	VisitCreateDeepInfraCredentialDto(*CreateDeepInfraCredentialDto) error
+	VisitCreateDeepSeekCredentialDto(*CreateDeepSeekCredentialDto) error
+	VisitCreateGcpCredentialDto(*CreateGcpCredentialDto) error
+	VisitCreateGladiaCredentialDto(*CreateGladiaCredentialDto) error
+	VisitCreateGoHighLevelCredentialDto(*CreateGoHighLevelCredentialDto) error
+	VisitCreateGoogleCredentialDto(*CreateGoogleCredentialDto) error
+	VisitCreateGroqCredentialDto(*CreateGroqCredentialDto) error
+	VisitCreateInflectionAiCredentialDto(*CreateInflectionAiCredentialDto) error
+	VisitCreateLangfuseCredentialDto(*CreateLangfuseCredentialDto) error
+	VisitCreateLmntCredentialDto(*CreateLmntCredentialDto) error
+	VisitCreateMakeCredentialDto(*CreateMakeCredentialDto) error
+	VisitCreateOpenAiCredentialDto(*CreateOpenAiCredentialDto) error
+	VisitCreateOpenRouterCredentialDto(*CreateOpenRouterCredentialDto) error
+	VisitCreatePerplexityAiCredentialDto(*CreatePerplexityAiCredentialDto) error
+	VisitCreatePlayHtCredentialDto(*CreatePlayHtCredentialDto) error
+	VisitCreateRimeAiCredentialDto(*CreateRimeAiCredentialDto) error
+	VisitCreateRunpodCredentialDto(*CreateRunpodCredentialDto) error
+	VisitCreateS3CredentialDto(*CreateS3CredentialDto) error
+	VisitCreateSupabaseCredentialDto(*CreateSupabaseCredentialDto) error
+	VisitCreateSmallestAiCredentialDto(*CreateSmallestAiCredentialDto) error
+	VisitCreateTavusCredentialDto(*CreateTavusCredentialDto) error
+	VisitCreateTogetherAiCredentialDto(*CreateTogetherAiCredentialDto) error
+	VisitCreateTwilioCredentialDto(*CreateTwilioCredentialDto) error
+	VisitCreateVonageCredentialDto(*CreateVonageCredentialDto) error
+	VisitCreateWebhookCredentialDto(*CreateWebhookCredentialDto) error
+	VisitCreateXAiCredentialDto(*CreateXAiCredentialDto) error
+	VisitCreateNeuphonicCredentialDto(*CreateNeuphonicCredentialDto) error
+	VisitCreateHumeCredentialDto(*CreateHumeCredentialDto) error
+	VisitCreateMistralCredentialDto(*CreateMistralCredentialDto) error
+	VisitCreateSpeechmaticsCredentialDto(*CreateSpeechmaticsCredentialDto) error
+	VisitCreateTrieveCredentialDto(*CreateTrieveCredentialDto) error
+	VisitCreateGoogleCalendarOAuth2ClientCredentialDto(*CreateGoogleCalendarOAuth2ClientCredentialDto) error
+	VisitCreateGoogleCalendarOAuth2AuthorizationCredentialDto(*CreateGoogleCalendarOAuth2AuthorizationCredentialDto) error
+	VisitCreateGoogleSheetsOAuth2AuthorizationCredentialDto(*CreateGoogleSheetsOAuth2AuthorizationCredentialDto) error
+	VisitCreateSlackOAuth2AuthorizationCredentialDto(*CreateSlackOAuth2AuthorizationCredentialDto) error
+	VisitCreateGoHighLevelMcpCredentialDto(*CreateGoHighLevelMcpCredentialDto) error
 }
 
-func (c *CreateWorkflowDtoModel) Accept(visitor CreateWorkflowDtoModelVisitor) error {
-	if c.typ == "WorkflowOpenAiModel" || c.WorkflowOpenAiModel != nil {
-		return visitor.VisitWorkflowOpenAiModel(c.WorkflowOpenAiModel)
+func (c *CreateWorkflowDtoCredentialsItem) Accept(visitor CreateWorkflowDtoCredentialsItemVisitor) error {
+	if c.typ == "CreateElevenLabsCredentialDto" || c.CreateElevenLabsCredentialDto != nil {
+		return visitor.VisitCreateElevenLabsCredentialDto(c.CreateElevenLabsCredentialDto)
 	}
-	if c.typ == "WorkflowAnthropicModel" || c.WorkflowAnthropicModel != nil {
-		return visitor.VisitWorkflowAnthropicModel(c.WorkflowAnthropicModel)
+	if c.typ == "CreateAnthropicCredentialDto" || c.CreateAnthropicCredentialDto != nil {
+		return visitor.VisitCreateAnthropicCredentialDto(c.CreateAnthropicCredentialDto)
+	}
+	if c.typ == "CreateAnyscaleCredentialDto" || c.CreateAnyscaleCredentialDto != nil {
+		return visitor.VisitCreateAnyscaleCredentialDto(c.CreateAnyscaleCredentialDto)
+	}
+	if c.typ == "CreateAssemblyAiCredentialDto" || c.CreateAssemblyAiCredentialDto != nil {
+		return visitor.VisitCreateAssemblyAiCredentialDto(c.CreateAssemblyAiCredentialDto)
+	}
+	if c.typ == "CreateAzureOpenAiCredentialDto" || c.CreateAzureOpenAiCredentialDto != nil {
+		return visitor.VisitCreateAzureOpenAiCredentialDto(c.CreateAzureOpenAiCredentialDto)
+	}
+	if c.typ == "CreateAzureCredentialDto" || c.CreateAzureCredentialDto != nil {
+		return visitor.VisitCreateAzureCredentialDto(c.CreateAzureCredentialDto)
+	}
+	if c.typ == "CreateByoSipTrunkCredentialDto" || c.CreateByoSipTrunkCredentialDto != nil {
+		return visitor.VisitCreateByoSipTrunkCredentialDto(c.CreateByoSipTrunkCredentialDto)
+	}
+	if c.typ == "CreateCartesiaCredentialDto" || c.CreateCartesiaCredentialDto != nil {
+		return visitor.VisitCreateCartesiaCredentialDto(c.CreateCartesiaCredentialDto)
+	}
+	if c.typ == "CreateCerebrasCredentialDto" || c.CreateCerebrasCredentialDto != nil {
+		return visitor.VisitCreateCerebrasCredentialDto(c.CreateCerebrasCredentialDto)
+	}
+	if c.typ == "CreateCloudflareCredentialDto" || c.CreateCloudflareCredentialDto != nil {
+		return visitor.VisitCreateCloudflareCredentialDto(c.CreateCloudflareCredentialDto)
+	}
+	if c.typ == "CreateCustomLlmCredentialDto" || c.CreateCustomLlmCredentialDto != nil {
+		return visitor.VisitCreateCustomLlmCredentialDto(c.CreateCustomLlmCredentialDto)
+	}
+	if c.typ == "CreateDeepgramCredentialDto" || c.CreateDeepgramCredentialDto != nil {
+		return visitor.VisitCreateDeepgramCredentialDto(c.CreateDeepgramCredentialDto)
+	}
+	if c.typ == "CreateDeepInfraCredentialDto" || c.CreateDeepInfraCredentialDto != nil {
+		return visitor.VisitCreateDeepInfraCredentialDto(c.CreateDeepInfraCredentialDto)
+	}
+	if c.typ == "CreateDeepSeekCredentialDto" || c.CreateDeepSeekCredentialDto != nil {
+		return visitor.VisitCreateDeepSeekCredentialDto(c.CreateDeepSeekCredentialDto)
+	}
+	if c.typ == "CreateGcpCredentialDto" || c.CreateGcpCredentialDto != nil {
+		return visitor.VisitCreateGcpCredentialDto(c.CreateGcpCredentialDto)
+	}
+	if c.typ == "CreateGladiaCredentialDto" || c.CreateGladiaCredentialDto != nil {
+		return visitor.VisitCreateGladiaCredentialDto(c.CreateGladiaCredentialDto)
+	}
+	if c.typ == "CreateGoHighLevelCredentialDto" || c.CreateGoHighLevelCredentialDto != nil {
+		return visitor.VisitCreateGoHighLevelCredentialDto(c.CreateGoHighLevelCredentialDto)
+	}
+	if c.typ == "CreateGoogleCredentialDto" || c.CreateGoogleCredentialDto != nil {
+		return visitor.VisitCreateGoogleCredentialDto(c.CreateGoogleCredentialDto)
+	}
+	if c.typ == "CreateGroqCredentialDto" || c.CreateGroqCredentialDto != nil {
+		return visitor.VisitCreateGroqCredentialDto(c.CreateGroqCredentialDto)
+	}
+	if c.typ == "CreateInflectionAiCredentialDto" || c.CreateInflectionAiCredentialDto != nil {
+		return visitor.VisitCreateInflectionAiCredentialDto(c.CreateInflectionAiCredentialDto)
+	}
+	if c.typ == "CreateLangfuseCredentialDto" || c.CreateLangfuseCredentialDto != nil {
+		return visitor.VisitCreateLangfuseCredentialDto(c.CreateLangfuseCredentialDto)
+	}
+	if c.typ == "CreateLmntCredentialDto" || c.CreateLmntCredentialDto != nil {
+		return visitor.VisitCreateLmntCredentialDto(c.CreateLmntCredentialDto)
+	}
+	if c.typ == "CreateMakeCredentialDto" || c.CreateMakeCredentialDto != nil {
+		return visitor.VisitCreateMakeCredentialDto(c.CreateMakeCredentialDto)
+	}
+	if c.typ == "CreateOpenAiCredentialDto" || c.CreateOpenAiCredentialDto != nil {
+		return visitor.VisitCreateOpenAiCredentialDto(c.CreateOpenAiCredentialDto)
+	}
+	if c.typ == "CreateOpenRouterCredentialDto" || c.CreateOpenRouterCredentialDto != nil {
+		return visitor.VisitCreateOpenRouterCredentialDto(c.CreateOpenRouterCredentialDto)
+	}
+	if c.typ == "CreatePerplexityAiCredentialDto" || c.CreatePerplexityAiCredentialDto != nil {
+		return visitor.VisitCreatePerplexityAiCredentialDto(c.CreatePerplexityAiCredentialDto)
+	}
+	if c.typ == "CreatePlayHtCredentialDto" || c.CreatePlayHtCredentialDto != nil {
+		return visitor.VisitCreatePlayHtCredentialDto(c.CreatePlayHtCredentialDto)
+	}
+	if c.typ == "CreateRimeAiCredentialDto" || c.CreateRimeAiCredentialDto != nil {
+		return visitor.VisitCreateRimeAiCredentialDto(c.CreateRimeAiCredentialDto)
+	}
+	if c.typ == "CreateRunpodCredentialDto" || c.CreateRunpodCredentialDto != nil {
+		return visitor.VisitCreateRunpodCredentialDto(c.CreateRunpodCredentialDto)
+	}
+	if c.typ == "CreateS3CredentialDto" || c.CreateS3CredentialDto != nil {
+		return visitor.VisitCreateS3CredentialDto(c.CreateS3CredentialDto)
+	}
+	if c.typ == "CreateSupabaseCredentialDto" || c.CreateSupabaseCredentialDto != nil {
+		return visitor.VisitCreateSupabaseCredentialDto(c.CreateSupabaseCredentialDto)
+	}
+	if c.typ == "CreateSmallestAiCredentialDto" || c.CreateSmallestAiCredentialDto != nil {
+		return visitor.VisitCreateSmallestAiCredentialDto(c.CreateSmallestAiCredentialDto)
+	}
+	if c.typ == "CreateTavusCredentialDto" || c.CreateTavusCredentialDto != nil {
+		return visitor.VisitCreateTavusCredentialDto(c.CreateTavusCredentialDto)
+	}
+	if c.typ == "CreateTogetherAiCredentialDto" || c.CreateTogetherAiCredentialDto != nil {
+		return visitor.VisitCreateTogetherAiCredentialDto(c.CreateTogetherAiCredentialDto)
+	}
+	if c.typ == "CreateTwilioCredentialDto" || c.CreateTwilioCredentialDto != nil {
+		return visitor.VisitCreateTwilioCredentialDto(c.CreateTwilioCredentialDto)
+	}
+	if c.typ == "CreateVonageCredentialDto" || c.CreateVonageCredentialDto != nil {
+		return visitor.VisitCreateVonageCredentialDto(c.CreateVonageCredentialDto)
+	}
+	if c.typ == "CreateWebhookCredentialDto" || c.CreateWebhookCredentialDto != nil {
+		return visitor.VisitCreateWebhookCredentialDto(c.CreateWebhookCredentialDto)
+	}
+	if c.typ == "CreateXAiCredentialDto" || c.CreateXAiCredentialDto != nil {
+		return visitor.VisitCreateXAiCredentialDto(c.CreateXAiCredentialDto)
+	}
+	if c.typ == "CreateNeuphonicCredentialDto" || c.CreateNeuphonicCredentialDto != nil {
+		return visitor.VisitCreateNeuphonicCredentialDto(c.CreateNeuphonicCredentialDto)
+	}
+	if c.typ == "CreateHumeCredentialDto" || c.CreateHumeCredentialDto != nil {
+		return visitor.VisitCreateHumeCredentialDto(c.CreateHumeCredentialDto)
+	}
+	if c.typ == "CreateMistralCredentialDto" || c.CreateMistralCredentialDto != nil {
+		return visitor.VisitCreateMistralCredentialDto(c.CreateMistralCredentialDto)
+	}
+	if c.typ == "CreateSpeechmaticsCredentialDto" || c.CreateSpeechmaticsCredentialDto != nil {
+		return visitor.VisitCreateSpeechmaticsCredentialDto(c.CreateSpeechmaticsCredentialDto)
+	}
+	if c.typ == "CreateTrieveCredentialDto" || c.CreateTrieveCredentialDto != nil {
+		return visitor.VisitCreateTrieveCredentialDto(c.CreateTrieveCredentialDto)
+	}
+	if c.typ == "CreateGoogleCalendarOAuth2ClientCredentialDto" || c.CreateGoogleCalendarOAuth2ClientCredentialDto != nil {
+		return visitor.VisitCreateGoogleCalendarOAuth2ClientCredentialDto(c.CreateGoogleCalendarOAuth2ClientCredentialDto)
+	}
+	if c.typ == "CreateGoogleCalendarOAuth2AuthorizationCredentialDto" || c.CreateGoogleCalendarOAuth2AuthorizationCredentialDto != nil {
+		return visitor.VisitCreateGoogleCalendarOAuth2AuthorizationCredentialDto(c.CreateGoogleCalendarOAuth2AuthorizationCredentialDto)
+	}
+	if c.typ == "CreateGoogleSheetsOAuth2AuthorizationCredentialDto" || c.CreateGoogleSheetsOAuth2AuthorizationCredentialDto != nil {
+		return visitor.VisitCreateGoogleSheetsOAuth2AuthorizationCredentialDto(c.CreateGoogleSheetsOAuth2AuthorizationCredentialDto)
+	}
+	if c.typ == "CreateSlackOAuth2AuthorizationCredentialDto" || c.CreateSlackOAuth2AuthorizationCredentialDto != nil {
+		return visitor.VisitCreateSlackOAuth2AuthorizationCredentialDto(c.CreateSlackOAuth2AuthorizationCredentialDto)
+	}
+	if c.typ == "CreateGoHighLevelMcpCredentialDto" || c.CreateGoHighLevelMcpCredentialDto != nil {
+		return visitor.VisitCreateGoHighLevelMcpCredentialDto(c.CreateGoHighLevelMcpCredentialDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", c)
 }
@@ -29912,6 +31555,598 @@ func (c *CreateWorkflowDtoNodesItem) Accept(visitor CreateWorkflowDtoNodesItemVi
 	}
 	if c.typ == "ToolNode" || c.ToolNode != nil {
 		return visitor.VisitToolNode(c.ToolNode)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+// This is the transcriber for the workflow.
+//
+// This can be overridden at node level using `nodes[n].transcriber`.
+type CreateWorkflowDtoTranscriber struct {
+	AssemblyAiTranscriber   *AssemblyAiTranscriber
+	AzureSpeechTranscriber  *AzureSpeechTranscriber
+	CustomTranscriber       *CustomTranscriber
+	DeepgramTranscriber     *DeepgramTranscriber
+	ElevenLabsTranscriber   *ElevenLabsTranscriber
+	GladiaTranscriber       *GladiaTranscriber
+	GoogleTranscriber       *GoogleTranscriber
+	SpeechmaticsTranscriber *SpeechmaticsTranscriber
+	TalkscriberTranscriber  *TalkscriberTranscriber
+	OpenAiTranscriber       *OpenAiTranscriber
+	CartesiaTranscriber     *CartesiaTranscriber
+
+	typ string
+}
+
+func (c *CreateWorkflowDtoTranscriber) GetAssemblyAiTranscriber() *AssemblyAiTranscriber {
+	if c == nil {
+		return nil
+	}
+	return c.AssemblyAiTranscriber
+}
+
+func (c *CreateWorkflowDtoTranscriber) GetAzureSpeechTranscriber() *AzureSpeechTranscriber {
+	if c == nil {
+		return nil
+	}
+	return c.AzureSpeechTranscriber
+}
+
+func (c *CreateWorkflowDtoTranscriber) GetCustomTranscriber() *CustomTranscriber {
+	if c == nil {
+		return nil
+	}
+	return c.CustomTranscriber
+}
+
+func (c *CreateWorkflowDtoTranscriber) GetDeepgramTranscriber() *DeepgramTranscriber {
+	if c == nil {
+		return nil
+	}
+	return c.DeepgramTranscriber
+}
+
+func (c *CreateWorkflowDtoTranscriber) GetElevenLabsTranscriber() *ElevenLabsTranscriber {
+	if c == nil {
+		return nil
+	}
+	return c.ElevenLabsTranscriber
+}
+
+func (c *CreateWorkflowDtoTranscriber) GetGladiaTranscriber() *GladiaTranscriber {
+	if c == nil {
+		return nil
+	}
+	return c.GladiaTranscriber
+}
+
+func (c *CreateWorkflowDtoTranscriber) GetGoogleTranscriber() *GoogleTranscriber {
+	if c == nil {
+		return nil
+	}
+	return c.GoogleTranscriber
+}
+
+func (c *CreateWorkflowDtoTranscriber) GetSpeechmaticsTranscriber() *SpeechmaticsTranscriber {
+	if c == nil {
+		return nil
+	}
+	return c.SpeechmaticsTranscriber
+}
+
+func (c *CreateWorkflowDtoTranscriber) GetTalkscriberTranscriber() *TalkscriberTranscriber {
+	if c == nil {
+		return nil
+	}
+	return c.TalkscriberTranscriber
+}
+
+func (c *CreateWorkflowDtoTranscriber) GetOpenAiTranscriber() *OpenAiTranscriber {
+	if c == nil {
+		return nil
+	}
+	return c.OpenAiTranscriber
+}
+
+func (c *CreateWorkflowDtoTranscriber) GetCartesiaTranscriber() *CartesiaTranscriber {
+	if c == nil {
+		return nil
+	}
+	return c.CartesiaTranscriber
+}
+
+func (c *CreateWorkflowDtoTranscriber) UnmarshalJSON(data []byte) error {
+	valueAssemblyAiTranscriber := new(AssemblyAiTranscriber)
+	if err := json.Unmarshal(data, &valueAssemblyAiTranscriber); err == nil {
+		c.typ = "AssemblyAiTranscriber"
+		c.AssemblyAiTranscriber = valueAssemblyAiTranscriber
+		return nil
+	}
+	valueAzureSpeechTranscriber := new(AzureSpeechTranscriber)
+	if err := json.Unmarshal(data, &valueAzureSpeechTranscriber); err == nil {
+		c.typ = "AzureSpeechTranscriber"
+		c.AzureSpeechTranscriber = valueAzureSpeechTranscriber
+		return nil
+	}
+	valueCustomTranscriber := new(CustomTranscriber)
+	if err := json.Unmarshal(data, &valueCustomTranscriber); err == nil {
+		c.typ = "CustomTranscriber"
+		c.CustomTranscriber = valueCustomTranscriber
+		return nil
+	}
+	valueDeepgramTranscriber := new(DeepgramTranscriber)
+	if err := json.Unmarshal(data, &valueDeepgramTranscriber); err == nil {
+		c.typ = "DeepgramTranscriber"
+		c.DeepgramTranscriber = valueDeepgramTranscriber
+		return nil
+	}
+	valueElevenLabsTranscriber := new(ElevenLabsTranscriber)
+	if err := json.Unmarshal(data, &valueElevenLabsTranscriber); err == nil {
+		c.typ = "ElevenLabsTranscriber"
+		c.ElevenLabsTranscriber = valueElevenLabsTranscriber
+		return nil
+	}
+	valueGladiaTranscriber := new(GladiaTranscriber)
+	if err := json.Unmarshal(data, &valueGladiaTranscriber); err == nil {
+		c.typ = "GladiaTranscriber"
+		c.GladiaTranscriber = valueGladiaTranscriber
+		return nil
+	}
+	valueGoogleTranscriber := new(GoogleTranscriber)
+	if err := json.Unmarshal(data, &valueGoogleTranscriber); err == nil {
+		c.typ = "GoogleTranscriber"
+		c.GoogleTranscriber = valueGoogleTranscriber
+		return nil
+	}
+	valueSpeechmaticsTranscriber := new(SpeechmaticsTranscriber)
+	if err := json.Unmarshal(data, &valueSpeechmaticsTranscriber); err == nil {
+		c.typ = "SpeechmaticsTranscriber"
+		c.SpeechmaticsTranscriber = valueSpeechmaticsTranscriber
+		return nil
+	}
+	valueTalkscriberTranscriber := new(TalkscriberTranscriber)
+	if err := json.Unmarshal(data, &valueTalkscriberTranscriber); err == nil {
+		c.typ = "TalkscriberTranscriber"
+		c.TalkscriberTranscriber = valueTalkscriberTranscriber
+		return nil
+	}
+	valueOpenAiTranscriber := new(OpenAiTranscriber)
+	if err := json.Unmarshal(data, &valueOpenAiTranscriber); err == nil {
+		c.typ = "OpenAiTranscriber"
+		c.OpenAiTranscriber = valueOpenAiTranscriber
+		return nil
+	}
+	valueCartesiaTranscriber := new(CartesiaTranscriber)
+	if err := json.Unmarshal(data, &valueCartesiaTranscriber); err == nil {
+		c.typ = "CartesiaTranscriber"
+		c.CartesiaTranscriber = valueCartesiaTranscriber
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c CreateWorkflowDtoTranscriber) MarshalJSON() ([]byte, error) {
+	if c.typ == "AssemblyAiTranscriber" || c.AssemblyAiTranscriber != nil {
+		return json.Marshal(c.AssemblyAiTranscriber)
+	}
+	if c.typ == "AzureSpeechTranscriber" || c.AzureSpeechTranscriber != nil {
+		return json.Marshal(c.AzureSpeechTranscriber)
+	}
+	if c.typ == "CustomTranscriber" || c.CustomTranscriber != nil {
+		return json.Marshal(c.CustomTranscriber)
+	}
+	if c.typ == "DeepgramTranscriber" || c.DeepgramTranscriber != nil {
+		return json.Marshal(c.DeepgramTranscriber)
+	}
+	if c.typ == "ElevenLabsTranscriber" || c.ElevenLabsTranscriber != nil {
+		return json.Marshal(c.ElevenLabsTranscriber)
+	}
+	if c.typ == "GladiaTranscriber" || c.GladiaTranscriber != nil {
+		return json.Marshal(c.GladiaTranscriber)
+	}
+	if c.typ == "GoogleTranscriber" || c.GoogleTranscriber != nil {
+		return json.Marshal(c.GoogleTranscriber)
+	}
+	if c.typ == "SpeechmaticsTranscriber" || c.SpeechmaticsTranscriber != nil {
+		return json.Marshal(c.SpeechmaticsTranscriber)
+	}
+	if c.typ == "TalkscriberTranscriber" || c.TalkscriberTranscriber != nil {
+		return json.Marshal(c.TalkscriberTranscriber)
+	}
+	if c.typ == "OpenAiTranscriber" || c.OpenAiTranscriber != nil {
+		return json.Marshal(c.OpenAiTranscriber)
+	}
+	if c.typ == "CartesiaTranscriber" || c.CartesiaTranscriber != nil {
+		return json.Marshal(c.CartesiaTranscriber)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type CreateWorkflowDtoTranscriberVisitor interface {
+	VisitAssemblyAiTranscriber(*AssemblyAiTranscriber) error
+	VisitAzureSpeechTranscriber(*AzureSpeechTranscriber) error
+	VisitCustomTranscriber(*CustomTranscriber) error
+	VisitDeepgramTranscriber(*DeepgramTranscriber) error
+	VisitElevenLabsTranscriber(*ElevenLabsTranscriber) error
+	VisitGladiaTranscriber(*GladiaTranscriber) error
+	VisitGoogleTranscriber(*GoogleTranscriber) error
+	VisitSpeechmaticsTranscriber(*SpeechmaticsTranscriber) error
+	VisitTalkscriberTranscriber(*TalkscriberTranscriber) error
+	VisitOpenAiTranscriber(*OpenAiTranscriber) error
+	VisitCartesiaTranscriber(*CartesiaTranscriber) error
+}
+
+func (c *CreateWorkflowDtoTranscriber) Accept(visitor CreateWorkflowDtoTranscriberVisitor) error {
+	if c.typ == "AssemblyAiTranscriber" || c.AssemblyAiTranscriber != nil {
+		return visitor.VisitAssemblyAiTranscriber(c.AssemblyAiTranscriber)
+	}
+	if c.typ == "AzureSpeechTranscriber" || c.AzureSpeechTranscriber != nil {
+		return visitor.VisitAzureSpeechTranscriber(c.AzureSpeechTranscriber)
+	}
+	if c.typ == "CustomTranscriber" || c.CustomTranscriber != nil {
+		return visitor.VisitCustomTranscriber(c.CustomTranscriber)
+	}
+	if c.typ == "DeepgramTranscriber" || c.DeepgramTranscriber != nil {
+		return visitor.VisitDeepgramTranscriber(c.DeepgramTranscriber)
+	}
+	if c.typ == "ElevenLabsTranscriber" || c.ElevenLabsTranscriber != nil {
+		return visitor.VisitElevenLabsTranscriber(c.ElevenLabsTranscriber)
+	}
+	if c.typ == "GladiaTranscriber" || c.GladiaTranscriber != nil {
+		return visitor.VisitGladiaTranscriber(c.GladiaTranscriber)
+	}
+	if c.typ == "GoogleTranscriber" || c.GoogleTranscriber != nil {
+		return visitor.VisitGoogleTranscriber(c.GoogleTranscriber)
+	}
+	if c.typ == "SpeechmaticsTranscriber" || c.SpeechmaticsTranscriber != nil {
+		return visitor.VisitSpeechmaticsTranscriber(c.SpeechmaticsTranscriber)
+	}
+	if c.typ == "TalkscriberTranscriber" || c.TalkscriberTranscriber != nil {
+		return visitor.VisitTalkscriberTranscriber(c.TalkscriberTranscriber)
+	}
+	if c.typ == "OpenAiTranscriber" || c.OpenAiTranscriber != nil {
+		return visitor.VisitOpenAiTranscriber(c.OpenAiTranscriber)
+	}
+	if c.typ == "CartesiaTranscriber" || c.CartesiaTranscriber != nil {
+		return visitor.VisitCartesiaTranscriber(c.CartesiaTranscriber)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+// This is the voice for the workflow.
+//
+// This can be overridden at node level using `nodes[n].voice`.
+type CreateWorkflowDtoVoice struct {
+	AzureVoice      *AzureVoice
+	CartesiaVoice   *CartesiaVoice
+	CustomVoice     *CustomVoice
+	DeepgramVoice   *DeepgramVoice
+	ElevenLabsVoice *ElevenLabsVoice
+	HumeVoice       *HumeVoice
+	LmntVoice       *LmntVoice
+	NeuphonicVoice  *NeuphonicVoice
+	OpenAiVoice     *OpenAiVoice
+	PlayHtVoice     *PlayHtVoice
+	RimeAiVoice     *RimeAiVoice
+	SmallestAiVoice *SmallestAiVoice
+	TavusVoice      *TavusVoice
+	VapiVoice       *VapiVoice
+	SesameVoice     *SesameVoice
+
+	typ string
+}
+
+func (c *CreateWorkflowDtoVoice) GetAzureVoice() *AzureVoice {
+	if c == nil {
+		return nil
+	}
+	return c.AzureVoice
+}
+
+func (c *CreateWorkflowDtoVoice) GetCartesiaVoice() *CartesiaVoice {
+	if c == nil {
+		return nil
+	}
+	return c.CartesiaVoice
+}
+
+func (c *CreateWorkflowDtoVoice) GetCustomVoice() *CustomVoice {
+	if c == nil {
+		return nil
+	}
+	return c.CustomVoice
+}
+
+func (c *CreateWorkflowDtoVoice) GetDeepgramVoice() *DeepgramVoice {
+	if c == nil {
+		return nil
+	}
+	return c.DeepgramVoice
+}
+
+func (c *CreateWorkflowDtoVoice) GetElevenLabsVoice() *ElevenLabsVoice {
+	if c == nil {
+		return nil
+	}
+	return c.ElevenLabsVoice
+}
+
+func (c *CreateWorkflowDtoVoice) GetHumeVoice() *HumeVoice {
+	if c == nil {
+		return nil
+	}
+	return c.HumeVoice
+}
+
+func (c *CreateWorkflowDtoVoice) GetLmntVoice() *LmntVoice {
+	if c == nil {
+		return nil
+	}
+	return c.LmntVoice
+}
+
+func (c *CreateWorkflowDtoVoice) GetNeuphonicVoice() *NeuphonicVoice {
+	if c == nil {
+		return nil
+	}
+	return c.NeuphonicVoice
+}
+
+func (c *CreateWorkflowDtoVoice) GetOpenAiVoice() *OpenAiVoice {
+	if c == nil {
+		return nil
+	}
+	return c.OpenAiVoice
+}
+
+func (c *CreateWorkflowDtoVoice) GetPlayHtVoice() *PlayHtVoice {
+	if c == nil {
+		return nil
+	}
+	return c.PlayHtVoice
+}
+
+func (c *CreateWorkflowDtoVoice) GetRimeAiVoice() *RimeAiVoice {
+	if c == nil {
+		return nil
+	}
+	return c.RimeAiVoice
+}
+
+func (c *CreateWorkflowDtoVoice) GetSmallestAiVoice() *SmallestAiVoice {
+	if c == nil {
+		return nil
+	}
+	return c.SmallestAiVoice
+}
+
+func (c *CreateWorkflowDtoVoice) GetTavusVoice() *TavusVoice {
+	if c == nil {
+		return nil
+	}
+	return c.TavusVoice
+}
+
+func (c *CreateWorkflowDtoVoice) GetVapiVoice() *VapiVoice {
+	if c == nil {
+		return nil
+	}
+	return c.VapiVoice
+}
+
+func (c *CreateWorkflowDtoVoice) GetSesameVoice() *SesameVoice {
+	if c == nil {
+		return nil
+	}
+	return c.SesameVoice
+}
+
+func (c *CreateWorkflowDtoVoice) UnmarshalJSON(data []byte) error {
+	valueAzureVoice := new(AzureVoice)
+	if err := json.Unmarshal(data, &valueAzureVoice); err == nil {
+		c.typ = "AzureVoice"
+		c.AzureVoice = valueAzureVoice
+		return nil
+	}
+	valueCartesiaVoice := new(CartesiaVoice)
+	if err := json.Unmarshal(data, &valueCartesiaVoice); err == nil {
+		c.typ = "CartesiaVoice"
+		c.CartesiaVoice = valueCartesiaVoice
+		return nil
+	}
+	valueCustomVoice := new(CustomVoice)
+	if err := json.Unmarshal(data, &valueCustomVoice); err == nil {
+		c.typ = "CustomVoice"
+		c.CustomVoice = valueCustomVoice
+		return nil
+	}
+	valueDeepgramVoice := new(DeepgramVoice)
+	if err := json.Unmarshal(data, &valueDeepgramVoice); err == nil {
+		c.typ = "DeepgramVoice"
+		c.DeepgramVoice = valueDeepgramVoice
+		return nil
+	}
+	valueElevenLabsVoice := new(ElevenLabsVoice)
+	if err := json.Unmarshal(data, &valueElevenLabsVoice); err == nil {
+		c.typ = "ElevenLabsVoice"
+		c.ElevenLabsVoice = valueElevenLabsVoice
+		return nil
+	}
+	valueHumeVoice := new(HumeVoice)
+	if err := json.Unmarshal(data, &valueHumeVoice); err == nil {
+		c.typ = "HumeVoice"
+		c.HumeVoice = valueHumeVoice
+		return nil
+	}
+	valueLmntVoice := new(LmntVoice)
+	if err := json.Unmarshal(data, &valueLmntVoice); err == nil {
+		c.typ = "LmntVoice"
+		c.LmntVoice = valueLmntVoice
+		return nil
+	}
+	valueNeuphonicVoice := new(NeuphonicVoice)
+	if err := json.Unmarshal(data, &valueNeuphonicVoice); err == nil {
+		c.typ = "NeuphonicVoice"
+		c.NeuphonicVoice = valueNeuphonicVoice
+		return nil
+	}
+	valueOpenAiVoice := new(OpenAiVoice)
+	if err := json.Unmarshal(data, &valueOpenAiVoice); err == nil {
+		c.typ = "OpenAiVoice"
+		c.OpenAiVoice = valueOpenAiVoice
+		return nil
+	}
+	valuePlayHtVoice := new(PlayHtVoice)
+	if err := json.Unmarshal(data, &valuePlayHtVoice); err == nil {
+		c.typ = "PlayHtVoice"
+		c.PlayHtVoice = valuePlayHtVoice
+		return nil
+	}
+	valueRimeAiVoice := new(RimeAiVoice)
+	if err := json.Unmarshal(data, &valueRimeAiVoice); err == nil {
+		c.typ = "RimeAiVoice"
+		c.RimeAiVoice = valueRimeAiVoice
+		return nil
+	}
+	valueSmallestAiVoice := new(SmallestAiVoice)
+	if err := json.Unmarshal(data, &valueSmallestAiVoice); err == nil {
+		c.typ = "SmallestAiVoice"
+		c.SmallestAiVoice = valueSmallestAiVoice
+		return nil
+	}
+	valueTavusVoice := new(TavusVoice)
+	if err := json.Unmarshal(data, &valueTavusVoice); err == nil {
+		c.typ = "TavusVoice"
+		c.TavusVoice = valueTavusVoice
+		return nil
+	}
+	valueVapiVoice := new(VapiVoice)
+	if err := json.Unmarshal(data, &valueVapiVoice); err == nil {
+		c.typ = "VapiVoice"
+		c.VapiVoice = valueVapiVoice
+		return nil
+	}
+	valueSesameVoice := new(SesameVoice)
+	if err := json.Unmarshal(data, &valueSesameVoice); err == nil {
+		c.typ = "SesameVoice"
+		c.SesameVoice = valueSesameVoice
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c CreateWorkflowDtoVoice) MarshalJSON() ([]byte, error) {
+	if c.typ == "AzureVoice" || c.AzureVoice != nil {
+		return json.Marshal(c.AzureVoice)
+	}
+	if c.typ == "CartesiaVoice" || c.CartesiaVoice != nil {
+		return json.Marshal(c.CartesiaVoice)
+	}
+	if c.typ == "CustomVoice" || c.CustomVoice != nil {
+		return json.Marshal(c.CustomVoice)
+	}
+	if c.typ == "DeepgramVoice" || c.DeepgramVoice != nil {
+		return json.Marshal(c.DeepgramVoice)
+	}
+	if c.typ == "ElevenLabsVoice" || c.ElevenLabsVoice != nil {
+		return json.Marshal(c.ElevenLabsVoice)
+	}
+	if c.typ == "HumeVoice" || c.HumeVoice != nil {
+		return json.Marshal(c.HumeVoice)
+	}
+	if c.typ == "LmntVoice" || c.LmntVoice != nil {
+		return json.Marshal(c.LmntVoice)
+	}
+	if c.typ == "NeuphonicVoice" || c.NeuphonicVoice != nil {
+		return json.Marshal(c.NeuphonicVoice)
+	}
+	if c.typ == "OpenAiVoice" || c.OpenAiVoice != nil {
+		return json.Marshal(c.OpenAiVoice)
+	}
+	if c.typ == "PlayHtVoice" || c.PlayHtVoice != nil {
+		return json.Marshal(c.PlayHtVoice)
+	}
+	if c.typ == "RimeAiVoice" || c.RimeAiVoice != nil {
+		return json.Marshal(c.RimeAiVoice)
+	}
+	if c.typ == "SmallestAiVoice" || c.SmallestAiVoice != nil {
+		return json.Marshal(c.SmallestAiVoice)
+	}
+	if c.typ == "TavusVoice" || c.TavusVoice != nil {
+		return json.Marshal(c.TavusVoice)
+	}
+	if c.typ == "VapiVoice" || c.VapiVoice != nil {
+		return json.Marshal(c.VapiVoice)
+	}
+	if c.typ == "SesameVoice" || c.SesameVoice != nil {
+		return json.Marshal(c.SesameVoice)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type CreateWorkflowDtoVoiceVisitor interface {
+	VisitAzureVoice(*AzureVoice) error
+	VisitCartesiaVoice(*CartesiaVoice) error
+	VisitCustomVoice(*CustomVoice) error
+	VisitDeepgramVoice(*DeepgramVoice) error
+	VisitElevenLabsVoice(*ElevenLabsVoice) error
+	VisitHumeVoice(*HumeVoice) error
+	VisitLmntVoice(*LmntVoice) error
+	VisitNeuphonicVoice(*NeuphonicVoice) error
+	VisitOpenAiVoice(*OpenAiVoice) error
+	VisitPlayHtVoice(*PlayHtVoice) error
+	VisitRimeAiVoice(*RimeAiVoice) error
+	VisitSmallestAiVoice(*SmallestAiVoice) error
+	VisitTavusVoice(*TavusVoice) error
+	VisitVapiVoice(*VapiVoice) error
+	VisitSesameVoice(*SesameVoice) error
+}
+
+func (c *CreateWorkflowDtoVoice) Accept(visitor CreateWorkflowDtoVoiceVisitor) error {
+	if c.typ == "AzureVoice" || c.AzureVoice != nil {
+		return visitor.VisitAzureVoice(c.AzureVoice)
+	}
+	if c.typ == "CartesiaVoice" || c.CartesiaVoice != nil {
+		return visitor.VisitCartesiaVoice(c.CartesiaVoice)
+	}
+	if c.typ == "CustomVoice" || c.CustomVoice != nil {
+		return visitor.VisitCustomVoice(c.CustomVoice)
+	}
+	if c.typ == "DeepgramVoice" || c.DeepgramVoice != nil {
+		return visitor.VisitDeepgramVoice(c.DeepgramVoice)
+	}
+	if c.typ == "ElevenLabsVoice" || c.ElevenLabsVoice != nil {
+		return visitor.VisitElevenLabsVoice(c.ElevenLabsVoice)
+	}
+	if c.typ == "HumeVoice" || c.HumeVoice != nil {
+		return visitor.VisitHumeVoice(c.HumeVoice)
+	}
+	if c.typ == "LmntVoice" || c.LmntVoice != nil {
+		return visitor.VisitLmntVoice(c.LmntVoice)
+	}
+	if c.typ == "NeuphonicVoice" || c.NeuphonicVoice != nil {
+		return visitor.VisitNeuphonicVoice(c.NeuphonicVoice)
+	}
+	if c.typ == "OpenAiVoice" || c.OpenAiVoice != nil {
+		return visitor.VisitOpenAiVoice(c.OpenAiVoice)
+	}
+	if c.typ == "PlayHtVoice" || c.PlayHtVoice != nil {
+		return visitor.VisitPlayHtVoice(c.PlayHtVoice)
+	}
+	if c.typ == "RimeAiVoice" || c.RimeAiVoice != nil {
+		return visitor.VisitRimeAiVoice(c.RimeAiVoice)
+	}
+	if c.typ == "SmallestAiVoice" || c.SmallestAiVoice != nil {
+		return visitor.VisitSmallestAiVoice(c.SmallestAiVoice)
+	}
+	if c.typ == "TavusVoice" || c.TavusVoice != nil {
+		return visitor.VisitTavusVoice(c.TavusVoice)
+	}
+	if c.typ == "VapiVoice" || c.VapiVoice != nil {
+		return visitor.VisitVapiVoice(c.VapiVoice)
+	}
+	if c.typ == "SesameVoice" || c.SesameVoice != nil {
+		return visitor.VisitSesameVoice(c.SesameVoice)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", c)
 }
@@ -34113,10 +36348,93 @@ func (d DeepgramVoiceModel) Ptr() *DeepgramVoiceModel {
 	return &d
 }
 
+type DeveloperMessage struct {
+	// This is the role of the message author
+	// This is the content of the developer message
+	Content string `json:"content" url:"content"`
+	// This is an optional name for the participant
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	role string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (d *DeveloperMessage) GetContent() string {
+	if d == nil {
+		return ""
+	}
+	return d.Content
+}
+
+func (d *DeveloperMessage) GetName() *string {
+	if d == nil {
+		return nil
+	}
+	return d.Name
+}
+
+func (d *DeveloperMessage) Role() string {
+	return d.role
+}
+
+func (d *DeveloperMessage) GetExtraProperties() map[string]interface{} {
+	return d.extraProperties
+}
+
+func (d *DeveloperMessage) UnmarshalJSON(data []byte) error {
+	type embed DeveloperMessage
+	var unmarshaler = struct {
+		embed
+		Role string `json:"role"`
+	}{
+		embed: embed(*d),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*d = DeveloperMessage(unmarshaler.embed)
+	if unmarshaler.Role != "developer" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", d, "developer", unmarshaler.Role)
+	}
+	d.role = unmarshaler.Role
+	extraProperties, err := internal.ExtractExtraProperties(data, *d, "role")
+	if err != nil {
+		return err
+	}
+	d.extraProperties = extraProperties
+	d.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (d *DeveloperMessage) MarshalJSON() ([]byte, error) {
+	type embed DeveloperMessage
+	var marshaler = struct {
+		embed
+		Role string `json:"role"`
+	}{
+		embed: embed(*d),
+		Role:  "developer",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (d *DeveloperMessage) String() string {
+	if len(d.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(d); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", d)
+}
+
 type Edge struct {
-	Condition *EdgeCondition `json:"condition,omitempty" url:"condition,omitempty"`
-	From      string         `json:"from" url:"from"`
-	To        string         `json:"to" url:"to"`
+	Condition *AiEdgeCondition `json:"condition,omitempty" url:"condition,omitempty"`
+	From      string           `json:"from" url:"from"`
+	To        string           `json:"to" url:"to"`
 	// This is for metadata you want to store on the edge.
 	Metadata map[string]interface{} `json:"metadata,omitempty" url:"metadata,omitempty"`
 
@@ -34124,7 +36442,7 @@ type Edge struct {
 	rawJSON         json.RawMessage
 }
 
-func (e *Edge) GetCondition() *EdgeCondition {
+func (e *Edge) GetCondition() *AiEdgeCondition {
 	if e == nil {
 		return nil
 	}
@@ -34182,89 +36500,6 @@ func (e *Edge) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", e)
-}
-
-type EdgeCondition struct {
-	AiEdgeCondition     *AiEdgeCondition
-	LogicEdgeCondition  *LogicEdgeCondition
-	FailedEdgeCondition *FailedEdgeCondition
-
-	typ string
-}
-
-func (e *EdgeCondition) GetAiEdgeCondition() *AiEdgeCondition {
-	if e == nil {
-		return nil
-	}
-	return e.AiEdgeCondition
-}
-
-func (e *EdgeCondition) GetLogicEdgeCondition() *LogicEdgeCondition {
-	if e == nil {
-		return nil
-	}
-	return e.LogicEdgeCondition
-}
-
-func (e *EdgeCondition) GetFailedEdgeCondition() *FailedEdgeCondition {
-	if e == nil {
-		return nil
-	}
-	return e.FailedEdgeCondition
-}
-
-func (e *EdgeCondition) UnmarshalJSON(data []byte) error {
-	valueAiEdgeCondition := new(AiEdgeCondition)
-	if err := json.Unmarshal(data, &valueAiEdgeCondition); err == nil {
-		e.typ = "AiEdgeCondition"
-		e.AiEdgeCondition = valueAiEdgeCondition
-		return nil
-	}
-	valueLogicEdgeCondition := new(LogicEdgeCondition)
-	if err := json.Unmarshal(data, &valueLogicEdgeCondition); err == nil {
-		e.typ = "LogicEdgeCondition"
-		e.LogicEdgeCondition = valueLogicEdgeCondition
-		return nil
-	}
-	valueFailedEdgeCondition := new(FailedEdgeCondition)
-	if err := json.Unmarshal(data, &valueFailedEdgeCondition); err == nil {
-		e.typ = "FailedEdgeCondition"
-		e.FailedEdgeCondition = valueFailedEdgeCondition
-		return nil
-	}
-	return fmt.Errorf("%s cannot be deserialized as a %T", data, e)
-}
-
-func (e EdgeCondition) MarshalJSON() ([]byte, error) {
-	if e.typ == "AiEdgeCondition" || e.AiEdgeCondition != nil {
-		return json.Marshal(e.AiEdgeCondition)
-	}
-	if e.typ == "LogicEdgeCondition" || e.LogicEdgeCondition != nil {
-		return json.Marshal(e.LogicEdgeCondition)
-	}
-	if e.typ == "FailedEdgeCondition" || e.FailedEdgeCondition != nil {
-		return json.Marshal(e.FailedEdgeCondition)
-	}
-	return nil, fmt.Errorf("type %T does not include a non-empty union type", e)
-}
-
-type EdgeConditionVisitor interface {
-	VisitAiEdgeCondition(*AiEdgeCondition) error
-	VisitLogicEdgeCondition(*LogicEdgeCondition) error
-	VisitFailedEdgeCondition(*FailedEdgeCondition) error
-}
-
-func (e *EdgeCondition) Accept(visitor EdgeConditionVisitor) error {
-	if e.typ == "AiEdgeCondition" || e.AiEdgeCondition != nil {
-		return visitor.VisitAiEdgeCondition(e.AiEdgeCondition)
-	}
-	if e.typ == "LogicEdgeCondition" || e.LogicEdgeCondition != nil {
-		return visitor.VisitLogicEdgeCondition(e.LogicEdgeCondition)
-	}
-	if e.typ == "FailedEdgeCondition" || e.FailedEdgeCondition != nil {
-		return visitor.VisitFailedEdgeCondition(e.FailedEdgeCondition)
-	}
-	return fmt.Errorf("type %T does not include a non-empty union type", e)
 }
 
 type ElevenLabsCredential struct {
@@ -35503,69 +37738,7 @@ func (e *ExactReplacement) String() string {
 	return fmt.Sprintf("%#v", e)
 }
 
-type FailedEdgeCondition struct {
-	type_ string
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (f *FailedEdgeCondition) Type() string {
-	return f.type_
-}
-
-func (f *FailedEdgeCondition) GetExtraProperties() map[string]interface{} {
-	return f.extraProperties
-}
-
-func (f *FailedEdgeCondition) UnmarshalJSON(data []byte) error {
-	type embed FailedEdgeCondition
-	var unmarshaler = struct {
-		embed
-		Type string `json:"type"`
-	}{
-		embed: embed(*f),
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
-		return err
-	}
-	*f = FailedEdgeCondition(unmarshaler.embed)
-	if unmarshaler.Type != "failed" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", f, "failed", unmarshaler.Type)
-	}
-	f.type_ = unmarshaler.Type
-	extraProperties, err := internal.ExtractExtraProperties(data, *f, "type")
-	if err != nil {
-		return err
-	}
-	f.extraProperties = extraProperties
-	f.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (f *FailedEdgeCondition) MarshalJSON() ([]byte, error) {
-	type embed FailedEdgeCondition
-	var marshaler = struct {
-		embed
-		Type string `json:"type"`
-	}{
-		embed: embed(*f),
-		Type:  "failed",
-	}
-	return json.Marshal(marshaler)
-}
-
-func (f *FailedEdgeCondition) String() string {
-	if len(f.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(f); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", f)
-}
+type FailedEdgeCondition = interface{}
 
 type FallbackAssemblyAiTranscriber struct {
 	// This is the transcription provider that will be used.
@@ -35575,6 +37748,30 @@ type FallbackAssemblyAiTranscriber struct {
 	//
 	// @default 0.4
 	ConfidenceThreshold *float64 `json:"confidenceThreshold,omitempty" url:"confidenceThreshold,omitempty"`
+	// Uses Assembly AI's new Universal Streaming API. See: https://www.assemblyai.com/docs/speech-to-text/universal-streaming
+	//
+	// @default false
+	EnableUniversalStreamingApi *bool `json:"enableUniversalStreamingApi,omitempty" url:"enableUniversalStreamingApi,omitempty"`
+	// This enables formatting of transcripts. Only used when `enableUniversalStreamingApi` is true.
+	//
+	// @default false
+	FormatTurns *bool `json:"formatTurns,omitempty" url:"formatTurns,omitempty"`
+	// The confidence threshold to use when determining if the end of a turn has been reached. Only used when `enableUniversalStreamingApi` is true.
+	//
+	// @default 0.7
+	EndOfTurnConfidenceThreshold *float64 `json:"endOfTurnConfidenceThreshold,omitempty" url:"endOfTurnConfidenceThreshold,omitempty"`
+	// The minimum amount of silence in milliseconds required to detect end of turn when confident. Only used when `enableUniversalStreamingApi` is true.
+	//
+	// @default 160
+	MinEndOfTurnSilenceWhenConfident *float64 `json:"minEndOfTurnSilenceWhenConfident,omitempty" url:"minEndOfTurnSilenceWhenConfident,omitempty"`
+	// The maximum wait time for word finalization. Only used when `enableUniversalStreamingApi` is true.
+	//
+	// @default 160
+	WordFinalizationMaxWaitTime *float64 `json:"wordFinalizationMaxWaitTime,omitempty" url:"wordFinalizationMaxWaitTime,omitempty"`
+	// The maximum amount of silence in milliseconds allowed in a turn before end of turn is triggered. Only used when `enableUniversalStreamingApi` is true.
+	//
+	// @default 400
+	MaxTurnSilence *float64 `json:"maxTurnSilence,omitempty" url:"maxTurnSilence,omitempty"`
 	// The WebSocket URL that the transcriber connects to.
 	RealtimeUrl *string `json:"realtimeUrl,omitempty" url:"realtimeUrl,omitempty"`
 	// Add up to 2500 characters of custom vocabulary.
@@ -35595,6 +37792,48 @@ func (f *FallbackAssemblyAiTranscriber) GetConfidenceThreshold() *float64 {
 		return nil
 	}
 	return f.ConfidenceThreshold
+}
+
+func (f *FallbackAssemblyAiTranscriber) GetEnableUniversalStreamingApi() *bool {
+	if f == nil {
+		return nil
+	}
+	return f.EnableUniversalStreamingApi
+}
+
+func (f *FallbackAssemblyAiTranscriber) GetFormatTurns() *bool {
+	if f == nil {
+		return nil
+	}
+	return f.FormatTurns
+}
+
+func (f *FallbackAssemblyAiTranscriber) GetEndOfTurnConfidenceThreshold() *float64 {
+	if f == nil {
+		return nil
+	}
+	return f.EndOfTurnConfidenceThreshold
+}
+
+func (f *FallbackAssemblyAiTranscriber) GetMinEndOfTurnSilenceWhenConfident() *float64 {
+	if f == nil {
+		return nil
+	}
+	return f.MinEndOfTurnSilenceWhenConfident
+}
+
+func (f *FallbackAssemblyAiTranscriber) GetWordFinalizationMaxWaitTime() *float64 {
+	if f == nil {
+		return nil
+	}
+	return f.WordFinalizationMaxWaitTime
+}
+
+func (f *FallbackAssemblyAiTranscriber) GetMaxTurnSilence() *float64 {
+	if f == nil {
+		return nil
+	}
+	return f.MaxTurnSilence
 }
 
 func (f *FallbackAssemblyAiTranscriber) GetRealtimeUrl() *string {
@@ -36396,6 +38635,650 @@ func NewFallbackAzureVoiceVoiceIdFromString(s string) (FallbackAzureVoiceVoiceId
 }
 
 func (f FallbackAzureVoiceVoiceId) Ptr() *FallbackAzureVoiceVoiceId {
+	return &f
+}
+
+type FallbackCartesiaTranscriber struct {
+	Model    *string                              `json:"model,omitempty" url:"model,omitempty"`
+	Language *FallbackCartesiaTranscriberLanguage `json:"language,omitempty" url:"language,omitempty"`
+	provider string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FallbackCartesiaTranscriber) GetLanguage() *FallbackCartesiaTranscriberLanguage {
+	if f == nil {
+		return nil
+	}
+	return f.Language
+}
+
+func (f *FallbackCartesiaTranscriber) Provider() string {
+	return f.provider
+}
+
+func (f *FallbackCartesiaTranscriber) GetExtraProperties() map[string]interface{} {
+	return f.extraProperties
+}
+
+func (f *FallbackCartesiaTranscriber) UnmarshalJSON(data []byte) error {
+	type embed FallbackCartesiaTranscriber
+	var unmarshaler = struct {
+		embed
+		Provider string `json:"provider"`
+	}{
+		embed: embed(*f),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*f = FallbackCartesiaTranscriber(unmarshaler.embed)
+	if unmarshaler.Provider != "cartesia" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", f, "cartesia", unmarshaler.Provider)
+	}
+	f.provider = unmarshaler.Provider
+	extraProperties, err := internal.ExtractExtraProperties(data, *f, "provider")
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FallbackCartesiaTranscriber) MarshalJSON() ([]byte, error) {
+	type embed FallbackCartesiaTranscriber
+	var marshaler = struct {
+		embed
+		Provider string `json:"provider"`
+	}{
+		embed:    embed(*f),
+		Provider: "cartesia",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (f *FallbackCartesiaTranscriber) String() string {
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+type FallbackCartesiaTranscriberLanguage string
+
+const (
+	FallbackCartesiaTranscriberLanguageAa  FallbackCartesiaTranscriberLanguage = "aa"
+	FallbackCartesiaTranscriberLanguageAb  FallbackCartesiaTranscriberLanguage = "ab"
+	FallbackCartesiaTranscriberLanguageAe  FallbackCartesiaTranscriberLanguage = "ae"
+	FallbackCartesiaTranscriberLanguageAf  FallbackCartesiaTranscriberLanguage = "af"
+	FallbackCartesiaTranscriberLanguageAk  FallbackCartesiaTranscriberLanguage = "ak"
+	FallbackCartesiaTranscriberLanguageAm  FallbackCartesiaTranscriberLanguage = "am"
+	FallbackCartesiaTranscriberLanguageAn  FallbackCartesiaTranscriberLanguage = "an"
+	FallbackCartesiaTranscriberLanguageAr  FallbackCartesiaTranscriberLanguage = "ar"
+	FallbackCartesiaTranscriberLanguageAs  FallbackCartesiaTranscriberLanguage = "as"
+	FallbackCartesiaTranscriberLanguageAv  FallbackCartesiaTranscriberLanguage = "av"
+	FallbackCartesiaTranscriberLanguageAy  FallbackCartesiaTranscriberLanguage = "ay"
+	FallbackCartesiaTranscriberLanguageAz  FallbackCartesiaTranscriberLanguage = "az"
+	FallbackCartesiaTranscriberLanguageBa  FallbackCartesiaTranscriberLanguage = "ba"
+	FallbackCartesiaTranscriberLanguageBe  FallbackCartesiaTranscriberLanguage = "be"
+	FallbackCartesiaTranscriberLanguageBg  FallbackCartesiaTranscriberLanguage = "bg"
+	FallbackCartesiaTranscriberLanguageBh  FallbackCartesiaTranscriberLanguage = "bh"
+	FallbackCartesiaTranscriberLanguageBi  FallbackCartesiaTranscriberLanguage = "bi"
+	FallbackCartesiaTranscriberLanguageBm  FallbackCartesiaTranscriberLanguage = "bm"
+	FallbackCartesiaTranscriberLanguageBn  FallbackCartesiaTranscriberLanguage = "bn"
+	FallbackCartesiaTranscriberLanguageBo  FallbackCartesiaTranscriberLanguage = "bo"
+	FallbackCartesiaTranscriberLanguageBr  FallbackCartesiaTranscriberLanguage = "br"
+	FallbackCartesiaTranscriberLanguageBs  FallbackCartesiaTranscriberLanguage = "bs"
+	FallbackCartesiaTranscriberLanguageCa  FallbackCartesiaTranscriberLanguage = "ca"
+	FallbackCartesiaTranscriberLanguageCe  FallbackCartesiaTranscriberLanguage = "ce"
+	FallbackCartesiaTranscriberLanguageCh  FallbackCartesiaTranscriberLanguage = "ch"
+	FallbackCartesiaTranscriberLanguageCo  FallbackCartesiaTranscriberLanguage = "co"
+	FallbackCartesiaTranscriberLanguageCr  FallbackCartesiaTranscriberLanguage = "cr"
+	FallbackCartesiaTranscriberLanguageCs  FallbackCartesiaTranscriberLanguage = "cs"
+	FallbackCartesiaTranscriberLanguageCu  FallbackCartesiaTranscriberLanguage = "cu"
+	FallbackCartesiaTranscriberLanguageCv  FallbackCartesiaTranscriberLanguage = "cv"
+	FallbackCartesiaTranscriberLanguageCy  FallbackCartesiaTranscriberLanguage = "cy"
+	FallbackCartesiaTranscriberLanguageDa  FallbackCartesiaTranscriberLanguage = "da"
+	FallbackCartesiaTranscriberLanguageDe  FallbackCartesiaTranscriberLanguage = "de"
+	FallbackCartesiaTranscriberLanguageDv  FallbackCartesiaTranscriberLanguage = "dv"
+	FallbackCartesiaTranscriberLanguageDz  FallbackCartesiaTranscriberLanguage = "dz"
+	FallbackCartesiaTranscriberLanguageEe  FallbackCartesiaTranscriberLanguage = "ee"
+	FallbackCartesiaTranscriberLanguageEl  FallbackCartesiaTranscriberLanguage = "el"
+	FallbackCartesiaTranscriberLanguageEn  FallbackCartesiaTranscriberLanguage = "en"
+	FallbackCartesiaTranscriberLanguageEo  FallbackCartesiaTranscriberLanguage = "eo"
+	FallbackCartesiaTranscriberLanguageEs  FallbackCartesiaTranscriberLanguage = "es"
+	FallbackCartesiaTranscriberLanguageEt  FallbackCartesiaTranscriberLanguage = "et"
+	FallbackCartesiaTranscriberLanguageEu  FallbackCartesiaTranscriberLanguage = "eu"
+	FallbackCartesiaTranscriberLanguageFa  FallbackCartesiaTranscriberLanguage = "fa"
+	FallbackCartesiaTranscriberLanguageFf  FallbackCartesiaTranscriberLanguage = "ff"
+	FallbackCartesiaTranscriberLanguageFi  FallbackCartesiaTranscriberLanguage = "fi"
+	FallbackCartesiaTranscriberLanguageFj  FallbackCartesiaTranscriberLanguage = "fj"
+	FallbackCartesiaTranscriberLanguageFo  FallbackCartesiaTranscriberLanguage = "fo"
+	FallbackCartesiaTranscriberLanguageFr  FallbackCartesiaTranscriberLanguage = "fr"
+	FallbackCartesiaTranscriberLanguageFy  FallbackCartesiaTranscriberLanguage = "fy"
+	FallbackCartesiaTranscriberLanguageGa  FallbackCartesiaTranscriberLanguage = "ga"
+	FallbackCartesiaTranscriberLanguageGd  FallbackCartesiaTranscriberLanguage = "gd"
+	FallbackCartesiaTranscriberLanguageGl  FallbackCartesiaTranscriberLanguage = "gl"
+	FallbackCartesiaTranscriberLanguageGn  FallbackCartesiaTranscriberLanguage = "gn"
+	FallbackCartesiaTranscriberLanguageGu  FallbackCartesiaTranscriberLanguage = "gu"
+	FallbackCartesiaTranscriberLanguageGv  FallbackCartesiaTranscriberLanguage = "gv"
+	FallbackCartesiaTranscriberLanguageHa  FallbackCartesiaTranscriberLanguage = "ha"
+	FallbackCartesiaTranscriberLanguageHe  FallbackCartesiaTranscriberLanguage = "he"
+	FallbackCartesiaTranscriberLanguageHi  FallbackCartesiaTranscriberLanguage = "hi"
+	FallbackCartesiaTranscriberLanguageHo  FallbackCartesiaTranscriberLanguage = "ho"
+	FallbackCartesiaTranscriberLanguageHr  FallbackCartesiaTranscriberLanguage = "hr"
+	FallbackCartesiaTranscriberLanguageHt  FallbackCartesiaTranscriberLanguage = "ht"
+	FallbackCartesiaTranscriberLanguageHu  FallbackCartesiaTranscriberLanguage = "hu"
+	FallbackCartesiaTranscriberLanguageHy  FallbackCartesiaTranscriberLanguage = "hy"
+	FallbackCartesiaTranscriberLanguageHz  FallbackCartesiaTranscriberLanguage = "hz"
+	FallbackCartesiaTranscriberLanguageIa  FallbackCartesiaTranscriberLanguage = "ia"
+	FallbackCartesiaTranscriberLanguageId  FallbackCartesiaTranscriberLanguage = "id"
+	FallbackCartesiaTranscriberLanguageIe  FallbackCartesiaTranscriberLanguage = "ie"
+	FallbackCartesiaTranscriberLanguageIg  FallbackCartesiaTranscriberLanguage = "ig"
+	FallbackCartesiaTranscriberLanguageIi  FallbackCartesiaTranscriberLanguage = "ii"
+	FallbackCartesiaTranscriberLanguageIk  FallbackCartesiaTranscriberLanguage = "ik"
+	FallbackCartesiaTranscriberLanguageIo  FallbackCartesiaTranscriberLanguage = "io"
+	FallbackCartesiaTranscriberLanguageIs  FallbackCartesiaTranscriberLanguage = "is"
+	FallbackCartesiaTranscriberLanguageIt  FallbackCartesiaTranscriberLanguage = "it"
+	FallbackCartesiaTranscriberLanguageIu  FallbackCartesiaTranscriberLanguage = "iu"
+	FallbackCartesiaTranscriberLanguageJa  FallbackCartesiaTranscriberLanguage = "ja"
+	FallbackCartesiaTranscriberLanguageJv  FallbackCartesiaTranscriberLanguage = "jv"
+	FallbackCartesiaTranscriberLanguageKa  FallbackCartesiaTranscriberLanguage = "ka"
+	FallbackCartesiaTranscriberLanguageKg  FallbackCartesiaTranscriberLanguage = "kg"
+	FallbackCartesiaTranscriberLanguageKi  FallbackCartesiaTranscriberLanguage = "ki"
+	FallbackCartesiaTranscriberLanguageKj  FallbackCartesiaTranscriberLanguage = "kj"
+	FallbackCartesiaTranscriberLanguageKk  FallbackCartesiaTranscriberLanguage = "kk"
+	FallbackCartesiaTranscriberLanguageKl  FallbackCartesiaTranscriberLanguage = "kl"
+	FallbackCartesiaTranscriberLanguageKm  FallbackCartesiaTranscriberLanguage = "km"
+	FallbackCartesiaTranscriberLanguageKn  FallbackCartesiaTranscriberLanguage = "kn"
+	FallbackCartesiaTranscriberLanguageKo  FallbackCartesiaTranscriberLanguage = "ko"
+	FallbackCartesiaTranscriberLanguageKr  FallbackCartesiaTranscriberLanguage = "kr"
+	FallbackCartesiaTranscriberLanguageKs  FallbackCartesiaTranscriberLanguage = "ks"
+	FallbackCartesiaTranscriberLanguageKu  FallbackCartesiaTranscriberLanguage = "ku"
+	FallbackCartesiaTranscriberLanguageKv  FallbackCartesiaTranscriberLanguage = "kv"
+	FallbackCartesiaTranscriberLanguageKw  FallbackCartesiaTranscriberLanguage = "kw"
+	FallbackCartesiaTranscriberLanguageKy  FallbackCartesiaTranscriberLanguage = "ky"
+	FallbackCartesiaTranscriberLanguageLa  FallbackCartesiaTranscriberLanguage = "la"
+	FallbackCartesiaTranscriberLanguageLb  FallbackCartesiaTranscriberLanguage = "lb"
+	FallbackCartesiaTranscriberLanguageLg  FallbackCartesiaTranscriberLanguage = "lg"
+	FallbackCartesiaTranscriberLanguageLi  FallbackCartesiaTranscriberLanguage = "li"
+	FallbackCartesiaTranscriberLanguageLn  FallbackCartesiaTranscriberLanguage = "ln"
+	FallbackCartesiaTranscriberLanguageLo  FallbackCartesiaTranscriberLanguage = "lo"
+	FallbackCartesiaTranscriberLanguageLt  FallbackCartesiaTranscriberLanguage = "lt"
+	FallbackCartesiaTranscriberLanguageLu  FallbackCartesiaTranscriberLanguage = "lu"
+	FallbackCartesiaTranscriberLanguageLv  FallbackCartesiaTranscriberLanguage = "lv"
+	FallbackCartesiaTranscriberLanguageMg  FallbackCartesiaTranscriberLanguage = "mg"
+	FallbackCartesiaTranscriberLanguageMh  FallbackCartesiaTranscriberLanguage = "mh"
+	FallbackCartesiaTranscriberLanguageMi  FallbackCartesiaTranscriberLanguage = "mi"
+	FallbackCartesiaTranscriberLanguageMk  FallbackCartesiaTranscriberLanguage = "mk"
+	FallbackCartesiaTranscriberLanguageMl  FallbackCartesiaTranscriberLanguage = "ml"
+	FallbackCartesiaTranscriberLanguageMn  FallbackCartesiaTranscriberLanguage = "mn"
+	FallbackCartesiaTranscriberLanguageMr  FallbackCartesiaTranscriberLanguage = "mr"
+	FallbackCartesiaTranscriberLanguageMs  FallbackCartesiaTranscriberLanguage = "ms"
+	FallbackCartesiaTranscriberLanguageMt  FallbackCartesiaTranscriberLanguage = "mt"
+	FallbackCartesiaTranscriberLanguageMy  FallbackCartesiaTranscriberLanguage = "my"
+	FallbackCartesiaTranscriberLanguageNa  FallbackCartesiaTranscriberLanguage = "na"
+	FallbackCartesiaTranscriberLanguageNb  FallbackCartesiaTranscriberLanguage = "nb"
+	FallbackCartesiaTranscriberLanguageNd  FallbackCartesiaTranscriberLanguage = "nd"
+	FallbackCartesiaTranscriberLanguageNe  FallbackCartesiaTranscriberLanguage = "ne"
+	FallbackCartesiaTranscriberLanguageNg  FallbackCartesiaTranscriberLanguage = "ng"
+	FallbackCartesiaTranscriberLanguageNl  FallbackCartesiaTranscriberLanguage = "nl"
+	FallbackCartesiaTranscriberLanguageNn  FallbackCartesiaTranscriberLanguage = "nn"
+	FallbackCartesiaTranscriberLanguageNo  FallbackCartesiaTranscriberLanguage = "no"
+	FallbackCartesiaTranscriberLanguageNr  FallbackCartesiaTranscriberLanguage = "nr"
+	FallbackCartesiaTranscriberLanguageNv  FallbackCartesiaTranscriberLanguage = "nv"
+	FallbackCartesiaTranscriberLanguageNy  FallbackCartesiaTranscriberLanguage = "ny"
+	FallbackCartesiaTranscriberLanguageOc  FallbackCartesiaTranscriberLanguage = "oc"
+	FallbackCartesiaTranscriberLanguageOj  FallbackCartesiaTranscriberLanguage = "oj"
+	FallbackCartesiaTranscriberLanguageOm  FallbackCartesiaTranscriberLanguage = "om"
+	FallbackCartesiaTranscriberLanguageOr  FallbackCartesiaTranscriberLanguage = "or"
+	FallbackCartesiaTranscriberLanguageOs  FallbackCartesiaTranscriberLanguage = "os"
+	FallbackCartesiaTranscriberLanguagePa  FallbackCartesiaTranscriberLanguage = "pa"
+	FallbackCartesiaTranscriberLanguagePi  FallbackCartesiaTranscriberLanguage = "pi"
+	FallbackCartesiaTranscriberLanguagePl  FallbackCartesiaTranscriberLanguage = "pl"
+	FallbackCartesiaTranscriberLanguagePs  FallbackCartesiaTranscriberLanguage = "ps"
+	FallbackCartesiaTranscriberLanguagePt  FallbackCartesiaTranscriberLanguage = "pt"
+	FallbackCartesiaTranscriberLanguageQu  FallbackCartesiaTranscriberLanguage = "qu"
+	FallbackCartesiaTranscriberLanguageRm  FallbackCartesiaTranscriberLanguage = "rm"
+	FallbackCartesiaTranscriberLanguageRn  FallbackCartesiaTranscriberLanguage = "rn"
+	FallbackCartesiaTranscriberLanguageRo  FallbackCartesiaTranscriberLanguage = "ro"
+	FallbackCartesiaTranscriberLanguageRu  FallbackCartesiaTranscriberLanguage = "ru"
+	FallbackCartesiaTranscriberLanguageRw  FallbackCartesiaTranscriberLanguage = "rw"
+	FallbackCartesiaTranscriberLanguageSa  FallbackCartesiaTranscriberLanguage = "sa"
+	FallbackCartesiaTranscriberLanguageSc  FallbackCartesiaTranscriberLanguage = "sc"
+	FallbackCartesiaTranscriberLanguageSd  FallbackCartesiaTranscriberLanguage = "sd"
+	FallbackCartesiaTranscriberLanguageSe  FallbackCartesiaTranscriberLanguage = "se"
+	FallbackCartesiaTranscriberLanguageSg  FallbackCartesiaTranscriberLanguage = "sg"
+	FallbackCartesiaTranscriberLanguageSi  FallbackCartesiaTranscriberLanguage = "si"
+	FallbackCartesiaTranscriberLanguageSk  FallbackCartesiaTranscriberLanguage = "sk"
+	FallbackCartesiaTranscriberLanguageSl  FallbackCartesiaTranscriberLanguage = "sl"
+	FallbackCartesiaTranscriberLanguageSm  FallbackCartesiaTranscriberLanguage = "sm"
+	FallbackCartesiaTranscriberLanguageSn  FallbackCartesiaTranscriberLanguage = "sn"
+	FallbackCartesiaTranscriberLanguageSo  FallbackCartesiaTranscriberLanguage = "so"
+	FallbackCartesiaTranscriberLanguageSq  FallbackCartesiaTranscriberLanguage = "sq"
+	FallbackCartesiaTranscriberLanguageSr  FallbackCartesiaTranscriberLanguage = "sr"
+	FallbackCartesiaTranscriberLanguageSs  FallbackCartesiaTranscriberLanguage = "ss"
+	FallbackCartesiaTranscriberLanguageSt  FallbackCartesiaTranscriberLanguage = "st"
+	FallbackCartesiaTranscriberLanguageSu  FallbackCartesiaTranscriberLanguage = "su"
+	FallbackCartesiaTranscriberLanguageSv  FallbackCartesiaTranscriberLanguage = "sv"
+	FallbackCartesiaTranscriberLanguageSw  FallbackCartesiaTranscriberLanguage = "sw"
+	FallbackCartesiaTranscriberLanguageTa  FallbackCartesiaTranscriberLanguage = "ta"
+	FallbackCartesiaTranscriberLanguageTe  FallbackCartesiaTranscriberLanguage = "te"
+	FallbackCartesiaTranscriberLanguageTg  FallbackCartesiaTranscriberLanguage = "tg"
+	FallbackCartesiaTranscriberLanguageTh  FallbackCartesiaTranscriberLanguage = "th"
+	FallbackCartesiaTranscriberLanguageTi  FallbackCartesiaTranscriberLanguage = "ti"
+	FallbackCartesiaTranscriberLanguageTk  FallbackCartesiaTranscriberLanguage = "tk"
+	FallbackCartesiaTranscriberLanguageTl  FallbackCartesiaTranscriberLanguage = "tl"
+	FallbackCartesiaTranscriberLanguageTn  FallbackCartesiaTranscriberLanguage = "tn"
+	FallbackCartesiaTranscriberLanguageTo  FallbackCartesiaTranscriberLanguage = "to"
+	FallbackCartesiaTranscriberLanguageTr  FallbackCartesiaTranscriberLanguage = "tr"
+	FallbackCartesiaTranscriberLanguageTs  FallbackCartesiaTranscriberLanguage = "ts"
+	FallbackCartesiaTranscriberLanguageTt  FallbackCartesiaTranscriberLanguage = "tt"
+	FallbackCartesiaTranscriberLanguageTw  FallbackCartesiaTranscriberLanguage = "tw"
+	FallbackCartesiaTranscriberLanguageTy  FallbackCartesiaTranscriberLanguage = "ty"
+	FallbackCartesiaTranscriberLanguageUg  FallbackCartesiaTranscriberLanguage = "ug"
+	FallbackCartesiaTranscriberLanguageUk  FallbackCartesiaTranscriberLanguage = "uk"
+	FallbackCartesiaTranscriberLanguageUr  FallbackCartesiaTranscriberLanguage = "ur"
+	FallbackCartesiaTranscriberLanguageUz  FallbackCartesiaTranscriberLanguage = "uz"
+	FallbackCartesiaTranscriberLanguageVe  FallbackCartesiaTranscriberLanguage = "ve"
+	FallbackCartesiaTranscriberLanguageVi  FallbackCartesiaTranscriberLanguage = "vi"
+	FallbackCartesiaTranscriberLanguageVo  FallbackCartesiaTranscriberLanguage = "vo"
+	FallbackCartesiaTranscriberLanguageWa  FallbackCartesiaTranscriberLanguage = "wa"
+	FallbackCartesiaTranscriberLanguageWo  FallbackCartesiaTranscriberLanguage = "wo"
+	FallbackCartesiaTranscriberLanguageXh  FallbackCartesiaTranscriberLanguage = "xh"
+	FallbackCartesiaTranscriberLanguageYi  FallbackCartesiaTranscriberLanguage = "yi"
+	FallbackCartesiaTranscriberLanguageYue FallbackCartesiaTranscriberLanguage = "yue"
+	FallbackCartesiaTranscriberLanguageYo  FallbackCartesiaTranscriberLanguage = "yo"
+	FallbackCartesiaTranscriberLanguageZa  FallbackCartesiaTranscriberLanguage = "za"
+	FallbackCartesiaTranscriberLanguageZh  FallbackCartesiaTranscriberLanguage = "zh"
+	FallbackCartesiaTranscriberLanguageZu  FallbackCartesiaTranscriberLanguage = "zu"
+)
+
+func NewFallbackCartesiaTranscriberLanguageFromString(s string) (FallbackCartesiaTranscriberLanguage, error) {
+	switch s {
+	case "aa":
+		return FallbackCartesiaTranscriberLanguageAa, nil
+	case "ab":
+		return FallbackCartesiaTranscriberLanguageAb, nil
+	case "ae":
+		return FallbackCartesiaTranscriberLanguageAe, nil
+	case "af":
+		return FallbackCartesiaTranscriberLanguageAf, nil
+	case "ak":
+		return FallbackCartesiaTranscriberLanguageAk, nil
+	case "am":
+		return FallbackCartesiaTranscriberLanguageAm, nil
+	case "an":
+		return FallbackCartesiaTranscriberLanguageAn, nil
+	case "ar":
+		return FallbackCartesiaTranscriberLanguageAr, nil
+	case "as":
+		return FallbackCartesiaTranscriberLanguageAs, nil
+	case "av":
+		return FallbackCartesiaTranscriberLanguageAv, nil
+	case "ay":
+		return FallbackCartesiaTranscriberLanguageAy, nil
+	case "az":
+		return FallbackCartesiaTranscriberLanguageAz, nil
+	case "ba":
+		return FallbackCartesiaTranscriberLanguageBa, nil
+	case "be":
+		return FallbackCartesiaTranscriberLanguageBe, nil
+	case "bg":
+		return FallbackCartesiaTranscriberLanguageBg, nil
+	case "bh":
+		return FallbackCartesiaTranscriberLanguageBh, nil
+	case "bi":
+		return FallbackCartesiaTranscriberLanguageBi, nil
+	case "bm":
+		return FallbackCartesiaTranscriberLanguageBm, nil
+	case "bn":
+		return FallbackCartesiaTranscriberLanguageBn, nil
+	case "bo":
+		return FallbackCartesiaTranscriberLanguageBo, nil
+	case "br":
+		return FallbackCartesiaTranscriberLanguageBr, nil
+	case "bs":
+		return FallbackCartesiaTranscriberLanguageBs, nil
+	case "ca":
+		return FallbackCartesiaTranscriberLanguageCa, nil
+	case "ce":
+		return FallbackCartesiaTranscriberLanguageCe, nil
+	case "ch":
+		return FallbackCartesiaTranscriberLanguageCh, nil
+	case "co":
+		return FallbackCartesiaTranscriberLanguageCo, nil
+	case "cr":
+		return FallbackCartesiaTranscriberLanguageCr, nil
+	case "cs":
+		return FallbackCartesiaTranscriberLanguageCs, nil
+	case "cu":
+		return FallbackCartesiaTranscriberLanguageCu, nil
+	case "cv":
+		return FallbackCartesiaTranscriberLanguageCv, nil
+	case "cy":
+		return FallbackCartesiaTranscriberLanguageCy, nil
+	case "da":
+		return FallbackCartesiaTranscriberLanguageDa, nil
+	case "de":
+		return FallbackCartesiaTranscriberLanguageDe, nil
+	case "dv":
+		return FallbackCartesiaTranscriberLanguageDv, nil
+	case "dz":
+		return FallbackCartesiaTranscriberLanguageDz, nil
+	case "ee":
+		return FallbackCartesiaTranscriberLanguageEe, nil
+	case "el":
+		return FallbackCartesiaTranscriberLanguageEl, nil
+	case "en":
+		return FallbackCartesiaTranscriberLanguageEn, nil
+	case "eo":
+		return FallbackCartesiaTranscriberLanguageEo, nil
+	case "es":
+		return FallbackCartesiaTranscriberLanguageEs, nil
+	case "et":
+		return FallbackCartesiaTranscriberLanguageEt, nil
+	case "eu":
+		return FallbackCartesiaTranscriberLanguageEu, nil
+	case "fa":
+		return FallbackCartesiaTranscriberLanguageFa, nil
+	case "ff":
+		return FallbackCartesiaTranscriberLanguageFf, nil
+	case "fi":
+		return FallbackCartesiaTranscriberLanguageFi, nil
+	case "fj":
+		return FallbackCartesiaTranscriberLanguageFj, nil
+	case "fo":
+		return FallbackCartesiaTranscriberLanguageFo, nil
+	case "fr":
+		return FallbackCartesiaTranscriberLanguageFr, nil
+	case "fy":
+		return FallbackCartesiaTranscriberLanguageFy, nil
+	case "ga":
+		return FallbackCartesiaTranscriberLanguageGa, nil
+	case "gd":
+		return FallbackCartesiaTranscriberLanguageGd, nil
+	case "gl":
+		return FallbackCartesiaTranscriberLanguageGl, nil
+	case "gn":
+		return FallbackCartesiaTranscriberLanguageGn, nil
+	case "gu":
+		return FallbackCartesiaTranscriberLanguageGu, nil
+	case "gv":
+		return FallbackCartesiaTranscriberLanguageGv, nil
+	case "ha":
+		return FallbackCartesiaTranscriberLanguageHa, nil
+	case "he":
+		return FallbackCartesiaTranscriberLanguageHe, nil
+	case "hi":
+		return FallbackCartesiaTranscriberLanguageHi, nil
+	case "ho":
+		return FallbackCartesiaTranscriberLanguageHo, nil
+	case "hr":
+		return FallbackCartesiaTranscriberLanguageHr, nil
+	case "ht":
+		return FallbackCartesiaTranscriberLanguageHt, nil
+	case "hu":
+		return FallbackCartesiaTranscriberLanguageHu, nil
+	case "hy":
+		return FallbackCartesiaTranscriberLanguageHy, nil
+	case "hz":
+		return FallbackCartesiaTranscriberLanguageHz, nil
+	case "ia":
+		return FallbackCartesiaTranscriberLanguageIa, nil
+	case "id":
+		return FallbackCartesiaTranscriberLanguageId, nil
+	case "ie":
+		return FallbackCartesiaTranscriberLanguageIe, nil
+	case "ig":
+		return FallbackCartesiaTranscriberLanguageIg, nil
+	case "ii":
+		return FallbackCartesiaTranscriberLanguageIi, nil
+	case "ik":
+		return FallbackCartesiaTranscriberLanguageIk, nil
+	case "io":
+		return FallbackCartesiaTranscriberLanguageIo, nil
+	case "is":
+		return FallbackCartesiaTranscriberLanguageIs, nil
+	case "it":
+		return FallbackCartesiaTranscriberLanguageIt, nil
+	case "iu":
+		return FallbackCartesiaTranscriberLanguageIu, nil
+	case "ja":
+		return FallbackCartesiaTranscriberLanguageJa, nil
+	case "jv":
+		return FallbackCartesiaTranscriberLanguageJv, nil
+	case "ka":
+		return FallbackCartesiaTranscriberLanguageKa, nil
+	case "kg":
+		return FallbackCartesiaTranscriberLanguageKg, nil
+	case "ki":
+		return FallbackCartesiaTranscriberLanguageKi, nil
+	case "kj":
+		return FallbackCartesiaTranscriberLanguageKj, nil
+	case "kk":
+		return FallbackCartesiaTranscriberLanguageKk, nil
+	case "kl":
+		return FallbackCartesiaTranscriberLanguageKl, nil
+	case "km":
+		return FallbackCartesiaTranscriberLanguageKm, nil
+	case "kn":
+		return FallbackCartesiaTranscriberLanguageKn, nil
+	case "ko":
+		return FallbackCartesiaTranscriberLanguageKo, nil
+	case "kr":
+		return FallbackCartesiaTranscriberLanguageKr, nil
+	case "ks":
+		return FallbackCartesiaTranscriberLanguageKs, nil
+	case "ku":
+		return FallbackCartesiaTranscriberLanguageKu, nil
+	case "kv":
+		return FallbackCartesiaTranscriberLanguageKv, nil
+	case "kw":
+		return FallbackCartesiaTranscriberLanguageKw, nil
+	case "ky":
+		return FallbackCartesiaTranscriberLanguageKy, nil
+	case "la":
+		return FallbackCartesiaTranscriberLanguageLa, nil
+	case "lb":
+		return FallbackCartesiaTranscriberLanguageLb, nil
+	case "lg":
+		return FallbackCartesiaTranscriberLanguageLg, nil
+	case "li":
+		return FallbackCartesiaTranscriberLanguageLi, nil
+	case "ln":
+		return FallbackCartesiaTranscriberLanguageLn, nil
+	case "lo":
+		return FallbackCartesiaTranscriberLanguageLo, nil
+	case "lt":
+		return FallbackCartesiaTranscriberLanguageLt, nil
+	case "lu":
+		return FallbackCartesiaTranscriberLanguageLu, nil
+	case "lv":
+		return FallbackCartesiaTranscriberLanguageLv, nil
+	case "mg":
+		return FallbackCartesiaTranscriberLanguageMg, nil
+	case "mh":
+		return FallbackCartesiaTranscriberLanguageMh, nil
+	case "mi":
+		return FallbackCartesiaTranscriberLanguageMi, nil
+	case "mk":
+		return FallbackCartesiaTranscriberLanguageMk, nil
+	case "ml":
+		return FallbackCartesiaTranscriberLanguageMl, nil
+	case "mn":
+		return FallbackCartesiaTranscriberLanguageMn, nil
+	case "mr":
+		return FallbackCartesiaTranscriberLanguageMr, nil
+	case "ms":
+		return FallbackCartesiaTranscriberLanguageMs, nil
+	case "mt":
+		return FallbackCartesiaTranscriberLanguageMt, nil
+	case "my":
+		return FallbackCartesiaTranscriberLanguageMy, nil
+	case "na":
+		return FallbackCartesiaTranscriberLanguageNa, nil
+	case "nb":
+		return FallbackCartesiaTranscriberLanguageNb, nil
+	case "nd":
+		return FallbackCartesiaTranscriberLanguageNd, nil
+	case "ne":
+		return FallbackCartesiaTranscriberLanguageNe, nil
+	case "ng":
+		return FallbackCartesiaTranscriberLanguageNg, nil
+	case "nl":
+		return FallbackCartesiaTranscriberLanguageNl, nil
+	case "nn":
+		return FallbackCartesiaTranscriberLanguageNn, nil
+	case "no":
+		return FallbackCartesiaTranscriberLanguageNo, nil
+	case "nr":
+		return FallbackCartesiaTranscriberLanguageNr, nil
+	case "nv":
+		return FallbackCartesiaTranscriberLanguageNv, nil
+	case "ny":
+		return FallbackCartesiaTranscriberLanguageNy, nil
+	case "oc":
+		return FallbackCartesiaTranscriberLanguageOc, nil
+	case "oj":
+		return FallbackCartesiaTranscriberLanguageOj, nil
+	case "om":
+		return FallbackCartesiaTranscriberLanguageOm, nil
+	case "or":
+		return FallbackCartesiaTranscriberLanguageOr, nil
+	case "os":
+		return FallbackCartesiaTranscriberLanguageOs, nil
+	case "pa":
+		return FallbackCartesiaTranscriberLanguagePa, nil
+	case "pi":
+		return FallbackCartesiaTranscriberLanguagePi, nil
+	case "pl":
+		return FallbackCartesiaTranscriberLanguagePl, nil
+	case "ps":
+		return FallbackCartesiaTranscriberLanguagePs, nil
+	case "pt":
+		return FallbackCartesiaTranscriberLanguagePt, nil
+	case "qu":
+		return FallbackCartesiaTranscriberLanguageQu, nil
+	case "rm":
+		return FallbackCartesiaTranscriberLanguageRm, nil
+	case "rn":
+		return FallbackCartesiaTranscriberLanguageRn, nil
+	case "ro":
+		return FallbackCartesiaTranscriberLanguageRo, nil
+	case "ru":
+		return FallbackCartesiaTranscriberLanguageRu, nil
+	case "rw":
+		return FallbackCartesiaTranscriberLanguageRw, nil
+	case "sa":
+		return FallbackCartesiaTranscriberLanguageSa, nil
+	case "sc":
+		return FallbackCartesiaTranscriberLanguageSc, nil
+	case "sd":
+		return FallbackCartesiaTranscriberLanguageSd, nil
+	case "se":
+		return FallbackCartesiaTranscriberLanguageSe, nil
+	case "sg":
+		return FallbackCartesiaTranscriberLanguageSg, nil
+	case "si":
+		return FallbackCartesiaTranscriberLanguageSi, nil
+	case "sk":
+		return FallbackCartesiaTranscriberLanguageSk, nil
+	case "sl":
+		return FallbackCartesiaTranscriberLanguageSl, nil
+	case "sm":
+		return FallbackCartesiaTranscriberLanguageSm, nil
+	case "sn":
+		return FallbackCartesiaTranscriberLanguageSn, nil
+	case "so":
+		return FallbackCartesiaTranscriberLanguageSo, nil
+	case "sq":
+		return FallbackCartesiaTranscriberLanguageSq, nil
+	case "sr":
+		return FallbackCartesiaTranscriberLanguageSr, nil
+	case "ss":
+		return FallbackCartesiaTranscriberLanguageSs, nil
+	case "st":
+		return FallbackCartesiaTranscriberLanguageSt, nil
+	case "su":
+		return FallbackCartesiaTranscriberLanguageSu, nil
+	case "sv":
+		return FallbackCartesiaTranscriberLanguageSv, nil
+	case "sw":
+		return FallbackCartesiaTranscriberLanguageSw, nil
+	case "ta":
+		return FallbackCartesiaTranscriberLanguageTa, nil
+	case "te":
+		return FallbackCartesiaTranscriberLanguageTe, nil
+	case "tg":
+		return FallbackCartesiaTranscriberLanguageTg, nil
+	case "th":
+		return FallbackCartesiaTranscriberLanguageTh, nil
+	case "ti":
+		return FallbackCartesiaTranscriberLanguageTi, nil
+	case "tk":
+		return FallbackCartesiaTranscriberLanguageTk, nil
+	case "tl":
+		return FallbackCartesiaTranscriberLanguageTl, nil
+	case "tn":
+		return FallbackCartesiaTranscriberLanguageTn, nil
+	case "to":
+		return FallbackCartesiaTranscriberLanguageTo, nil
+	case "tr":
+		return FallbackCartesiaTranscriberLanguageTr, nil
+	case "ts":
+		return FallbackCartesiaTranscriberLanguageTs, nil
+	case "tt":
+		return FallbackCartesiaTranscriberLanguageTt, nil
+	case "tw":
+		return FallbackCartesiaTranscriberLanguageTw, nil
+	case "ty":
+		return FallbackCartesiaTranscriberLanguageTy, nil
+	case "ug":
+		return FallbackCartesiaTranscriberLanguageUg, nil
+	case "uk":
+		return FallbackCartesiaTranscriberLanguageUk, nil
+	case "ur":
+		return FallbackCartesiaTranscriberLanguageUr, nil
+	case "uz":
+		return FallbackCartesiaTranscriberLanguageUz, nil
+	case "ve":
+		return FallbackCartesiaTranscriberLanguageVe, nil
+	case "vi":
+		return FallbackCartesiaTranscriberLanguageVi, nil
+	case "vo":
+		return FallbackCartesiaTranscriberLanguageVo, nil
+	case "wa":
+		return FallbackCartesiaTranscriberLanguageWa, nil
+	case "wo":
+		return FallbackCartesiaTranscriberLanguageWo, nil
+	case "xh":
+		return FallbackCartesiaTranscriberLanguageXh, nil
+	case "yi":
+		return FallbackCartesiaTranscriberLanguageYi, nil
+	case "yue":
+		return FallbackCartesiaTranscriberLanguageYue, nil
+	case "yo":
+		return FallbackCartesiaTranscriberLanguageYo, nil
+	case "za":
+		return FallbackCartesiaTranscriberLanguageZa, nil
+	case "zh":
+		return FallbackCartesiaTranscriberLanguageZh, nil
+	case "zu":
+		return FallbackCartesiaTranscriberLanguageZu, nil
+	}
+	var t FallbackCartesiaTranscriberLanguage
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (f FallbackCartesiaTranscriberLanguage) Ptr() *FallbackCartesiaTranscriberLanguage {
 	return &f
 }
 
@@ -38622,6 +41505,8 @@ type FallbackGladiaTranscriber struct {
 	LanguageBehaviour *FallbackGladiaTranscriberLanguageBehaviour `json:"languageBehaviour,omitempty" url:"languageBehaviour,omitempty"`
 	// Defines the language to use for the transcription. Required when languageBehaviour is 'manual'.
 	Language *FallbackGladiaTranscriberLanguage `json:"language,omitempty" url:"language,omitempty"`
+	// Defines the languages to use for the transcription. Required when languageBehaviour is 'manual'.
+	Languages *FallbackGladiaTranscriberLanguages `json:"languages,omitempty" url:"languages,omitempty"`
 	// Provides a custom vocabulary to the model to improve accuracy of transcribing context specific words, technical terms, names, etc. If empty, this argument is ignored.
 	// ⚠️ Warning ⚠️: Please be aware that the transcription_hint field has a character limit of 600. If you provide a transcription_hint longer than 600 characters, it will be automatically truncated to meet this limit.
 	TranscriptionHint *string `json:"transcriptionHint,omitempty" url:"transcriptionHint,omitempty"`
@@ -38658,6 +41543,13 @@ func (f *FallbackGladiaTranscriber) GetLanguage() *FallbackGladiaTranscriberLang
 		return nil
 	}
 	return f.Language
+}
+
+func (f *FallbackGladiaTranscriber) GetLanguages() *FallbackGladiaTranscriberLanguages {
+	if f == nil {
+		return nil
+	}
+	return f.Languages
 }
 
 func (f *FallbackGladiaTranscriber) GetTranscriptionHint() *string {
@@ -39084,11 +41976,326 @@ func (f FallbackGladiaTranscriberLanguageBehaviour) Ptr() *FallbackGladiaTranscr
 	return &f
 }
 
+// Defines the languages to use for the transcription. Required when languageBehaviour is 'manual'.
+type FallbackGladiaTranscriberLanguages string
+
+const (
+	FallbackGladiaTranscriberLanguagesAf  FallbackGladiaTranscriberLanguages = "af"
+	FallbackGladiaTranscriberLanguagesSq  FallbackGladiaTranscriberLanguages = "sq"
+	FallbackGladiaTranscriberLanguagesAm  FallbackGladiaTranscriberLanguages = "am"
+	FallbackGladiaTranscriberLanguagesAr  FallbackGladiaTranscriberLanguages = "ar"
+	FallbackGladiaTranscriberLanguagesHy  FallbackGladiaTranscriberLanguages = "hy"
+	FallbackGladiaTranscriberLanguagesAs  FallbackGladiaTranscriberLanguages = "as"
+	FallbackGladiaTranscriberLanguagesAz  FallbackGladiaTranscriberLanguages = "az"
+	FallbackGladiaTranscriberLanguagesBa  FallbackGladiaTranscriberLanguages = "ba"
+	FallbackGladiaTranscriberLanguagesEu  FallbackGladiaTranscriberLanguages = "eu"
+	FallbackGladiaTranscriberLanguagesBe  FallbackGladiaTranscriberLanguages = "be"
+	FallbackGladiaTranscriberLanguagesBn  FallbackGladiaTranscriberLanguages = "bn"
+	FallbackGladiaTranscriberLanguagesBs  FallbackGladiaTranscriberLanguages = "bs"
+	FallbackGladiaTranscriberLanguagesBr  FallbackGladiaTranscriberLanguages = "br"
+	FallbackGladiaTranscriberLanguagesBg  FallbackGladiaTranscriberLanguages = "bg"
+	FallbackGladiaTranscriberLanguagesCa  FallbackGladiaTranscriberLanguages = "ca"
+	FallbackGladiaTranscriberLanguagesZh  FallbackGladiaTranscriberLanguages = "zh"
+	FallbackGladiaTranscriberLanguagesHr  FallbackGladiaTranscriberLanguages = "hr"
+	FallbackGladiaTranscriberLanguagesCs  FallbackGladiaTranscriberLanguages = "cs"
+	FallbackGladiaTranscriberLanguagesDa  FallbackGladiaTranscriberLanguages = "da"
+	FallbackGladiaTranscriberLanguagesNl  FallbackGladiaTranscriberLanguages = "nl"
+	FallbackGladiaTranscriberLanguagesEn  FallbackGladiaTranscriberLanguages = "en"
+	FallbackGladiaTranscriberLanguagesEt  FallbackGladiaTranscriberLanguages = "et"
+	FallbackGladiaTranscriberLanguagesFo  FallbackGladiaTranscriberLanguages = "fo"
+	FallbackGladiaTranscriberLanguagesFi  FallbackGladiaTranscriberLanguages = "fi"
+	FallbackGladiaTranscriberLanguagesFr  FallbackGladiaTranscriberLanguages = "fr"
+	FallbackGladiaTranscriberLanguagesGl  FallbackGladiaTranscriberLanguages = "gl"
+	FallbackGladiaTranscriberLanguagesKa  FallbackGladiaTranscriberLanguages = "ka"
+	FallbackGladiaTranscriberLanguagesDe  FallbackGladiaTranscriberLanguages = "de"
+	FallbackGladiaTranscriberLanguagesEl  FallbackGladiaTranscriberLanguages = "el"
+	FallbackGladiaTranscriberLanguagesGu  FallbackGladiaTranscriberLanguages = "gu"
+	FallbackGladiaTranscriberLanguagesHt  FallbackGladiaTranscriberLanguages = "ht"
+	FallbackGladiaTranscriberLanguagesHa  FallbackGladiaTranscriberLanguages = "ha"
+	FallbackGladiaTranscriberLanguagesHaw FallbackGladiaTranscriberLanguages = "haw"
+	FallbackGladiaTranscriberLanguagesHe  FallbackGladiaTranscriberLanguages = "he"
+	FallbackGladiaTranscriberLanguagesHi  FallbackGladiaTranscriberLanguages = "hi"
+	FallbackGladiaTranscriberLanguagesHu  FallbackGladiaTranscriberLanguages = "hu"
+	FallbackGladiaTranscriberLanguagesIs  FallbackGladiaTranscriberLanguages = "is"
+	FallbackGladiaTranscriberLanguagesId  FallbackGladiaTranscriberLanguages = "id"
+	FallbackGladiaTranscriberLanguagesIt  FallbackGladiaTranscriberLanguages = "it"
+	FallbackGladiaTranscriberLanguagesJa  FallbackGladiaTranscriberLanguages = "ja"
+	FallbackGladiaTranscriberLanguagesJv  FallbackGladiaTranscriberLanguages = "jv"
+	FallbackGladiaTranscriberLanguagesKn  FallbackGladiaTranscriberLanguages = "kn"
+	FallbackGladiaTranscriberLanguagesKk  FallbackGladiaTranscriberLanguages = "kk"
+	FallbackGladiaTranscriberLanguagesKm  FallbackGladiaTranscriberLanguages = "km"
+	FallbackGladiaTranscriberLanguagesKo  FallbackGladiaTranscriberLanguages = "ko"
+	FallbackGladiaTranscriberLanguagesLo  FallbackGladiaTranscriberLanguages = "lo"
+	FallbackGladiaTranscriberLanguagesLa  FallbackGladiaTranscriberLanguages = "la"
+	FallbackGladiaTranscriberLanguagesLv  FallbackGladiaTranscriberLanguages = "lv"
+	FallbackGladiaTranscriberLanguagesLn  FallbackGladiaTranscriberLanguages = "ln"
+	FallbackGladiaTranscriberLanguagesLt  FallbackGladiaTranscriberLanguages = "lt"
+	FallbackGladiaTranscriberLanguagesLb  FallbackGladiaTranscriberLanguages = "lb"
+	FallbackGladiaTranscriberLanguagesMk  FallbackGladiaTranscriberLanguages = "mk"
+	FallbackGladiaTranscriberLanguagesMg  FallbackGladiaTranscriberLanguages = "mg"
+	FallbackGladiaTranscriberLanguagesMs  FallbackGladiaTranscriberLanguages = "ms"
+	FallbackGladiaTranscriberLanguagesMl  FallbackGladiaTranscriberLanguages = "ml"
+	FallbackGladiaTranscriberLanguagesMt  FallbackGladiaTranscriberLanguages = "mt"
+	FallbackGladiaTranscriberLanguagesMi  FallbackGladiaTranscriberLanguages = "mi"
+	FallbackGladiaTranscriberLanguagesMr  FallbackGladiaTranscriberLanguages = "mr"
+	FallbackGladiaTranscriberLanguagesMn  FallbackGladiaTranscriberLanguages = "mn"
+	FallbackGladiaTranscriberLanguagesMy  FallbackGladiaTranscriberLanguages = "my"
+	FallbackGladiaTranscriberLanguagesNe  FallbackGladiaTranscriberLanguages = "ne"
+	FallbackGladiaTranscriberLanguagesNo  FallbackGladiaTranscriberLanguages = "no"
+	FallbackGladiaTranscriberLanguagesNn  FallbackGladiaTranscriberLanguages = "nn"
+	FallbackGladiaTranscriberLanguagesOc  FallbackGladiaTranscriberLanguages = "oc"
+	FallbackGladiaTranscriberLanguagesPs  FallbackGladiaTranscriberLanguages = "ps"
+	FallbackGladiaTranscriberLanguagesFa  FallbackGladiaTranscriberLanguages = "fa"
+	FallbackGladiaTranscriberLanguagesPl  FallbackGladiaTranscriberLanguages = "pl"
+	FallbackGladiaTranscriberLanguagesPt  FallbackGladiaTranscriberLanguages = "pt"
+	FallbackGladiaTranscriberLanguagesPa  FallbackGladiaTranscriberLanguages = "pa"
+	FallbackGladiaTranscriberLanguagesRo  FallbackGladiaTranscriberLanguages = "ro"
+	FallbackGladiaTranscriberLanguagesRu  FallbackGladiaTranscriberLanguages = "ru"
+	FallbackGladiaTranscriberLanguagesSa  FallbackGladiaTranscriberLanguages = "sa"
+	FallbackGladiaTranscriberLanguagesSr  FallbackGladiaTranscriberLanguages = "sr"
+	FallbackGladiaTranscriberLanguagesSn  FallbackGladiaTranscriberLanguages = "sn"
+	FallbackGladiaTranscriberLanguagesSd  FallbackGladiaTranscriberLanguages = "sd"
+	FallbackGladiaTranscriberLanguagesSi  FallbackGladiaTranscriberLanguages = "si"
+	FallbackGladiaTranscriberLanguagesSk  FallbackGladiaTranscriberLanguages = "sk"
+	FallbackGladiaTranscriberLanguagesSl  FallbackGladiaTranscriberLanguages = "sl"
+	FallbackGladiaTranscriberLanguagesSo  FallbackGladiaTranscriberLanguages = "so"
+	FallbackGladiaTranscriberLanguagesEs  FallbackGladiaTranscriberLanguages = "es"
+	FallbackGladiaTranscriberLanguagesSu  FallbackGladiaTranscriberLanguages = "su"
+	FallbackGladiaTranscriberLanguagesSw  FallbackGladiaTranscriberLanguages = "sw"
+	FallbackGladiaTranscriberLanguagesSv  FallbackGladiaTranscriberLanguages = "sv"
+	FallbackGladiaTranscriberLanguagesTl  FallbackGladiaTranscriberLanguages = "tl"
+	FallbackGladiaTranscriberLanguagesTg  FallbackGladiaTranscriberLanguages = "tg"
+	FallbackGladiaTranscriberLanguagesTa  FallbackGladiaTranscriberLanguages = "ta"
+	FallbackGladiaTranscriberLanguagesTt  FallbackGladiaTranscriberLanguages = "tt"
+	FallbackGladiaTranscriberLanguagesTe  FallbackGladiaTranscriberLanguages = "te"
+	FallbackGladiaTranscriberLanguagesTh  FallbackGladiaTranscriberLanguages = "th"
+	FallbackGladiaTranscriberLanguagesBo  FallbackGladiaTranscriberLanguages = "bo"
+	FallbackGladiaTranscriberLanguagesTr  FallbackGladiaTranscriberLanguages = "tr"
+	FallbackGladiaTranscriberLanguagesTk  FallbackGladiaTranscriberLanguages = "tk"
+	FallbackGladiaTranscriberLanguagesUk  FallbackGladiaTranscriberLanguages = "uk"
+	FallbackGladiaTranscriberLanguagesUr  FallbackGladiaTranscriberLanguages = "ur"
+	FallbackGladiaTranscriberLanguagesUz  FallbackGladiaTranscriberLanguages = "uz"
+	FallbackGladiaTranscriberLanguagesVi  FallbackGladiaTranscriberLanguages = "vi"
+	FallbackGladiaTranscriberLanguagesCy  FallbackGladiaTranscriberLanguages = "cy"
+	FallbackGladiaTranscriberLanguagesYi  FallbackGladiaTranscriberLanguages = "yi"
+	FallbackGladiaTranscriberLanguagesYo  FallbackGladiaTranscriberLanguages = "yo"
+)
+
+func NewFallbackGladiaTranscriberLanguagesFromString(s string) (FallbackGladiaTranscriberLanguages, error) {
+	switch s {
+	case "af":
+		return FallbackGladiaTranscriberLanguagesAf, nil
+	case "sq":
+		return FallbackGladiaTranscriberLanguagesSq, nil
+	case "am":
+		return FallbackGladiaTranscriberLanguagesAm, nil
+	case "ar":
+		return FallbackGladiaTranscriberLanguagesAr, nil
+	case "hy":
+		return FallbackGladiaTranscriberLanguagesHy, nil
+	case "as":
+		return FallbackGladiaTranscriberLanguagesAs, nil
+	case "az":
+		return FallbackGladiaTranscriberLanguagesAz, nil
+	case "ba":
+		return FallbackGladiaTranscriberLanguagesBa, nil
+	case "eu":
+		return FallbackGladiaTranscriberLanguagesEu, nil
+	case "be":
+		return FallbackGladiaTranscriberLanguagesBe, nil
+	case "bn":
+		return FallbackGladiaTranscriberLanguagesBn, nil
+	case "bs":
+		return FallbackGladiaTranscriberLanguagesBs, nil
+	case "br":
+		return FallbackGladiaTranscriberLanguagesBr, nil
+	case "bg":
+		return FallbackGladiaTranscriberLanguagesBg, nil
+	case "ca":
+		return FallbackGladiaTranscriberLanguagesCa, nil
+	case "zh":
+		return FallbackGladiaTranscriberLanguagesZh, nil
+	case "hr":
+		return FallbackGladiaTranscriberLanguagesHr, nil
+	case "cs":
+		return FallbackGladiaTranscriberLanguagesCs, nil
+	case "da":
+		return FallbackGladiaTranscriberLanguagesDa, nil
+	case "nl":
+		return FallbackGladiaTranscriberLanguagesNl, nil
+	case "en":
+		return FallbackGladiaTranscriberLanguagesEn, nil
+	case "et":
+		return FallbackGladiaTranscriberLanguagesEt, nil
+	case "fo":
+		return FallbackGladiaTranscriberLanguagesFo, nil
+	case "fi":
+		return FallbackGladiaTranscriberLanguagesFi, nil
+	case "fr":
+		return FallbackGladiaTranscriberLanguagesFr, nil
+	case "gl":
+		return FallbackGladiaTranscriberLanguagesGl, nil
+	case "ka":
+		return FallbackGladiaTranscriberLanguagesKa, nil
+	case "de":
+		return FallbackGladiaTranscriberLanguagesDe, nil
+	case "el":
+		return FallbackGladiaTranscriberLanguagesEl, nil
+	case "gu":
+		return FallbackGladiaTranscriberLanguagesGu, nil
+	case "ht":
+		return FallbackGladiaTranscriberLanguagesHt, nil
+	case "ha":
+		return FallbackGladiaTranscriberLanguagesHa, nil
+	case "haw":
+		return FallbackGladiaTranscriberLanguagesHaw, nil
+	case "he":
+		return FallbackGladiaTranscriberLanguagesHe, nil
+	case "hi":
+		return FallbackGladiaTranscriberLanguagesHi, nil
+	case "hu":
+		return FallbackGladiaTranscriberLanguagesHu, nil
+	case "is":
+		return FallbackGladiaTranscriberLanguagesIs, nil
+	case "id":
+		return FallbackGladiaTranscriberLanguagesId, nil
+	case "it":
+		return FallbackGladiaTranscriberLanguagesIt, nil
+	case "ja":
+		return FallbackGladiaTranscriberLanguagesJa, nil
+	case "jv":
+		return FallbackGladiaTranscriberLanguagesJv, nil
+	case "kn":
+		return FallbackGladiaTranscriberLanguagesKn, nil
+	case "kk":
+		return FallbackGladiaTranscriberLanguagesKk, nil
+	case "km":
+		return FallbackGladiaTranscriberLanguagesKm, nil
+	case "ko":
+		return FallbackGladiaTranscriberLanguagesKo, nil
+	case "lo":
+		return FallbackGladiaTranscriberLanguagesLo, nil
+	case "la":
+		return FallbackGladiaTranscriberLanguagesLa, nil
+	case "lv":
+		return FallbackGladiaTranscriberLanguagesLv, nil
+	case "ln":
+		return FallbackGladiaTranscriberLanguagesLn, nil
+	case "lt":
+		return FallbackGladiaTranscriberLanguagesLt, nil
+	case "lb":
+		return FallbackGladiaTranscriberLanguagesLb, nil
+	case "mk":
+		return FallbackGladiaTranscriberLanguagesMk, nil
+	case "mg":
+		return FallbackGladiaTranscriberLanguagesMg, nil
+	case "ms":
+		return FallbackGladiaTranscriberLanguagesMs, nil
+	case "ml":
+		return FallbackGladiaTranscriberLanguagesMl, nil
+	case "mt":
+		return FallbackGladiaTranscriberLanguagesMt, nil
+	case "mi":
+		return FallbackGladiaTranscriberLanguagesMi, nil
+	case "mr":
+		return FallbackGladiaTranscriberLanguagesMr, nil
+	case "mn":
+		return FallbackGladiaTranscriberLanguagesMn, nil
+	case "my":
+		return FallbackGladiaTranscriberLanguagesMy, nil
+	case "ne":
+		return FallbackGladiaTranscriberLanguagesNe, nil
+	case "no":
+		return FallbackGladiaTranscriberLanguagesNo, nil
+	case "nn":
+		return FallbackGladiaTranscriberLanguagesNn, nil
+	case "oc":
+		return FallbackGladiaTranscriberLanguagesOc, nil
+	case "ps":
+		return FallbackGladiaTranscriberLanguagesPs, nil
+	case "fa":
+		return FallbackGladiaTranscriberLanguagesFa, nil
+	case "pl":
+		return FallbackGladiaTranscriberLanguagesPl, nil
+	case "pt":
+		return FallbackGladiaTranscriberLanguagesPt, nil
+	case "pa":
+		return FallbackGladiaTranscriberLanguagesPa, nil
+	case "ro":
+		return FallbackGladiaTranscriberLanguagesRo, nil
+	case "ru":
+		return FallbackGladiaTranscriberLanguagesRu, nil
+	case "sa":
+		return FallbackGladiaTranscriberLanguagesSa, nil
+	case "sr":
+		return FallbackGladiaTranscriberLanguagesSr, nil
+	case "sn":
+		return FallbackGladiaTranscriberLanguagesSn, nil
+	case "sd":
+		return FallbackGladiaTranscriberLanguagesSd, nil
+	case "si":
+		return FallbackGladiaTranscriberLanguagesSi, nil
+	case "sk":
+		return FallbackGladiaTranscriberLanguagesSk, nil
+	case "sl":
+		return FallbackGladiaTranscriberLanguagesSl, nil
+	case "so":
+		return FallbackGladiaTranscriberLanguagesSo, nil
+	case "es":
+		return FallbackGladiaTranscriberLanguagesEs, nil
+	case "su":
+		return FallbackGladiaTranscriberLanguagesSu, nil
+	case "sw":
+		return FallbackGladiaTranscriberLanguagesSw, nil
+	case "sv":
+		return FallbackGladiaTranscriberLanguagesSv, nil
+	case "tl":
+		return FallbackGladiaTranscriberLanguagesTl, nil
+	case "tg":
+		return FallbackGladiaTranscriberLanguagesTg, nil
+	case "ta":
+		return FallbackGladiaTranscriberLanguagesTa, nil
+	case "tt":
+		return FallbackGladiaTranscriberLanguagesTt, nil
+	case "te":
+		return FallbackGladiaTranscriberLanguagesTe, nil
+	case "th":
+		return FallbackGladiaTranscriberLanguagesTh, nil
+	case "bo":
+		return FallbackGladiaTranscriberLanguagesBo, nil
+	case "tr":
+		return FallbackGladiaTranscriberLanguagesTr, nil
+	case "tk":
+		return FallbackGladiaTranscriberLanguagesTk, nil
+	case "uk":
+		return FallbackGladiaTranscriberLanguagesUk, nil
+	case "ur":
+		return FallbackGladiaTranscriberLanguagesUr, nil
+	case "uz":
+		return FallbackGladiaTranscriberLanguagesUz, nil
+	case "vi":
+		return FallbackGladiaTranscriberLanguagesVi, nil
+	case "cy":
+		return FallbackGladiaTranscriberLanguagesCy, nil
+	case "yi":
+		return FallbackGladiaTranscriberLanguagesYi, nil
+	case "yo":
+		return FallbackGladiaTranscriberLanguagesYo, nil
+	}
+	var t FallbackGladiaTranscriberLanguages
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (f FallbackGladiaTranscriberLanguages) Ptr() *FallbackGladiaTranscriberLanguages {
+	return &f
+}
+
 type FallbackGladiaTranscriberModel string
 
 const (
 	FallbackGladiaTranscriberModelFast     FallbackGladiaTranscriberModel = "fast"
 	FallbackGladiaTranscriberModelAccurate FallbackGladiaTranscriberModel = "accurate"
+	FallbackGladiaTranscriberModelSolaria1 FallbackGladiaTranscriberModel = "solaria-1"
 )
 
 func NewFallbackGladiaTranscriberModelFromString(s string) (FallbackGladiaTranscriberModel, error) {
@@ -39097,6 +42304,8 @@ func NewFallbackGladiaTranscriberModelFromString(s string) (FallbackGladiaTransc
 		return FallbackGladiaTranscriberModelFast, nil
 	case "accurate":
 		return FallbackGladiaTranscriberModelAccurate, nil
+	case "solaria-1":
+		return FallbackGladiaTranscriberModelSolaria1, nil
 	}
 	var t FallbackGladiaTranscriberModel
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -39328,6 +42537,7 @@ type FallbackGoogleTranscriberModel string
 
 const (
 	FallbackGoogleTranscriberModelGemini25ProPreview0506       FallbackGoogleTranscriberModel = "gemini-2.5-pro-preview-05-06"
+	FallbackGoogleTranscriberModelGemini25FlashPreview0520     FallbackGoogleTranscriberModel = "gemini-2.5-flash-preview-05-20"
 	FallbackGoogleTranscriberModelGemini25FlashPreview0417     FallbackGoogleTranscriberModel = "gemini-2.5-flash-preview-04-17"
 	FallbackGoogleTranscriberModelGemini20FlashThinkingExp     FallbackGoogleTranscriberModel = "gemini-2.0-flash-thinking-exp"
 	FallbackGoogleTranscriberModelGemini20ProExp0205           FallbackGoogleTranscriberModel = "gemini-2.0-pro-exp-02-05"
@@ -39347,6 +42557,8 @@ func NewFallbackGoogleTranscriberModelFromString(s string) (FallbackGoogleTransc
 	switch s {
 	case "gemini-2.5-pro-preview-05-06":
 		return FallbackGoogleTranscriberModelGemini25ProPreview0506, nil
+	case "gemini-2.5-flash-preview-05-20":
+		return FallbackGoogleTranscriberModelGemini25FlashPreview0520, nil
 	case "gemini-2.5-flash-preview-04-17":
 		return FallbackGoogleTranscriberModelGemini25FlashPreview0417, nil
 	case "gemini-2.0-flash-thinking-exp":
@@ -43013,6 +46225,7 @@ type FallbackTranscriberPlanTranscribersItem struct {
 	FallbackTalkscriberTranscriber  *FallbackTalkscriberTranscriber
 	FallbackSpeechmaticsTranscriber *FallbackSpeechmaticsTranscriber
 	FallbackOpenAiTranscriber       *FallbackOpenAiTranscriber
+	FallbackCartesiaTranscriber     *FallbackCartesiaTranscriber
 
 	typ string
 }
@@ -43087,6 +46300,13 @@ func (f *FallbackTranscriberPlanTranscribersItem) GetFallbackOpenAiTranscriber()
 	return f.FallbackOpenAiTranscriber
 }
 
+func (f *FallbackTranscriberPlanTranscribersItem) GetFallbackCartesiaTranscriber() *FallbackCartesiaTranscriber {
+	if f == nil {
+		return nil
+	}
+	return f.FallbackCartesiaTranscriber
+}
+
 func (f *FallbackTranscriberPlanTranscribersItem) UnmarshalJSON(data []byte) error {
 	valueFallbackAssemblyAiTranscriber := new(FallbackAssemblyAiTranscriber)
 	if err := json.Unmarshal(data, &valueFallbackAssemblyAiTranscriber); err == nil {
@@ -43148,6 +46368,12 @@ func (f *FallbackTranscriberPlanTranscribersItem) UnmarshalJSON(data []byte) err
 		f.FallbackOpenAiTranscriber = valueFallbackOpenAiTranscriber
 		return nil
 	}
+	valueFallbackCartesiaTranscriber := new(FallbackCartesiaTranscriber)
+	if err := json.Unmarshal(data, &valueFallbackCartesiaTranscriber); err == nil {
+		f.typ = "FallbackCartesiaTranscriber"
+		f.FallbackCartesiaTranscriber = valueFallbackCartesiaTranscriber
+		return nil
+	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, f)
 }
 
@@ -43182,6 +46408,9 @@ func (f FallbackTranscriberPlanTranscribersItem) MarshalJSON() ([]byte, error) {
 	if f.typ == "FallbackOpenAiTranscriber" || f.FallbackOpenAiTranscriber != nil {
 		return json.Marshal(f.FallbackOpenAiTranscriber)
 	}
+	if f.typ == "FallbackCartesiaTranscriber" || f.FallbackCartesiaTranscriber != nil {
+		return json.Marshal(f.FallbackCartesiaTranscriber)
+	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", f)
 }
 
@@ -43196,6 +46425,7 @@ type FallbackTranscriberPlanTranscribersItemVisitor interface {
 	VisitFallbackTalkscriberTranscriber(*FallbackTalkscriberTranscriber) error
 	VisitFallbackSpeechmaticsTranscriber(*FallbackSpeechmaticsTranscriber) error
 	VisitFallbackOpenAiTranscriber(*FallbackOpenAiTranscriber) error
+	VisitFallbackCartesiaTranscriber(*FallbackCartesiaTranscriber) error
 }
 
 func (f *FallbackTranscriberPlanTranscribersItem) Accept(visitor FallbackTranscriberPlanTranscribersItemVisitor) error {
@@ -43229,6 +46459,9 @@ func (f *FallbackTranscriberPlanTranscribersItem) Accept(visitor FallbackTranscr
 	if f.typ == "FallbackOpenAiTranscriber" || f.FallbackOpenAiTranscriber != nil {
 		return visitor.VisitFallbackOpenAiTranscriber(f.FallbackOpenAiTranscriber)
 	}
+	if f.typ == "FallbackCartesiaTranscriber" || f.FallbackCartesiaTranscriber != nil {
+		return visitor.VisitFallbackCartesiaTranscriber(f.FallbackCartesiaTranscriber)
+	}
 	return fmt.Errorf("type %T does not include a non-empty union type", f)
 }
 
@@ -43242,10 +46475,6 @@ type FallbackVapiVoice struct {
 	//
 	// @default 1
 	Speed *float64 `json:"speed,omitempty" url:"speed,omitempty"`
-	// This is the language code (ISO 639-1) that will be used.
-	//
-	// @default 'en-US'
-	Language *FallbackVapiVoiceLanguage `json:"language,omitempty" url:"language,omitempty"`
 	// This is the plan for chunking the model output before it is sent to the voice provider.
 	ChunkPlan *ChunkPlan `json:"chunkPlan,omitempty" url:"chunkPlan,omitempty"`
 	provider  string
@@ -43273,13 +46502,6 @@ func (f *FallbackVapiVoice) GetSpeed() *float64 {
 		return nil
 	}
 	return f.Speed
-}
-
-func (f *FallbackVapiVoice) GetLanguage() *FallbackVapiVoiceLanguage {
-	if f == nil {
-		return nil
-	}
-	return f.Language
 }
 
 func (f *FallbackVapiVoice) GetChunkPlan() *ChunkPlan {
@@ -43344,142 +46566,6 @@ func (f *FallbackVapiVoice) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", f)
-}
-
-// This is the language code (ISO 639-1) that will be used.
-//
-// @default 'en-US'
-type FallbackVapiVoiceLanguage string
-
-const (
-	FallbackVapiVoiceLanguageEnUs FallbackVapiVoiceLanguage = "en-US"
-	FallbackVapiVoiceLanguageEnGb FallbackVapiVoiceLanguage = "en-GB"
-	FallbackVapiVoiceLanguageEnAu FallbackVapiVoiceLanguage = "en-AU"
-	FallbackVapiVoiceLanguageEnCa FallbackVapiVoiceLanguage = "en-CA"
-	FallbackVapiVoiceLanguageJa   FallbackVapiVoiceLanguage = "ja"
-	FallbackVapiVoiceLanguageZh   FallbackVapiVoiceLanguage = "zh"
-	FallbackVapiVoiceLanguageDe   FallbackVapiVoiceLanguage = "de"
-	FallbackVapiVoiceLanguageHi   FallbackVapiVoiceLanguage = "hi"
-	FallbackVapiVoiceLanguageFrFr FallbackVapiVoiceLanguage = "fr-FR"
-	FallbackVapiVoiceLanguageFrCa FallbackVapiVoiceLanguage = "fr-CA"
-	FallbackVapiVoiceLanguageKo   FallbackVapiVoiceLanguage = "ko"
-	FallbackVapiVoiceLanguagePtBr FallbackVapiVoiceLanguage = "pt-BR"
-	FallbackVapiVoiceLanguagePtPt FallbackVapiVoiceLanguage = "pt-PT"
-	FallbackVapiVoiceLanguageIt   FallbackVapiVoiceLanguage = "it"
-	FallbackVapiVoiceLanguageEsEs FallbackVapiVoiceLanguage = "es-ES"
-	FallbackVapiVoiceLanguageEsMx FallbackVapiVoiceLanguage = "es-MX"
-	FallbackVapiVoiceLanguageId   FallbackVapiVoiceLanguage = "id"
-	FallbackVapiVoiceLanguageNl   FallbackVapiVoiceLanguage = "nl"
-	FallbackVapiVoiceLanguageTr   FallbackVapiVoiceLanguage = "tr"
-	FallbackVapiVoiceLanguageFil  FallbackVapiVoiceLanguage = "fil"
-	FallbackVapiVoiceLanguagePl   FallbackVapiVoiceLanguage = "pl"
-	FallbackVapiVoiceLanguageSv   FallbackVapiVoiceLanguage = "sv"
-	FallbackVapiVoiceLanguageBg   FallbackVapiVoiceLanguage = "bg"
-	FallbackVapiVoiceLanguageRo   FallbackVapiVoiceLanguage = "ro"
-	FallbackVapiVoiceLanguageArSa FallbackVapiVoiceLanguage = "ar-SA"
-	FallbackVapiVoiceLanguageArAe FallbackVapiVoiceLanguage = "ar-AE"
-	FallbackVapiVoiceLanguageCs   FallbackVapiVoiceLanguage = "cs"
-	FallbackVapiVoiceLanguageEl   FallbackVapiVoiceLanguage = "el"
-	FallbackVapiVoiceLanguageFi   FallbackVapiVoiceLanguage = "fi"
-	FallbackVapiVoiceLanguageHr   FallbackVapiVoiceLanguage = "hr"
-	FallbackVapiVoiceLanguageMs   FallbackVapiVoiceLanguage = "ms"
-	FallbackVapiVoiceLanguageSk   FallbackVapiVoiceLanguage = "sk"
-	FallbackVapiVoiceLanguageDa   FallbackVapiVoiceLanguage = "da"
-	FallbackVapiVoiceLanguageTa   FallbackVapiVoiceLanguage = "ta"
-	FallbackVapiVoiceLanguageUk   FallbackVapiVoiceLanguage = "uk"
-	FallbackVapiVoiceLanguageRu   FallbackVapiVoiceLanguage = "ru"
-	FallbackVapiVoiceLanguageHu   FallbackVapiVoiceLanguage = "hu"
-	FallbackVapiVoiceLanguageNo   FallbackVapiVoiceLanguage = "no"
-	FallbackVapiVoiceLanguageVi   FallbackVapiVoiceLanguage = "vi"
-)
-
-func NewFallbackVapiVoiceLanguageFromString(s string) (FallbackVapiVoiceLanguage, error) {
-	switch s {
-	case "en-US":
-		return FallbackVapiVoiceLanguageEnUs, nil
-	case "en-GB":
-		return FallbackVapiVoiceLanguageEnGb, nil
-	case "en-AU":
-		return FallbackVapiVoiceLanguageEnAu, nil
-	case "en-CA":
-		return FallbackVapiVoiceLanguageEnCa, nil
-	case "ja":
-		return FallbackVapiVoiceLanguageJa, nil
-	case "zh":
-		return FallbackVapiVoiceLanguageZh, nil
-	case "de":
-		return FallbackVapiVoiceLanguageDe, nil
-	case "hi":
-		return FallbackVapiVoiceLanguageHi, nil
-	case "fr-FR":
-		return FallbackVapiVoiceLanguageFrFr, nil
-	case "fr-CA":
-		return FallbackVapiVoiceLanguageFrCa, nil
-	case "ko":
-		return FallbackVapiVoiceLanguageKo, nil
-	case "pt-BR":
-		return FallbackVapiVoiceLanguagePtBr, nil
-	case "pt-PT":
-		return FallbackVapiVoiceLanguagePtPt, nil
-	case "it":
-		return FallbackVapiVoiceLanguageIt, nil
-	case "es-ES":
-		return FallbackVapiVoiceLanguageEsEs, nil
-	case "es-MX":
-		return FallbackVapiVoiceLanguageEsMx, nil
-	case "id":
-		return FallbackVapiVoiceLanguageId, nil
-	case "nl":
-		return FallbackVapiVoiceLanguageNl, nil
-	case "tr":
-		return FallbackVapiVoiceLanguageTr, nil
-	case "fil":
-		return FallbackVapiVoiceLanguageFil, nil
-	case "pl":
-		return FallbackVapiVoiceLanguagePl, nil
-	case "sv":
-		return FallbackVapiVoiceLanguageSv, nil
-	case "bg":
-		return FallbackVapiVoiceLanguageBg, nil
-	case "ro":
-		return FallbackVapiVoiceLanguageRo, nil
-	case "ar-SA":
-		return FallbackVapiVoiceLanguageArSa, nil
-	case "ar-AE":
-		return FallbackVapiVoiceLanguageArAe, nil
-	case "cs":
-		return FallbackVapiVoiceLanguageCs, nil
-	case "el":
-		return FallbackVapiVoiceLanguageEl, nil
-	case "fi":
-		return FallbackVapiVoiceLanguageFi, nil
-	case "hr":
-		return FallbackVapiVoiceLanguageHr, nil
-	case "ms":
-		return FallbackVapiVoiceLanguageMs, nil
-	case "sk":
-		return FallbackVapiVoiceLanguageSk, nil
-	case "da":
-		return FallbackVapiVoiceLanguageDa, nil
-	case "ta":
-		return FallbackVapiVoiceLanguageTa, nil
-	case "uk":
-		return FallbackVapiVoiceLanguageUk, nil
-	case "ru":
-		return FallbackVapiVoiceLanguageRu, nil
-	case "hu":
-		return FallbackVapiVoiceLanguageHu, nil
-	case "no":
-		return FallbackVapiVoiceLanguageNo, nil
-	case "vi":
-		return FallbackVapiVoiceLanguageVi, nil
-	}
-	var t FallbackVapiVoiceLanguage
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (f FallbackVapiVoiceLanguage) Ptr() *FallbackVapiVoiceLanguage {
-	return &f
 }
 
 // The voices provided by Vapi
@@ -43760,43 +46846,192 @@ func (f *FormatPlanReplacementsItem) Accept(visitor FormatPlanReplacementsItemVi
 	return fmt.Errorf("type %T does not include a non-empty union type", f)
 }
 
+type FourierDenoisingPlan struct {
+	// Whether Fourier denoising is enabled. Note that this is experimental and may not work as expected.
+	Enabled *bool `json:"enabled,omitempty" url:"enabled,omitempty"`
+	// Whether automatic media detection is enabled. When enabled, the filter will automatically
+	// detect consistent background TV/music/radio and switch to more aggressive filtering settings.
+	// Only applies when enabled is true.
+	MediaDetectionEnabled *bool `json:"mediaDetectionEnabled,omitempty" url:"mediaDetectionEnabled,omitempty"`
+	// Static threshold in dB used as fallback when no baseline is established.
+	StaticThreshold *float64 `json:"staticThreshold,omitempty" url:"staticThreshold,omitempty"`
+	// How far below the rolling baseline to filter audio, in dB.
+	// Lower values (e.g., -10) are more aggressive, higher values (e.g., -20) are more conservative.
+	BaselineOffsetDb *float64 `json:"baselineOffsetDb,omitempty" url:"baselineOffsetDb,omitempty"`
+	// Rolling window size in milliseconds for calculating the audio baseline.
+	// Larger windows adapt more slowly but are more stable.
+	WindowSizeMs *float64 `json:"windowSizeMs,omitempty" url:"windowSizeMs,omitempty"`
+	// Percentile to use for baseline calculation (1-99).
+	// Higher percentiles (e.g., 85) focus on louder speech, lower percentiles (e.g., 50) include quieter speech.
+	BaselinePercentile *float64 `json:"baselinePercentile,omitempty" url:"baselinePercentile,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FourierDenoisingPlan) GetEnabled() *bool {
+	if f == nil {
+		return nil
+	}
+	return f.Enabled
+}
+
+func (f *FourierDenoisingPlan) GetMediaDetectionEnabled() *bool {
+	if f == nil {
+		return nil
+	}
+	return f.MediaDetectionEnabled
+}
+
+func (f *FourierDenoisingPlan) GetStaticThreshold() *float64 {
+	if f == nil {
+		return nil
+	}
+	return f.StaticThreshold
+}
+
+func (f *FourierDenoisingPlan) GetBaselineOffsetDb() *float64 {
+	if f == nil {
+		return nil
+	}
+	return f.BaselineOffsetDb
+}
+
+func (f *FourierDenoisingPlan) GetWindowSizeMs() *float64 {
+	if f == nil {
+		return nil
+	}
+	return f.WindowSizeMs
+}
+
+func (f *FourierDenoisingPlan) GetBaselinePercentile() *float64 {
+	if f == nil {
+		return nil
+	}
+	return f.BaselinePercentile
+}
+
+func (f *FourierDenoisingPlan) GetExtraProperties() map[string]interface{} {
+	return f.extraProperties
+}
+
+func (f *FourierDenoisingPlan) UnmarshalJSON(data []byte) error {
+	type unmarshaler FourierDenoisingPlan
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FourierDenoisingPlan(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FourierDenoisingPlan) String() string {
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+type FunctionCall struct {
+	// This is the arguments to call the function with
+	Arguments string `json:"arguments" url:"arguments"`
+	// This is the name of the function to call
+	Name string `json:"name" url:"name"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FunctionCall) GetArguments() string {
+	if f == nil {
+		return ""
+	}
+	return f.Arguments
+}
+
+func (f *FunctionCall) GetName() string {
+	if f == nil {
+		return ""
+	}
+	return f.Name
+}
+
+func (f *FunctionCall) GetExtraProperties() map[string]interface{} {
+	return f.extraProperties
+}
+
+func (f *FunctionCall) UnmarshalJSON(data []byte) error {
+	type unmarshaler FunctionCall
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FunctionCall(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FunctionCall) String() string {
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
 type FunctionCallAssistantHookAction struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
 	Messages []*FunctionCallAssistantHookActionMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
 	// The type of tool. "function" for Function tool.
+	// This determines if the tool is async.
+	//
+	//	If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+	//
+	//	If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+	//
+	//	Defaults to synchronous (`false`).
+	Async *bool `json:"async,omitempty" url:"async,omitempty"`
+	// This is the server where a `tool-calls` webhook will be sent.
+	//
+	// Notes:
+	// - Webhook is sent to this server when a tool call is made.
+	// - Webhook contains the call, assistant, and phone number objects.
+	// - Webhook contains the variables set on the assistant.
+	// - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+	// - Webhook expects a response with tool call result.
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 	// This is the function definition of the tool.
 	//
 	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (f *FunctionCallAssistantHookAction) GetAsync() *bool {
-	if f == nil {
-		return nil
-	}
-	return f.Async
 }
 
 func (f *FunctionCallAssistantHookAction) GetMessages() []*FunctionCallAssistantHookActionMessagesItem {
@@ -43806,11 +47041,11 @@ func (f *FunctionCallAssistantHookAction) GetMessages() []*FunctionCallAssistant
 	return f.Messages
 }
 
-func (f *FunctionCallAssistantHookAction) GetFunction() *OpenAiFunction {
+func (f *FunctionCallAssistantHookAction) GetAsync() *bool {
 	if f == nil {
 		return nil
 	}
-	return f.Function
+	return f.Async
 }
 
 func (f *FunctionCallAssistantHookAction) GetServer() *Server {
@@ -43818,6 +47053,13 @@ func (f *FunctionCallAssistantHookAction) GetServer() *Server {
 		return nil
 	}
 	return f.Server
+}
+
+func (f *FunctionCallAssistantHookAction) GetFunction() *OpenAiFunction {
+	if f == nil {
+		return nil
+	}
+	return f.Function
 }
 
 func (f *FunctionCallAssistantHookAction) Type() string {
@@ -44064,19 +47306,28 @@ func (f *FunctionToolProviderDetails) String() string {
 }
 
 type FunctionToolWithToolCall struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
 	Messages []*FunctionToolWithToolCallMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
 	// The type of tool. "function" for Function tool.
+	// This determines if the tool is async.
+	//
+	//	If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+	//
+	//	If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+	//
+	//	Defaults to synchronous (`false`).
+	Async *bool `json:"async,omitempty" url:"async,omitempty"`
+	// This is the server where a `tool-calls` webhook will be sent.
+	//
+	// Notes:
+	// - Webhook is sent to this server when a tool call is made.
+	// - Webhook contains the call, assistant, and phone number objects.
+	// - Webhook contains the variables set on the assistant.
+	// - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+	// - Webhook expects a response with tool call result.
+	Server   *Server   `json:"server,omitempty" url:"server,omitempty"`
 	ToolCall *ToolCall `json:"toolCall,omitempty" url:"toolCall,omitempty"`
 	// This is the function definition of the tool.
 	//
@@ -44084,16 +47335,17 @@ type FunctionToolWithToolCall struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (f *FunctionToolWithToolCall) GetMessages() []*FunctionToolWithToolCallMessagesItem {
+	if f == nil {
+		return nil
+	}
+	return f.Messages
 }
 
 func (f *FunctionToolWithToolCall) GetAsync() *bool {
@@ -44103,11 +47355,11 @@ func (f *FunctionToolWithToolCall) GetAsync() *bool {
 	return f.Async
 }
 
-func (f *FunctionToolWithToolCall) GetMessages() []*FunctionToolWithToolCallMessagesItem {
+func (f *FunctionToolWithToolCall) GetServer() *Server {
 	if f == nil {
 		return nil
 	}
-	return f.Messages
+	return f.Server
 }
 
 func (f *FunctionToolWithToolCall) GetToolCall() *ToolCall {
@@ -44122,13 +47374,6 @@ func (f *FunctionToolWithToolCall) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return f.Function
-}
-
-func (f *FunctionToolWithToolCall) GetServer() *Server {
-	if f == nil {
-		return nil
-	}
-	return f.Server
 }
 
 func (f *FunctionToolWithToolCall) Type() string {
@@ -44293,6 +47538,8 @@ func (f *FunctionToolWithToolCallMessagesItem) Accept(visitor FunctionToolWithTo
 }
 
 type GcpCredential struct {
+	// This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+	FallbackIndex *float64 `json:"fallbackIndex,omitempty" url:"fallbackIndex,omitempty"`
 	// This is the unique identifier for the credential.
 	Id string `json:"id" url:"id"`
 	// This is the unique identifier for the org that this credential belongs to.
@@ -44307,12 +47554,20 @@ type GcpCredential struct {
 	//
 	// The schema is identical to the JSON that GCP outputs.
 	GcpKey *GcpKey `json:"gcpKey,omitempty" url:"gcpKey,omitempty"`
-	// This is the bucket plan that can be provided to store call artifacts in GCP.
+	// This is the region of the GCP resource.
+	Region     *string     `json:"region,omitempty" url:"region,omitempty"`
 	BucketPlan *BucketPlan `json:"bucketPlan,omitempty" url:"bucketPlan,omitempty"`
 	provider   string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (g *GcpCredential) GetFallbackIndex() *float64 {
+	if g == nil {
+		return nil
+	}
+	return g.FallbackIndex
 }
 
 func (g *GcpCredential) GetId() string {
@@ -44355,6 +47610,13 @@ func (g *GcpCredential) GetGcpKey() *GcpKey {
 		return nil
 	}
 	return g.GcpKey
+}
+
+func (g *GcpCredential) GetRegion() *string {
+	if g == nil {
+		return nil
+	}
+	return g.Region
 }
 
 func (g *GcpCredential) GetBucketPlan() *BucketPlan {
@@ -44737,6 +47999,472 @@ func (g *GeminiMultimodalLiveVoiceConfig) String() string {
 	return fmt.Sprintf("%#v", g)
 }
 
+type GetChatPaginatedDto struct {
+	// This is the unique identifier for the assistant that will be used for the chat.
+	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
+	// This is the unique identifier for the workflow that will be used for the chat.
+	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
+	// This is the unique identifier for the session that will be used for the chat.
+	SessionId *string `json:"sessionId,omitempty" url:"sessionId,omitempty"`
+	// This is the page number to return. Defaults to 1.
+	Page *float64 `json:"page,omitempty" url:"page,omitempty"`
+	// This is the sort order for pagination. Defaults to 'DESC'.
+	SortOrder *GetChatPaginatedDtoSortOrder `json:"sortOrder,omitempty" url:"sortOrder,omitempty"`
+	// This is the maximum number of items to return. Defaults to 100.
+	Limit *float64 `json:"limit,omitempty" url:"limit,omitempty"`
+	// This will return items where the createdAt is greater than the specified value.
+	CreatedAtGt *time.Time `json:"createdAtGt,omitempty" url:"createdAtGt,omitempty"`
+	// This will return items where the createdAt is less than the specified value.
+	CreatedAtLt *time.Time `json:"createdAtLt,omitempty" url:"createdAtLt,omitempty"`
+	// This will return items where the createdAt is greater than or equal to the specified value.
+	CreatedAtGe *time.Time `json:"createdAtGe,omitempty" url:"createdAtGe,omitempty"`
+	// This will return items where the createdAt is less than or equal to the specified value.
+	CreatedAtLe *time.Time `json:"createdAtLe,omitempty" url:"createdAtLe,omitempty"`
+	// This will return items where the updatedAt is greater than the specified value.
+	UpdatedAtGt *time.Time `json:"updatedAtGt,omitempty" url:"updatedAtGt,omitempty"`
+	// This will return items where the updatedAt is less than the specified value.
+	UpdatedAtLt *time.Time `json:"updatedAtLt,omitempty" url:"updatedAtLt,omitempty"`
+	// This will return items where the updatedAt is greater than or equal to the specified value.
+	UpdatedAtGe *time.Time `json:"updatedAtGe,omitempty" url:"updatedAtGe,omitempty"`
+	// This will return items where the updatedAt is less than or equal to the specified value.
+	UpdatedAtLe *time.Time `json:"updatedAtLe,omitempty" url:"updatedAtLe,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (g *GetChatPaginatedDto) GetAssistantId() *string {
+	if g == nil {
+		return nil
+	}
+	return g.AssistantId
+}
+
+func (g *GetChatPaginatedDto) GetWorkflowId() *string {
+	if g == nil {
+		return nil
+	}
+	return g.WorkflowId
+}
+
+func (g *GetChatPaginatedDto) GetSessionId() *string {
+	if g == nil {
+		return nil
+	}
+	return g.SessionId
+}
+
+func (g *GetChatPaginatedDto) GetPage() *float64 {
+	if g == nil {
+		return nil
+	}
+	return g.Page
+}
+
+func (g *GetChatPaginatedDto) GetSortOrder() *GetChatPaginatedDtoSortOrder {
+	if g == nil {
+		return nil
+	}
+	return g.SortOrder
+}
+
+func (g *GetChatPaginatedDto) GetLimit() *float64 {
+	if g == nil {
+		return nil
+	}
+	return g.Limit
+}
+
+func (g *GetChatPaginatedDto) GetCreatedAtGt() *time.Time {
+	if g == nil {
+		return nil
+	}
+	return g.CreatedAtGt
+}
+
+func (g *GetChatPaginatedDto) GetCreatedAtLt() *time.Time {
+	if g == nil {
+		return nil
+	}
+	return g.CreatedAtLt
+}
+
+func (g *GetChatPaginatedDto) GetCreatedAtGe() *time.Time {
+	if g == nil {
+		return nil
+	}
+	return g.CreatedAtGe
+}
+
+func (g *GetChatPaginatedDto) GetCreatedAtLe() *time.Time {
+	if g == nil {
+		return nil
+	}
+	return g.CreatedAtLe
+}
+
+func (g *GetChatPaginatedDto) GetUpdatedAtGt() *time.Time {
+	if g == nil {
+		return nil
+	}
+	return g.UpdatedAtGt
+}
+
+func (g *GetChatPaginatedDto) GetUpdatedAtLt() *time.Time {
+	if g == nil {
+		return nil
+	}
+	return g.UpdatedAtLt
+}
+
+func (g *GetChatPaginatedDto) GetUpdatedAtGe() *time.Time {
+	if g == nil {
+		return nil
+	}
+	return g.UpdatedAtGe
+}
+
+func (g *GetChatPaginatedDto) GetUpdatedAtLe() *time.Time {
+	if g == nil {
+		return nil
+	}
+	return g.UpdatedAtLe
+}
+
+func (g *GetChatPaginatedDto) GetExtraProperties() map[string]interface{} {
+	return g.extraProperties
+}
+
+func (g *GetChatPaginatedDto) UnmarshalJSON(data []byte) error {
+	type embed GetChatPaginatedDto
+	var unmarshaler = struct {
+		embed
+		CreatedAtGt *internal.DateTime `json:"createdAtGt,omitempty"`
+		CreatedAtLt *internal.DateTime `json:"createdAtLt,omitempty"`
+		CreatedAtGe *internal.DateTime `json:"createdAtGe,omitempty"`
+		CreatedAtLe *internal.DateTime `json:"createdAtLe,omitempty"`
+		UpdatedAtGt *internal.DateTime `json:"updatedAtGt,omitempty"`
+		UpdatedAtLt *internal.DateTime `json:"updatedAtLt,omitempty"`
+		UpdatedAtGe *internal.DateTime `json:"updatedAtGe,omitempty"`
+		UpdatedAtLe *internal.DateTime `json:"updatedAtLe,omitempty"`
+	}{
+		embed: embed(*g),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*g = GetChatPaginatedDto(unmarshaler.embed)
+	g.CreatedAtGt = unmarshaler.CreatedAtGt.TimePtr()
+	g.CreatedAtLt = unmarshaler.CreatedAtLt.TimePtr()
+	g.CreatedAtGe = unmarshaler.CreatedAtGe.TimePtr()
+	g.CreatedAtLe = unmarshaler.CreatedAtLe.TimePtr()
+	g.UpdatedAtGt = unmarshaler.UpdatedAtGt.TimePtr()
+	g.UpdatedAtLt = unmarshaler.UpdatedAtLt.TimePtr()
+	g.UpdatedAtGe = unmarshaler.UpdatedAtGe.TimePtr()
+	g.UpdatedAtLe = unmarshaler.UpdatedAtLe.TimePtr()
+	extraProperties, err := internal.ExtractExtraProperties(data, *g)
+	if err != nil {
+		return err
+	}
+	g.extraProperties = extraProperties
+	g.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (g *GetChatPaginatedDto) MarshalJSON() ([]byte, error) {
+	type embed GetChatPaginatedDto
+	var marshaler = struct {
+		embed
+		CreatedAtGt *internal.DateTime `json:"createdAtGt,omitempty"`
+		CreatedAtLt *internal.DateTime `json:"createdAtLt,omitempty"`
+		CreatedAtGe *internal.DateTime `json:"createdAtGe,omitempty"`
+		CreatedAtLe *internal.DateTime `json:"createdAtLe,omitempty"`
+		UpdatedAtGt *internal.DateTime `json:"updatedAtGt,omitempty"`
+		UpdatedAtLt *internal.DateTime `json:"updatedAtLt,omitempty"`
+		UpdatedAtGe *internal.DateTime `json:"updatedAtGe,omitempty"`
+		UpdatedAtLe *internal.DateTime `json:"updatedAtLe,omitempty"`
+	}{
+		embed:       embed(*g),
+		CreatedAtGt: internal.NewOptionalDateTime(g.CreatedAtGt),
+		CreatedAtLt: internal.NewOptionalDateTime(g.CreatedAtLt),
+		CreatedAtGe: internal.NewOptionalDateTime(g.CreatedAtGe),
+		CreatedAtLe: internal.NewOptionalDateTime(g.CreatedAtLe),
+		UpdatedAtGt: internal.NewOptionalDateTime(g.UpdatedAtGt),
+		UpdatedAtLt: internal.NewOptionalDateTime(g.UpdatedAtLt),
+		UpdatedAtGe: internal.NewOptionalDateTime(g.UpdatedAtGe),
+		UpdatedAtLe: internal.NewOptionalDateTime(g.UpdatedAtLe),
+	}
+	return json.Marshal(marshaler)
+}
+
+func (g *GetChatPaginatedDto) String() string {
+	if len(g.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(g.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(g); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", g)
+}
+
+// This is the sort order for pagination. Defaults to 'DESC'.
+type GetChatPaginatedDtoSortOrder string
+
+const (
+	GetChatPaginatedDtoSortOrderAsc  GetChatPaginatedDtoSortOrder = "ASC"
+	GetChatPaginatedDtoSortOrderDesc GetChatPaginatedDtoSortOrder = "DESC"
+)
+
+func NewGetChatPaginatedDtoSortOrderFromString(s string) (GetChatPaginatedDtoSortOrder, error) {
+	switch s {
+	case "ASC":
+		return GetChatPaginatedDtoSortOrderAsc, nil
+	case "DESC":
+		return GetChatPaginatedDtoSortOrderDesc, nil
+	}
+	var t GetChatPaginatedDtoSortOrder
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (g GetChatPaginatedDtoSortOrder) Ptr() *GetChatPaginatedDtoSortOrder {
+	return &g
+}
+
+type GetSessionPaginatedDto struct {
+	// This is the name of the session to filter by.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// This is the ID of the assistant to filter sessions by.
+	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
+	// This is the ID of the workflow to filter sessions by.
+	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
+	// This is the page number to return. Defaults to 1.
+	Page *float64 `json:"page,omitempty" url:"page,omitempty"`
+	// This is the sort order for pagination. Defaults to 'DESC'.
+	SortOrder *GetSessionPaginatedDtoSortOrder `json:"sortOrder,omitempty" url:"sortOrder,omitempty"`
+	// This is the maximum number of items to return. Defaults to 100.
+	Limit *float64 `json:"limit,omitempty" url:"limit,omitempty"`
+	// This will return items where the createdAt is greater than the specified value.
+	CreatedAtGt *time.Time `json:"createdAtGt,omitempty" url:"createdAtGt,omitempty"`
+	// This will return items where the createdAt is less than the specified value.
+	CreatedAtLt *time.Time `json:"createdAtLt,omitempty" url:"createdAtLt,omitempty"`
+	// This will return items where the createdAt is greater than or equal to the specified value.
+	CreatedAtGe *time.Time `json:"createdAtGe,omitempty" url:"createdAtGe,omitempty"`
+	// This will return items where the createdAt is less than or equal to the specified value.
+	CreatedAtLe *time.Time `json:"createdAtLe,omitempty" url:"createdAtLe,omitempty"`
+	// This will return items where the updatedAt is greater than the specified value.
+	UpdatedAtGt *time.Time `json:"updatedAtGt,omitempty" url:"updatedAtGt,omitempty"`
+	// This will return items where the updatedAt is less than the specified value.
+	UpdatedAtLt *time.Time `json:"updatedAtLt,omitempty" url:"updatedAtLt,omitempty"`
+	// This will return items where the updatedAt is greater than or equal to the specified value.
+	UpdatedAtGe *time.Time `json:"updatedAtGe,omitempty" url:"updatedAtGe,omitempty"`
+	// This will return items where the updatedAt is less than or equal to the specified value.
+	UpdatedAtLe *time.Time `json:"updatedAtLe,omitempty" url:"updatedAtLe,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (g *GetSessionPaginatedDto) GetName() *string {
+	if g == nil {
+		return nil
+	}
+	return g.Name
+}
+
+func (g *GetSessionPaginatedDto) GetAssistantId() *string {
+	if g == nil {
+		return nil
+	}
+	return g.AssistantId
+}
+
+func (g *GetSessionPaginatedDto) GetWorkflowId() *string {
+	if g == nil {
+		return nil
+	}
+	return g.WorkflowId
+}
+
+func (g *GetSessionPaginatedDto) GetPage() *float64 {
+	if g == nil {
+		return nil
+	}
+	return g.Page
+}
+
+func (g *GetSessionPaginatedDto) GetSortOrder() *GetSessionPaginatedDtoSortOrder {
+	if g == nil {
+		return nil
+	}
+	return g.SortOrder
+}
+
+func (g *GetSessionPaginatedDto) GetLimit() *float64 {
+	if g == nil {
+		return nil
+	}
+	return g.Limit
+}
+
+func (g *GetSessionPaginatedDto) GetCreatedAtGt() *time.Time {
+	if g == nil {
+		return nil
+	}
+	return g.CreatedAtGt
+}
+
+func (g *GetSessionPaginatedDto) GetCreatedAtLt() *time.Time {
+	if g == nil {
+		return nil
+	}
+	return g.CreatedAtLt
+}
+
+func (g *GetSessionPaginatedDto) GetCreatedAtGe() *time.Time {
+	if g == nil {
+		return nil
+	}
+	return g.CreatedAtGe
+}
+
+func (g *GetSessionPaginatedDto) GetCreatedAtLe() *time.Time {
+	if g == nil {
+		return nil
+	}
+	return g.CreatedAtLe
+}
+
+func (g *GetSessionPaginatedDto) GetUpdatedAtGt() *time.Time {
+	if g == nil {
+		return nil
+	}
+	return g.UpdatedAtGt
+}
+
+func (g *GetSessionPaginatedDto) GetUpdatedAtLt() *time.Time {
+	if g == nil {
+		return nil
+	}
+	return g.UpdatedAtLt
+}
+
+func (g *GetSessionPaginatedDto) GetUpdatedAtGe() *time.Time {
+	if g == nil {
+		return nil
+	}
+	return g.UpdatedAtGe
+}
+
+func (g *GetSessionPaginatedDto) GetUpdatedAtLe() *time.Time {
+	if g == nil {
+		return nil
+	}
+	return g.UpdatedAtLe
+}
+
+func (g *GetSessionPaginatedDto) GetExtraProperties() map[string]interface{} {
+	return g.extraProperties
+}
+
+func (g *GetSessionPaginatedDto) UnmarshalJSON(data []byte) error {
+	type embed GetSessionPaginatedDto
+	var unmarshaler = struct {
+		embed
+		CreatedAtGt *internal.DateTime `json:"createdAtGt,omitempty"`
+		CreatedAtLt *internal.DateTime `json:"createdAtLt,omitempty"`
+		CreatedAtGe *internal.DateTime `json:"createdAtGe,omitempty"`
+		CreatedAtLe *internal.DateTime `json:"createdAtLe,omitempty"`
+		UpdatedAtGt *internal.DateTime `json:"updatedAtGt,omitempty"`
+		UpdatedAtLt *internal.DateTime `json:"updatedAtLt,omitempty"`
+		UpdatedAtGe *internal.DateTime `json:"updatedAtGe,omitempty"`
+		UpdatedAtLe *internal.DateTime `json:"updatedAtLe,omitempty"`
+	}{
+		embed: embed(*g),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*g = GetSessionPaginatedDto(unmarshaler.embed)
+	g.CreatedAtGt = unmarshaler.CreatedAtGt.TimePtr()
+	g.CreatedAtLt = unmarshaler.CreatedAtLt.TimePtr()
+	g.CreatedAtGe = unmarshaler.CreatedAtGe.TimePtr()
+	g.CreatedAtLe = unmarshaler.CreatedAtLe.TimePtr()
+	g.UpdatedAtGt = unmarshaler.UpdatedAtGt.TimePtr()
+	g.UpdatedAtLt = unmarshaler.UpdatedAtLt.TimePtr()
+	g.UpdatedAtGe = unmarshaler.UpdatedAtGe.TimePtr()
+	g.UpdatedAtLe = unmarshaler.UpdatedAtLe.TimePtr()
+	extraProperties, err := internal.ExtractExtraProperties(data, *g)
+	if err != nil {
+		return err
+	}
+	g.extraProperties = extraProperties
+	g.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (g *GetSessionPaginatedDto) MarshalJSON() ([]byte, error) {
+	type embed GetSessionPaginatedDto
+	var marshaler = struct {
+		embed
+		CreatedAtGt *internal.DateTime `json:"createdAtGt,omitempty"`
+		CreatedAtLt *internal.DateTime `json:"createdAtLt,omitempty"`
+		CreatedAtGe *internal.DateTime `json:"createdAtGe,omitempty"`
+		CreatedAtLe *internal.DateTime `json:"createdAtLe,omitempty"`
+		UpdatedAtGt *internal.DateTime `json:"updatedAtGt,omitempty"`
+		UpdatedAtLt *internal.DateTime `json:"updatedAtLt,omitempty"`
+		UpdatedAtGe *internal.DateTime `json:"updatedAtGe,omitempty"`
+		UpdatedAtLe *internal.DateTime `json:"updatedAtLe,omitempty"`
+	}{
+		embed:       embed(*g),
+		CreatedAtGt: internal.NewOptionalDateTime(g.CreatedAtGt),
+		CreatedAtLt: internal.NewOptionalDateTime(g.CreatedAtLt),
+		CreatedAtGe: internal.NewOptionalDateTime(g.CreatedAtGe),
+		CreatedAtLe: internal.NewOptionalDateTime(g.CreatedAtLe),
+		UpdatedAtGt: internal.NewOptionalDateTime(g.UpdatedAtGt),
+		UpdatedAtLt: internal.NewOptionalDateTime(g.UpdatedAtLt),
+		UpdatedAtGe: internal.NewOptionalDateTime(g.UpdatedAtGe),
+		UpdatedAtLe: internal.NewOptionalDateTime(g.UpdatedAtLe),
+	}
+	return json.Marshal(marshaler)
+}
+
+func (g *GetSessionPaginatedDto) String() string {
+	if len(g.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(g.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(g); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", g)
+}
+
+// This is the sort order for pagination. Defaults to 'DESC'.
+type GetSessionPaginatedDtoSortOrder string
+
+const (
+	GetSessionPaginatedDtoSortOrderAsc  GetSessionPaginatedDtoSortOrder = "ASC"
+	GetSessionPaginatedDtoSortOrderDesc GetSessionPaginatedDtoSortOrder = "DESC"
+)
+
+func NewGetSessionPaginatedDtoSortOrderFromString(s string) (GetSessionPaginatedDtoSortOrder, error) {
+	switch s {
+	case "ASC":
+		return GetSessionPaginatedDtoSortOrderAsc, nil
+	case "DESC":
+		return GetSessionPaginatedDtoSortOrderDesc, nil
+	}
+	var t GetSessionPaginatedDtoSortOrder
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (g GetSessionPaginatedDtoSortOrder) Ptr() *GetSessionPaginatedDtoSortOrder {
+	return &g
+}
+
 type GhlToolProviderDetails struct {
 	// This is the Template URL or the Snapshot URL corresponding to the Template.
 	TemplateUrl       *string              `json:"templateUrl,omitempty" url:"templateUrl,omitempty"`
@@ -44860,14 +48588,6 @@ func (g *GhlToolProviderDetails) String() string {
 }
 
 type GhlToolWithToolCall struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -44881,23 +48601,10 @@ type GhlToolWithToolCall struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (g *GhlToolWithToolCall) GetAsync() *bool {
-	if g == nil {
-		return nil
-	}
-	return g.Async
 }
 
 func (g *GhlToolWithToolCall) GetMessages() []*GhlToolWithToolCallMessagesItem {
@@ -44926,13 +48633,6 @@ func (g *GhlToolWithToolCall) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return g.Function
-}
-
-func (g *GhlToolWithToolCall) GetServer() *Server {
-	if g == nil {
-		return nil
-	}
-	return g.Server
 }
 
 func (g *GhlToolWithToolCall) Type() string {
@@ -45228,6 +48928,8 @@ type GladiaTranscriber struct {
 	LanguageBehaviour *GladiaTranscriberLanguageBehaviour `json:"languageBehaviour,omitempty" url:"languageBehaviour,omitempty"`
 	// Defines the language to use for the transcription. Required when languageBehaviour is 'manual'.
 	Language *GladiaTranscriberLanguage `json:"language,omitempty" url:"language,omitempty"`
+	// Defines the languages to use for the transcription. Required when languageBehaviour is 'manual'.
+	Languages *GladiaTranscriberLanguages `json:"languages,omitempty" url:"languages,omitempty"`
 	// Provides a custom vocabulary to the model to improve accuracy of transcribing context specific words, technical terms, names, etc. If empty, this argument is ignored.
 	// ⚠️ Warning ⚠️: Please be aware that the transcription_hint field has a character limit of 600. If you provide a transcription_hint longer than 600 characters, it will be automatically truncated to meet this limit.
 	TranscriptionHint *string `json:"transcriptionHint,omitempty" url:"transcriptionHint,omitempty"`
@@ -45266,6 +48968,13 @@ func (g *GladiaTranscriber) GetLanguage() *GladiaTranscriberLanguage {
 		return nil
 	}
 	return g.Language
+}
+
+func (g *GladiaTranscriber) GetLanguages() *GladiaTranscriberLanguages {
+	if g == nil {
+		return nil
+	}
+	return g.Languages
 }
 
 func (g *GladiaTranscriber) GetTranscriptionHint() *string {
@@ -45699,11 +49408,326 @@ func (g GladiaTranscriberLanguageBehaviour) Ptr() *GladiaTranscriberLanguageBeha
 	return &g
 }
 
+// Defines the languages to use for the transcription. Required when languageBehaviour is 'manual'.
+type GladiaTranscriberLanguages string
+
+const (
+	GladiaTranscriberLanguagesAf  GladiaTranscriberLanguages = "af"
+	GladiaTranscriberLanguagesSq  GladiaTranscriberLanguages = "sq"
+	GladiaTranscriberLanguagesAm  GladiaTranscriberLanguages = "am"
+	GladiaTranscriberLanguagesAr  GladiaTranscriberLanguages = "ar"
+	GladiaTranscriberLanguagesHy  GladiaTranscriberLanguages = "hy"
+	GladiaTranscriberLanguagesAs  GladiaTranscriberLanguages = "as"
+	GladiaTranscriberLanguagesAz  GladiaTranscriberLanguages = "az"
+	GladiaTranscriberLanguagesBa  GladiaTranscriberLanguages = "ba"
+	GladiaTranscriberLanguagesEu  GladiaTranscriberLanguages = "eu"
+	GladiaTranscriberLanguagesBe  GladiaTranscriberLanguages = "be"
+	GladiaTranscriberLanguagesBn  GladiaTranscriberLanguages = "bn"
+	GladiaTranscriberLanguagesBs  GladiaTranscriberLanguages = "bs"
+	GladiaTranscriberLanguagesBr  GladiaTranscriberLanguages = "br"
+	GladiaTranscriberLanguagesBg  GladiaTranscriberLanguages = "bg"
+	GladiaTranscriberLanguagesCa  GladiaTranscriberLanguages = "ca"
+	GladiaTranscriberLanguagesZh  GladiaTranscriberLanguages = "zh"
+	GladiaTranscriberLanguagesHr  GladiaTranscriberLanguages = "hr"
+	GladiaTranscriberLanguagesCs  GladiaTranscriberLanguages = "cs"
+	GladiaTranscriberLanguagesDa  GladiaTranscriberLanguages = "da"
+	GladiaTranscriberLanguagesNl  GladiaTranscriberLanguages = "nl"
+	GladiaTranscriberLanguagesEn  GladiaTranscriberLanguages = "en"
+	GladiaTranscriberLanguagesEt  GladiaTranscriberLanguages = "et"
+	GladiaTranscriberLanguagesFo  GladiaTranscriberLanguages = "fo"
+	GladiaTranscriberLanguagesFi  GladiaTranscriberLanguages = "fi"
+	GladiaTranscriberLanguagesFr  GladiaTranscriberLanguages = "fr"
+	GladiaTranscriberLanguagesGl  GladiaTranscriberLanguages = "gl"
+	GladiaTranscriberLanguagesKa  GladiaTranscriberLanguages = "ka"
+	GladiaTranscriberLanguagesDe  GladiaTranscriberLanguages = "de"
+	GladiaTranscriberLanguagesEl  GladiaTranscriberLanguages = "el"
+	GladiaTranscriberLanguagesGu  GladiaTranscriberLanguages = "gu"
+	GladiaTranscriberLanguagesHt  GladiaTranscriberLanguages = "ht"
+	GladiaTranscriberLanguagesHa  GladiaTranscriberLanguages = "ha"
+	GladiaTranscriberLanguagesHaw GladiaTranscriberLanguages = "haw"
+	GladiaTranscriberLanguagesHe  GladiaTranscriberLanguages = "he"
+	GladiaTranscriberLanguagesHi  GladiaTranscriberLanguages = "hi"
+	GladiaTranscriberLanguagesHu  GladiaTranscriberLanguages = "hu"
+	GladiaTranscriberLanguagesIs  GladiaTranscriberLanguages = "is"
+	GladiaTranscriberLanguagesId  GladiaTranscriberLanguages = "id"
+	GladiaTranscriberLanguagesIt  GladiaTranscriberLanguages = "it"
+	GladiaTranscriberLanguagesJa  GladiaTranscriberLanguages = "ja"
+	GladiaTranscriberLanguagesJv  GladiaTranscriberLanguages = "jv"
+	GladiaTranscriberLanguagesKn  GladiaTranscriberLanguages = "kn"
+	GladiaTranscriberLanguagesKk  GladiaTranscriberLanguages = "kk"
+	GladiaTranscriberLanguagesKm  GladiaTranscriberLanguages = "km"
+	GladiaTranscriberLanguagesKo  GladiaTranscriberLanguages = "ko"
+	GladiaTranscriberLanguagesLo  GladiaTranscriberLanguages = "lo"
+	GladiaTranscriberLanguagesLa  GladiaTranscriberLanguages = "la"
+	GladiaTranscriberLanguagesLv  GladiaTranscriberLanguages = "lv"
+	GladiaTranscriberLanguagesLn  GladiaTranscriberLanguages = "ln"
+	GladiaTranscriberLanguagesLt  GladiaTranscriberLanguages = "lt"
+	GladiaTranscriberLanguagesLb  GladiaTranscriberLanguages = "lb"
+	GladiaTranscriberLanguagesMk  GladiaTranscriberLanguages = "mk"
+	GladiaTranscriberLanguagesMg  GladiaTranscriberLanguages = "mg"
+	GladiaTranscriberLanguagesMs  GladiaTranscriberLanguages = "ms"
+	GladiaTranscriberLanguagesMl  GladiaTranscriberLanguages = "ml"
+	GladiaTranscriberLanguagesMt  GladiaTranscriberLanguages = "mt"
+	GladiaTranscriberLanguagesMi  GladiaTranscriberLanguages = "mi"
+	GladiaTranscriberLanguagesMr  GladiaTranscriberLanguages = "mr"
+	GladiaTranscriberLanguagesMn  GladiaTranscriberLanguages = "mn"
+	GladiaTranscriberLanguagesMy  GladiaTranscriberLanguages = "my"
+	GladiaTranscriberLanguagesNe  GladiaTranscriberLanguages = "ne"
+	GladiaTranscriberLanguagesNo  GladiaTranscriberLanguages = "no"
+	GladiaTranscriberLanguagesNn  GladiaTranscriberLanguages = "nn"
+	GladiaTranscriberLanguagesOc  GladiaTranscriberLanguages = "oc"
+	GladiaTranscriberLanguagesPs  GladiaTranscriberLanguages = "ps"
+	GladiaTranscriberLanguagesFa  GladiaTranscriberLanguages = "fa"
+	GladiaTranscriberLanguagesPl  GladiaTranscriberLanguages = "pl"
+	GladiaTranscriberLanguagesPt  GladiaTranscriberLanguages = "pt"
+	GladiaTranscriberLanguagesPa  GladiaTranscriberLanguages = "pa"
+	GladiaTranscriberLanguagesRo  GladiaTranscriberLanguages = "ro"
+	GladiaTranscriberLanguagesRu  GladiaTranscriberLanguages = "ru"
+	GladiaTranscriberLanguagesSa  GladiaTranscriberLanguages = "sa"
+	GladiaTranscriberLanguagesSr  GladiaTranscriberLanguages = "sr"
+	GladiaTranscriberLanguagesSn  GladiaTranscriberLanguages = "sn"
+	GladiaTranscriberLanguagesSd  GladiaTranscriberLanguages = "sd"
+	GladiaTranscriberLanguagesSi  GladiaTranscriberLanguages = "si"
+	GladiaTranscriberLanguagesSk  GladiaTranscriberLanguages = "sk"
+	GladiaTranscriberLanguagesSl  GladiaTranscriberLanguages = "sl"
+	GladiaTranscriberLanguagesSo  GladiaTranscriberLanguages = "so"
+	GladiaTranscriberLanguagesEs  GladiaTranscriberLanguages = "es"
+	GladiaTranscriberLanguagesSu  GladiaTranscriberLanguages = "su"
+	GladiaTranscriberLanguagesSw  GladiaTranscriberLanguages = "sw"
+	GladiaTranscriberLanguagesSv  GladiaTranscriberLanguages = "sv"
+	GladiaTranscriberLanguagesTl  GladiaTranscriberLanguages = "tl"
+	GladiaTranscriberLanguagesTg  GladiaTranscriberLanguages = "tg"
+	GladiaTranscriberLanguagesTa  GladiaTranscriberLanguages = "ta"
+	GladiaTranscriberLanguagesTt  GladiaTranscriberLanguages = "tt"
+	GladiaTranscriberLanguagesTe  GladiaTranscriberLanguages = "te"
+	GladiaTranscriberLanguagesTh  GladiaTranscriberLanguages = "th"
+	GladiaTranscriberLanguagesBo  GladiaTranscriberLanguages = "bo"
+	GladiaTranscriberLanguagesTr  GladiaTranscriberLanguages = "tr"
+	GladiaTranscriberLanguagesTk  GladiaTranscriberLanguages = "tk"
+	GladiaTranscriberLanguagesUk  GladiaTranscriberLanguages = "uk"
+	GladiaTranscriberLanguagesUr  GladiaTranscriberLanguages = "ur"
+	GladiaTranscriberLanguagesUz  GladiaTranscriberLanguages = "uz"
+	GladiaTranscriberLanguagesVi  GladiaTranscriberLanguages = "vi"
+	GladiaTranscriberLanguagesCy  GladiaTranscriberLanguages = "cy"
+	GladiaTranscriberLanguagesYi  GladiaTranscriberLanguages = "yi"
+	GladiaTranscriberLanguagesYo  GladiaTranscriberLanguages = "yo"
+)
+
+func NewGladiaTranscriberLanguagesFromString(s string) (GladiaTranscriberLanguages, error) {
+	switch s {
+	case "af":
+		return GladiaTranscriberLanguagesAf, nil
+	case "sq":
+		return GladiaTranscriberLanguagesSq, nil
+	case "am":
+		return GladiaTranscriberLanguagesAm, nil
+	case "ar":
+		return GladiaTranscriberLanguagesAr, nil
+	case "hy":
+		return GladiaTranscriberLanguagesHy, nil
+	case "as":
+		return GladiaTranscriberLanguagesAs, nil
+	case "az":
+		return GladiaTranscriberLanguagesAz, nil
+	case "ba":
+		return GladiaTranscriberLanguagesBa, nil
+	case "eu":
+		return GladiaTranscriberLanguagesEu, nil
+	case "be":
+		return GladiaTranscriberLanguagesBe, nil
+	case "bn":
+		return GladiaTranscriberLanguagesBn, nil
+	case "bs":
+		return GladiaTranscriberLanguagesBs, nil
+	case "br":
+		return GladiaTranscriberLanguagesBr, nil
+	case "bg":
+		return GladiaTranscriberLanguagesBg, nil
+	case "ca":
+		return GladiaTranscriberLanguagesCa, nil
+	case "zh":
+		return GladiaTranscriberLanguagesZh, nil
+	case "hr":
+		return GladiaTranscriberLanguagesHr, nil
+	case "cs":
+		return GladiaTranscriberLanguagesCs, nil
+	case "da":
+		return GladiaTranscriberLanguagesDa, nil
+	case "nl":
+		return GladiaTranscriberLanguagesNl, nil
+	case "en":
+		return GladiaTranscriberLanguagesEn, nil
+	case "et":
+		return GladiaTranscriberLanguagesEt, nil
+	case "fo":
+		return GladiaTranscriberLanguagesFo, nil
+	case "fi":
+		return GladiaTranscriberLanguagesFi, nil
+	case "fr":
+		return GladiaTranscriberLanguagesFr, nil
+	case "gl":
+		return GladiaTranscriberLanguagesGl, nil
+	case "ka":
+		return GladiaTranscriberLanguagesKa, nil
+	case "de":
+		return GladiaTranscriberLanguagesDe, nil
+	case "el":
+		return GladiaTranscriberLanguagesEl, nil
+	case "gu":
+		return GladiaTranscriberLanguagesGu, nil
+	case "ht":
+		return GladiaTranscriberLanguagesHt, nil
+	case "ha":
+		return GladiaTranscriberLanguagesHa, nil
+	case "haw":
+		return GladiaTranscriberLanguagesHaw, nil
+	case "he":
+		return GladiaTranscriberLanguagesHe, nil
+	case "hi":
+		return GladiaTranscriberLanguagesHi, nil
+	case "hu":
+		return GladiaTranscriberLanguagesHu, nil
+	case "is":
+		return GladiaTranscriberLanguagesIs, nil
+	case "id":
+		return GladiaTranscriberLanguagesId, nil
+	case "it":
+		return GladiaTranscriberLanguagesIt, nil
+	case "ja":
+		return GladiaTranscriberLanguagesJa, nil
+	case "jv":
+		return GladiaTranscriberLanguagesJv, nil
+	case "kn":
+		return GladiaTranscriberLanguagesKn, nil
+	case "kk":
+		return GladiaTranscriberLanguagesKk, nil
+	case "km":
+		return GladiaTranscriberLanguagesKm, nil
+	case "ko":
+		return GladiaTranscriberLanguagesKo, nil
+	case "lo":
+		return GladiaTranscriberLanguagesLo, nil
+	case "la":
+		return GladiaTranscriberLanguagesLa, nil
+	case "lv":
+		return GladiaTranscriberLanguagesLv, nil
+	case "ln":
+		return GladiaTranscriberLanguagesLn, nil
+	case "lt":
+		return GladiaTranscriberLanguagesLt, nil
+	case "lb":
+		return GladiaTranscriberLanguagesLb, nil
+	case "mk":
+		return GladiaTranscriberLanguagesMk, nil
+	case "mg":
+		return GladiaTranscriberLanguagesMg, nil
+	case "ms":
+		return GladiaTranscriberLanguagesMs, nil
+	case "ml":
+		return GladiaTranscriberLanguagesMl, nil
+	case "mt":
+		return GladiaTranscriberLanguagesMt, nil
+	case "mi":
+		return GladiaTranscriberLanguagesMi, nil
+	case "mr":
+		return GladiaTranscriberLanguagesMr, nil
+	case "mn":
+		return GladiaTranscriberLanguagesMn, nil
+	case "my":
+		return GladiaTranscriberLanguagesMy, nil
+	case "ne":
+		return GladiaTranscriberLanguagesNe, nil
+	case "no":
+		return GladiaTranscriberLanguagesNo, nil
+	case "nn":
+		return GladiaTranscriberLanguagesNn, nil
+	case "oc":
+		return GladiaTranscriberLanguagesOc, nil
+	case "ps":
+		return GladiaTranscriberLanguagesPs, nil
+	case "fa":
+		return GladiaTranscriberLanguagesFa, nil
+	case "pl":
+		return GladiaTranscriberLanguagesPl, nil
+	case "pt":
+		return GladiaTranscriberLanguagesPt, nil
+	case "pa":
+		return GladiaTranscriberLanguagesPa, nil
+	case "ro":
+		return GladiaTranscriberLanguagesRo, nil
+	case "ru":
+		return GladiaTranscriberLanguagesRu, nil
+	case "sa":
+		return GladiaTranscriberLanguagesSa, nil
+	case "sr":
+		return GladiaTranscriberLanguagesSr, nil
+	case "sn":
+		return GladiaTranscriberLanguagesSn, nil
+	case "sd":
+		return GladiaTranscriberLanguagesSd, nil
+	case "si":
+		return GladiaTranscriberLanguagesSi, nil
+	case "sk":
+		return GladiaTranscriberLanguagesSk, nil
+	case "sl":
+		return GladiaTranscriberLanguagesSl, nil
+	case "so":
+		return GladiaTranscriberLanguagesSo, nil
+	case "es":
+		return GladiaTranscriberLanguagesEs, nil
+	case "su":
+		return GladiaTranscriberLanguagesSu, nil
+	case "sw":
+		return GladiaTranscriberLanguagesSw, nil
+	case "sv":
+		return GladiaTranscriberLanguagesSv, nil
+	case "tl":
+		return GladiaTranscriberLanguagesTl, nil
+	case "tg":
+		return GladiaTranscriberLanguagesTg, nil
+	case "ta":
+		return GladiaTranscriberLanguagesTa, nil
+	case "tt":
+		return GladiaTranscriberLanguagesTt, nil
+	case "te":
+		return GladiaTranscriberLanguagesTe, nil
+	case "th":
+		return GladiaTranscriberLanguagesTh, nil
+	case "bo":
+		return GladiaTranscriberLanguagesBo, nil
+	case "tr":
+		return GladiaTranscriberLanguagesTr, nil
+	case "tk":
+		return GladiaTranscriberLanguagesTk, nil
+	case "uk":
+		return GladiaTranscriberLanguagesUk, nil
+	case "ur":
+		return GladiaTranscriberLanguagesUr, nil
+	case "uz":
+		return GladiaTranscriberLanguagesUz, nil
+	case "vi":
+		return GladiaTranscriberLanguagesVi, nil
+	case "cy":
+		return GladiaTranscriberLanguagesCy, nil
+	case "yi":
+		return GladiaTranscriberLanguagesYi, nil
+	case "yo":
+		return GladiaTranscriberLanguagesYo, nil
+	}
+	var t GladiaTranscriberLanguages
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (g GladiaTranscriberLanguages) Ptr() *GladiaTranscriberLanguages {
+	return &g
+}
+
 type GladiaTranscriberModel string
 
 const (
 	GladiaTranscriberModelFast     GladiaTranscriberModel = "fast"
 	GladiaTranscriberModelAccurate GladiaTranscriberModel = "accurate"
+	GladiaTranscriberModelSolaria1 GladiaTranscriberModel = "solaria-1"
 )
 
 func NewGladiaTranscriberModelFromString(s string) (GladiaTranscriberModel, error) {
@@ -45712,6 +49736,8 @@ func NewGladiaTranscriberModelFromString(s string) (GladiaTranscriberModel, erro
 		return GladiaTranscriberModelFast, nil
 	case "accurate":
 		return GladiaTranscriberModelAccurate, nil
+	case "solaria-1":
+		return GladiaTranscriberModelSolaria1, nil
 	}
 	var t GladiaTranscriberModel
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -45864,14 +49890,6 @@ func (g *GoHighLevelCalendarAvailabilityToolProviderDetails) String() string {
 }
 
 type GoHighLevelCalendarAvailabilityToolWithToolCall struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -45884,23 +49902,10 @@ type GoHighLevelCalendarAvailabilityToolWithToolCall struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (g *GoHighLevelCalendarAvailabilityToolWithToolCall) GetAsync() *bool {
-	if g == nil {
-		return nil
-	}
-	return g.Async
 }
 
 func (g *GoHighLevelCalendarAvailabilityToolWithToolCall) GetMessages() []*GoHighLevelCalendarAvailabilityToolWithToolCallMessagesItem {
@@ -45922,13 +49927,6 @@ func (g *GoHighLevelCalendarAvailabilityToolWithToolCall) GetFunction() *OpenAiF
 		return nil
 	}
 	return g.Function
-}
-
-func (g *GoHighLevelCalendarAvailabilityToolWithToolCall) GetServer() *Server {
-	if g == nil {
-		return nil
-	}
-	return g.Server
 }
 
 func (g *GoHighLevelCalendarAvailabilityToolWithToolCall) Type() string {
@@ -46175,14 +50173,6 @@ func (g *GoHighLevelCalendarEventCreateToolProviderDetails) String() string {
 }
 
 type GoHighLevelCalendarEventCreateToolWithToolCall struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -46195,23 +50185,10 @@ type GoHighLevelCalendarEventCreateToolWithToolCall struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (g *GoHighLevelCalendarEventCreateToolWithToolCall) GetAsync() *bool {
-	if g == nil {
-		return nil
-	}
-	return g.Async
 }
 
 func (g *GoHighLevelCalendarEventCreateToolWithToolCall) GetMessages() []*GoHighLevelCalendarEventCreateToolWithToolCallMessagesItem {
@@ -46233,13 +50210,6 @@ func (g *GoHighLevelCalendarEventCreateToolWithToolCall) GetFunction() *OpenAiFu
 		return nil
 	}
 	return g.Function
-}
-
-func (g *GoHighLevelCalendarEventCreateToolWithToolCall) GetServer() *Server {
-	if g == nil {
-		return nil
-	}
-	return g.Server
 }
 
 func (g *GoHighLevelCalendarEventCreateToolWithToolCall) Type() string {
@@ -46486,14 +50456,6 @@ func (g *GoHighLevelContactCreateToolProviderDetails) String() string {
 }
 
 type GoHighLevelContactCreateToolWithToolCall struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -46506,23 +50468,10 @@ type GoHighLevelContactCreateToolWithToolCall struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (g *GoHighLevelContactCreateToolWithToolCall) GetAsync() *bool {
-	if g == nil {
-		return nil
-	}
-	return g.Async
 }
 
 func (g *GoHighLevelContactCreateToolWithToolCall) GetMessages() []*GoHighLevelContactCreateToolWithToolCallMessagesItem {
@@ -46544,13 +50493,6 @@ func (g *GoHighLevelContactCreateToolWithToolCall) GetFunction() *OpenAiFunction
 		return nil
 	}
 	return g.Function
-}
-
-func (g *GoHighLevelContactCreateToolWithToolCall) GetServer() *Server {
-	if g == nil {
-		return nil
-	}
-	return g.Server
 }
 
 func (g *GoHighLevelContactCreateToolWithToolCall) Type() string {
@@ -46797,14 +50739,6 @@ func (g *GoHighLevelContactGetToolProviderDetails) String() string {
 }
 
 type GoHighLevelContactGetToolWithToolCall struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -46817,23 +50751,10 @@ type GoHighLevelContactGetToolWithToolCall struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (g *GoHighLevelContactGetToolWithToolCall) GetAsync() *bool {
-	if g == nil {
-		return nil
-	}
-	return g.Async
 }
 
 func (g *GoHighLevelContactGetToolWithToolCall) GetMessages() []*GoHighLevelContactGetToolWithToolCallMessagesItem {
@@ -46855,13 +50776,6 @@ func (g *GoHighLevelContactGetToolWithToolCall) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return g.Function
-}
-
-func (g *GoHighLevelContactGetToolWithToolCall) GetServer() *Server {
-	if g == nil {
-		return nil
-	}
-	return g.Server
 }
 
 func (g *GoHighLevelContactGetToolWithToolCall) Type() string {
@@ -47360,14 +51274,6 @@ func (g *GoogleCalendarCreateEventToolProviderDetails) String() string {
 }
 
 type GoogleCalendarCreateEventToolWithToolCall struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -47380,23 +51286,10 @@ type GoogleCalendarCreateEventToolWithToolCall struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (g *GoogleCalendarCreateEventToolWithToolCall) GetAsync() *bool {
-	if g == nil {
-		return nil
-	}
-	return g.Async
 }
 
 func (g *GoogleCalendarCreateEventToolWithToolCall) GetMessages() []*GoogleCalendarCreateEventToolWithToolCallMessagesItem {
@@ -47418,13 +51311,6 @@ func (g *GoogleCalendarCreateEventToolWithToolCall) GetFunction() *OpenAiFunctio
 		return nil
 	}
 	return g.Function
-}
-
-func (g *GoogleCalendarCreateEventToolWithToolCall) GetServer() *Server {
-	if g == nil {
-		return nil
-	}
-	return g.Server
 }
 
 func (g *GoogleCalendarCreateEventToolWithToolCall) Type() string {
@@ -48139,6 +52025,7 @@ type GoogleModelModel string
 
 const (
 	GoogleModelModelGemini25ProPreview0506       GoogleModelModel = "gemini-2.5-pro-preview-05-06"
+	GoogleModelModelGemini25FlashPreview0520     GoogleModelModel = "gemini-2.5-flash-preview-05-20"
 	GoogleModelModelGemini25FlashPreview0417     GoogleModelModel = "gemini-2.5-flash-preview-04-17"
 	GoogleModelModelGemini20FlashThinkingExp     GoogleModelModel = "gemini-2.0-flash-thinking-exp"
 	GoogleModelModelGemini20ProExp0205           GoogleModelModel = "gemini-2.0-pro-exp-02-05"
@@ -48158,6 +52045,8 @@ func NewGoogleModelModelFromString(s string) (GoogleModelModel, error) {
 	switch s {
 	case "gemini-2.5-pro-preview-05-06":
 		return GoogleModelModelGemini25ProPreview0506, nil
+	case "gemini-2.5-flash-preview-05-20":
+		return GoogleModelModelGemini25FlashPreview0520, nil
 	case "gemini-2.5-flash-preview-04-17":
 		return GoogleModelModelGemini25FlashPreview0417, nil
 	case "gemini-2.0-flash-thinking-exp":
@@ -48909,14 +52798,6 @@ func (g *GoogleSheetsRowAppendToolProviderDetails) String() string {
 }
 
 type GoogleSheetsRowAppendToolWithToolCall struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -48929,23 +52810,10 @@ type GoogleSheetsRowAppendToolWithToolCall struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (g *GoogleSheetsRowAppendToolWithToolCall) GetAsync() *bool {
-	if g == nil {
-		return nil
-	}
-	return g.Async
 }
 
 func (g *GoogleSheetsRowAppendToolWithToolCall) GetMessages() []*GoogleSheetsRowAppendToolWithToolCallMessagesItem {
@@ -48967,13 +52835,6 @@ func (g *GoogleSheetsRowAppendToolWithToolCall) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return g.Function
-}
-
-func (g *GoogleSheetsRowAppendToolWithToolCall) GetServer() *Server {
-	if g == nil {
-		return nil
-	}
-	return g.Server
 }
 
 func (g *GoogleSheetsRowAppendToolWithToolCall) Type() string {
@@ -49368,6 +53229,7 @@ type GoogleTranscriberModel string
 
 const (
 	GoogleTranscriberModelGemini25ProPreview0506       GoogleTranscriberModel = "gemini-2.5-pro-preview-05-06"
+	GoogleTranscriberModelGemini25FlashPreview0520     GoogleTranscriberModel = "gemini-2.5-flash-preview-05-20"
 	GoogleTranscriberModelGemini25FlashPreview0417     GoogleTranscriberModel = "gemini-2.5-flash-preview-04-17"
 	GoogleTranscriberModelGemini20FlashThinkingExp     GoogleTranscriberModel = "gemini-2.0-flash-thinking-exp"
 	GoogleTranscriberModelGemini20ProExp0205           GoogleTranscriberModel = "gemini-2.0-pro-exp-02-05"
@@ -49387,6 +53249,8 @@ func NewGoogleTranscriberModelFromString(s string) (GoogleTranscriberModel, erro
 	switch s {
 	case "gemini-2.5-pro-preview-05-06":
 		return GoogleTranscriberModelGemini25ProPreview0506, nil
+	case "gemini-2.5-flash-preview-05-20":
+		return GoogleTranscriberModelGemini25FlashPreview0520, nil
 	case "gemini-2.5-flash-preview-04-17":
 		return GoogleTranscriberModelGemini25FlashPreview0417, nil
 	case "gemini-2.0-flash-thinking-exp":
@@ -50617,6 +54481,251 @@ func (h *HumeVoice) String() string {
 	return fmt.Sprintf("%#v", h)
 }
 
+type ImportTwilioPhoneNumberDto struct {
+	// This is the fallback destination an inbound call will be transferred to if:
+	// 1. `assistantId` is not set
+	// 2. `squadId` is not set
+	// 3. and, `assistant-request` message to the `serverUrl` fails
+	//
+	// If this is not set and above conditions are met, the inbound call is hung up with an error message.
+	FallbackDestination *ImportTwilioPhoneNumberDtoFallbackDestination `json:"fallbackDestination,omitempty" url:"fallbackDestination,omitempty"`
+	// This is the hooks that will be used for incoming calls to this phone number.
+	Hooks []*PhoneNumberHookCallRinging `json:"hooks,omitempty" url:"hooks,omitempty"`
+	// Controls whether Vapi sets the messaging webhook URL on the Twilio number during import.
+	//
+	// If set to `false`, Vapi will not update the Twilio messaging URL, leaving it as is.
+	// If `true` or omitted (default), Vapi will configure both the voice and messaging URLs.
+	//
+	// @default true
+	SmsEnabled *bool `json:"smsEnabled,omitempty" url:"smsEnabled,omitempty"`
+	// These are the digits of the phone number you own on your Twilio.
+	TwilioPhoneNumber string `json:"twilioPhoneNumber" url:"twilioPhoneNumber"`
+	// This is your Twilio Account SID that will be used to handle this phone number.
+	TwilioAccountSid string `json:"twilioAccountSid" url:"twilioAccountSid"`
+	// This is the Twilio Auth Token that will be used to handle this phone number.
+	TwilioAuthToken *string `json:"twilioAuthToken,omitempty" url:"twilioAuthToken,omitempty"`
+	// This is the Twilio API Key that will be used to handle this phone number. If AuthToken is provided, this will be ignored.
+	TwilioApiKey *string `json:"twilioApiKey,omitempty" url:"twilioApiKey,omitempty"`
+	// This is the Twilio API Secret that will be used to handle this phone number. If AuthToken is provided, this will be ignored.
+	TwilioApiSecret *string `json:"twilioApiSecret,omitempty" url:"twilioApiSecret,omitempty"`
+	// This is the name of the phone number. This is just for your own reference.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// This is the assistant that will be used for incoming calls to this phone number.
+	//
+	// If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
+	// This is the workflow that will be used for incoming calls to this phone number.
+	//
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
+	// This is the squad that will be used for incoming calls to this phone number.
+	//
+	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
+	SquadId *string `json:"squadId,omitempty" url:"squadId,omitempty"`
+	// This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
+	//
+	// The order of precedence is:
+	//
+	// 1. assistant.server
+	// 2. phoneNumber.server
+	// 3. org.server
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (i *ImportTwilioPhoneNumberDto) GetFallbackDestination() *ImportTwilioPhoneNumberDtoFallbackDestination {
+	if i == nil {
+		return nil
+	}
+	return i.FallbackDestination
+}
+
+func (i *ImportTwilioPhoneNumberDto) GetHooks() []*PhoneNumberHookCallRinging {
+	if i == nil {
+		return nil
+	}
+	return i.Hooks
+}
+
+func (i *ImportTwilioPhoneNumberDto) GetSmsEnabled() *bool {
+	if i == nil {
+		return nil
+	}
+	return i.SmsEnabled
+}
+
+func (i *ImportTwilioPhoneNumberDto) GetTwilioPhoneNumber() string {
+	if i == nil {
+		return ""
+	}
+	return i.TwilioPhoneNumber
+}
+
+func (i *ImportTwilioPhoneNumberDto) GetTwilioAccountSid() string {
+	if i == nil {
+		return ""
+	}
+	return i.TwilioAccountSid
+}
+
+func (i *ImportTwilioPhoneNumberDto) GetTwilioAuthToken() *string {
+	if i == nil {
+		return nil
+	}
+	return i.TwilioAuthToken
+}
+
+func (i *ImportTwilioPhoneNumberDto) GetTwilioApiKey() *string {
+	if i == nil {
+		return nil
+	}
+	return i.TwilioApiKey
+}
+
+func (i *ImportTwilioPhoneNumberDto) GetTwilioApiSecret() *string {
+	if i == nil {
+		return nil
+	}
+	return i.TwilioApiSecret
+}
+
+func (i *ImportTwilioPhoneNumberDto) GetName() *string {
+	if i == nil {
+		return nil
+	}
+	return i.Name
+}
+
+func (i *ImportTwilioPhoneNumberDto) GetAssistantId() *string {
+	if i == nil {
+		return nil
+	}
+	return i.AssistantId
+}
+
+func (i *ImportTwilioPhoneNumberDto) GetWorkflowId() *string {
+	if i == nil {
+		return nil
+	}
+	return i.WorkflowId
+}
+
+func (i *ImportTwilioPhoneNumberDto) GetSquadId() *string {
+	if i == nil {
+		return nil
+	}
+	return i.SquadId
+}
+
+func (i *ImportTwilioPhoneNumberDto) GetServer() *Server {
+	if i == nil {
+		return nil
+	}
+	return i.Server
+}
+
+func (i *ImportTwilioPhoneNumberDto) GetExtraProperties() map[string]interface{} {
+	return i.extraProperties
+}
+
+func (i *ImportTwilioPhoneNumberDto) UnmarshalJSON(data []byte) error {
+	type unmarshaler ImportTwilioPhoneNumberDto
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*i = ImportTwilioPhoneNumberDto(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *i)
+	if err != nil {
+		return err
+	}
+	i.extraProperties = extraProperties
+	i.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (i *ImportTwilioPhoneNumberDto) String() string {
+	if len(i.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(i); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", i)
+}
+
+// This is the fallback destination an inbound call will be transferred to if:
+// 1. `assistantId` is not set
+// 2. `squadId` is not set
+// 3. and, `assistant-request` message to the `serverUrl` fails
+//
+// If this is not set and above conditions are met, the inbound call is hung up with an error message.
+type ImportTwilioPhoneNumberDtoFallbackDestination struct {
+	TransferDestinationNumber *TransferDestinationNumber
+	TransferDestinationSip    *TransferDestinationSip
+
+	typ string
+}
+
+func (i *ImportTwilioPhoneNumberDtoFallbackDestination) GetTransferDestinationNumber() *TransferDestinationNumber {
+	if i == nil {
+		return nil
+	}
+	return i.TransferDestinationNumber
+}
+
+func (i *ImportTwilioPhoneNumberDtoFallbackDestination) GetTransferDestinationSip() *TransferDestinationSip {
+	if i == nil {
+		return nil
+	}
+	return i.TransferDestinationSip
+}
+
+func (i *ImportTwilioPhoneNumberDtoFallbackDestination) UnmarshalJSON(data []byte) error {
+	valueTransferDestinationNumber := new(TransferDestinationNumber)
+	if err := json.Unmarshal(data, &valueTransferDestinationNumber); err == nil {
+		i.typ = "TransferDestinationNumber"
+		i.TransferDestinationNumber = valueTransferDestinationNumber
+		return nil
+	}
+	valueTransferDestinationSip := new(TransferDestinationSip)
+	if err := json.Unmarshal(data, &valueTransferDestinationSip); err == nil {
+		i.typ = "TransferDestinationSip"
+		i.TransferDestinationSip = valueTransferDestinationSip
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, i)
+}
+
+func (i ImportTwilioPhoneNumberDtoFallbackDestination) MarshalJSON() ([]byte, error) {
+	if i.typ == "TransferDestinationNumber" || i.TransferDestinationNumber != nil {
+		return json.Marshal(i.TransferDestinationNumber)
+	}
+	if i.typ == "TransferDestinationSip" || i.TransferDestinationSip != nil {
+		return json.Marshal(i.TransferDestinationSip)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", i)
+}
+
+type ImportTwilioPhoneNumberDtoFallbackDestinationVisitor interface {
+	VisitTransferDestinationNumber(*TransferDestinationNumber) error
+	VisitTransferDestinationSip(*TransferDestinationSip) error
+}
+
+func (i *ImportTwilioPhoneNumberDtoFallbackDestination) Accept(visitor ImportTwilioPhoneNumberDtoFallbackDestinationVisitor) error {
+	if i.typ == "TransferDestinationNumber" || i.TransferDestinationNumber != nil {
+		return visitor.VisitTransferDestinationNumber(i.TransferDestinationNumber)
+	}
+	if i.typ == "TransferDestinationSip" || i.TransferDestinationSip != nil {
+		return visitor.VisitTransferDestinationSip(i.TransferDestinationSip)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", i)
+}
+
 type ImportVonagePhoneNumberDto struct {
 	// This is the fallback destination an inbound call will be transferred to if:
 	// 1. `assistantId` is not set
@@ -51723,8 +55832,6 @@ type JsonSchema struct {
 	//
 	// This only makes sense if the type is "object".
 	Required []string `json:"required,omitempty" url:"required,omitempty"`
-	// This is a regex that will be used to validate data in question.
-	Regex *string `json:"regex,omitempty" url:"regex,omitempty"`
 	// This the value that will be used in filling the property.
 	Value *string `json:"value,omitempty" url:"value,omitempty"`
 	// This the target variable that will be filled with the value of this property.
@@ -51769,13 +55876,6 @@ func (j *JsonSchema) GetRequired() []string {
 		return nil
 	}
 	return j.Required
-}
-
-func (j *JsonSchema) GetRegex() *string {
-	if j == nil {
-		return nil
-	}
-	return j.Regex
 }
 
 func (j *JsonSchema) GetValue() *string {
@@ -52134,6 +56234,7 @@ type KnowledgeBaseModel string
 
 const (
 	KnowledgeBaseModelGemini25ProPreview0506       KnowledgeBaseModel = "gemini-2.5-pro-preview-05-06"
+	KnowledgeBaseModelGemini25FlashPreview0520     KnowledgeBaseModel = "gemini-2.5-flash-preview-05-20"
 	KnowledgeBaseModelGemini25FlashPreview0417     KnowledgeBaseModel = "gemini-2.5-flash-preview-04-17"
 	KnowledgeBaseModelGemini20FlashThinkingExp     KnowledgeBaseModel = "gemini-2.0-flash-thinking-exp"
 	KnowledgeBaseModelGemini20ProExp0205           KnowledgeBaseModel = "gemini-2.0-pro-exp-02-05"
@@ -52153,6 +56254,8 @@ func NewKnowledgeBaseModelFromString(s string) (KnowledgeBaseModel, error) {
 	switch s {
 	case "gemini-2.5-pro-preview-05-06":
 		return KnowledgeBaseModelGemini25ProPreview0506, nil
+	case "gemini-2.5-flash-preview-05-20":
+		return KnowledgeBaseModelGemini25FlashPreview0520, nil
 	case "gemini-2.5-flash-preview-04-17":
 		return KnowledgeBaseModelGemini25FlashPreview0417, nil
 	case "gemini-2.0-flash-thinking-exp":
@@ -52888,77 +56991,7 @@ func (l *LmntVoice) String() string {
 	return fmt.Sprintf("%#v", l)
 }
 
-type LogicEdgeCondition struct {
-	Liquid string `json:"liquid" url:"liquid"`
-	type_  string
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (l *LogicEdgeCondition) GetLiquid() string {
-	if l == nil {
-		return ""
-	}
-	return l.Liquid
-}
-
-func (l *LogicEdgeCondition) Type() string {
-	return l.type_
-}
-
-func (l *LogicEdgeCondition) GetExtraProperties() map[string]interface{} {
-	return l.extraProperties
-}
-
-func (l *LogicEdgeCondition) UnmarshalJSON(data []byte) error {
-	type embed LogicEdgeCondition
-	var unmarshaler = struct {
-		embed
-		Type string `json:"type"`
-	}{
-		embed: embed(*l),
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
-		return err
-	}
-	*l = LogicEdgeCondition(unmarshaler.embed)
-	if unmarshaler.Type != "logic" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", l, "logic", unmarshaler.Type)
-	}
-	l.type_ = unmarshaler.Type
-	extraProperties, err := internal.ExtractExtraProperties(data, *l, "type")
-	if err != nil {
-		return err
-	}
-	l.extraProperties = extraProperties
-	l.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (l *LogicEdgeCondition) MarshalJSON() ([]byte, error) {
-	type embed LogicEdgeCondition
-	var marshaler = struct {
-		embed
-		Type string `json:"type"`
-	}{
-		embed: embed(*l),
-		Type:  "logic",
-	}
-	return json.Marshal(marshaler)
-}
-
-func (l *LogicEdgeCondition) String() string {
-	if len(l.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(l.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(l); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", l)
-}
+type LogicEdgeCondition = interface{}
 
 type MakeCredential struct {
 	// Team ID
@@ -53219,14 +57252,6 @@ func (m *MakeToolProviderDetails) String() string {
 }
 
 type MakeToolWithToolCall struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -53240,23 +57265,10 @@ type MakeToolWithToolCall struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (m *MakeToolWithToolCall) GetAsync() *bool {
-	if m == nil {
-		return nil
-	}
-	return m.Async
 }
 
 func (m *MakeToolWithToolCall) GetMessages() []*MakeToolWithToolCallMessagesItem {
@@ -53285,13 +57297,6 @@ func (m *MakeToolWithToolCall) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return m.Function
-}
-
-func (m *MakeToolWithToolCall) GetServer() *Server {
-	if m == nil {
-		return nil
-	}
-	return m.Server
 }
 
 func (m *MakeToolWithToolCall) Type() string {
@@ -53552,156 +57557,6 @@ func (m *MessagePlan) String() string {
 	return fmt.Sprintf("%#v", m)
 }
 
-type Metrics struct {
-	OrgId                            string                 `json:"orgId" url:"orgId"`
-	RangeStart                       string                 `json:"rangeStart" url:"rangeStart"`
-	RangeEnd                         string                 `json:"rangeEnd" url:"rangeEnd"`
-	Bill                             float64                `json:"bill" url:"bill"`
-	BillWithinBillingLimit           bool                   `json:"billWithinBillingLimit" url:"billWithinBillingLimit"`
-	BillDailyBreakdown               map[string]interface{} `json:"billDailyBreakdown,omitempty" url:"billDailyBreakdown,omitempty"`
-	CallActive                       float64                `json:"callActive" url:"callActive"`
-	CallActiveWithinConcurrencyLimit bool                   `json:"callActiveWithinConcurrencyLimit" url:"callActiveWithinConcurrencyLimit"`
-	CallMinutes                      float64                `json:"callMinutes" url:"callMinutes"`
-	CallMinutesDailyBreakdown        map[string]interface{} `json:"callMinutesDailyBreakdown,omitempty" url:"callMinutesDailyBreakdown,omitempty"`
-	CallMinutesAverage               float64                `json:"callMinutesAverage" url:"callMinutesAverage"`
-	CallMinutesAverageDailyBreakdown map[string]interface{} `json:"callMinutesAverageDailyBreakdown,omitempty" url:"callMinutesAverageDailyBreakdown,omitempty"`
-	CallCount                        float64                `json:"callCount" url:"callCount"`
-	CallCountDailyBreakdown          map[string]interface{} `json:"callCountDailyBreakdown,omitempty" url:"callCountDailyBreakdown,omitempty"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (m *Metrics) GetOrgId() string {
-	if m == nil {
-		return ""
-	}
-	return m.OrgId
-}
-
-func (m *Metrics) GetRangeStart() string {
-	if m == nil {
-		return ""
-	}
-	return m.RangeStart
-}
-
-func (m *Metrics) GetRangeEnd() string {
-	if m == nil {
-		return ""
-	}
-	return m.RangeEnd
-}
-
-func (m *Metrics) GetBill() float64 {
-	if m == nil {
-		return 0
-	}
-	return m.Bill
-}
-
-func (m *Metrics) GetBillWithinBillingLimit() bool {
-	if m == nil {
-		return false
-	}
-	return m.BillWithinBillingLimit
-}
-
-func (m *Metrics) GetBillDailyBreakdown() map[string]interface{} {
-	if m == nil {
-		return nil
-	}
-	return m.BillDailyBreakdown
-}
-
-func (m *Metrics) GetCallActive() float64 {
-	if m == nil {
-		return 0
-	}
-	return m.CallActive
-}
-
-func (m *Metrics) GetCallActiveWithinConcurrencyLimit() bool {
-	if m == nil {
-		return false
-	}
-	return m.CallActiveWithinConcurrencyLimit
-}
-
-func (m *Metrics) GetCallMinutes() float64 {
-	if m == nil {
-		return 0
-	}
-	return m.CallMinutes
-}
-
-func (m *Metrics) GetCallMinutesDailyBreakdown() map[string]interface{} {
-	if m == nil {
-		return nil
-	}
-	return m.CallMinutesDailyBreakdown
-}
-
-func (m *Metrics) GetCallMinutesAverage() float64 {
-	if m == nil {
-		return 0
-	}
-	return m.CallMinutesAverage
-}
-
-func (m *Metrics) GetCallMinutesAverageDailyBreakdown() map[string]interface{} {
-	if m == nil {
-		return nil
-	}
-	return m.CallMinutesAverageDailyBreakdown
-}
-
-func (m *Metrics) GetCallCount() float64 {
-	if m == nil {
-		return 0
-	}
-	return m.CallCount
-}
-
-func (m *Metrics) GetCallCountDailyBreakdown() map[string]interface{} {
-	if m == nil {
-		return nil
-	}
-	return m.CallCountDailyBreakdown
-}
-
-func (m *Metrics) GetExtraProperties() map[string]interface{} {
-	return m.extraProperties
-}
-
-func (m *Metrics) UnmarshalJSON(data []byte) error {
-	type unmarshaler Metrics
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*m = Metrics(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *m)
-	if err != nil {
-		return err
-	}
-	m.extraProperties = extraProperties
-	m.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (m *Metrics) String() string {
-	if len(m.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(m); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", m)
-}
-
 type MistralCredential struct {
 	// This is not returned in the API.
 	ApiKey string `json:"apiKey" url:"apiKey"`
@@ -53817,6 +57672,115 @@ func (m *MistralCredential) MarshalJSON() ([]byte, error) {
 }
 
 func (m *MistralCredential) String() string {
+	if len(m.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(m); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", m)
+}
+
+type ModelCost struct {
+	// This is the type of cost, always 'model' for this class.
+	// This is the model that was used during the call.
+	//
+	// This matches one of the following:
+	// - `call.assistant.model`,
+	// - `call.assistantId->model`,
+	// - `call.squad[n].assistant.model`,
+	// - `call.squad[n].assistantId->model`,
+	// - `call.squadId->[n].assistant.model`,
+	// - `call.squadId->[n].assistantId->model`.
+	Model map[string]interface{} `json:"model,omitempty" url:"model,omitempty"`
+	// This is the number of prompt tokens used in the call. These should be total prompt tokens used in the call for single assistant calls, while squad calls will have multiple model costs one for each assistant that was used.
+	PromptTokens float64 `json:"promptTokens" url:"promptTokens"`
+	// This is the number of completion tokens generated in the call. These should be total completion tokens used in the call for single assistant calls, while squad calls will have multiple model costs one for each assistant that was used.
+	CompletionTokens float64 `json:"completionTokens" url:"completionTokens"`
+	// This is the cost of the component in USD.
+	Cost  float64 `json:"cost" url:"cost"`
+	type_ string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (m *ModelCost) GetModel() map[string]interface{} {
+	if m == nil {
+		return nil
+	}
+	return m.Model
+}
+
+func (m *ModelCost) GetPromptTokens() float64 {
+	if m == nil {
+		return 0
+	}
+	return m.PromptTokens
+}
+
+func (m *ModelCost) GetCompletionTokens() float64 {
+	if m == nil {
+		return 0
+	}
+	return m.CompletionTokens
+}
+
+func (m *ModelCost) GetCost() float64 {
+	if m == nil {
+		return 0
+	}
+	return m.Cost
+}
+
+func (m *ModelCost) Type() string {
+	return m.type_
+}
+
+func (m *ModelCost) GetExtraProperties() map[string]interface{} {
+	return m.extraProperties
+}
+
+func (m *ModelCost) UnmarshalJSON(data []byte) error {
+	type embed ModelCost
+	var unmarshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*m),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*m = ModelCost(unmarshaler.embed)
+	if unmarshaler.Type != "model" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", m, "model", unmarshaler.Type)
+	}
+	m.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *m, "type")
+	if err != nil {
+		return err
+	}
+	m.extraProperties = extraProperties
+	m.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (m *ModelCost) MarshalJSON() ([]byte, error) {
+	type embed ModelCost
+	var marshaler = struct {
+		embed
+		Type string `json:"type"`
+	}{
+		embed: embed(*m),
+		Type:  "model",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (m *ModelCost) String() string {
 	if len(m.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
 			return value
@@ -54306,6 +58270,71 @@ func NewNeuphonicVoiceModelFromString(s string) (NeuphonicVoiceModel, error) {
 
 func (n NeuphonicVoiceModel) Ptr() *NeuphonicVoiceModel {
 	return &n
+}
+
+type NodeArtifact struct {
+	// This is the node id.
+	NodeName *string `json:"nodeName,omitempty" url:"nodeName,omitempty"`
+	// This is the messages that were spoken during the node.
+	Messages []map[string]interface{} `json:"messages,omitempty" url:"messages,omitempty"`
+	// This is the object containing the variables extracted from the node.
+	Variables map[string]interface{} `json:"variables,omitempty" url:"variables,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NodeArtifact) GetNodeName() *string {
+	if n == nil {
+		return nil
+	}
+	return n.NodeName
+}
+
+func (n *NodeArtifact) GetMessages() []map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.Messages
+}
+
+func (n *NodeArtifact) GetVariables() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.Variables
+}
+
+func (n *NodeArtifact) GetExtraProperties() map[string]interface{} {
+	return n.extraProperties
+}
+
+func (n *NodeArtifact) UnmarshalJSON(data []byte) error {
+	type unmarshaler NodeArtifact
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NodeArtifact(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NodeArtifact) String() string {
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
 }
 
 type OAuth2AuthenticationPlan struct {
@@ -54988,9 +59017,21 @@ type OpenAiModel struct {
 	KnowledgeBaseId *string `json:"knowledgeBaseId,omitempty" url:"knowledgeBaseId,omitempty"`
 	// This is the provider that will be used for the model.
 	// This is the OpenAI model that will be used.
+	//
+	// When using Vapi OpenAI or your own Azure Credentials, you have the option to specify the region for the selected model. This shouldn't be specified unless you have a specific reason to do so. Vapi will automatically find the fastest region that make sense.
+	// This is helpful when you are required to comply with Data Residency rules. Learn more about Azure regions here https://azure.microsoft.com/en-us/explore/global-infrastructure/data-residency/.
+	//
+	// @default undefined
 	Model OpenAiModelModel `json:"model" url:"model"`
 	// These are the fallback models that will be used if the primary model fails. This shouldn't be specified unless you have a specific reason to do so. Vapi will automatically find the fastest fallbacks that make sense.
 	FallbackModels []OpenAiModelFallbackModelsItem `json:"fallbackModels,omitempty" url:"fallbackModels,omitempty"`
+	// Azure OpenAI doesn't support `maxLength` right now https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/structured-outputs?tabs=python-secure%2Cdotnet-entra-id&pivots=programming-language-csharp#unsupported-type-specific-keywords. Need to strip.
+	//
+	// - `strip-parameters-with-unsupported-validation` will strip parameters with unsupported validation.
+	// - `strip-unsupported-validation` will keep the parameters but strip unsupported validation.
+	//
+	// @default `strip-unsupported-validation`
+	ToolStrictCompatibilityMode *OpenAiModelToolStrictCompatibilityMode `json:"toolStrictCompatibilityMode,omitempty" url:"toolStrictCompatibilityMode,omitempty"`
 	// This is the temperature that will be used for calls. Default is 0 to leverage caching for lower latency.
 	Temperature *float64 `json:"temperature,omitempty" url:"temperature,omitempty"`
 	// This is the max number of tokens that the assistant will be allowed to generate in each turn of the conversation. Default is 250.
@@ -55060,6 +59101,13 @@ func (o *OpenAiModel) GetFallbackModels() []OpenAiModelFallbackModelsItem {
 		return nil
 	}
 	return o.FallbackModels
+}
+
+func (o *OpenAiModel) GetToolStrictCompatibilityMode() *OpenAiModelToolStrictCompatibilityMode {
+	if o == nil {
+		return nil
+	}
+	return o.ToolStrictCompatibilityMode
 }
 
 func (o *OpenAiModel) GetTemperature() *float64 {
@@ -55150,6 +59198,9 @@ func (o *OpenAiModel) String() string {
 type OpenAiModelFallbackModelsItem string
 
 const (
+	OpenAiModelFallbackModelsItemGpt4120250414                    OpenAiModelFallbackModelsItem = "gpt-4.1-2025-04-14"
+	OpenAiModelFallbackModelsItemGpt41Mini20250414                OpenAiModelFallbackModelsItem = "gpt-4.1-mini-2025-04-14"
+	OpenAiModelFallbackModelsItemGpt41Nano20250414                OpenAiModelFallbackModelsItem = "gpt-4.1-nano-2025-04-14"
 	OpenAiModelFallbackModelsItemGpt41                            OpenAiModelFallbackModelsItem = "gpt-4.1"
 	OpenAiModelFallbackModelsItemGpt41Mini                        OpenAiModelFallbackModelsItem = "gpt-4.1-mini"
 	OpenAiModelFallbackModelsItemGpt41Nano                        OpenAiModelFallbackModelsItem = "gpt-4.1-nano"
@@ -55183,10 +59234,76 @@ const (
 	OpenAiModelFallbackModelsItemGpt35Turbo1106                   OpenAiModelFallbackModelsItem = "gpt-3.5-turbo-1106"
 	OpenAiModelFallbackModelsItemGpt35Turbo16K                    OpenAiModelFallbackModelsItem = "gpt-3.5-turbo-16k"
 	OpenAiModelFallbackModelsItemGpt35Turbo0613                   OpenAiModelFallbackModelsItem = "gpt-3.5-turbo-0613"
+	OpenAiModelFallbackModelsItemGpt4120250414Westus              OpenAiModelFallbackModelsItem = "gpt-4.1-2025-04-14:westus"
+	OpenAiModelFallbackModelsItemGpt4120250414Eastus2             OpenAiModelFallbackModelsItem = "gpt-4.1-2025-04-14:eastus2"
+	OpenAiModelFallbackModelsItemGpt4120250414Eastus              OpenAiModelFallbackModelsItem = "gpt-4.1-2025-04-14:eastus"
+	OpenAiModelFallbackModelsItemGpt4120250414Westus3             OpenAiModelFallbackModelsItem = "gpt-4.1-2025-04-14:westus3"
+	OpenAiModelFallbackModelsItemGpt4120250414Northcentralus      OpenAiModelFallbackModelsItem = "gpt-4.1-2025-04-14:northcentralus"
+	OpenAiModelFallbackModelsItemGpt4120250414Southcentralus      OpenAiModelFallbackModelsItem = "gpt-4.1-2025-04-14:southcentralus"
+	OpenAiModelFallbackModelsItemGpt41Mini20250414Westus          OpenAiModelFallbackModelsItem = "gpt-4.1-mini-2025-04-14:westus"
+	OpenAiModelFallbackModelsItemGpt41Mini20250414Eastus2         OpenAiModelFallbackModelsItem = "gpt-4.1-mini-2025-04-14:eastus2"
+	OpenAiModelFallbackModelsItemGpt41Mini20250414Eastus          OpenAiModelFallbackModelsItem = "gpt-4.1-mini-2025-04-14:eastus"
+	OpenAiModelFallbackModelsItemGpt41Mini20250414Westus3         OpenAiModelFallbackModelsItem = "gpt-4.1-mini-2025-04-14:westus3"
+	OpenAiModelFallbackModelsItemGpt41Mini20250414Northcentralus  OpenAiModelFallbackModelsItem = "gpt-4.1-mini-2025-04-14:northcentralus"
+	OpenAiModelFallbackModelsItemGpt41Mini20250414Southcentralus  OpenAiModelFallbackModelsItem = "gpt-4.1-mini-2025-04-14:southcentralus"
+	OpenAiModelFallbackModelsItemGpt41Nano20250414Westus          OpenAiModelFallbackModelsItem = "gpt-4.1-nano-2025-04-14:westus"
+	OpenAiModelFallbackModelsItemGpt41Nano20250414Eastus2         OpenAiModelFallbackModelsItem = "gpt-4.1-nano-2025-04-14:eastus2"
+	OpenAiModelFallbackModelsItemGpt41Nano20250414Westus3         OpenAiModelFallbackModelsItem = "gpt-4.1-nano-2025-04-14:westus3"
+	OpenAiModelFallbackModelsItemGpt41Nano20250414Northcentralus  OpenAiModelFallbackModelsItem = "gpt-4.1-nano-2025-04-14:northcentralus"
+	OpenAiModelFallbackModelsItemGpt41Nano20250414Southcentralus  OpenAiModelFallbackModelsItem = "gpt-4.1-nano-2025-04-14:southcentralus"
+	OpenAiModelFallbackModelsItemGpt4O20241120Swedencentral       OpenAiModelFallbackModelsItem = "gpt-4o-2024-11-20:swedencentral"
+	OpenAiModelFallbackModelsItemGpt4O20241120Westus              OpenAiModelFallbackModelsItem = "gpt-4o-2024-11-20:westus"
+	OpenAiModelFallbackModelsItemGpt4O20241120Eastus2             OpenAiModelFallbackModelsItem = "gpt-4o-2024-11-20:eastus2"
+	OpenAiModelFallbackModelsItemGpt4O20241120Eastus              OpenAiModelFallbackModelsItem = "gpt-4o-2024-11-20:eastus"
+	OpenAiModelFallbackModelsItemGpt4O20241120Westus3             OpenAiModelFallbackModelsItem = "gpt-4o-2024-11-20:westus3"
+	OpenAiModelFallbackModelsItemGpt4O20241120Southcentralus      OpenAiModelFallbackModelsItem = "gpt-4o-2024-11-20:southcentralus"
+	OpenAiModelFallbackModelsItemGpt4O20240806Westus              OpenAiModelFallbackModelsItem = "gpt-4o-2024-08-06:westus"
+	OpenAiModelFallbackModelsItemGpt4O20240806Westus3             OpenAiModelFallbackModelsItem = "gpt-4o-2024-08-06:westus3"
+	OpenAiModelFallbackModelsItemGpt4O20240806Eastus              OpenAiModelFallbackModelsItem = "gpt-4o-2024-08-06:eastus"
+	OpenAiModelFallbackModelsItemGpt4O20240806Eastus2             OpenAiModelFallbackModelsItem = "gpt-4o-2024-08-06:eastus2"
+	OpenAiModelFallbackModelsItemGpt4O20240806Northcentralus      OpenAiModelFallbackModelsItem = "gpt-4o-2024-08-06:northcentralus"
+	OpenAiModelFallbackModelsItemGpt4O20240806Southcentralus      OpenAiModelFallbackModelsItem = "gpt-4o-2024-08-06:southcentralus"
+	OpenAiModelFallbackModelsItemGpt4OMini20240718Westus          OpenAiModelFallbackModelsItem = "gpt-4o-mini-2024-07-18:westus"
+	OpenAiModelFallbackModelsItemGpt4OMini20240718Westus3         OpenAiModelFallbackModelsItem = "gpt-4o-mini-2024-07-18:westus3"
+	OpenAiModelFallbackModelsItemGpt4OMini20240718Eastus          OpenAiModelFallbackModelsItem = "gpt-4o-mini-2024-07-18:eastus"
+	OpenAiModelFallbackModelsItemGpt4OMini20240718Eastus2         OpenAiModelFallbackModelsItem = "gpt-4o-mini-2024-07-18:eastus2"
+	OpenAiModelFallbackModelsItemGpt4OMini20240718Northcentralus  OpenAiModelFallbackModelsItem = "gpt-4o-mini-2024-07-18:northcentralus"
+	OpenAiModelFallbackModelsItemGpt4OMini20240718Southcentralus  OpenAiModelFallbackModelsItem = "gpt-4o-mini-2024-07-18:southcentralus"
+	OpenAiModelFallbackModelsItemGpt4O20240513Eastus2             OpenAiModelFallbackModelsItem = "gpt-4o-2024-05-13:eastus2"
+	OpenAiModelFallbackModelsItemGpt4O20240513Eastus              OpenAiModelFallbackModelsItem = "gpt-4o-2024-05-13:eastus"
+	OpenAiModelFallbackModelsItemGpt4O20240513Northcentralus      OpenAiModelFallbackModelsItem = "gpt-4o-2024-05-13:northcentralus"
+	OpenAiModelFallbackModelsItemGpt4O20240513Southcentralus      OpenAiModelFallbackModelsItem = "gpt-4o-2024-05-13:southcentralus"
+	OpenAiModelFallbackModelsItemGpt4O20240513Westus3             OpenAiModelFallbackModelsItem = "gpt-4o-2024-05-13:westus3"
+	OpenAiModelFallbackModelsItemGpt4O20240513Westus              OpenAiModelFallbackModelsItem = "gpt-4o-2024-05-13:westus"
+	OpenAiModelFallbackModelsItemGpt4Turbo20240409Eastus2         OpenAiModelFallbackModelsItem = "gpt-4-turbo-2024-04-09:eastus2"
+	OpenAiModelFallbackModelsItemGpt40125PreviewEastus            OpenAiModelFallbackModelsItem = "gpt-4-0125-preview:eastus"
+	OpenAiModelFallbackModelsItemGpt40125PreviewNorthcentralus    OpenAiModelFallbackModelsItem = "gpt-4-0125-preview:northcentralus"
+	OpenAiModelFallbackModelsItemGpt40125PreviewSouthcentralus    OpenAiModelFallbackModelsItem = "gpt-4-0125-preview:southcentralus"
+	OpenAiModelFallbackModelsItemGpt41106PreviewAustralia         OpenAiModelFallbackModelsItem = "gpt-4-1106-preview:australia"
+	OpenAiModelFallbackModelsItemGpt41106PreviewCanadaeast        OpenAiModelFallbackModelsItem = "gpt-4-1106-preview:canadaeast"
+	OpenAiModelFallbackModelsItemGpt41106PreviewFrance            OpenAiModelFallbackModelsItem = "gpt-4-1106-preview:france"
+	OpenAiModelFallbackModelsItemGpt41106PreviewIndia             OpenAiModelFallbackModelsItem = "gpt-4-1106-preview:india"
+	OpenAiModelFallbackModelsItemGpt41106PreviewNorway            OpenAiModelFallbackModelsItem = "gpt-4-1106-preview:norway"
+	OpenAiModelFallbackModelsItemGpt41106PreviewSwedencentral     OpenAiModelFallbackModelsItem = "gpt-4-1106-preview:swedencentral"
+	OpenAiModelFallbackModelsItemGpt41106PreviewUk                OpenAiModelFallbackModelsItem = "gpt-4-1106-preview:uk"
+	OpenAiModelFallbackModelsItemGpt41106PreviewWestus            OpenAiModelFallbackModelsItem = "gpt-4-1106-preview:westus"
+	OpenAiModelFallbackModelsItemGpt41106PreviewWestus3           OpenAiModelFallbackModelsItem = "gpt-4-1106-preview:westus3"
+	OpenAiModelFallbackModelsItemGpt40613Canadaeast               OpenAiModelFallbackModelsItem = "gpt-4-0613:canadaeast"
+	OpenAiModelFallbackModelsItemGpt35Turbo0125Canadaeast         OpenAiModelFallbackModelsItem = "gpt-3.5-turbo-0125:canadaeast"
+	OpenAiModelFallbackModelsItemGpt35Turbo0125Northcentralus     OpenAiModelFallbackModelsItem = "gpt-3.5-turbo-0125:northcentralus"
+	OpenAiModelFallbackModelsItemGpt35Turbo0125Southcentralus     OpenAiModelFallbackModelsItem = "gpt-3.5-turbo-0125:southcentralus"
+	OpenAiModelFallbackModelsItemGpt35Turbo1106Canadaeast         OpenAiModelFallbackModelsItem = "gpt-3.5-turbo-1106:canadaeast"
+	OpenAiModelFallbackModelsItemGpt35Turbo1106Westus             OpenAiModelFallbackModelsItem = "gpt-3.5-turbo-1106:westus"
 )
 
 func NewOpenAiModelFallbackModelsItemFromString(s string) (OpenAiModelFallbackModelsItem, error) {
 	switch s {
+	case "gpt-4.1-2025-04-14":
+		return OpenAiModelFallbackModelsItemGpt4120250414, nil
+	case "gpt-4.1-mini-2025-04-14":
+		return OpenAiModelFallbackModelsItemGpt41Mini20250414, nil
+	case "gpt-4.1-nano-2025-04-14":
+		return OpenAiModelFallbackModelsItemGpt41Nano20250414, nil
 	case "gpt-4.1":
 		return OpenAiModelFallbackModelsItemGpt41, nil
 	case "gpt-4.1-mini":
@@ -55253,6 +59370,126 @@ func NewOpenAiModelFallbackModelsItemFromString(s string) (OpenAiModelFallbackMo
 		return OpenAiModelFallbackModelsItemGpt35Turbo16K, nil
 	case "gpt-3.5-turbo-0613":
 		return OpenAiModelFallbackModelsItemGpt35Turbo0613, nil
+	case "gpt-4.1-2025-04-14:westus":
+		return OpenAiModelFallbackModelsItemGpt4120250414Westus, nil
+	case "gpt-4.1-2025-04-14:eastus2":
+		return OpenAiModelFallbackModelsItemGpt4120250414Eastus2, nil
+	case "gpt-4.1-2025-04-14:eastus":
+		return OpenAiModelFallbackModelsItemGpt4120250414Eastus, nil
+	case "gpt-4.1-2025-04-14:westus3":
+		return OpenAiModelFallbackModelsItemGpt4120250414Westus3, nil
+	case "gpt-4.1-2025-04-14:northcentralus":
+		return OpenAiModelFallbackModelsItemGpt4120250414Northcentralus, nil
+	case "gpt-4.1-2025-04-14:southcentralus":
+		return OpenAiModelFallbackModelsItemGpt4120250414Southcentralus, nil
+	case "gpt-4.1-mini-2025-04-14:westus":
+		return OpenAiModelFallbackModelsItemGpt41Mini20250414Westus, nil
+	case "gpt-4.1-mini-2025-04-14:eastus2":
+		return OpenAiModelFallbackModelsItemGpt41Mini20250414Eastus2, nil
+	case "gpt-4.1-mini-2025-04-14:eastus":
+		return OpenAiModelFallbackModelsItemGpt41Mini20250414Eastus, nil
+	case "gpt-4.1-mini-2025-04-14:westus3":
+		return OpenAiModelFallbackModelsItemGpt41Mini20250414Westus3, nil
+	case "gpt-4.1-mini-2025-04-14:northcentralus":
+		return OpenAiModelFallbackModelsItemGpt41Mini20250414Northcentralus, nil
+	case "gpt-4.1-mini-2025-04-14:southcentralus":
+		return OpenAiModelFallbackModelsItemGpt41Mini20250414Southcentralus, nil
+	case "gpt-4.1-nano-2025-04-14:westus":
+		return OpenAiModelFallbackModelsItemGpt41Nano20250414Westus, nil
+	case "gpt-4.1-nano-2025-04-14:eastus2":
+		return OpenAiModelFallbackModelsItemGpt41Nano20250414Eastus2, nil
+	case "gpt-4.1-nano-2025-04-14:westus3":
+		return OpenAiModelFallbackModelsItemGpt41Nano20250414Westus3, nil
+	case "gpt-4.1-nano-2025-04-14:northcentralus":
+		return OpenAiModelFallbackModelsItemGpt41Nano20250414Northcentralus, nil
+	case "gpt-4.1-nano-2025-04-14:southcentralus":
+		return OpenAiModelFallbackModelsItemGpt41Nano20250414Southcentralus, nil
+	case "gpt-4o-2024-11-20:swedencentral":
+		return OpenAiModelFallbackModelsItemGpt4O20241120Swedencentral, nil
+	case "gpt-4o-2024-11-20:westus":
+		return OpenAiModelFallbackModelsItemGpt4O20241120Westus, nil
+	case "gpt-4o-2024-11-20:eastus2":
+		return OpenAiModelFallbackModelsItemGpt4O20241120Eastus2, nil
+	case "gpt-4o-2024-11-20:eastus":
+		return OpenAiModelFallbackModelsItemGpt4O20241120Eastus, nil
+	case "gpt-4o-2024-11-20:westus3":
+		return OpenAiModelFallbackModelsItemGpt4O20241120Westus3, nil
+	case "gpt-4o-2024-11-20:southcentralus":
+		return OpenAiModelFallbackModelsItemGpt4O20241120Southcentralus, nil
+	case "gpt-4o-2024-08-06:westus":
+		return OpenAiModelFallbackModelsItemGpt4O20240806Westus, nil
+	case "gpt-4o-2024-08-06:westus3":
+		return OpenAiModelFallbackModelsItemGpt4O20240806Westus3, nil
+	case "gpt-4o-2024-08-06:eastus":
+		return OpenAiModelFallbackModelsItemGpt4O20240806Eastus, nil
+	case "gpt-4o-2024-08-06:eastus2":
+		return OpenAiModelFallbackModelsItemGpt4O20240806Eastus2, nil
+	case "gpt-4o-2024-08-06:northcentralus":
+		return OpenAiModelFallbackModelsItemGpt4O20240806Northcentralus, nil
+	case "gpt-4o-2024-08-06:southcentralus":
+		return OpenAiModelFallbackModelsItemGpt4O20240806Southcentralus, nil
+	case "gpt-4o-mini-2024-07-18:westus":
+		return OpenAiModelFallbackModelsItemGpt4OMini20240718Westus, nil
+	case "gpt-4o-mini-2024-07-18:westus3":
+		return OpenAiModelFallbackModelsItemGpt4OMini20240718Westus3, nil
+	case "gpt-4o-mini-2024-07-18:eastus":
+		return OpenAiModelFallbackModelsItemGpt4OMini20240718Eastus, nil
+	case "gpt-4o-mini-2024-07-18:eastus2":
+		return OpenAiModelFallbackModelsItemGpt4OMini20240718Eastus2, nil
+	case "gpt-4o-mini-2024-07-18:northcentralus":
+		return OpenAiModelFallbackModelsItemGpt4OMini20240718Northcentralus, nil
+	case "gpt-4o-mini-2024-07-18:southcentralus":
+		return OpenAiModelFallbackModelsItemGpt4OMini20240718Southcentralus, nil
+	case "gpt-4o-2024-05-13:eastus2":
+		return OpenAiModelFallbackModelsItemGpt4O20240513Eastus2, nil
+	case "gpt-4o-2024-05-13:eastus":
+		return OpenAiModelFallbackModelsItemGpt4O20240513Eastus, nil
+	case "gpt-4o-2024-05-13:northcentralus":
+		return OpenAiModelFallbackModelsItemGpt4O20240513Northcentralus, nil
+	case "gpt-4o-2024-05-13:southcentralus":
+		return OpenAiModelFallbackModelsItemGpt4O20240513Southcentralus, nil
+	case "gpt-4o-2024-05-13:westus3":
+		return OpenAiModelFallbackModelsItemGpt4O20240513Westus3, nil
+	case "gpt-4o-2024-05-13:westus":
+		return OpenAiModelFallbackModelsItemGpt4O20240513Westus, nil
+	case "gpt-4-turbo-2024-04-09:eastus2":
+		return OpenAiModelFallbackModelsItemGpt4Turbo20240409Eastus2, nil
+	case "gpt-4-0125-preview:eastus":
+		return OpenAiModelFallbackModelsItemGpt40125PreviewEastus, nil
+	case "gpt-4-0125-preview:northcentralus":
+		return OpenAiModelFallbackModelsItemGpt40125PreviewNorthcentralus, nil
+	case "gpt-4-0125-preview:southcentralus":
+		return OpenAiModelFallbackModelsItemGpt40125PreviewSouthcentralus, nil
+	case "gpt-4-1106-preview:australia":
+		return OpenAiModelFallbackModelsItemGpt41106PreviewAustralia, nil
+	case "gpt-4-1106-preview:canadaeast":
+		return OpenAiModelFallbackModelsItemGpt41106PreviewCanadaeast, nil
+	case "gpt-4-1106-preview:france":
+		return OpenAiModelFallbackModelsItemGpt41106PreviewFrance, nil
+	case "gpt-4-1106-preview:india":
+		return OpenAiModelFallbackModelsItemGpt41106PreviewIndia, nil
+	case "gpt-4-1106-preview:norway":
+		return OpenAiModelFallbackModelsItemGpt41106PreviewNorway, nil
+	case "gpt-4-1106-preview:swedencentral":
+		return OpenAiModelFallbackModelsItemGpt41106PreviewSwedencentral, nil
+	case "gpt-4-1106-preview:uk":
+		return OpenAiModelFallbackModelsItemGpt41106PreviewUk, nil
+	case "gpt-4-1106-preview:westus":
+		return OpenAiModelFallbackModelsItemGpt41106PreviewWestus, nil
+	case "gpt-4-1106-preview:westus3":
+		return OpenAiModelFallbackModelsItemGpt41106PreviewWestus3, nil
+	case "gpt-4-0613:canadaeast":
+		return OpenAiModelFallbackModelsItemGpt40613Canadaeast, nil
+	case "gpt-3.5-turbo-0125:canadaeast":
+		return OpenAiModelFallbackModelsItemGpt35Turbo0125Canadaeast, nil
+	case "gpt-3.5-turbo-0125:northcentralus":
+		return OpenAiModelFallbackModelsItemGpt35Turbo0125Northcentralus, nil
+	case "gpt-3.5-turbo-0125:southcentralus":
+		return OpenAiModelFallbackModelsItemGpt35Turbo0125Southcentralus, nil
+	case "gpt-3.5-turbo-1106:canadaeast":
+		return OpenAiModelFallbackModelsItemGpt35Turbo1106Canadaeast, nil
+	case "gpt-3.5-turbo-1106:westus":
+		return OpenAiModelFallbackModelsItemGpt35Turbo1106Westus, nil
 	}
 	var t OpenAiModelFallbackModelsItem
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -55263,9 +59500,17 @@ func (o OpenAiModelFallbackModelsItem) Ptr() *OpenAiModelFallbackModelsItem {
 }
 
 // This is the OpenAI model that will be used.
+//
+// When using Vapi OpenAI or your own Azure Credentials, you have the option to specify the region for the selected model. This shouldn't be specified unless you have a specific reason to do so. Vapi will automatically find the fastest region that make sense.
+// This is helpful when you are required to comply with Data Residency rules. Learn more about Azure regions here https://azure.microsoft.com/en-us/explore/global-infrastructure/data-residency/.
+//
+// @default undefined
 type OpenAiModelModel string
 
 const (
+	OpenAiModelModelGpt4120250414                    OpenAiModelModel = "gpt-4.1-2025-04-14"
+	OpenAiModelModelGpt41Mini20250414                OpenAiModelModel = "gpt-4.1-mini-2025-04-14"
+	OpenAiModelModelGpt41Nano20250414                OpenAiModelModel = "gpt-4.1-nano-2025-04-14"
 	OpenAiModelModelGpt41                            OpenAiModelModel = "gpt-4.1"
 	OpenAiModelModelGpt41Mini                        OpenAiModelModel = "gpt-4.1-mini"
 	OpenAiModelModelGpt41Nano                        OpenAiModelModel = "gpt-4.1-nano"
@@ -55299,10 +59544,76 @@ const (
 	OpenAiModelModelGpt35Turbo1106                   OpenAiModelModel = "gpt-3.5-turbo-1106"
 	OpenAiModelModelGpt35Turbo16K                    OpenAiModelModel = "gpt-3.5-turbo-16k"
 	OpenAiModelModelGpt35Turbo0613                   OpenAiModelModel = "gpt-3.5-turbo-0613"
+	OpenAiModelModelGpt4120250414Westus              OpenAiModelModel = "gpt-4.1-2025-04-14:westus"
+	OpenAiModelModelGpt4120250414Eastus2             OpenAiModelModel = "gpt-4.1-2025-04-14:eastus2"
+	OpenAiModelModelGpt4120250414Eastus              OpenAiModelModel = "gpt-4.1-2025-04-14:eastus"
+	OpenAiModelModelGpt4120250414Westus3             OpenAiModelModel = "gpt-4.1-2025-04-14:westus3"
+	OpenAiModelModelGpt4120250414Northcentralus      OpenAiModelModel = "gpt-4.1-2025-04-14:northcentralus"
+	OpenAiModelModelGpt4120250414Southcentralus      OpenAiModelModel = "gpt-4.1-2025-04-14:southcentralus"
+	OpenAiModelModelGpt41Mini20250414Westus          OpenAiModelModel = "gpt-4.1-mini-2025-04-14:westus"
+	OpenAiModelModelGpt41Mini20250414Eastus2         OpenAiModelModel = "gpt-4.1-mini-2025-04-14:eastus2"
+	OpenAiModelModelGpt41Mini20250414Eastus          OpenAiModelModel = "gpt-4.1-mini-2025-04-14:eastus"
+	OpenAiModelModelGpt41Mini20250414Westus3         OpenAiModelModel = "gpt-4.1-mini-2025-04-14:westus3"
+	OpenAiModelModelGpt41Mini20250414Northcentralus  OpenAiModelModel = "gpt-4.1-mini-2025-04-14:northcentralus"
+	OpenAiModelModelGpt41Mini20250414Southcentralus  OpenAiModelModel = "gpt-4.1-mini-2025-04-14:southcentralus"
+	OpenAiModelModelGpt41Nano20250414Westus          OpenAiModelModel = "gpt-4.1-nano-2025-04-14:westus"
+	OpenAiModelModelGpt41Nano20250414Eastus2         OpenAiModelModel = "gpt-4.1-nano-2025-04-14:eastus2"
+	OpenAiModelModelGpt41Nano20250414Westus3         OpenAiModelModel = "gpt-4.1-nano-2025-04-14:westus3"
+	OpenAiModelModelGpt41Nano20250414Northcentralus  OpenAiModelModel = "gpt-4.1-nano-2025-04-14:northcentralus"
+	OpenAiModelModelGpt41Nano20250414Southcentralus  OpenAiModelModel = "gpt-4.1-nano-2025-04-14:southcentralus"
+	OpenAiModelModelGpt4O20241120Swedencentral       OpenAiModelModel = "gpt-4o-2024-11-20:swedencentral"
+	OpenAiModelModelGpt4O20241120Westus              OpenAiModelModel = "gpt-4o-2024-11-20:westus"
+	OpenAiModelModelGpt4O20241120Eastus2             OpenAiModelModel = "gpt-4o-2024-11-20:eastus2"
+	OpenAiModelModelGpt4O20241120Eastus              OpenAiModelModel = "gpt-4o-2024-11-20:eastus"
+	OpenAiModelModelGpt4O20241120Westus3             OpenAiModelModel = "gpt-4o-2024-11-20:westus3"
+	OpenAiModelModelGpt4O20241120Southcentralus      OpenAiModelModel = "gpt-4o-2024-11-20:southcentralus"
+	OpenAiModelModelGpt4O20240806Westus              OpenAiModelModel = "gpt-4o-2024-08-06:westus"
+	OpenAiModelModelGpt4O20240806Westus3             OpenAiModelModel = "gpt-4o-2024-08-06:westus3"
+	OpenAiModelModelGpt4O20240806Eastus              OpenAiModelModel = "gpt-4o-2024-08-06:eastus"
+	OpenAiModelModelGpt4O20240806Eastus2             OpenAiModelModel = "gpt-4o-2024-08-06:eastus2"
+	OpenAiModelModelGpt4O20240806Northcentralus      OpenAiModelModel = "gpt-4o-2024-08-06:northcentralus"
+	OpenAiModelModelGpt4O20240806Southcentralus      OpenAiModelModel = "gpt-4o-2024-08-06:southcentralus"
+	OpenAiModelModelGpt4OMini20240718Westus          OpenAiModelModel = "gpt-4o-mini-2024-07-18:westus"
+	OpenAiModelModelGpt4OMini20240718Westus3         OpenAiModelModel = "gpt-4o-mini-2024-07-18:westus3"
+	OpenAiModelModelGpt4OMini20240718Eastus          OpenAiModelModel = "gpt-4o-mini-2024-07-18:eastus"
+	OpenAiModelModelGpt4OMini20240718Eastus2         OpenAiModelModel = "gpt-4o-mini-2024-07-18:eastus2"
+	OpenAiModelModelGpt4OMini20240718Northcentralus  OpenAiModelModel = "gpt-4o-mini-2024-07-18:northcentralus"
+	OpenAiModelModelGpt4OMini20240718Southcentralus  OpenAiModelModel = "gpt-4o-mini-2024-07-18:southcentralus"
+	OpenAiModelModelGpt4O20240513Eastus2             OpenAiModelModel = "gpt-4o-2024-05-13:eastus2"
+	OpenAiModelModelGpt4O20240513Eastus              OpenAiModelModel = "gpt-4o-2024-05-13:eastus"
+	OpenAiModelModelGpt4O20240513Northcentralus      OpenAiModelModel = "gpt-4o-2024-05-13:northcentralus"
+	OpenAiModelModelGpt4O20240513Southcentralus      OpenAiModelModel = "gpt-4o-2024-05-13:southcentralus"
+	OpenAiModelModelGpt4O20240513Westus3             OpenAiModelModel = "gpt-4o-2024-05-13:westus3"
+	OpenAiModelModelGpt4O20240513Westus              OpenAiModelModel = "gpt-4o-2024-05-13:westus"
+	OpenAiModelModelGpt4Turbo20240409Eastus2         OpenAiModelModel = "gpt-4-turbo-2024-04-09:eastus2"
+	OpenAiModelModelGpt40125PreviewEastus            OpenAiModelModel = "gpt-4-0125-preview:eastus"
+	OpenAiModelModelGpt40125PreviewNorthcentralus    OpenAiModelModel = "gpt-4-0125-preview:northcentralus"
+	OpenAiModelModelGpt40125PreviewSouthcentralus    OpenAiModelModel = "gpt-4-0125-preview:southcentralus"
+	OpenAiModelModelGpt41106PreviewAustralia         OpenAiModelModel = "gpt-4-1106-preview:australia"
+	OpenAiModelModelGpt41106PreviewCanadaeast        OpenAiModelModel = "gpt-4-1106-preview:canadaeast"
+	OpenAiModelModelGpt41106PreviewFrance            OpenAiModelModel = "gpt-4-1106-preview:france"
+	OpenAiModelModelGpt41106PreviewIndia             OpenAiModelModel = "gpt-4-1106-preview:india"
+	OpenAiModelModelGpt41106PreviewNorway            OpenAiModelModel = "gpt-4-1106-preview:norway"
+	OpenAiModelModelGpt41106PreviewSwedencentral     OpenAiModelModel = "gpt-4-1106-preview:swedencentral"
+	OpenAiModelModelGpt41106PreviewUk                OpenAiModelModel = "gpt-4-1106-preview:uk"
+	OpenAiModelModelGpt41106PreviewWestus            OpenAiModelModel = "gpt-4-1106-preview:westus"
+	OpenAiModelModelGpt41106PreviewWestus3           OpenAiModelModel = "gpt-4-1106-preview:westus3"
+	OpenAiModelModelGpt40613Canadaeast               OpenAiModelModel = "gpt-4-0613:canadaeast"
+	OpenAiModelModelGpt35Turbo0125Canadaeast         OpenAiModelModel = "gpt-3.5-turbo-0125:canadaeast"
+	OpenAiModelModelGpt35Turbo0125Northcentralus     OpenAiModelModel = "gpt-3.5-turbo-0125:northcentralus"
+	OpenAiModelModelGpt35Turbo0125Southcentralus     OpenAiModelModel = "gpt-3.5-turbo-0125:southcentralus"
+	OpenAiModelModelGpt35Turbo1106Canadaeast         OpenAiModelModel = "gpt-3.5-turbo-1106:canadaeast"
+	OpenAiModelModelGpt35Turbo1106Westus             OpenAiModelModel = "gpt-3.5-turbo-1106:westus"
 )
 
 func NewOpenAiModelModelFromString(s string) (OpenAiModelModel, error) {
 	switch s {
+	case "gpt-4.1-2025-04-14":
+		return OpenAiModelModelGpt4120250414, nil
+	case "gpt-4.1-mini-2025-04-14":
+		return OpenAiModelModelGpt41Mini20250414, nil
+	case "gpt-4.1-nano-2025-04-14":
+		return OpenAiModelModelGpt41Nano20250414, nil
 	case "gpt-4.1":
 		return OpenAiModelModelGpt41, nil
 	case "gpt-4.1-mini":
@@ -55369,12 +59680,160 @@ func NewOpenAiModelModelFromString(s string) (OpenAiModelModel, error) {
 		return OpenAiModelModelGpt35Turbo16K, nil
 	case "gpt-3.5-turbo-0613":
 		return OpenAiModelModelGpt35Turbo0613, nil
+	case "gpt-4.1-2025-04-14:westus":
+		return OpenAiModelModelGpt4120250414Westus, nil
+	case "gpt-4.1-2025-04-14:eastus2":
+		return OpenAiModelModelGpt4120250414Eastus2, nil
+	case "gpt-4.1-2025-04-14:eastus":
+		return OpenAiModelModelGpt4120250414Eastus, nil
+	case "gpt-4.1-2025-04-14:westus3":
+		return OpenAiModelModelGpt4120250414Westus3, nil
+	case "gpt-4.1-2025-04-14:northcentralus":
+		return OpenAiModelModelGpt4120250414Northcentralus, nil
+	case "gpt-4.1-2025-04-14:southcentralus":
+		return OpenAiModelModelGpt4120250414Southcentralus, nil
+	case "gpt-4.1-mini-2025-04-14:westus":
+		return OpenAiModelModelGpt41Mini20250414Westus, nil
+	case "gpt-4.1-mini-2025-04-14:eastus2":
+		return OpenAiModelModelGpt41Mini20250414Eastus2, nil
+	case "gpt-4.1-mini-2025-04-14:eastus":
+		return OpenAiModelModelGpt41Mini20250414Eastus, nil
+	case "gpt-4.1-mini-2025-04-14:westus3":
+		return OpenAiModelModelGpt41Mini20250414Westus3, nil
+	case "gpt-4.1-mini-2025-04-14:northcentralus":
+		return OpenAiModelModelGpt41Mini20250414Northcentralus, nil
+	case "gpt-4.1-mini-2025-04-14:southcentralus":
+		return OpenAiModelModelGpt41Mini20250414Southcentralus, nil
+	case "gpt-4.1-nano-2025-04-14:westus":
+		return OpenAiModelModelGpt41Nano20250414Westus, nil
+	case "gpt-4.1-nano-2025-04-14:eastus2":
+		return OpenAiModelModelGpt41Nano20250414Eastus2, nil
+	case "gpt-4.1-nano-2025-04-14:westus3":
+		return OpenAiModelModelGpt41Nano20250414Westus3, nil
+	case "gpt-4.1-nano-2025-04-14:northcentralus":
+		return OpenAiModelModelGpt41Nano20250414Northcentralus, nil
+	case "gpt-4.1-nano-2025-04-14:southcentralus":
+		return OpenAiModelModelGpt41Nano20250414Southcentralus, nil
+	case "gpt-4o-2024-11-20:swedencentral":
+		return OpenAiModelModelGpt4O20241120Swedencentral, nil
+	case "gpt-4o-2024-11-20:westus":
+		return OpenAiModelModelGpt4O20241120Westus, nil
+	case "gpt-4o-2024-11-20:eastus2":
+		return OpenAiModelModelGpt4O20241120Eastus2, nil
+	case "gpt-4o-2024-11-20:eastus":
+		return OpenAiModelModelGpt4O20241120Eastus, nil
+	case "gpt-4o-2024-11-20:westus3":
+		return OpenAiModelModelGpt4O20241120Westus3, nil
+	case "gpt-4o-2024-11-20:southcentralus":
+		return OpenAiModelModelGpt4O20241120Southcentralus, nil
+	case "gpt-4o-2024-08-06:westus":
+		return OpenAiModelModelGpt4O20240806Westus, nil
+	case "gpt-4o-2024-08-06:westus3":
+		return OpenAiModelModelGpt4O20240806Westus3, nil
+	case "gpt-4o-2024-08-06:eastus":
+		return OpenAiModelModelGpt4O20240806Eastus, nil
+	case "gpt-4o-2024-08-06:eastus2":
+		return OpenAiModelModelGpt4O20240806Eastus2, nil
+	case "gpt-4o-2024-08-06:northcentralus":
+		return OpenAiModelModelGpt4O20240806Northcentralus, nil
+	case "gpt-4o-2024-08-06:southcentralus":
+		return OpenAiModelModelGpt4O20240806Southcentralus, nil
+	case "gpt-4o-mini-2024-07-18:westus":
+		return OpenAiModelModelGpt4OMini20240718Westus, nil
+	case "gpt-4o-mini-2024-07-18:westus3":
+		return OpenAiModelModelGpt4OMini20240718Westus3, nil
+	case "gpt-4o-mini-2024-07-18:eastus":
+		return OpenAiModelModelGpt4OMini20240718Eastus, nil
+	case "gpt-4o-mini-2024-07-18:eastus2":
+		return OpenAiModelModelGpt4OMini20240718Eastus2, nil
+	case "gpt-4o-mini-2024-07-18:northcentralus":
+		return OpenAiModelModelGpt4OMini20240718Northcentralus, nil
+	case "gpt-4o-mini-2024-07-18:southcentralus":
+		return OpenAiModelModelGpt4OMini20240718Southcentralus, nil
+	case "gpt-4o-2024-05-13:eastus2":
+		return OpenAiModelModelGpt4O20240513Eastus2, nil
+	case "gpt-4o-2024-05-13:eastus":
+		return OpenAiModelModelGpt4O20240513Eastus, nil
+	case "gpt-4o-2024-05-13:northcentralus":
+		return OpenAiModelModelGpt4O20240513Northcentralus, nil
+	case "gpt-4o-2024-05-13:southcentralus":
+		return OpenAiModelModelGpt4O20240513Southcentralus, nil
+	case "gpt-4o-2024-05-13:westus3":
+		return OpenAiModelModelGpt4O20240513Westus3, nil
+	case "gpt-4o-2024-05-13:westus":
+		return OpenAiModelModelGpt4O20240513Westus, nil
+	case "gpt-4-turbo-2024-04-09:eastus2":
+		return OpenAiModelModelGpt4Turbo20240409Eastus2, nil
+	case "gpt-4-0125-preview:eastus":
+		return OpenAiModelModelGpt40125PreviewEastus, nil
+	case "gpt-4-0125-preview:northcentralus":
+		return OpenAiModelModelGpt40125PreviewNorthcentralus, nil
+	case "gpt-4-0125-preview:southcentralus":
+		return OpenAiModelModelGpt40125PreviewSouthcentralus, nil
+	case "gpt-4-1106-preview:australia":
+		return OpenAiModelModelGpt41106PreviewAustralia, nil
+	case "gpt-4-1106-preview:canadaeast":
+		return OpenAiModelModelGpt41106PreviewCanadaeast, nil
+	case "gpt-4-1106-preview:france":
+		return OpenAiModelModelGpt41106PreviewFrance, nil
+	case "gpt-4-1106-preview:india":
+		return OpenAiModelModelGpt41106PreviewIndia, nil
+	case "gpt-4-1106-preview:norway":
+		return OpenAiModelModelGpt41106PreviewNorway, nil
+	case "gpt-4-1106-preview:swedencentral":
+		return OpenAiModelModelGpt41106PreviewSwedencentral, nil
+	case "gpt-4-1106-preview:uk":
+		return OpenAiModelModelGpt41106PreviewUk, nil
+	case "gpt-4-1106-preview:westus":
+		return OpenAiModelModelGpt41106PreviewWestus, nil
+	case "gpt-4-1106-preview:westus3":
+		return OpenAiModelModelGpt41106PreviewWestus3, nil
+	case "gpt-4-0613:canadaeast":
+		return OpenAiModelModelGpt40613Canadaeast, nil
+	case "gpt-3.5-turbo-0125:canadaeast":
+		return OpenAiModelModelGpt35Turbo0125Canadaeast, nil
+	case "gpt-3.5-turbo-0125:northcentralus":
+		return OpenAiModelModelGpt35Turbo0125Northcentralus, nil
+	case "gpt-3.5-turbo-0125:southcentralus":
+		return OpenAiModelModelGpt35Turbo0125Southcentralus, nil
+	case "gpt-3.5-turbo-1106:canadaeast":
+		return OpenAiModelModelGpt35Turbo1106Canadaeast, nil
+	case "gpt-3.5-turbo-1106:westus":
+		return OpenAiModelModelGpt35Turbo1106Westus, nil
 	}
 	var t OpenAiModelModel
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
 }
 
 func (o OpenAiModelModel) Ptr() *OpenAiModelModel {
+	return &o
+}
+
+// Azure OpenAI doesn't support `maxLength` right now https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/structured-outputs?tabs=python-secure%2Cdotnet-entra-id&pivots=programming-language-csharp#unsupported-type-specific-keywords. Need to strip.
+//
+// - `strip-parameters-with-unsupported-validation` will strip parameters with unsupported validation.
+// - `strip-unsupported-validation` will keep the parameters but strip unsupported validation.
+//
+// @default `strip-unsupported-validation`
+type OpenAiModelToolStrictCompatibilityMode string
+
+const (
+	OpenAiModelToolStrictCompatibilityModeStripParametersWithUnsupportedValidation OpenAiModelToolStrictCompatibilityMode = "strip-parameters-with-unsupported-validation"
+	OpenAiModelToolStrictCompatibilityModeStripUnsupportedValidation               OpenAiModelToolStrictCompatibilityMode = "strip-unsupported-validation"
+)
+
+func NewOpenAiModelToolStrictCompatibilityModeFromString(s string) (OpenAiModelToolStrictCompatibilityMode, error) {
+	switch s {
+	case "strip-parameters-with-unsupported-validation":
+		return OpenAiModelToolStrictCompatibilityModeStripParametersWithUnsupportedValidation, nil
+	case "strip-unsupported-validation":
+		return OpenAiModelToolStrictCompatibilityModeStripUnsupportedValidation, nil
+	}
+	var t OpenAiModelToolStrictCompatibilityMode
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (o OpenAiModelToolStrictCompatibilityMode) Ptr() *OpenAiModelToolStrictCompatibilityMode {
 	return &o
 }
 
@@ -57086,6 +61545,8 @@ type Org struct {
 	Plan *OrgPlan `json:"plan,omitempty" url:"plan,omitempty"`
 	// This is the secret key used for signing JWT tokens for the org.
 	JwtSecret *string `json:"jwtSecret,omitempty" url:"jwtSecret,omitempty"`
+	// This is the total number of call minutes used by this org across all time.
+	MinutesUsed *float64 `json:"minutesUsed,omitempty" url:"minutesUsed,omitempty"`
 	// This is the name of the org. This is just for your own reference.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the channel of the org. There is the cluster the API traffic for the org will be directed.
@@ -57203,6 +61664,13 @@ func (o *Org) GetJwtSecret() *string {
 		return nil
 	}
 	return o.JwtSecret
+}
+
+func (o *Org) GetMinutesUsed() *float64 {
+	if o == nil {
+		return nil
+	}
+	return o.MinutesUsed
 }
 
 func (o *Org) GetName() *string {
@@ -60226,6 +64694,8 @@ type S3Credential struct {
 	S3BucketName string `json:"s3BucketName" url:"s3BucketName"`
 	// The path prefix for the uploaded recording. Ex. "recordings/"
 	S3PathPrefix string `json:"s3PathPrefix" url:"s3PathPrefix"`
+	// This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+	FallbackIndex *float64 `json:"fallbackIndex,omitempty" url:"fallbackIndex,omitempty"`
 	// This is the unique identifier for the credential.
 	Id string `json:"id" url:"id"`
 	// This is the unique identifier for the org that this credential belongs to.
@@ -60275,6 +64745,13 @@ func (s *S3Credential) GetS3PathPrefix() string {
 		return ""
 	}
 	return s.S3PathPrefix
+}
+
+func (s *S3Credential) GetFallbackIndex() *float64 {
+	if s == nil {
+		return nil
+	}
+	return s.FallbackIndex
 }
 
 func (s *S3Credential) GetId() string {
@@ -60562,6 +65039,84 @@ func (s *SbcConfiguration) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
+type SchedulePlan struct {
+	// This is the ISO 8601 date-time string of the earliest time the call can be scheduled.
+	EarliestAt time.Time `json:"earliestAt" url:"earliestAt"`
+	// This is the ISO 8601 date-time string of the latest time the call can be scheduled.
+	LatestAt *time.Time `json:"latestAt,omitempty" url:"latestAt,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulePlan) GetEarliestAt() time.Time {
+	if s == nil {
+		return time.Time{}
+	}
+	return s.EarliestAt
+}
+
+func (s *SchedulePlan) GetLatestAt() *time.Time {
+	if s == nil {
+		return nil
+	}
+	return s.LatestAt
+}
+
+func (s *SchedulePlan) GetExtraProperties() map[string]interface{} {
+	return s.extraProperties
+}
+
+func (s *SchedulePlan) UnmarshalJSON(data []byte) error {
+	type embed SchedulePlan
+	var unmarshaler = struct {
+		embed
+		EarliestAt *internal.DateTime `json:"earliestAt"`
+		LatestAt   *internal.DateTime `json:"latestAt,omitempty"`
+	}{
+		embed: embed(*s),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*s = SchedulePlan(unmarshaler.embed)
+	s.EarliestAt = unmarshaler.EarliestAt.Time()
+	s.LatestAt = unmarshaler.LatestAt.TimePtr()
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulePlan) MarshalJSON() ([]byte, error) {
+	type embed SchedulePlan
+	var marshaler = struct {
+		embed
+		EarliestAt *internal.DateTime `json:"earliestAt"`
+		LatestAt   *internal.DateTime `json:"latestAt,omitempty"`
+	}{
+		embed:      embed(*s),
+		EarliestAt: internal.NewDateTime(s.EarliestAt),
+		LatestAt:   internal.NewOptionalDateTime(s.LatestAt),
+	}
+	return json.Marshal(marshaler)
+}
+
+func (s *SchedulePlan) String() string {
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
 type Server struct {
 	// This is the timeout in seconds for the request. Defaults to 20 seconds.
 	//
@@ -60711,7 +65266,9 @@ type ServerMessageAssistantRequest struct {
 	// This is the customer that the message is associated with.
 	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
 	// This is the call that the message is associated with.
-	Call  *Call `json:"call,omitempty" url:"call,omitempty"`
+	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the chat object.
+	Chat  *Chat `json:"chat,omitempty" url:"chat,omitempty"`
 	type_ string
 
 	extraProperties map[string]interface{}
@@ -60758,6 +65315,13 @@ func (s *ServerMessageAssistantRequest) GetCall() *Call {
 		return nil
 	}
 	return s.Call
+}
+
+func (s *ServerMessageAssistantRequest) GetChat() *Chat {
+	if s == nil {
+		return nil
+	}
+	return s.Chat
 }
 
 func (s *ServerMessageAssistantRequest) Type() string {
@@ -60962,7 +65526,9 @@ type ServerMessageConversationUpdate struct {
 	// This is the customer that the message is associated with.
 	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
 	// This is the call that the message is associated with.
-	Call  *Call `json:"call,omitempty" url:"call,omitempty"`
+	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the chat object.
+	Chat  *Chat `json:"chat,omitempty" url:"chat,omitempty"`
 	type_ string
 
 	extraProperties map[string]interface{}
@@ -61023,6 +65589,13 @@ func (s *ServerMessageConversationUpdate) GetCall() *Call {
 		return nil
 	}
 	return s.Call
+}
+
+func (s *ServerMessageConversationUpdate) GetChat() *Chat {
+	if s == nil {
+		return nil
+	}
+	return s.Chat
 }
 
 func (s *ServerMessageConversationUpdate) Type() string {
@@ -61353,6 +65926,8 @@ type ServerMessageEndOfCallReport struct {
 	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
 	// This is the call that the message is associated with.
 	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the chat object.
+	Chat *Chat `json:"chat,omitempty" url:"chat,omitempty"`
 	// This is the analysis of the call. This can also be found at `call.analysis` on GET /call/:id.
 	Analysis *Analysis `json:"analysis,omitempty" url:"analysis,omitempty"`
 	// This is the ISO 8601 date-time string of when the call started. This can also be found at `call.startedAt` on GET /call/:id.
@@ -61426,6 +66001,13 @@ func (s *ServerMessageEndOfCallReport) GetCall() *Call {
 		return nil
 	}
 	return s.Call
+}
+
+func (s *ServerMessageEndOfCallReport) GetChat() *Chat {
+	if s == nil {
+		return nil
+	}
+	return s.Chat
 }
 
 func (s *ServerMessageEndOfCallReport) GetAnalysis() *Analysis {
@@ -61713,8 +66295,9 @@ const (
 	ServerMessageEndOfCallReportEndedReasonAssistantRequestReturnedInvalidAssistant                                                                  ServerMessageEndOfCallReportEndedReason = "assistant-request-returned-invalid-assistant"
 	ServerMessageEndOfCallReportEndedReasonAssistantRequestReturnedNoAssistant                                                                       ServerMessageEndOfCallReportEndedReason = "assistant-request-returned-no-assistant"
 	ServerMessageEndOfCallReportEndedReasonAssistantRequestReturnedForwardingPhoneNumber                                                             ServerMessageEndOfCallReportEndedReason = "assistant-request-returned-forwarding-phone-number"
-	ServerMessageEndOfCallReportEndedReasonCallStartErrorGetOrg                                                                                      ServerMessageEndOfCallReportEndedReason = "call.start.error-get-org"
-	ServerMessageEndOfCallReportEndedReasonCallStartErrorGetSubscription                                                                             ServerMessageEndOfCallReportEndedReason = "call.start.error-get-subscription"
+	ServerMessageEndOfCallReportEndedReasonScheduledCallDeleted                                                                                      ServerMessageEndOfCallReportEndedReason = "scheduled-call-deleted"
+	ServerMessageEndOfCallReportEndedReasonCallStartErrorVapifaultGetOrg                                                                             ServerMessageEndOfCallReportEndedReason = "call.start.error-vapifault-get-org"
+	ServerMessageEndOfCallReportEndedReasonCallStartErrorVapifaultGetSubscription                                                                    ServerMessageEndOfCallReportEndedReason = "call.start.error-vapifault-get-subscription"
 	ServerMessageEndOfCallReportEndedReasonCallStartErrorGetAssistant                                                                                ServerMessageEndOfCallReportEndedReason = "call.start.error-get-assistant"
 	ServerMessageEndOfCallReportEndedReasonCallStartErrorGetPhoneNumber                                                                              ServerMessageEndOfCallReportEndedReason = "call.start.error-get-phone-number"
 	ServerMessageEndOfCallReportEndedReasonCallStartErrorGetCustomer                                                                                 ServerMessageEndOfCallReportEndedReason = "call.start.error-get-customer"
@@ -61722,6 +66305,11 @@ const (
 	ServerMessageEndOfCallReportEndedReasonCallStartErrorVapiNumberInternational                                                                     ServerMessageEndOfCallReportEndedReason = "call.start.error-vapi-number-international"
 	ServerMessageEndOfCallReportEndedReasonCallStartErrorVapiNumberOutboundDailyLimit                                                                ServerMessageEndOfCallReportEndedReason = "call.start.error-vapi-number-outbound-daily-limit"
 	ServerMessageEndOfCallReportEndedReasonCallStartErrorGetTransport                                                                                ServerMessageEndOfCallReportEndedReason = "call.start.error-get-transport"
+	ServerMessageEndOfCallReportEndedReasonCallStartErrorSubscriptionWalletDoesNotExist                                                              ServerMessageEndOfCallReportEndedReason = "call.start.error-subscription-wallet-does-not-exist"
+	ServerMessageEndOfCallReportEndedReasonCallStartErrorSubscriptionFrozen                                                                          ServerMessageEndOfCallReportEndedReason = "call.start.error-subscription-frozen"
+	ServerMessageEndOfCallReportEndedReasonCallStartErrorSubscriptionInsufficientCredits                                                             ServerMessageEndOfCallReportEndedReason = "call.start.error-subscription-insufficient-credits"
+	ServerMessageEndOfCallReportEndedReasonCallStartErrorSubscriptionUpgradeFailed                                                                   ServerMessageEndOfCallReportEndedReason = "call.start.error-subscription-upgrade-failed"
+	ServerMessageEndOfCallReportEndedReasonCallStartErrorSubscriptionConcurrencyLimitReached                                                         ServerMessageEndOfCallReportEndedReason = "call.start.error-subscription-concurrency-limit-reached"
 	ServerMessageEndOfCallReportEndedReasonAssistantNotValid                                                                                         ServerMessageEndOfCallReportEndedReason = "assistant-not-valid"
 	ServerMessageEndOfCallReportEndedReasonDatabaseError                                                                                             ServerMessageEndOfCallReportEndedReason = "database-error"
 	ServerMessageEndOfCallReportEndedReasonAssistantNotFound                                                                                         ServerMessageEndOfCallReportEndedReason = "assistant-not-found"
@@ -61789,7 +66377,6 @@ const (
 	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultAzureSpeechTranscriberFailed                                                  ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-vapifault-azure-speech-transcriber-failed"
 	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorPipelineNoAvailableLlmModel                                                            ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-pipeline-no-available-llm-model"
 	ServerMessageEndOfCallReportEndedReasonWorkerShutdown                                                                                            ServerMessageEndOfCallReportEndedReason = "worker-shutdown"
-	ServerMessageEndOfCallReportEndedReasonUnknownError                                                                                              ServerMessageEndOfCallReportEndedReason = "unknown-error"
 	ServerMessageEndOfCallReportEndedReasonVonageDisconnected                                                                                        ServerMessageEndOfCallReportEndedReason = "vonage-disconnected"
 	ServerMessageEndOfCallReportEndedReasonVonageFailedToConnectCall                                                                                 ServerMessageEndOfCallReportEndedReason = "vonage-failed-to-connect-call"
 	ServerMessageEndOfCallReportEndedReasonVonageCompleted                                                                                           ServerMessageEndOfCallReportEndedReason = "vonage-completed"
@@ -61799,6 +66386,9 @@ const (
 	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultTransportNeverConnected                                                       ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-vapifault-transport-never-connected"
 	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultTransportConnectedButCallNotActive                                            ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-vapifault-transport-connected-but-call-not-active"
 	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultCallStartedButConnectionToTransportMissing                                    ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-vapifault-call-started-but-connection-to-transport-missing"
+	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultWorkerDied                                                                    ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-vapifault-worker-died"
+	ServerMessageEndOfCallReportEndedReasonCallInProgressTwilioCompletedCall                                                                         ServerMessageEndOfCallReportEndedReason = "call.in-progress.twilio-completed-call"
+	ServerMessageEndOfCallReportEndedReasonCallInProgressSipCompletedCall                                                                            ServerMessageEndOfCallReportEndedReason = "call.in-progress.sip-completed-call"
 	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultOpenaiLlmFailed                                                               ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-vapifault-openai-llm-failed"
 	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultAzureOpenaiLlmFailed                                                          ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-vapifault-azure-openai-llm-failed"
 	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultGroqLlmFailed                                                                 ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-vapifault-groq-llm-failed"
@@ -61808,6 +66398,7 @@ const (
 	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultInflectionAiLlmFailed                                                         ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-vapifault-inflection-ai-llm-failed"
 	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultCerebrasLlmFailed                                                             ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-vapifault-cerebras-llm-failed"
 	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultDeepSeekLlmFailed                                                             ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-vapifault-deep-seek-llm-failed"
+	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultChatPipelineFailedToStart                                                     ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-vapifault-chat-pipeline-failed-to-start"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorOpenai400BadRequestValidationFailed                                                          ServerMessageEndOfCallReportEndedReason = "pipeline-error-openai-400-bad-request-validation-failed"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorOpenai401Unauthorized                                                                        ServerMessageEndOfCallReportEndedReason = "pipeline-error-openai-401-unauthorized"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorOpenai401IncorrectApiKey                                                                     ServerMessageEndOfCallReportEndedReason = "pipeline-error-openai-401-incorrect-api-key"
@@ -62075,6 +66666,7 @@ const (
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorCartesiaSocketHangUp                                                                         ServerMessageEndOfCallReportEndedReason = "pipeline-error-cartesia-socket-hang-up"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorCartesiaRequestedPayment                                                                     ServerMessageEndOfCallReportEndedReason = "pipeline-error-cartesia-requested-payment"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorCartesia500ServerError                                                                       ServerMessageEndOfCallReportEndedReason = "pipeline-error-cartesia-500-server-error"
+	ServerMessageEndOfCallReportEndedReasonPipelineErrorCartesia502ServerError                                                                       ServerMessageEndOfCallReportEndedReason = "pipeline-error-cartesia-502-server-error"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorCartesia503ServerError                                                                       ServerMessageEndOfCallReportEndedReason = "pipeline-error-cartesia-503-server-error"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorCartesia522ServerError                                                                       ServerMessageEndOfCallReportEndedReason = "pipeline-error-cartesia-522-server-error"
 	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultCartesiaSocketHangUp                                                          ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-vapifault-cartesia-socket-hang-up"
@@ -62095,6 +66687,7 @@ const (
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorElevenLabsInvalidApiKey                                                                      ServerMessageEndOfCallReportEndedReason = "pipeline-error-eleven-labs-invalid-api-key"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorElevenLabsInvalidVoiceSamples                                                                ServerMessageEndOfCallReportEndedReason = "pipeline-error-eleven-labs-invalid-voice-samples"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorElevenLabsVoiceDisabledByOwner                                                               ServerMessageEndOfCallReportEndedReason = "pipeline-error-eleven-labs-voice-disabled-by-owner"
+	ServerMessageEndOfCallReportEndedReasonPipelineErrorElevenLabsVapiVoiceDisabledByOwner                                                           ServerMessageEndOfCallReportEndedReason = "pipeline-error-eleven-labs-vapi-voice-disabled-by-owner"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorElevenLabsBlockedAccountInProbation                                                          ServerMessageEndOfCallReportEndedReason = "pipeline-error-eleven-labs-blocked-account-in-probation"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorElevenLabsBlockedContentAgainstTheirPolicy                                                   ServerMessageEndOfCallReportEndedReason = "pipeline-error-eleven-labs-blocked-content-against-their-policy"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorElevenLabsMissingSamplesForVoiceClone                                                        ServerMessageEndOfCallReportEndedReason = "pipeline-error-eleven-labs-missing-samples-for-voice-clone"
@@ -62103,6 +66696,7 @@ const (
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorElevenLabsMaxCharacterLimitExceeded                                                          ServerMessageEndOfCallReportEndedReason = "pipeline-error-eleven-labs-max-character-limit-exceeded"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorElevenLabsBlockedVoicePotentiallyAgainstTermsOfServiceAndAwaitingVerification                ServerMessageEndOfCallReportEndedReason = "pipeline-error-eleven-labs-blocked-voice-potentially-against-terms-of-service-and-awaiting-verification"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorElevenLabs500ServerError                                                                     ServerMessageEndOfCallReportEndedReason = "pipeline-error-eleven-labs-500-server-error"
+	ServerMessageEndOfCallReportEndedReasonPipelineErrorElevenLabs503ServerError                                                                     ServerMessageEndOfCallReportEndedReason = "pipeline-error-eleven-labs-503-server-error"
 	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultElevenLabsVoiceNotFound                                                       ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-vapifault-eleven-labs-voice-not-found"
 	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultElevenLabsQuotaExceeded                                                       ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-vapifault-eleven-labs-quota-exceeded"
 	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultElevenLabsUnauthorizedAccess                                                  ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-vapifault-eleven-labs-unauthorized-access"
@@ -62124,6 +66718,7 @@ const (
 	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultElevenLabsMaxCharacterLimitExceeded                                           ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-vapifault-eleven-labs-max-character-limit-exceeded"
 	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultElevenLabsBlockedVoicePotentiallyAgainstTermsOfServiceAndAwaitingVerification ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-vapifault-eleven-labs-blocked-voice-potentially-against-terms-of-service-and-awaiting-verification"
 	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorProviderfaultElevenLabs500ServerError                                                  ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-providerfault-eleven-labs-500-server-error"
+	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorProviderfaultElevenLabs503ServerError                                                  ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-providerfault-eleven-labs-503-server-error"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorPlayhtRequestTimedOut                                                                        ServerMessageEndOfCallReportEndedReason = "pipeline-error-playht-request-timed-out"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorPlayhtInvalidVoice                                                                           ServerMessageEndOfCallReportEndedReason = "pipeline-error-playht-invalid-voice"
 	ServerMessageEndOfCallReportEndedReasonPipelineErrorPlayhtUnexpectedError                                                                        ServerMessageEndOfCallReportEndedReason = "pipeline-error-playht-unexpected-error"
@@ -62177,6 +66772,7 @@ const (
 	ServerMessageEndOfCallReportEndedReasonAssistantForwardedCall                                                                                    ServerMessageEndOfCallReportEndedReason = "assistant-forwarded-call"
 	ServerMessageEndOfCallReportEndedReasonAssistantJoinTimedOut                                                                                     ServerMessageEndOfCallReportEndedReason = "assistant-join-timed-out"
 	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorAssistantDidNotReceiveCustomerAudio                                                    ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-assistant-did-not-receive-customer-audio"
+	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorTransferFailed                                                                         ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-transfer-failed"
 	ServerMessageEndOfCallReportEndedReasonCustomerBusy                                                                                              ServerMessageEndOfCallReportEndedReason = "customer-busy"
 	ServerMessageEndOfCallReportEndedReasonCustomerEndedCall                                                                                         ServerMessageEndOfCallReportEndedReason = "customer-ended-call"
 	ServerMessageEndOfCallReportEndedReasonCustomerDidNotAnswer                                                                                      ServerMessageEndOfCallReportEndedReason = "customer-did-not-answer"
@@ -62186,9 +66782,16 @@ const (
 	ServerMessageEndOfCallReportEndedReasonPhoneCallProviderClosedWebsocket                                                                          ServerMessageEndOfCallReportEndedReason = "phone-call-provider-closed-websocket"
 	ServerMessageEndOfCallReportEndedReasonCallForwardingOperatorBusy                                                                                ServerMessageEndOfCallReportEndedReason = "call.forwarding.operator-busy"
 	ServerMessageEndOfCallReportEndedReasonSilenceTimedOut                                                                                           ServerMessageEndOfCallReportEndedReason = "silence-timed-out"
-	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorSipTelephonyProviderFailedToConnectCall                                                ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-sip-telephony-provider-failed-to-connect-call"
+	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorSipInboundCallFailedToConnect                                                          ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-sip-inbound-call-failed-to-connect"
+	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorProviderfaultOutboundSip403Forbidden                                                   ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-providerfault-outbound-sip-403-forbidden"
+	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorProviderfaultOutboundSip407ProxyAuthenticationRequired                                 ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-providerfault-outbound-sip-407-proxy-authentication-required"
+	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorProviderfaultOutboundSip503ServiceUnavailable                                          ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-providerfault-outbound-sip-503-service-unavailable"
+	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorProviderfaultOutboundSip480TemporarilyUnavailable                                      ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-providerfault-outbound-sip-480-temporarily-unavailable"
+	ServerMessageEndOfCallReportEndedReasonCallInProgressErrorSipOutboundCallFailedToConnect                                                         ServerMessageEndOfCallReportEndedReason = "call.in-progress.error-sip-outbound-call-failed-to-connect"
 	ServerMessageEndOfCallReportEndedReasonCallRingingHookExecutedSay                                                                                ServerMessageEndOfCallReportEndedReason = "call.ringing.hook-executed-say"
 	ServerMessageEndOfCallReportEndedReasonCallRingingHookExecutedTransfer                                                                           ServerMessageEndOfCallReportEndedReason = "call.ringing.hook-executed-transfer"
+	ServerMessageEndOfCallReportEndedReasonCallRingingSipInboundCallerHungupBeforeCallConnect                                                        ServerMessageEndOfCallReportEndedReason = "call.ringing.sip-inbound-caller-hungup-before-call-connect"
+	ServerMessageEndOfCallReportEndedReasonCallRingingErrorSipInboundCallFailedToConnect                                                             ServerMessageEndOfCallReportEndedReason = "call.ringing.error-sip-inbound-call-failed-to-connect"
 	ServerMessageEndOfCallReportEndedReasonTwilioFailedToConnectCall                                                                                 ServerMessageEndOfCallReportEndedReason = "twilio-failed-to-connect-call"
 	ServerMessageEndOfCallReportEndedReasonTwilioReportedCustomerMisdialed                                                                           ServerMessageEndOfCallReportEndedReason = "twilio-reported-customer-misdialed"
 	ServerMessageEndOfCallReportEndedReasonVonageRejected                                                                                            ServerMessageEndOfCallReportEndedReason = "vonage-rejected"
@@ -62211,10 +66814,12 @@ func NewServerMessageEndOfCallReportEndedReasonFromString(s string) (ServerMessa
 		return ServerMessageEndOfCallReportEndedReasonAssistantRequestReturnedNoAssistant, nil
 	case "assistant-request-returned-forwarding-phone-number":
 		return ServerMessageEndOfCallReportEndedReasonAssistantRequestReturnedForwardingPhoneNumber, nil
-	case "call.start.error-get-org":
-		return ServerMessageEndOfCallReportEndedReasonCallStartErrorGetOrg, nil
-	case "call.start.error-get-subscription":
-		return ServerMessageEndOfCallReportEndedReasonCallStartErrorGetSubscription, nil
+	case "scheduled-call-deleted":
+		return ServerMessageEndOfCallReportEndedReasonScheduledCallDeleted, nil
+	case "call.start.error-vapifault-get-org":
+		return ServerMessageEndOfCallReportEndedReasonCallStartErrorVapifaultGetOrg, nil
+	case "call.start.error-vapifault-get-subscription":
+		return ServerMessageEndOfCallReportEndedReasonCallStartErrorVapifaultGetSubscription, nil
 	case "call.start.error-get-assistant":
 		return ServerMessageEndOfCallReportEndedReasonCallStartErrorGetAssistant, nil
 	case "call.start.error-get-phone-number":
@@ -62229,6 +66834,16 @@ func NewServerMessageEndOfCallReportEndedReasonFromString(s string) (ServerMessa
 		return ServerMessageEndOfCallReportEndedReasonCallStartErrorVapiNumberOutboundDailyLimit, nil
 	case "call.start.error-get-transport":
 		return ServerMessageEndOfCallReportEndedReasonCallStartErrorGetTransport, nil
+	case "call.start.error-subscription-wallet-does-not-exist":
+		return ServerMessageEndOfCallReportEndedReasonCallStartErrorSubscriptionWalletDoesNotExist, nil
+	case "call.start.error-subscription-frozen":
+		return ServerMessageEndOfCallReportEndedReasonCallStartErrorSubscriptionFrozen, nil
+	case "call.start.error-subscription-insufficient-credits":
+		return ServerMessageEndOfCallReportEndedReasonCallStartErrorSubscriptionInsufficientCredits, nil
+	case "call.start.error-subscription-upgrade-failed":
+		return ServerMessageEndOfCallReportEndedReasonCallStartErrorSubscriptionUpgradeFailed, nil
+	case "call.start.error-subscription-concurrency-limit-reached":
+		return ServerMessageEndOfCallReportEndedReasonCallStartErrorSubscriptionConcurrencyLimitReached, nil
 	case "assistant-not-valid":
 		return ServerMessageEndOfCallReportEndedReasonAssistantNotValid, nil
 	case "database-error":
@@ -62363,8 +66978,6 @@ func NewServerMessageEndOfCallReportEndedReasonFromString(s string) (ServerMessa
 		return ServerMessageEndOfCallReportEndedReasonCallInProgressErrorPipelineNoAvailableLlmModel, nil
 	case "worker-shutdown":
 		return ServerMessageEndOfCallReportEndedReasonWorkerShutdown, nil
-	case "unknown-error":
-		return ServerMessageEndOfCallReportEndedReasonUnknownError, nil
 	case "vonage-disconnected":
 		return ServerMessageEndOfCallReportEndedReasonVonageDisconnected, nil
 	case "vonage-failed-to-connect-call":
@@ -62383,6 +66996,12 @@ func NewServerMessageEndOfCallReportEndedReasonFromString(s string) (ServerMessa
 		return ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultTransportConnectedButCallNotActive, nil
 	case "call.in-progress.error-vapifault-call-started-but-connection-to-transport-missing":
 		return ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultCallStartedButConnectionToTransportMissing, nil
+	case "call.in-progress.error-vapifault-worker-died":
+		return ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultWorkerDied, nil
+	case "call.in-progress.twilio-completed-call":
+		return ServerMessageEndOfCallReportEndedReasonCallInProgressTwilioCompletedCall, nil
+	case "call.in-progress.sip-completed-call":
+		return ServerMessageEndOfCallReportEndedReasonCallInProgressSipCompletedCall, nil
 	case "call.in-progress.error-vapifault-openai-llm-failed":
 		return ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultOpenaiLlmFailed, nil
 	case "call.in-progress.error-vapifault-azure-openai-llm-failed":
@@ -62401,6 +67020,8 @@ func NewServerMessageEndOfCallReportEndedReasonFromString(s string) (ServerMessa
 		return ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultCerebrasLlmFailed, nil
 	case "call.in-progress.error-vapifault-deep-seek-llm-failed":
 		return ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultDeepSeekLlmFailed, nil
+	case "call.in-progress.error-vapifault-chat-pipeline-failed-to-start":
+		return ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultChatPipelineFailedToStart, nil
 	case "pipeline-error-openai-400-bad-request-validation-failed":
 		return ServerMessageEndOfCallReportEndedReasonPipelineErrorOpenai400BadRequestValidationFailed, nil
 	case "pipeline-error-openai-401-unauthorized":
@@ -62935,6 +67556,8 @@ func NewServerMessageEndOfCallReportEndedReasonFromString(s string) (ServerMessa
 		return ServerMessageEndOfCallReportEndedReasonPipelineErrorCartesiaRequestedPayment, nil
 	case "pipeline-error-cartesia-500-server-error":
 		return ServerMessageEndOfCallReportEndedReasonPipelineErrorCartesia500ServerError, nil
+	case "pipeline-error-cartesia-502-server-error":
+		return ServerMessageEndOfCallReportEndedReasonPipelineErrorCartesia502ServerError, nil
 	case "pipeline-error-cartesia-503-server-error":
 		return ServerMessageEndOfCallReportEndedReasonPipelineErrorCartesia503ServerError, nil
 	case "pipeline-error-cartesia-522-server-error":
@@ -62975,6 +67598,8 @@ func NewServerMessageEndOfCallReportEndedReasonFromString(s string) (ServerMessa
 		return ServerMessageEndOfCallReportEndedReasonPipelineErrorElevenLabsInvalidVoiceSamples, nil
 	case "pipeline-error-eleven-labs-voice-disabled-by-owner":
 		return ServerMessageEndOfCallReportEndedReasonPipelineErrorElevenLabsVoiceDisabledByOwner, nil
+	case "pipeline-error-eleven-labs-vapi-voice-disabled-by-owner":
+		return ServerMessageEndOfCallReportEndedReasonPipelineErrorElevenLabsVapiVoiceDisabledByOwner, nil
 	case "pipeline-error-eleven-labs-blocked-account-in-probation":
 		return ServerMessageEndOfCallReportEndedReasonPipelineErrorElevenLabsBlockedAccountInProbation, nil
 	case "pipeline-error-eleven-labs-blocked-content-against-their-policy":
@@ -62991,6 +67616,8 @@ func NewServerMessageEndOfCallReportEndedReasonFromString(s string) (ServerMessa
 		return ServerMessageEndOfCallReportEndedReasonPipelineErrorElevenLabsBlockedVoicePotentiallyAgainstTermsOfServiceAndAwaitingVerification, nil
 	case "pipeline-error-eleven-labs-500-server-error":
 		return ServerMessageEndOfCallReportEndedReasonPipelineErrorElevenLabs500ServerError, nil
+	case "pipeline-error-eleven-labs-503-server-error":
+		return ServerMessageEndOfCallReportEndedReasonPipelineErrorElevenLabs503ServerError, nil
 	case "call.in-progress.error-vapifault-eleven-labs-voice-not-found":
 		return ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultElevenLabsVoiceNotFound, nil
 	case "call.in-progress.error-vapifault-eleven-labs-quota-exceeded":
@@ -63033,6 +67660,8 @@ func NewServerMessageEndOfCallReportEndedReasonFromString(s string) (ServerMessa
 		return ServerMessageEndOfCallReportEndedReasonCallInProgressErrorVapifaultElevenLabsBlockedVoicePotentiallyAgainstTermsOfServiceAndAwaitingVerification, nil
 	case "call.in-progress.error-providerfault-eleven-labs-500-server-error":
 		return ServerMessageEndOfCallReportEndedReasonCallInProgressErrorProviderfaultElevenLabs500ServerError, nil
+	case "call.in-progress.error-providerfault-eleven-labs-503-server-error":
+		return ServerMessageEndOfCallReportEndedReasonCallInProgressErrorProviderfaultElevenLabs503ServerError, nil
 	case "pipeline-error-playht-request-timed-out":
 		return ServerMessageEndOfCallReportEndedReasonPipelineErrorPlayhtRequestTimedOut, nil
 	case "pipeline-error-playht-invalid-voice":
@@ -63139,6 +67768,8 @@ func NewServerMessageEndOfCallReportEndedReasonFromString(s string) (ServerMessa
 		return ServerMessageEndOfCallReportEndedReasonAssistantJoinTimedOut, nil
 	case "call.in-progress.error-assistant-did-not-receive-customer-audio":
 		return ServerMessageEndOfCallReportEndedReasonCallInProgressErrorAssistantDidNotReceiveCustomerAudio, nil
+	case "call.in-progress.error-transfer-failed":
+		return ServerMessageEndOfCallReportEndedReasonCallInProgressErrorTransferFailed, nil
 	case "customer-busy":
 		return ServerMessageEndOfCallReportEndedReasonCustomerBusy, nil
 	case "customer-ended-call":
@@ -63157,12 +67788,26 @@ func NewServerMessageEndOfCallReportEndedReasonFromString(s string) (ServerMessa
 		return ServerMessageEndOfCallReportEndedReasonCallForwardingOperatorBusy, nil
 	case "silence-timed-out":
 		return ServerMessageEndOfCallReportEndedReasonSilenceTimedOut, nil
-	case "call.in-progress.error-sip-telephony-provider-failed-to-connect-call":
-		return ServerMessageEndOfCallReportEndedReasonCallInProgressErrorSipTelephonyProviderFailedToConnectCall, nil
+	case "call.in-progress.error-sip-inbound-call-failed-to-connect":
+		return ServerMessageEndOfCallReportEndedReasonCallInProgressErrorSipInboundCallFailedToConnect, nil
+	case "call.in-progress.error-providerfault-outbound-sip-403-forbidden":
+		return ServerMessageEndOfCallReportEndedReasonCallInProgressErrorProviderfaultOutboundSip403Forbidden, nil
+	case "call.in-progress.error-providerfault-outbound-sip-407-proxy-authentication-required":
+		return ServerMessageEndOfCallReportEndedReasonCallInProgressErrorProviderfaultOutboundSip407ProxyAuthenticationRequired, nil
+	case "call.in-progress.error-providerfault-outbound-sip-503-service-unavailable":
+		return ServerMessageEndOfCallReportEndedReasonCallInProgressErrorProviderfaultOutboundSip503ServiceUnavailable, nil
+	case "call.in-progress.error-providerfault-outbound-sip-480-temporarily-unavailable":
+		return ServerMessageEndOfCallReportEndedReasonCallInProgressErrorProviderfaultOutboundSip480TemporarilyUnavailable, nil
+	case "call.in-progress.error-sip-outbound-call-failed-to-connect":
+		return ServerMessageEndOfCallReportEndedReasonCallInProgressErrorSipOutboundCallFailedToConnect, nil
 	case "call.ringing.hook-executed-say":
 		return ServerMessageEndOfCallReportEndedReasonCallRingingHookExecutedSay, nil
 	case "call.ringing.hook-executed-transfer":
 		return ServerMessageEndOfCallReportEndedReasonCallRingingHookExecutedTransfer, nil
+	case "call.ringing.sip-inbound-caller-hungup-before-call-connect":
+		return ServerMessageEndOfCallReportEndedReasonCallRingingSipInboundCallerHungupBeforeCallConnect, nil
+	case "call.ringing.error-sip-inbound-call-failed-to-connect":
+		return ServerMessageEndOfCallReportEndedReasonCallRingingErrorSipInboundCallFailedToConnect, nil
 	case "twilio-failed-to-connect-call":
 		return ServerMessageEndOfCallReportEndedReasonTwilioFailedToConnectCall, nil
 	case "twilio-reported-customer-misdialed":
@@ -63325,7 +67970,9 @@ type ServerMessageHang struct {
 	// This is the customer that the message is associated with.
 	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
 	// This is the call that the message is associated with.
-	Call  *Call `json:"call,omitempty" url:"call,omitempty"`
+	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the chat object.
+	Chat  *Chat `json:"chat,omitempty" url:"chat,omitempty"`
 	type_ string
 
 	extraProperties map[string]interface{}
@@ -63372,6 +68019,13 @@ func (s *ServerMessageHang) GetCall() *Call {
 		return nil
 	}
 	return s.Call
+}
+
+func (s *ServerMessageHang) GetChat() *Chat {
+	if s == nil {
+		return nil
+	}
+	return s.Chat
 }
 
 func (s *ServerMessageHang) Type() string {
@@ -63576,7 +68230,9 @@ type ServerMessageKnowledgeBaseRequest struct {
 	// This is the customer that the message is associated with.
 	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
 	// This is the call that the message is associated with.
-	Call  *Call `json:"call,omitempty" url:"call,omitempty"`
+	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the chat object.
+	Chat  *Chat `json:"chat,omitempty" url:"chat,omitempty"`
 	type_ string
 
 	extraProperties map[string]interface{}
@@ -63637,6 +68293,13 @@ func (s *ServerMessageKnowledgeBaseRequest) GetCall() *Call {
 		return nil
 	}
 	return s.Call
+}
+
+func (s *ServerMessageKnowledgeBaseRequest) GetChat() *Chat {
+	if s == nil {
+		return nil
+	}
+	return s.Chat
 }
 
 func (s *ServerMessageKnowledgeBaseRequest) Type() string {
@@ -63963,6 +68626,8 @@ type ServerMessageLanguageChangeDetected struct {
 	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
 	// This is the call that the message is associated with.
 	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the chat object.
+	Chat *Chat `json:"chat,omitempty" url:"chat,omitempty"`
 	// This is the language the transcriber is switched to.
 	Language string `json:"language" url:"language"`
 	type_    string
@@ -64011,6 +68676,13 @@ func (s *ServerMessageLanguageChangeDetected) GetCall() *Call {
 		return nil
 	}
 	return s.Call
+}
+
+func (s *ServerMessageLanguageChangeDetected) GetChat() *Chat {
+	if s == nil {
+		return nil
+	}
+	return s.Chat
 }
 
 func (s *ServerMessageLanguageChangeDetected) GetLanguage() string {
@@ -64604,6 +69276,8 @@ type ServerMessageModelOutput struct {
 	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
 	// This is the call that the message is associated with.
 	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the chat object.
+	Chat *Chat `json:"chat,omitempty" url:"chat,omitempty"`
 	// This is the output of the model. It can be a token or tool call.
 	Output map[string]interface{} `json:"output,omitempty" url:"output,omitempty"`
 	type_  string
@@ -64652,6 +69326,13 @@ func (s *ServerMessageModelOutput) GetCall() *Call {
 		return nil
 	}
 	return s.Call
+}
+
+func (s *ServerMessageModelOutput) GetChat() *Chat {
+	if s == nil {
+		return nil
+	}
+	return s.Chat
 }
 
 func (s *ServerMessageModelOutput) GetOutput() map[string]interface{} {
@@ -64865,7 +69546,9 @@ type ServerMessagePhoneCallControl struct {
 	// This is the customer that the message is associated with.
 	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
 	// This is the call that the message is associated with.
-	Call  *Call `json:"call,omitempty" url:"call,omitempty"`
+	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the chat object.
+	Chat  *Chat `json:"chat,omitempty" url:"chat,omitempty"`
 	type_ string
 
 	extraProperties map[string]interface{}
@@ -64926,6 +69609,13 @@ func (s *ServerMessagePhoneCallControl) GetCall() *Call {
 		return nil
 	}
 	return s.Call
+}
+
+func (s *ServerMessagePhoneCallControl) GetChat() *Chat {
+	if s == nil {
+		return nil
+	}
+	return s.Chat
 }
 
 func (s *ServerMessagePhoneCallControl) Type() string {
@@ -65281,8 +69971,6 @@ type ServerMessageResponseAssistantRequest struct {
 	// - Squad, use `squad` or `squadId`
 	// - Workflow, use `workflow` or `workflowId`
 	Squad *CreateSquadDto `json:"squad,omitempty" url:"squad,omitempty"`
-	// [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
-	//
 	// This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
 	//
 	// To start a call with:
@@ -65290,8 +69978,6 @@ type ServerMessageResponseAssistantRequest struct {
 	// - Squad, use `squad` or `squadId`
 	// - Workflow, use `workflow` or `workflowId`
 	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
-	// [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
-	//
 	// This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
 	//
 	// To start a call with:
@@ -65299,6 +69985,8 @@ type ServerMessageResponseAssistantRequest struct {
 	// - Squad, use `squad` or `squadId`
 	// - Workflow, use `workflow` or `workflowId`
 	Workflow *CreateWorkflowDto `json:"workflow,omitempty" url:"workflow,omitempty"`
+	// These are the overrides for the `workflow` or `workflowId`'s settings and template variables.
+	WorkflowOverrides *WorkflowOverrides `json:"workflowOverrides,omitempty" url:"workflowOverrides,omitempty"`
 	// This is the error if the call shouldn't be accepted. This is spoken to the customer.
 	//
 	// If this is sent, `assistantId`, `assistant`, `squadId`, `squad`, and `destination` are ignored.
@@ -65362,6 +70050,13 @@ func (s *ServerMessageResponseAssistantRequest) GetWorkflow() *CreateWorkflowDto
 		return nil
 	}
 	return s.Workflow
+}
+
+func (s *ServerMessageResponseAssistantRequest) GetWorkflowOverrides() *WorkflowOverrides {
+	if s == nil {
+		return nil
+	}
+	return s.WorkflowOverrides
 }
 
 func (s *ServerMessageResponseAssistantRequest) GetError() *string {
@@ -65939,7 +70634,9 @@ type ServerMessageSpeechUpdate struct {
 	// This is the customer that the message is associated with.
 	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
 	// This is the call that the message is associated with.
-	Call  *Call `json:"call,omitempty" url:"call,omitempty"`
+	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the chat object.
+	Chat  *Chat `json:"chat,omitempty" url:"chat,omitempty"`
 	type_ string
 
 	extraProperties map[string]interface{}
@@ -66007,6 +70704,13 @@ func (s *ServerMessageSpeechUpdate) GetCall() *Call {
 		return nil
 	}
 	return s.Call
+}
+
+func (s *ServerMessageSpeechUpdate) GetChat() *Chat {
+	if s == nil {
+		return nil
+	}
+	return s.Chat
 }
 
 func (s *ServerMessageSpeechUpdate) Type() string {
@@ -66264,6 +70968,8 @@ type ServerMessageStatusUpdate struct {
 	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
 	// This is the call that the message is associated with.
 	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the chat object.
+	Chat *Chat `json:"chat,omitempty" url:"chat,omitempty"`
 	// This is the transcript of the call. This is only sent if the status is "forwarding".
 	Transcript *string `json:"transcript,omitempty" url:"transcript,omitempty"`
 	// This is the summary of the call. This is only sent if the status is "forwarding".
@@ -66353,6 +71059,13 @@ func (s *ServerMessageStatusUpdate) GetCall() *Call {
 		return nil
 	}
 	return s.Call
+}
+
+func (s *ServerMessageStatusUpdate) GetChat() *Chat {
+	if s == nil {
+		return nil
+	}
+	return s.Chat
 }
 
 func (s *ServerMessageStatusUpdate) GetTranscript() *string {
@@ -66507,8 +71220,9 @@ const (
 	ServerMessageStatusUpdateEndedReasonAssistantRequestReturnedInvalidAssistant                                                                  ServerMessageStatusUpdateEndedReason = "assistant-request-returned-invalid-assistant"
 	ServerMessageStatusUpdateEndedReasonAssistantRequestReturnedNoAssistant                                                                       ServerMessageStatusUpdateEndedReason = "assistant-request-returned-no-assistant"
 	ServerMessageStatusUpdateEndedReasonAssistantRequestReturnedForwardingPhoneNumber                                                             ServerMessageStatusUpdateEndedReason = "assistant-request-returned-forwarding-phone-number"
-	ServerMessageStatusUpdateEndedReasonCallStartErrorGetOrg                                                                                      ServerMessageStatusUpdateEndedReason = "call.start.error-get-org"
-	ServerMessageStatusUpdateEndedReasonCallStartErrorGetSubscription                                                                             ServerMessageStatusUpdateEndedReason = "call.start.error-get-subscription"
+	ServerMessageStatusUpdateEndedReasonScheduledCallDeleted                                                                                      ServerMessageStatusUpdateEndedReason = "scheduled-call-deleted"
+	ServerMessageStatusUpdateEndedReasonCallStartErrorVapifaultGetOrg                                                                             ServerMessageStatusUpdateEndedReason = "call.start.error-vapifault-get-org"
+	ServerMessageStatusUpdateEndedReasonCallStartErrorVapifaultGetSubscription                                                                    ServerMessageStatusUpdateEndedReason = "call.start.error-vapifault-get-subscription"
 	ServerMessageStatusUpdateEndedReasonCallStartErrorGetAssistant                                                                                ServerMessageStatusUpdateEndedReason = "call.start.error-get-assistant"
 	ServerMessageStatusUpdateEndedReasonCallStartErrorGetPhoneNumber                                                                              ServerMessageStatusUpdateEndedReason = "call.start.error-get-phone-number"
 	ServerMessageStatusUpdateEndedReasonCallStartErrorGetCustomer                                                                                 ServerMessageStatusUpdateEndedReason = "call.start.error-get-customer"
@@ -66516,6 +71230,11 @@ const (
 	ServerMessageStatusUpdateEndedReasonCallStartErrorVapiNumberInternational                                                                     ServerMessageStatusUpdateEndedReason = "call.start.error-vapi-number-international"
 	ServerMessageStatusUpdateEndedReasonCallStartErrorVapiNumberOutboundDailyLimit                                                                ServerMessageStatusUpdateEndedReason = "call.start.error-vapi-number-outbound-daily-limit"
 	ServerMessageStatusUpdateEndedReasonCallStartErrorGetTransport                                                                                ServerMessageStatusUpdateEndedReason = "call.start.error-get-transport"
+	ServerMessageStatusUpdateEndedReasonCallStartErrorSubscriptionWalletDoesNotExist                                                              ServerMessageStatusUpdateEndedReason = "call.start.error-subscription-wallet-does-not-exist"
+	ServerMessageStatusUpdateEndedReasonCallStartErrorSubscriptionFrozen                                                                          ServerMessageStatusUpdateEndedReason = "call.start.error-subscription-frozen"
+	ServerMessageStatusUpdateEndedReasonCallStartErrorSubscriptionInsufficientCredits                                                             ServerMessageStatusUpdateEndedReason = "call.start.error-subscription-insufficient-credits"
+	ServerMessageStatusUpdateEndedReasonCallStartErrorSubscriptionUpgradeFailed                                                                   ServerMessageStatusUpdateEndedReason = "call.start.error-subscription-upgrade-failed"
+	ServerMessageStatusUpdateEndedReasonCallStartErrorSubscriptionConcurrencyLimitReached                                                         ServerMessageStatusUpdateEndedReason = "call.start.error-subscription-concurrency-limit-reached"
 	ServerMessageStatusUpdateEndedReasonAssistantNotValid                                                                                         ServerMessageStatusUpdateEndedReason = "assistant-not-valid"
 	ServerMessageStatusUpdateEndedReasonDatabaseError                                                                                             ServerMessageStatusUpdateEndedReason = "database-error"
 	ServerMessageStatusUpdateEndedReasonAssistantNotFound                                                                                         ServerMessageStatusUpdateEndedReason = "assistant-not-found"
@@ -66583,7 +71302,6 @@ const (
 	ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultAzureSpeechTranscriberFailed                                                  ServerMessageStatusUpdateEndedReason = "call.in-progress.error-vapifault-azure-speech-transcriber-failed"
 	ServerMessageStatusUpdateEndedReasonCallInProgressErrorPipelineNoAvailableLlmModel                                                            ServerMessageStatusUpdateEndedReason = "call.in-progress.error-pipeline-no-available-llm-model"
 	ServerMessageStatusUpdateEndedReasonWorkerShutdown                                                                                            ServerMessageStatusUpdateEndedReason = "worker-shutdown"
-	ServerMessageStatusUpdateEndedReasonUnknownError                                                                                              ServerMessageStatusUpdateEndedReason = "unknown-error"
 	ServerMessageStatusUpdateEndedReasonVonageDisconnected                                                                                        ServerMessageStatusUpdateEndedReason = "vonage-disconnected"
 	ServerMessageStatusUpdateEndedReasonVonageFailedToConnectCall                                                                                 ServerMessageStatusUpdateEndedReason = "vonage-failed-to-connect-call"
 	ServerMessageStatusUpdateEndedReasonVonageCompleted                                                                                           ServerMessageStatusUpdateEndedReason = "vonage-completed"
@@ -66593,6 +71311,9 @@ const (
 	ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultTransportNeverConnected                                                       ServerMessageStatusUpdateEndedReason = "call.in-progress.error-vapifault-transport-never-connected"
 	ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultTransportConnectedButCallNotActive                                            ServerMessageStatusUpdateEndedReason = "call.in-progress.error-vapifault-transport-connected-but-call-not-active"
 	ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultCallStartedButConnectionToTransportMissing                                    ServerMessageStatusUpdateEndedReason = "call.in-progress.error-vapifault-call-started-but-connection-to-transport-missing"
+	ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultWorkerDied                                                                    ServerMessageStatusUpdateEndedReason = "call.in-progress.error-vapifault-worker-died"
+	ServerMessageStatusUpdateEndedReasonCallInProgressTwilioCompletedCall                                                                         ServerMessageStatusUpdateEndedReason = "call.in-progress.twilio-completed-call"
+	ServerMessageStatusUpdateEndedReasonCallInProgressSipCompletedCall                                                                            ServerMessageStatusUpdateEndedReason = "call.in-progress.sip-completed-call"
 	ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultOpenaiLlmFailed                                                               ServerMessageStatusUpdateEndedReason = "call.in-progress.error-vapifault-openai-llm-failed"
 	ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultAzureOpenaiLlmFailed                                                          ServerMessageStatusUpdateEndedReason = "call.in-progress.error-vapifault-azure-openai-llm-failed"
 	ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultGroqLlmFailed                                                                 ServerMessageStatusUpdateEndedReason = "call.in-progress.error-vapifault-groq-llm-failed"
@@ -66602,6 +71323,7 @@ const (
 	ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultInflectionAiLlmFailed                                                         ServerMessageStatusUpdateEndedReason = "call.in-progress.error-vapifault-inflection-ai-llm-failed"
 	ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultCerebrasLlmFailed                                                             ServerMessageStatusUpdateEndedReason = "call.in-progress.error-vapifault-cerebras-llm-failed"
 	ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultDeepSeekLlmFailed                                                             ServerMessageStatusUpdateEndedReason = "call.in-progress.error-vapifault-deep-seek-llm-failed"
+	ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultChatPipelineFailedToStart                                                     ServerMessageStatusUpdateEndedReason = "call.in-progress.error-vapifault-chat-pipeline-failed-to-start"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorOpenai400BadRequestValidationFailed                                                          ServerMessageStatusUpdateEndedReason = "pipeline-error-openai-400-bad-request-validation-failed"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorOpenai401Unauthorized                                                                        ServerMessageStatusUpdateEndedReason = "pipeline-error-openai-401-unauthorized"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorOpenai401IncorrectApiKey                                                                     ServerMessageStatusUpdateEndedReason = "pipeline-error-openai-401-incorrect-api-key"
@@ -66869,6 +71591,7 @@ const (
 	ServerMessageStatusUpdateEndedReasonPipelineErrorCartesiaSocketHangUp                                                                         ServerMessageStatusUpdateEndedReason = "pipeline-error-cartesia-socket-hang-up"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorCartesiaRequestedPayment                                                                     ServerMessageStatusUpdateEndedReason = "pipeline-error-cartesia-requested-payment"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorCartesia500ServerError                                                                       ServerMessageStatusUpdateEndedReason = "pipeline-error-cartesia-500-server-error"
+	ServerMessageStatusUpdateEndedReasonPipelineErrorCartesia502ServerError                                                                       ServerMessageStatusUpdateEndedReason = "pipeline-error-cartesia-502-server-error"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorCartesia503ServerError                                                                       ServerMessageStatusUpdateEndedReason = "pipeline-error-cartesia-503-server-error"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorCartesia522ServerError                                                                       ServerMessageStatusUpdateEndedReason = "pipeline-error-cartesia-522-server-error"
 	ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultCartesiaSocketHangUp                                                          ServerMessageStatusUpdateEndedReason = "call.in-progress.error-vapifault-cartesia-socket-hang-up"
@@ -66889,6 +71612,7 @@ const (
 	ServerMessageStatusUpdateEndedReasonPipelineErrorElevenLabsInvalidApiKey                                                                      ServerMessageStatusUpdateEndedReason = "pipeline-error-eleven-labs-invalid-api-key"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorElevenLabsInvalidVoiceSamples                                                                ServerMessageStatusUpdateEndedReason = "pipeline-error-eleven-labs-invalid-voice-samples"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorElevenLabsVoiceDisabledByOwner                                                               ServerMessageStatusUpdateEndedReason = "pipeline-error-eleven-labs-voice-disabled-by-owner"
+	ServerMessageStatusUpdateEndedReasonPipelineErrorElevenLabsVapiVoiceDisabledByOwner                                                           ServerMessageStatusUpdateEndedReason = "pipeline-error-eleven-labs-vapi-voice-disabled-by-owner"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorElevenLabsBlockedAccountInProbation                                                          ServerMessageStatusUpdateEndedReason = "pipeline-error-eleven-labs-blocked-account-in-probation"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorElevenLabsBlockedContentAgainstTheirPolicy                                                   ServerMessageStatusUpdateEndedReason = "pipeline-error-eleven-labs-blocked-content-against-their-policy"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorElevenLabsMissingSamplesForVoiceClone                                                        ServerMessageStatusUpdateEndedReason = "pipeline-error-eleven-labs-missing-samples-for-voice-clone"
@@ -66897,6 +71621,7 @@ const (
 	ServerMessageStatusUpdateEndedReasonPipelineErrorElevenLabsMaxCharacterLimitExceeded                                                          ServerMessageStatusUpdateEndedReason = "pipeline-error-eleven-labs-max-character-limit-exceeded"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorElevenLabsBlockedVoicePotentiallyAgainstTermsOfServiceAndAwaitingVerification                ServerMessageStatusUpdateEndedReason = "pipeline-error-eleven-labs-blocked-voice-potentially-against-terms-of-service-and-awaiting-verification"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorElevenLabs500ServerError                                                                     ServerMessageStatusUpdateEndedReason = "pipeline-error-eleven-labs-500-server-error"
+	ServerMessageStatusUpdateEndedReasonPipelineErrorElevenLabs503ServerError                                                                     ServerMessageStatusUpdateEndedReason = "pipeline-error-eleven-labs-503-server-error"
 	ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultElevenLabsVoiceNotFound                                                       ServerMessageStatusUpdateEndedReason = "call.in-progress.error-vapifault-eleven-labs-voice-not-found"
 	ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultElevenLabsQuotaExceeded                                                       ServerMessageStatusUpdateEndedReason = "call.in-progress.error-vapifault-eleven-labs-quota-exceeded"
 	ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultElevenLabsUnauthorizedAccess                                                  ServerMessageStatusUpdateEndedReason = "call.in-progress.error-vapifault-eleven-labs-unauthorized-access"
@@ -66918,6 +71643,7 @@ const (
 	ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultElevenLabsMaxCharacterLimitExceeded                                           ServerMessageStatusUpdateEndedReason = "call.in-progress.error-vapifault-eleven-labs-max-character-limit-exceeded"
 	ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultElevenLabsBlockedVoicePotentiallyAgainstTermsOfServiceAndAwaitingVerification ServerMessageStatusUpdateEndedReason = "call.in-progress.error-vapifault-eleven-labs-blocked-voice-potentially-against-terms-of-service-and-awaiting-verification"
 	ServerMessageStatusUpdateEndedReasonCallInProgressErrorProviderfaultElevenLabs500ServerError                                                  ServerMessageStatusUpdateEndedReason = "call.in-progress.error-providerfault-eleven-labs-500-server-error"
+	ServerMessageStatusUpdateEndedReasonCallInProgressErrorProviderfaultElevenLabs503ServerError                                                  ServerMessageStatusUpdateEndedReason = "call.in-progress.error-providerfault-eleven-labs-503-server-error"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorPlayhtRequestTimedOut                                                                        ServerMessageStatusUpdateEndedReason = "pipeline-error-playht-request-timed-out"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorPlayhtInvalidVoice                                                                           ServerMessageStatusUpdateEndedReason = "pipeline-error-playht-invalid-voice"
 	ServerMessageStatusUpdateEndedReasonPipelineErrorPlayhtUnexpectedError                                                                        ServerMessageStatusUpdateEndedReason = "pipeline-error-playht-unexpected-error"
@@ -66971,6 +71697,7 @@ const (
 	ServerMessageStatusUpdateEndedReasonAssistantForwardedCall                                                                                    ServerMessageStatusUpdateEndedReason = "assistant-forwarded-call"
 	ServerMessageStatusUpdateEndedReasonAssistantJoinTimedOut                                                                                     ServerMessageStatusUpdateEndedReason = "assistant-join-timed-out"
 	ServerMessageStatusUpdateEndedReasonCallInProgressErrorAssistantDidNotReceiveCustomerAudio                                                    ServerMessageStatusUpdateEndedReason = "call.in-progress.error-assistant-did-not-receive-customer-audio"
+	ServerMessageStatusUpdateEndedReasonCallInProgressErrorTransferFailed                                                                         ServerMessageStatusUpdateEndedReason = "call.in-progress.error-transfer-failed"
 	ServerMessageStatusUpdateEndedReasonCustomerBusy                                                                                              ServerMessageStatusUpdateEndedReason = "customer-busy"
 	ServerMessageStatusUpdateEndedReasonCustomerEndedCall                                                                                         ServerMessageStatusUpdateEndedReason = "customer-ended-call"
 	ServerMessageStatusUpdateEndedReasonCustomerDidNotAnswer                                                                                      ServerMessageStatusUpdateEndedReason = "customer-did-not-answer"
@@ -66980,9 +71707,16 @@ const (
 	ServerMessageStatusUpdateEndedReasonPhoneCallProviderClosedWebsocket                                                                          ServerMessageStatusUpdateEndedReason = "phone-call-provider-closed-websocket"
 	ServerMessageStatusUpdateEndedReasonCallForwardingOperatorBusy                                                                                ServerMessageStatusUpdateEndedReason = "call.forwarding.operator-busy"
 	ServerMessageStatusUpdateEndedReasonSilenceTimedOut                                                                                           ServerMessageStatusUpdateEndedReason = "silence-timed-out"
-	ServerMessageStatusUpdateEndedReasonCallInProgressErrorSipTelephonyProviderFailedToConnectCall                                                ServerMessageStatusUpdateEndedReason = "call.in-progress.error-sip-telephony-provider-failed-to-connect-call"
+	ServerMessageStatusUpdateEndedReasonCallInProgressErrorSipInboundCallFailedToConnect                                                          ServerMessageStatusUpdateEndedReason = "call.in-progress.error-sip-inbound-call-failed-to-connect"
+	ServerMessageStatusUpdateEndedReasonCallInProgressErrorProviderfaultOutboundSip403Forbidden                                                   ServerMessageStatusUpdateEndedReason = "call.in-progress.error-providerfault-outbound-sip-403-forbidden"
+	ServerMessageStatusUpdateEndedReasonCallInProgressErrorProviderfaultOutboundSip407ProxyAuthenticationRequired                                 ServerMessageStatusUpdateEndedReason = "call.in-progress.error-providerfault-outbound-sip-407-proxy-authentication-required"
+	ServerMessageStatusUpdateEndedReasonCallInProgressErrorProviderfaultOutboundSip503ServiceUnavailable                                          ServerMessageStatusUpdateEndedReason = "call.in-progress.error-providerfault-outbound-sip-503-service-unavailable"
+	ServerMessageStatusUpdateEndedReasonCallInProgressErrorProviderfaultOutboundSip480TemporarilyUnavailable                                      ServerMessageStatusUpdateEndedReason = "call.in-progress.error-providerfault-outbound-sip-480-temporarily-unavailable"
+	ServerMessageStatusUpdateEndedReasonCallInProgressErrorSipOutboundCallFailedToConnect                                                         ServerMessageStatusUpdateEndedReason = "call.in-progress.error-sip-outbound-call-failed-to-connect"
 	ServerMessageStatusUpdateEndedReasonCallRingingHookExecutedSay                                                                                ServerMessageStatusUpdateEndedReason = "call.ringing.hook-executed-say"
 	ServerMessageStatusUpdateEndedReasonCallRingingHookExecutedTransfer                                                                           ServerMessageStatusUpdateEndedReason = "call.ringing.hook-executed-transfer"
+	ServerMessageStatusUpdateEndedReasonCallRingingSipInboundCallerHungupBeforeCallConnect                                                        ServerMessageStatusUpdateEndedReason = "call.ringing.sip-inbound-caller-hungup-before-call-connect"
+	ServerMessageStatusUpdateEndedReasonCallRingingErrorSipInboundCallFailedToConnect                                                             ServerMessageStatusUpdateEndedReason = "call.ringing.error-sip-inbound-call-failed-to-connect"
 	ServerMessageStatusUpdateEndedReasonTwilioFailedToConnectCall                                                                                 ServerMessageStatusUpdateEndedReason = "twilio-failed-to-connect-call"
 	ServerMessageStatusUpdateEndedReasonTwilioReportedCustomerMisdialed                                                                           ServerMessageStatusUpdateEndedReason = "twilio-reported-customer-misdialed"
 	ServerMessageStatusUpdateEndedReasonVonageRejected                                                                                            ServerMessageStatusUpdateEndedReason = "vonage-rejected"
@@ -67005,10 +71739,12 @@ func NewServerMessageStatusUpdateEndedReasonFromString(s string) (ServerMessageS
 		return ServerMessageStatusUpdateEndedReasonAssistantRequestReturnedNoAssistant, nil
 	case "assistant-request-returned-forwarding-phone-number":
 		return ServerMessageStatusUpdateEndedReasonAssistantRequestReturnedForwardingPhoneNumber, nil
-	case "call.start.error-get-org":
-		return ServerMessageStatusUpdateEndedReasonCallStartErrorGetOrg, nil
-	case "call.start.error-get-subscription":
-		return ServerMessageStatusUpdateEndedReasonCallStartErrorGetSubscription, nil
+	case "scheduled-call-deleted":
+		return ServerMessageStatusUpdateEndedReasonScheduledCallDeleted, nil
+	case "call.start.error-vapifault-get-org":
+		return ServerMessageStatusUpdateEndedReasonCallStartErrorVapifaultGetOrg, nil
+	case "call.start.error-vapifault-get-subscription":
+		return ServerMessageStatusUpdateEndedReasonCallStartErrorVapifaultGetSubscription, nil
 	case "call.start.error-get-assistant":
 		return ServerMessageStatusUpdateEndedReasonCallStartErrorGetAssistant, nil
 	case "call.start.error-get-phone-number":
@@ -67023,6 +71759,16 @@ func NewServerMessageStatusUpdateEndedReasonFromString(s string) (ServerMessageS
 		return ServerMessageStatusUpdateEndedReasonCallStartErrorVapiNumberOutboundDailyLimit, nil
 	case "call.start.error-get-transport":
 		return ServerMessageStatusUpdateEndedReasonCallStartErrorGetTransport, nil
+	case "call.start.error-subscription-wallet-does-not-exist":
+		return ServerMessageStatusUpdateEndedReasonCallStartErrorSubscriptionWalletDoesNotExist, nil
+	case "call.start.error-subscription-frozen":
+		return ServerMessageStatusUpdateEndedReasonCallStartErrorSubscriptionFrozen, nil
+	case "call.start.error-subscription-insufficient-credits":
+		return ServerMessageStatusUpdateEndedReasonCallStartErrorSubscriptionInsufficientCredits, nil
+	case "call.start.error-subscription-upgrade-failed":
+		return ServerMessageStatusUpdateEndedReasonCallStartErrorSubscriptionUpgradeFailed, nil
+	case "call.start.error-subscription-concurrency-limit-reached":
+		return ServerMessageStatusUpdateEndedReasonCallStartErrorSubscriptionConcurrencyLimitReached, nil
 	case "assistant-not-valid":
 		return ServerMessageStatusUpdateEndedReasonAssistantNotValid, nil
 	case "database-error":
@@ -67157,8 +71903,6 @@ func NewServerMessageStatusUpdateEndedReasonFromString(s string) (ServerMessageS
 		return ServerMessageStatusUpdateEndedReasonCallInProgressErrorPipelineNoAvailableLlmModel, nil
 	case "worker-shutdown":
 		return ServerMessageStatusUpdateEndedReasonWorkerShutdown, nil
-	case "unknown-error":
-		return ServerMessageStatusUpdateEndedReasonUnknownError, nil
 	case "vonage-disconnected":
 		return ServerMessageStatusUpdateEndedReasonVonageDisconnected, nil
 	case "vonage-failed-to-connect-call":
@@ -67177,6 +71921,12 @@ func NewServerMessageStatusUpdateEndedReasonFromString(s string) (ServerMessageS
 		return ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultTransportConnectedButCallNotActive, nil
 	case "call.in-progress.error-vapifault-call-started-but-connection-to-transport-missing":
 		return ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultCallStartedButConnectionToTransportMissing, nil
+	case "call.in-progress.error-vapifault-worker-died":
+		return ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultWorkerDied, nil
+	case "call.in-progress.twilio-completed-call":
+		return ServerMessageStatusUpdateEndedReasonCallInProgressTwilioCompletedCall, nil
+	case "call.in-progress.sip-completed-call":
+		return ServerMessageStatusUpdateEndedReasonCallInProgressSipCompletedCall, nil
 	case "call.in-progress.error-vapifault-openai-llm-failed":
 		return ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultOpenaiLlmFailed, nil
 	case "call.in-progress.error-vapifault-azure-openai-llm-failed":
@@ -67195,6 +71945,8 @@ func NewServerMessageStatusUpdateEndedReasonFromString(s string) (ServerMessageS
 		return ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultCerebrasLlmFailed, nil
 	case "call.in-progress.error-vapifault-deep-seek-llm-failed":
 		return ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultDeepSeekLlmFailed, nil
+	case "call.in-progress.error-vapifault-chat-pipeline-failed-to-start":
+		return ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultChatPipelineFailedToStart, nil
 	case "pipeline-error-openai-400-bad-request-validation-failed":
 		return ServerMessageStatusUpdateEndedReasonPipelineErrorOpenai400BadRequestValidationFailed, nil
 	case "pipeline-error-openai-401-unauthorized":
@@ -67729,6 +72481,8 @@ func NewServerMessageStatusUpdateEndedReasonFromString(s string) (ServerMessageS
 		return ServerMessageStatusUpdateEndedReasonPipelineErrorCartesiaRequestedPayment, nil
 	case "pipeline-error-cartesia-500-server-error":
 		return ServerMessageStatusUpdateEndedReasonPipelineErrorCartesia500ServerError, nil
+	case "pipeline-error-cartesia-502-server-error":
+		return ServerMessageStatusUpdateEndedReasonPipelineErrorCartesia502ServerError, nil
 	case "pipeline-error-cartesia-503-server-error":
 		return ServerMessageStatusUpdateEndedReasonPipelineErrorCartesia503ServerError, nil
 	case "pipeline-error-cartesia-522-server-error":
@@ -67769,6 +72523,8 @@ func NewServerMessageStatusUpdateEndedReasonFromString(s string) (ServerMessageS
 		return ServerMessageStatusUpdateEndedReasonPipelineErrorElevenLabsInvalidVoiceSamples, nil
 	case "pipeline-error-eleven-labs-voice-disabled-by-owner":
 		return ServerMessageStatusUpdateEndedReasonPipelineErrorElevenLabsVoiceDisabledByOwner, nil
+	case "pipeline-error-eleven-labs-vapi-voice-disabled-by-owner":
+		return ServerMessageStatusUpdateEndedReasonPipelineErrorElevenLabsVapiVoiceDisabledByOwner, nil
 	case "pipeline-error-eleven-labs-blocked-account-in-probation":
 		return ServerMessageStatusUpdateEndedReasonPipelineErrorElevenLabsBlockedAccountInProbation, nil
 	case "pipeline-error-eleven-labs-blocked-content-against-their-policy":
@@ -67785,6 +72541,8 @@ func NewServerMessageStatusUpdateEndedReasonFromString(s string) (ServerMessageS
 		return ServerMessageStatusUpdateEndedReasonPipelineErrorElevenLabsBlockedVoicePotentiallyAgainstTermsOfServiceAndAwaitingVerification, nil
 	case "pipeline-error-eleven-labs-500-server-error":
 		return ServerMessageStatusUpdateEndedReasonPipelineErrorElevenLabs500ServerError, nil
+	case "pipeline-error-eleven-labs-503-server-error":
+		return ServerMessageStatusUpdateEndedReasonPipelineErrorElevenLabs503ServerError, nil
 	case "call.in-progress.error-vapifault-eleven-labs-voice-not-found":
 		return ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultElevenLabsVoiceNotFound, nil
 	case "call.in-progress.error-vapifault-eleven-labs-quota-exceeded":
@@ -67827,6 +72585,8 @@ func NewServerMessageStatusUpdateEndedReasonFromString(s string) (ServerMessageS
 		return ServerMessageStatusUpdateEndedReasonCallInProgressErrorVapifaultElevenLabsBlockedVoicePotentiallyAgainstTermsOfServiceAndAwaitingVerification, nil
 	case "call.in-progress.error-providerfault-eleven-labs-500-server-error":
 		return ServerMessageStatusUpdateEndedReasonCallInProgressErrorProviderfaultElevenLabs500ServerError, nil
+	case "call.in-progress.error-providerfault-eleven-labs-503-server-error":
+		return ServerMessageStatusUpdateEndedReasonCallInProgressErrorProviderfaultElevenLabs503ServerError, nil
 	case "pipeline-error-playht-request-timed-out":
 		return ServerMessageStatusUpdateEndedReasonPipelineErrorPlayhtRequestTimedOut, nil
 	case "pipeline-error-playht-invalid-voice":
@@ -67933,6 +72693,8 @@ func NewServerMessageStatusUpdateEndedReasonFromString(s string) (ServerMessageS
 		return ServerMessageStatusUpdateEndedReasonAssistantJoinTimedOut, nil
 	case "call.in-progress.error-assistant-did-not-receive-customer-audio":
 		return ServerMessageStatusUpdateEndedReasonCallInProgressErrorAssistantDidNotReceiveCustomerAudio, nil
+	case "call.in-progress.error-transfer-failed":
+		return ServerMessageStatusUpdateEndedReasonCallInProgressErrorTransferFailed, nil
 	case "customer-busy":
 		return ServerMessageStatusUpdateEndedReasonCustomerBusy, nil
 	case "customer-ended-call":
@@ -67951,12 +72713,26 @@ func NewServerMessageStatusUpdateEndedReasonFromString(s string) (ServerMessageS
 		return ServerMessageStatusUpdateEndedReasonCallForwardingOperatorBusy, nil
 	case "silence-timed-out":
 		return ServerMessageStatusUpdateEndedReasonSilenceTimedOut, nil
-	case "call.in-progress.error-sip-telephony-provider-failed-to-connect-call":
-		return ServerMessageStatusUpdateEndedReasonCallInProgressErrorSipTelephonyProviderFailedToConnectCall, nil
+	case "call.in-progress.error-sip-inbound-call-failed-to-connect":
+		return ServerMessageStatusUpdateEndedReasonCallInProgressErrorSipInboundCallFailedToConnect, nil
+	case "call.in-progress.error-providerfault-outbound-sip-403-forbidden":
+		return ServerMessageStatusUpdateEndedReasonCallInProgressErrorProviderfaultOutboundSip403Forbidden, nil
+	case "call.in-progress.error-providerfault-outbound-sip-407-proxy-authentication-required":
+		return ServerMessageStatusUpdateEndedReasonCallInProgressErrorProviderfaultOutboundSip407ProxyAuthenticationRequired, nil
+	case "call.in-progress.error-providerfault-outbound-sip-503-service-unavailable":
+		return ServerMessageStatusUpdateEndedReasonCallInProgressErrorProviderfaultOutboundSip503ServiceUnavailable, nil
+	case "call.in-progress.error-providerfault-outbound-sip-480-temporarily-unavailable":
+		return ServerMessageStatusUpdateEndedReasonCallInProgressErrorProviderfaultOutboundSip480TemporarilyUnavailable, nil
+	case "call.in-progress.error-sip-outbound-call-failed-to-connect":
+		return ServerMessageStatusUpdateEndedReasonCallInProgressErrorSipOutboundCallFailedToConnect, nil
 	case "call.ringing.hook-executed-say":
 		return ServerMessageStatusUpdateEndedReasonCallRingingHookExecutedSay, nil
 	case "call.ringing.hook-executed-transfer":
 		return ServerMessageStatusUpdateEndedReasonCallRingingHookExecutedTransfer, nil
+	case "call.ringing.sip-inbound-caller-hungup-before-call-connect":
+		return ServerMessageStatusUpdateEndedReasonCallRingingSipInboundCallerHungupBeforeCallConnect, nil
+	case "call.ringing.error-sip-inbound-call-failed-to-connect":
+		return ServerMessageStatusUpdateEndedReasonCallRingingErrorSipInboundCallFailedToConnect, nil
 	case "twilio-failed-to-connect-call":
 		return ServerMessageStatusUpdateEndedReasonTwilioFailedToConnectCall, nil
 	case "twilio-reported-customer-misdialed":
@@ -68279,6 +73055,8 @@ type ServerMessageToolCalls struct {
 	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
 	// This is the call that the message is associated with.
 	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the chat object.
+	Chat *Chat `json:"chat,omitempty" url:"chat,omitempty"`
 	// This is the list of tool calls that the model is requesting.
 	ToolCallList []*ToolCall `json:"toolCallList,omitempty" url:"toolCallList,omitempty"`
 
@@ -68333,6 +73111,13 @@ func (s *ServerMessageToolCalls) GetCall() *Call {
 		return nil
 	}
 	return s.Call
+}
+
+func (s *ServerMessageToolCalls) GetChat() *Chat {
+	if s == nil {
+		return nil
+	}
+	return s.Chat
 }
 
 func (s *ServerMessageToolCalls) GetToolCallList() []*ToolCall {
@@ -68684,6 +73469,8 @@ type ServerMessageTranscript struct {
 	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
 	// This is the call that the message is associated with.
 	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the chat object.
+	Chat *Chat `json:"chat,omitempty" url:"chat,omitempty"`
 	// This is the role for which the transcript is for.
 	Role ServerMessageTranscriptRole `json:"role" url:"role"`
 	// This is the type of the transcript.
@@ -68742,6 +73529,13 @@ func (s *ServerMessageTranscript) GetCall() *Call {
 		return nil
 	}
 	return s.Call
+}
+
+func (s *ServerMessageTranscript) GetChat() *Chat {
+	if s == nil {
+		return nil
+	}
+	return s.Chat
 }
 
 func (s *ServerMessageTranscript) GetRole() ServerMessageTranscriptRole {
@@ -69007,7 +73801,9 @@ type ServerMessageTransferDestinationRequest struct {
 	// This is the customer that the message is associated with.
 	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
 	// This is the call that the message is associated with.
-	Call  *Call `json:"call,omitempty" url:"call,omitempty"`
+	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the chat object.
+	Chat  *Chat `json:"chat,omitempty" url:"chat,omitempty"`
 	type_ string
 
 	extraProperties map[string]interface{}
@@ -69054,6 +73850,13 @@ func (s *ServerMessageTransferDestinationRequest) GetCall() *Call {
 		return nil
 	}
 	return s.Call
+}
+
+func (s *ServerMessageTransferDestinationRequest) GetChat() *Chat {
+	if s == nil {
+		return nil
+	}
+	return s.Chat
 }
 
 func (s *ServerMessageTransferDestinationRequest) Type() string {
@@ -69257,6 +74060,8 @@ type ServerMessageTransferUpdate struct {
 	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
 	// This is the call that the message is associated with.
 	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the chat object.
+	Chat *Chat `json:"chat,omitempty" url:"chat,omitempty"`
 	// This is the assistant that the call is being transferred to. This is only sent if `destination.type` is "assistant".
 	ToAssistant *CreateAssistantDto `json:"toAssistant,omitempty" url:"toAssistant,omitempty"`
 	// This is the assistant that the call is being transferred from. This is only sent if `destination.type` is "assistant".
@@ -69318,6 +74123,13 @@ func (s *ServerMessageTransferUpdate) GetCall() *Call {
 		return nil
 	}
 	return s.Call
+}
+
+func (s *ServerMessageTransferUpdate) GetChat() *Chat {
+	if s == nil {
+		return nil
+	}
+	return s.Chat
 }
 
 func (s *ServerMessageTransferUpdate) GetToAssistant() *CreateAssistantDto {
@@ -69630,7 +74442,9 @@ type ServerMessageUserInterrupted struct {
 	// This is the customer that the message is associated with.
 	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
 	// This is the call that the message is associated with.
-	Call  *Call `json:"call,omitempty" url:"call,omitempty"`
+	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the chat object.
+	Chat  *Chat `json:"chat,omitempty" url:"chat,omitempty"`
 	type_ string
 
 	extraProperties map[string]interface{}
@@ -69677,6 +74491,13 @@ func (s *ServerMessageUserInterrupted) GetCall() *Call {
 		return nil
 	}
 	return s.Call
+}
+
+func (s *ServerMessageUserInterrupted) GetChat() *Chat {
+	if s == nil {
+		return nil
+	}
+	return s.Chat
 }
 
 func (s *ServerMessageUserInterrupted) Type() string {
@@ -69878,6 +74699,8 @@ type ServerMessageVoiceInput struct {
 	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
 	// This is the call that the message is associated with.
 	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the chat object.
+	Chat *Chat `json:"chat,omitempty" url:"chat,omitempty"`
 	// This is the voice input content
 	Input string `json:"input" url:"input"`
 	type_ string
@@ -69926,6 +74749,13 @@ func (s *ServerMessageVoiceInput) GetCall() *Call {
 		return nil
 	}
 	return s.Call
+}
+
+func (s *ServerMessageVoiceInput) GetChat() *Chat {
+	if s == nil {
+		return nil
+	}
+	return s.Chat
 }
 
 func (s *ServerMessageVoiceInput) GetInput() string {
@@ -70157,6 +74987,8 @@ type ServerMessageVoiceRequest struct {
 	Customer *CreateCustomerDto `json:"customer,omitempty" url:"customer,omitempty"`
 	// This is the call that the message is associated with.
 	Call *Call `json:"call,omitempty" url:"call,omitempty"`
+	// This is the chat object.
+	Chat *Chat `json:"chat,omitempty" url:"chat,omitempty"`
 	// This is the text to be synthesized.
 	Text string `json:"text" url:"text"`
 	// This is the sample rate to be synthesized.
@@ -70207,6 +75039,13 @@ func (s *ServerMessageVoiceRequest) GetCall() *Call {
 		return nil
 	}
 	return s.Call
+}
+
+func (s *ServerMessageVoiceRequest) GetChat() *Chat {
+	if s == nil {
+		return nil
+	}
+	return s.Chat
 }
 
 func (s *ServerMessageVoiceRequest) GetText() string {
@@ -71301,6 +76140,53 @@ func (s *SmallestAiVoice) MarshalJSON() ([]byte, error) {
 }
 
 func (s *SmallestAiVoice) String() string {
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SmartDenoisingPlan struct {
+	// Whether smart denoising using Krisp is enabled.
+	Enabled *bool `json:"enabled,omitempty" url:"enabled,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SmartDenoisingPlan) GetEnabled() *bool {
+	if s == nil {
+		return nil
+	}
+	return s.Enabled
+}
+
+func (s *SmartDenoisingPlan) GetExtraProperties() map[string]interface{} {
+	return s.extraProperties
+}
+
+func (s *SmartDenoisingPlan) UnmarshalJSON(data []byte) error {
+	type unmarshaler SmartDenoisingPlan
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SmartDenoisingPlan(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SmartDenoisingPlan) String() string {
 	if len(s.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
 			return value
@@ -72810,6 +77696,10 @@ const (
 	SubscriptionTypeTrial      SubscriptionType = "trial"
 	SubscriptionTypePayAsYouGo SubscriptionType = "pay-as-you-go"
 	SubscriptionTypeEnterprise SubscriptionType = "enterprise"
+	SubscriptionTypeAgency     SubscriptionType = "agency"
+	SubscriptionTypeStartup    SubscriptionType = "startup"
+	SubscriptionTypeGrowth     SubscriptionType = "growth"
+	SubscriptionTypeScale      SubscriptionType = "scale"
 )
 
 func NewSubscriptionTypeFromString(s string) (SubscriptionType, error) {
@@ -72820,6 +77710,14 @@ func NewSubscriptionTypeFromString(s string) (SubscriptionType, error) {
 		return SubscriptionTypePayAsYouGo, nil
 	case "enterprise":
 		return SubscriptionTypeEnterprise, nil
+	case "agency":
+		return SubscriptionTypeAgency, nil
+	case "startup":
+		return SubscriptionTypeStartup, nil
+	case "growth":
+		return SubscriptionTypeGrowth, nil
+	case "scale":
+		return SubscriptionTypeScale, nil
 	}
 	var t SubscriptionType
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -73021,7 +77919,9 @@ type SummaryPlan struct {
 	// You can customize by providing any messages you want.
 	//
 	// Here are the template variables available:
-	// - {{transcript}}: The transcript of the call from `call.artifact.transcript`- {{systemPrompt}}: The system prompt of the call from `assistant.model.messages[type=system].content`- {{endedReason}}: The ended reason of the call from `call.endedReason`
+	// - {{transcript}}: The transcript of the call from `call.artifact.transcript`
+	// - {{systemPrompt}}: The system prompt of the call from `assistant.model.messages[type=system].content`
+	// - {{endedReason}}: The ended reason of the call from `call.endedReason`
 	Messages []map[string]interface{} `json:"messages,omitempty" url:"messages,omitempty"`
 	// This determines whether a summary is generated and stored in `call.analysis.summary`. Defaults to true.
 	//
@@ -73267,6 +78167,8 @@ func (s SupabaseBucketPlanRegion) Ptr() *SupabaseBucketPlanRegion {
 
 type SupabaseCredential struct {
 	// This is for supabase storage.
+	// This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+	FallbackIndex *float64 `json:"fallbackIndex,omitempty" url:"fallbackIndex,omitempty"`
 	// This is the unique identifier for the credential.
 	Id string `json:"id" url:"id"`
 	// This is the unique identifier for the org that this credential belongs to.
@@ -73282,6 +78184,13 @@ type SupabaseCredential struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (s *SupabaseCredential) GetFallbackIndex() *float64 {
+	if s == nil {
+		return nil
+	}
+	return s.FallbackIndex
 }
 
 func (s *SupabaseCredential) GetId() string {
@@ -76166,20 +81075,22 @@ func (t TextContentLanguage) Ptr() *TextContentLanguage {
 }
 
 type TextEditorToolWithToolCall struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
 	Messages []*TextEditorToolWithToolCallMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
 	// The type of tool. "textEditor" for Text Editor tool.
 	// The sub type of tool.
+	//
+	//	This is the server where a `tool-calls` webhook will be sent.
+	//
+	//	Notes:
+	//	- Webhook is sent to this server when a tool call is made.
+	//	- Webhook contains the call, assistant, and phone number objects.
+	//	- Webhook contains the variables set on the assistant.
+	//	- Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+	//	- Webhook expects a response with tool call result.
+	Server   *Server   `json:"server,omitempty" url:"server,omitempty"`
 	ToolCall *ToolCall `json:"toolCall,omitempty" url:"toolCall,omitempty"`
 	// The name of the tool, fixed to 'str_replace_editor'
 	// This is the function definition of the tool.
@@ -76188,25 +81099,12 @@ type TextEditorToolWithToolCall struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server  *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_   string
-	subType string
-	name    string
+	type_    string
+	subType  string
+	name     string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (t *TextEditorToolWithToolCall) GetAsync() *bool {
-	if t == nil {
-		return nil
-	}
-	return t.Async
 }
 
 func (t *TextEditorToolWithToolCall) GetMessages() []*TextEditorToolWithToolCallMessagesItem {
@@ -76214,6 +81112,13 @@ func (t *TextEditorToolWithToolCall) GetMessages() []*TextEditorToolWithToolCall
 		return nil
 	}
 	return t.Messages
+}
+
+func (t *TextEditorToolWithToolCall) GetServer() *Server {
+	if t == nil {
+		return nil
+	}
+	return t.Server
 }
 
 func (t *TextEditorToolWithToolCall) GetToolCall() *ToolCall {
@@ -76228,13 +81133,6 @@ func (t *TextEditorToolWithToolCall) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return t.Function
-}
-
-func (t *TextEditorToolWithToolCall) GetServer() *Server {
-	if t == nil {
-		return nil
-	}
-	return t.Server
 }
 
 func (t *TextEditorToolWithToolCall) Type() string {
@@ -77369,22 +82267,15 @@ func (t TokenTag) Ptr() *TokenTag {
 }
 
 type ToolCall struct {
-	// This is the type of tool the model called.
-	// This is the function the model called.
+	// This is the ID of the tool call
+	Id string `json:"id" url:"id"`
+	// This is the type of tool
+	Type string `json:"type" url:"type"`
+	// This is the function that was called
 	Function *ToolCallFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the unique identifier for the tool call.
-	Id    string `json:"id" url:"id"`
-	type_ string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (t *ToolCall) GetFunction() *ToolCallFunction {
-	if t == nil {
-		return nil
-	}
-	return t.Function
 }
 
 func (t *ToolCall) GetId() string {
@@ -77394,8 +82285,18 @@ func (t *ToolCall) GetId() string {
 	return t.Id
 }
 
-func (t *ToolCall) Type() string {
-	return t.type_
+func (t *ToolCall) GetType() string {
+	if t == nil {
+		return ""
+	}
+	return t.Type
+}
+
+func (t *ToolCall) GetFunction() *ToolCallFunction {
+	if t == nil {
+		return nil
+	}
+	return t.Function
 }
 
 func (t *ToolCall) GetExtraProperties() map[string]interface{} {
@@ -77403,40 +82304,19 @@ func (t *ToolCall) GetExtraProperties() map[string]interface{} {
 }
 
 func (t *ToolCall) UnmarshalJSON(data []byte) error {
-	type embed ToolCall
-	var unmarshaler = struct {
-		embed
-		Type string `json:"type"`
-	}{
-		embed: embed(*t),
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+	type unmarshaler ToolCall
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*t = ToolCall(unmarshaler.embed)
-	if unmarshaler.Type != "function" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", t, "function", unmarshaler.Type)
-	}
-	t.type_ = unmarshaler.Type
-	extraProperties, err := internal.ExtractExtraProperties(data, *t, "type")
+	*t = ToolCall(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
 	if err != nil {
 		return err
 	}
 	t.extraProperties = extraProperties
 	t.rawJSON = json.RawMessage(data)
 	return nil
-}
-
-func (t *ToolCall) MarshalJSON() ([]byte, error) {
-	type embed ToolCall
-	var marshaler = struct {
-		embed
-		Type string `json:"type"`
-	}{
-		embed: embed(*t),
-		Type:  "function",
-	}
-	return json.Marshal(marshaler)
 }
 
 func (t *ToolCall) String() string {
@@ -77452,13 +82332,20 @@ func (t *ToolCall) String() string {
 }
 
 type ToolCallFunction struct {
-	// This is the name of the function the model called.
+	// This is the arguments to call the function with
+	Arguments string `json:"arguments" url:"arguments"`
+	// This is the name of the function to call
 	Name string `json:"name" url:"name"`
-	// These are the arguments that the function was called with.
-	Arguments map[string]interface{} `json:"arguments,omitempty" url:"arguments,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (t *ToolCallFunction) GetArguments() string {
+	if t == nil {
+		return ""
+	}
+	return t.Arguments
 }
 
 func (t *ToolCallFunction) GetName() string {
@@ -77466,13 +82353,6 @@ func (t *ToolCallFunction) GetName() string {
 		return ""
 	}
 	return t.Name
-}
-
-func (t *ToolCallFunction) GetArguments() map[string]interface{} {
-	if t == nil {
-		return nil
-	}
-	return t.Arguments
 }
 
 func (t *ToolCallFunction) GetExtraProperties() map[string]interface{} {
@@ -77786,6 +82666,98 @@ func (t *ToolCallResultMessage) UnmarshalJSON(data []byte) error {
 }
 
 func (t *ToolCallResultMessage) String() string {
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+type ToolMessage struct {
+	// This is the role of the message author
+	// This is the content of the tool message
+	Content string `json:"content" url:"content"`
+	// This is the ID of the tool call this message is responding to
+	ToolCallId string `json:"tool_call_id" url:"tool_call_id"`
+	// This is an optional name for the participant
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	role string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *ToolMessage) GetContent() string {
+	if t == nil {
+		return ""
+	}
+	return t.Content
+}
+
+func (t *ToolMessage) GetToolCallId() string {
+	if t == nil {
+		return ""
+	}
+	return t.ToolCallId
+}
+
+func (t *ToolMessage) GetName() *string {
+	if t == nil {
+		return nil
+	}
+	return t.Name
+}
+
+func (t *ToolMessage) Role() string {
+	return t.role
+}
+
+func (t *ToolMessage) GetExtraProperties() map[string]interface{} {
+	return t.extraProperties
+}
+
+func (t *ToolMessage) UnmarshalJSON(data []byte) error {
+	type embed ToolMessage
+	var unmarshaler = struct {
+		embed
+		Role string `json:"role"`
+	}{
+		embed: embed(*t),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*t = ToolMessage(unmarshaler.embed)
+	if unmarshaler.Role != "tool" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", t, "tool", unmarshaler.Role)
+	}
+	t.role = unmarshaler.Role
+	extraProperties, err := internal.ExtractExtraProperties(data, *t, "role")
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *ToolMessage) MarshalJSON() ([]byte, error) {
+	type embed ToolMessage
+	var marshaler = struct {
+		embed
+		Role string `json:"role"`
+	}{
+		embed: embed(*t),
+		Role:  "tool",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (t *ToolMessage) String() string {
 	if len(t.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
 			return value
@@ -80265,6 +85237,10 @@ type TransferPlan struct {
 	// Usage:
 	// - Used only when `mode` is `blind-transfer-add-summary-to-sip-header`, `warm-transfer-say-message`, `warm-transfer-wait-for-operator-to-speak-first-and-then-say-message`, or `warm-transfer-experimental`.
 	Message *TransferPlanMessage `json:"message,omitempty" url:"message,omitempty"`
+	// This is the timeout in seconds for the warm-transfer-wait-for-operator-to-speak-first-and-then-say-message/summary
+	//
+	// @default 60
+	Timeout *float64 `json:"timeout,omitempty" url:"timeout,omitempty"`
 	// This specifies the SIP verb to use while transferring the call.
 	// - 'refer': Uses SIP REFER to transfer the call (default)
 	// - 'bye': Ends current call with SIP BYE
@@ -80279,6 +85255,15 @@ type TransferPlan struct {
 	// - Supported formats: MP3 and WAV.
 	// - If not provided, the default hold audio will be used.
 	HoldAudioUrl *string `json:"holdAudioUrl,omitempty" url:"holdAudioUrl,omitempty"`
+	// This is the URL to an audio file played after the warm transfer message or summary is delivered to the destination party.
+	// It can be used to play a custom sound like 'beep' to notify that the transfer is complete.
+	//
+	// Usage:
+	// - Used only when `mode` is `warm-transfer-experimental`.
+	// - Used when transferring calls to play hold audio for the destination party.
+	// - Must be a publicly accessible URL to an audio file.
+	// - Supported formats: MP3 and WAV.
+	TransferCompleteAudioUrl *string `json:"transferCompleteAudioUrl,omitempty" url:"transferCompleteAudioUrl,omitempty"`
 	// This is the TwiML instructions to execute on the destination call leg before connecting the customer.
 	//
 	// Usage:
@@ -80327,6 +85312,13 @@ func (t *TransferPlan) GetMessage() *TransferPlanMessage {
 	return t.Message
 }
 
+func (t *TransferPlan) GetTimeout() *float64 {
+	if t == nil {
+		return nil
+	}
+	return t.Timeout
+}
+
 func (t *TransferPlan) GetSipVerb() map[string]interface{} {
 	if t == nil {
 		return nil
@@ -80339,6 +85331,13 @@ func (t *TransferPlan) GetHoldAudioUrl() *string {
 		return nil
 	}
 	return t.HoldAudioUrl
+}
+
+func (t *TransferPlan) GetTransferCompleteAudioUrl() *string {
+	if t == nil {
+		return nil
+	}
+	return t.TransferCompleteAudioUrl
 }
 
 func (t *TransferPlan) GetTwiml() *string {
@@ -81462,6 +86461,8 @@ type UpdateAzureCredentialDto struct {
 	Region *UpdateAzureCredentialDtoRegion `json:"region,omitempty" url:"region,omitempty"`
 	// This is not returned in the API.
 	ApiKey *string `json:"apiKey,omitempty" url:"apiKey,omitempty"`
+	// This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+	FallbackIndex *float64 `json:"fallbackIndex,omitempty" url:"fallbackIndex,omitempty"`
 	// This is the name of credential. This is just for your reference.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the bucket plan that can be provided to store call artifacts in Azure Blob Storage.
@@ -81490,6 +86491,13 @@ func (u *UpdateAzureCredentialDto) GetApiKey() *string {
 		return nil
 	}
 	return u.ApiKey
+}
+
+func (u *UpdateAzureCredentialDto) GetFallbackIndex() *float64 {
+	if u == nil {
+		return nil
+	}
+	return u.FallbackIndex
 }
 
 func (u *UpdateAzureCredentialDto) GetName() *string {
@@ -82071,6 +87079,8 @@ type UpdateCloudflareCredentialDto struct {
 	ApiKey *string `json:"apiKey,omitempty" url:"apiKey,omitempty"`
 	// Cloudflare Account Email.
 	AccountEmail *string `json:"accountEmail,omitempty" url:"accountEmail,omitempty"`
+	// This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+	FallbackIndex *float64 `json:"fallbackIndex,omitempty" url:"fallbackIndex,omitempty"`
 	// This is the name of credential. This is just for your reference.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the bucket plan that can be provided to store call artifacts in R2
@@ -82099,6 +87109,13 @@ func (u *UpdateCloudflareCredentialDto) GetAccountEmail() *string {
 		return nil
 	}
 	return u.AccountEmail
+}
+
+func (u *UpdateCloudflareCredentialDto) GetFallbackIndex() *float64 {
+	if u == nil {
+		return nil
+	}
+	return u.FallbackIndex
 }
 
 func (u *UpdateCloudflareCredentialDto) GetName() *string {
@@ -82447,17 +87464,27 @@ func (u *UpdateElevenLabsCredentialDto) String() string {
 }
 
 type UpdateGcpCredentialDto struct {
+	// This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+	FallbackIndex *float64 `json:"fallbackIndex,omitempty" url:"fallbackIndex,omitempty"`
 	// This is the name of credential. This is just for your reference.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// This is the GCP key. This is the JSON that can be generated in the Google Cloud Console at https://console.cloud.google.com/iam-admin/serviceaccounts/details/<service-account-id>/keys.
 	//
 	// The schema is identical to the JSON that GCP outputs.
 	GcpKey *GcpKey `json:"gcpKey,omitempty" url:"gcpKey,omitempty"`
-	// This is the bucket plan that can be provided to store call artifacts in GCP.
+	// This is the region of the GCP resource.
+	Region     *string     `json:"region,omitempty" url:"region,omitempty"`
 	BucketPlan *BucketPlan `json:"bucketPlan,omitempty" url:"bucketPlan,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (u *UpdateGcpCredentialDto) GetFallbackIndex() *float64 {
+	if u == nil {
+		return nil
+	}
+	return u.FallbackIndex
 }
 
 func (u *UpdateGcpCredentialDto) GetName() *string {
@@ -82472,6 +87499,13 @@ func (u *UpdateGcpCredentialDto) GetGcpKey() *GcpKey {
 		return nil
 	}
 	return u.GcpKey
+}
+
+func (u *UpdateGcpCredentialDto) GetRegion() *string {
+	if u == nil {
+		return nil
+	}
+	return u.Region
 }
 
 func (u *UpdateGcpCredentialDto) GetBucketPlan() *BucketPlan {
@@ -83881,6 +88915,8 @@ type UpdateS3CredentialDto struct {
 	S3BucketName *string `json:"s3BucketName,omitempty" url:"s3BucketName,omitempty"`
 	// The path prefix for the uploaded recording. Ex. "recordings/"
 	S3PathPrefix *string `json:"s3PathPrefix,omitempty" url:"s3PathPrefix,omitempty"`
+	// This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+	FallbackIndex *float64 `json:"fallbackIndex,omitempty" url:"fallbackIndex,omitempty"`
 	// This is the name of credential. This is just for your reference.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 
@@ -83921,6 +88957,13 @@ func (u *UpdateS3CredentialDto) GetS3PathPrefix() *string {
 		return nil
 	}
 	return u.S3PathPrefix
+}
+
+func (u *UpdateS3CredentialDto) GetFallbackIndex() *float64 {
+	if u == nil {
+		return nil
+	}
+	return u.FallbackIndex
 }
 
 func (u *UpdateS3CredentialDto) GetName() *string {
@@ -84131,12 +89174,21 @@ func (u *UpdateSpeechmaticsCredentialDto) String() string {
 }
 
 type UpdateSupabaseCredentialDto struct {
+	// This is the order in which this storage provider is tried during upload retries. Lower numbers are tried first in increasing order.
+	FallbackIndex *float64 `json:"fallbackIndex,omitempty" url:"fallbackIndex,omitempty"`
 	// This is the name of credential. This is just for your reference.
 	Name       *string             `json:"name,omitempty" url:"name,omitempty"`
 	BucketPlan *SupabaseBucketPlan `json:"bucketPlan,omitempty" url:"bucketPlan,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (u *UpdateSupabaseCredentialDto) GetFallbackIndex() *float64 {
+	if u == nil {
+		return nil
+	}
+	return u.FallbackIndex
 }
 
 func (u *UpdateSupabaseCredentialDto) GetName() *string {
@@ -86446,10 +91498,6 @@ type VapiVoice struct {
 	//
 	// @default 1
 	Speed *float64 `json:"speed,omitempty" url:"speed,omitempty"`
-	// This is the language code (ISO 639-1) that will be used.
-	//
-	// @default 'en-US'
-	Language *VapiVoiceLanguage `json:"language,omitempty" url:"language,omitempty"`
 	// This is the plan for chunking the model output before it is sent to the voice provider.
 	ChunkPlan *ChunkPlan `json:"chunkPlan,omitempty" url:"chunkPlan,omitempty"`
 	// This is the plan for voice provider fallbacks in the event that the primary voice provider fails.
@@ -86479,13 +91527,6 @@ func (v *VapiVoice) GetSpeed() *float64 {
 		return nil
 	}
 	return v.Speed
-}
-
-func (v *VapiVoice) GetLanguage() *VapiVoiceLanguage {
-	if v == nil {
-		return nil
-	}
-	return v.Language
 }
 
 func (v *VapiVoice) GetChunkPlan() *ChunkPlan {
@@ -86557,142 +91598,6 @@ func (v *VapiVoice) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", v)
-}
-
-// This is the language code (ISO 639-1) that will be used.
-//
-// @default 'en-US'
-type VapiVoiceLanguage string
-
-const (
-	VapiVoiceLanguageEnUs VapiVoiceLanguage = "en-US"
-	VapiVoiceLanguageEnGb VapiVoiceLanguage = "en-GB"
-	VapiVoiceLanguageEnAu VapiVoiceLanguage = "en-AU"
-	VapiVoiceLanguageEnCa VapiVoiceLanguage = "en-CA"
-	VapiVoiceLanguageJa   VapiVoiceLanguage = "ja"
-	VapiVoiceLanguageZh   VapiVoiceLanguage = "zh"
-	VapiVoiceLanguageDe   VapiVoiceLanguage = "de"
-	VapiVoiceLanguageHi   VapiVoiceLanguage = "hi"
-	VapiVoiceLanguageFrFr VapiVoiceLanguage = "fr-FR"
-	VapiVoiceLanguageFrCa VapiVoiceLanguage = "fr-CA"
-	VapiVoiceLanguageKo   VapiVoiceLanguage = "ko"
-	VapiVoiceLanguagePtBr VapiVoiceLanguage = "pt-BR"
-	VapiVoiceLanguagePtPt VapiVoiceLanguage = "pt-PT"
-	VapiVoiceLanguageIt   VapiVoiceLanguage = "it"
-	VapiVoiceLanguageEsEs VapiVoiceLanguage = "es-ES"
-	VapiVoiceLanguageEsMx VapiVoiceLanguage = "es-MX"
-	VapiVoiceLanguageId   VapiVoiceLanguage = "id"
-	VapiVoiceLanguageNl   VapiVoiceLanguage = "nl"
-	VapiVoiceLanguageTr   VapiVoiceLanguage = "tr"
-	VapiVoiceLanguageFil  VapiVoiceLanguage = "fil"
-	VapiVoiceLanguagePl   VapiVoiceLanguage = "pl"
-	VapiVoiceLanguageSv   VapiVoiceLanguage = "sv"
-	VapiVoiceLanguageBg   VapiVoiceLanguage = "bg"
-	VapiVoiceLanguageRo   VapiVoiceLanguage = "ro"
-	VapiVoiceLanguageArSa VapiVoiceLanguage = "ar-SA"
-	VapiVoiceLanguageArAe VapiVoiceLanguage = "ar-AE"
-	VapiVoiceLanguageCs   VapiVoiceLanguage = "cs"
-	VapiVoiceLanguageEl   VapiVoiceLanguage = "el"
-	VapiVoiceLanguageFi   VapiVoiceLanguage = "fi"
-	VapiVoiceLanguageHr   VapiVoiceLanguage = "hr"
-	VapiVoiceLanguageMs   VapiVoiceLanguage = "ms"
-	VapiVoiceLanguageSk   VapiVoiceLanguage = "sk"
-	VapiVoiceLanguageDa   VapiVoiceLanguage = "da"
-	VapiVoiceLanguageTa   VapiVoiceLanguage = "ta"
-	VapiVoiceLanguageUk   VapiVoiceLanguage = "uk"
-	VapiVoiceLanguageRu   VapiVoiceLanguage = "ru"
-	VapiVoiceLanguageHu   VapiVoiceLanguage = "hu"
-	VapiVoiceLanguageNo   VapiVoiceLanguage = "no"
-	VapiVoiceLanguageVi   VapiVoiceLanguage = "vi"
-)
-
-func NewVapiVoiceLanguageFromString(s string) (VapiVoiceLanguage, error) {
-	switch s {
-	case "en-US":
-		return VapiVoiceLanguageEnUs, nil
-	case "en-GB":
-		return VapiVoiceLanguageEnGb, nil
-	case "en-AU":
-		return VapiVoiceLanguageEnAu, nil
-	case "en-CA":
-		return VapiVoiceLanguageEnCa, nil
-	case "ja":
-		return VapiVoiceLanguageJa, nil
-	case "zh":
-		return VapiVoiceLanguageZh, nil
-	case "de":
-		return VapiVoiceLanguageDe, nil
-	case "hi":
-		return VapiVoiceLanguageHi, nil
-	case "fr-FR":
-		return VapiVoiceLanguageFrFr, nil
-	case "fr-CA":
-		return VapiVoiceLanguageFrCa, nil
-	case "ko":
-		return VapiVoiceLanguageKo, nil
-	case "pt-BR":
-		return VapiVoiceLanguagePtBr, nil
-	case "pt-PT":
-		return VapiVoiceLanguagePtPt, nil
-	case "it":
-		return VapiVoiceLanguageIt, nil
-	case "es-ES":
-		return VapiVoiceLanguageEsEs, nil
-	case "es-MX":
-		return VapiVoiceLanguageEsMx, nil
-	case "id":
-		return VapiVoiceLanguageId, nil
-	case "nl":
-		return VapiVoiceLanguageNl, nil
-	case "tr":
-		return VapiVoiceLanguageTr, nil
-	case "fil":
-		return VapiVoiceLanguageFil, nil
-	case "pl":
-		return VapiVoiceLanguagePl, nil
-	case "sv":
-		return VapiVoiceLanguageSv, nil
-	case "bg":
-		return VapiVoiceLanguageBg, nil
-	case "ro":
-		return VapiVoiceLanguageRo, nil
-	case "ar-SA":
-		return VapiVoiceLanguageArSa, nil
-	case "ar-AE":
-		return VapiVoiceLanguageArAe, nil
-	case "cs":
-		return VapiVoiceLanguageCs, nil
-	case "el":
-		return VapiVoiceLanguageEl, nil
-	case "fi":
-		return VapiVoiceLanguageFi, nil
-	case "hr":
-		return VapiVoiceLanguageHr, nil
-	case "ms":
-		return VapiVoiceLanguageMs, nil
-	case "sk":
-		return VapiVoiceLanguageSk, nil
-	case "da":
-		return VapiVoiceLanguageDa, nil
-	case "ta":
-		return VapiVoiceLanguageTa, nil
-	case "uk":
-		return VapiVoiceLanguageUk, nil
-	case "ru":
-		return VapiVoiceLanguageRu, nil
-	case "hu":
-		return VapiVoiceLanguageHu, nil
-	case "no":
-		return VapiVoiceLanguageNo, nil
-	case "vi":
-		return VapiVoiceLanguageVi, nil
-	}
-	var t VapiVoiceLanguage
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (v VapiVoiceLanguage) Ptr() *VapiVoiceLanguage {
-	return &v
 }
 
 // The voices provided by Vapi
@@ -86837,17 +91742,18 @@ func (v *VapiVoicemailDetectionPlan) String() string {
 }
 
 type VariableExtractionPlan struct {
-	Output []*VariableExtractionSchema `json:"output,omitempty" url:"output,omitempty"`
+	// This is the schema of parameters we want to extract from the response
+	Schema *JsonSchema `json:"schema,omitempty" url:"schema,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
 }
 
-func (v *VariableExtractionPlan) GetOutput() []*VariableExtractionSchema {
+func (v *VariableExtractionPlan) GetSchema() *JsonSchema {
 	if v == nil {
 		return nil
 	}
-	return v.Output
+	return v.Schema
 }
 
 func (v *VariableExtractionPlan) GetExtraProperties() map[string]interface{} {
@@ -86880,115 +91786,6 @@ func (v *VariableExtractionPlan) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", v)
-}
-
-type VariableExtractionSchema struct {
-	// This is the type of output you'd like.
-	//
-	// `string`, `number`, `boolean` are primitive types.
-	Type VariableExtractionSchemaType `json:"type" url:"type"`
-	// This is the title of the variable.
-	//
-	// It can only contain letters, numbers, and underscores.
-	Title string `json:"title" url:"title"`
-	// This is the description to help the model understand what it needs to output.
-	Description string `json:"description" url:"description"`
-	// This is the enum values to choose from. Only used if the type is `string`.
-	Enum []string `json:"enum,omitempty" url:"enum,omitempty"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (v *VariableExtractionSchema) GetType() VariableExtractionSchemaType {
-	if v == nil {
-		return ""
-	}
-	return v.Type
-}
-
-func (v *VariableExtractionSchema) GetTitle() string {
-	if v == nil {
-		return ""
-	}
-	return v.Title
-}
-
-func (v *VariableExtractionSchema) GetDescription() string {
-	if v == nil {
-		return ""
-	}
-	return v.Description
-}
-
-func (v *VariableExtractionSchema) GetEnum() []string {
-	if v == nil {
-		return nil
-	}
-	return v.Enum
-}
-
-func (v *VariableExtractionSchema) GetExtraProperties() map[string]interface{} {
-	return v.extraProperties
-}
-
-func (v *VariableExtractionSchema) UnmarshalJSON(data []byte) error {
-	type unmarshaler VariableExtractionSchema
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*v = VariableExtractionSchema(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *v)
-	if err != nil {
-		return err
-	}
-	v.extraProperties = extraProperties
-	v.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (v *VariableExtractionSchema) String() string {
-	if len(v.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(v.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(v); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", v)
-}
-
-// This is the type of output you'd like.
-//
-// `string`, `number`, `boolean` are primitive types.
-type VariableExtractionSchemaType string
-
-const (
-	VariableExtractionSchemaTypeString  VariableExtractionSchemaType = "string"
-	VariableExtractionSchemaTypeNumber  VariableExtractionSchemaType = "number"
-	VariableExtractionSchemaTypeInteger VariableExtractionSchemaType = "integer"
-	VariableExtractionSchemaTypeBoolean VariableExtractionSchemaType = "boolean"
-)
-
-func NewVariableExtractionSchemaTypeFromString(s string) (VariableExtractionSchemaType, error) {
-	switch s {
-	case "string":
-		return VariableExtractionSchemaTypeString, nil
-	case "number":
-		return VariableExtractionSchemaTypeNumber, nil
-	case "integer":
-		return VariableExtractionSchemaTypeInteger, nil
-	case "boolean":
-		return VariableExtractionSchemaTypeBoolean, nil
-	}
-	var t VariableExtractionSchemaType
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (v VariableExtractionSchemaType) Ptr() *VariableExtractionSchemaType {
-	return &v
 }
 
 type VoiceLibrary struct {
@@ -87808,6 +92605,8 @@ const (
 	WorkflowAnthropicModelModelClaude35Sonnet20241022 WorkflowAnthropicModelModel = "claude-3-5-sonnet-20241022"
 	WorkflowAnthropicModelModelClaude35Haiku20241022  WorkflowAnthropicModelModel = "claude-3-5-haiku-20241022"
 	WorkflowAnthropicModelModelClaude37Sonnet20250219 WorkflowAnthropicModelModel = "claude-3-7-sonnet-20250219"
+	WorkflowAnthropicModelModelClaudeOpus420250514    WorkflowAnthropicModelModel = "claude-opus-4-20250514"
+	WorkflowAnthropicModelModelClaudeSonnet420250514  WorkflowAnthropicModelModel = "claude-sonnet-4-20250514"
 )
 
 func NewWorkflowAnthropicModelModelFromString(s string) (WorkflowAnthropicModelModel, error) {
@@ -87826,6 +92625,10 @@ func NewWorkflowAnthropicModelModelFromString(s string) (WorkflowAnthropicModelM
 		return WorkflowAnthropicModelModelClaude35Haiku20241022, nil
 	case "claude-3-7-sonnet-20250219":
 		return WorkflowAnthropicModelModelClaude37Sonnet20250219, nil
+	case "claude-opus-4-20250514":
+		return WorkflowAnthropicModelModelClaudeOpus420250514, nil
+	case "claude-sonnet-4-20250514":
+		return WorkflowAnthropicModelModelClaudeSonnet420250514, nil
 	}
 	var t WorkflowAnthropicModelModel
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -87837,7 +92640,10 @@ func (w WorkflowAnthropicModelModel) Ptr() *WorkflowAnthropicModelModel {
 
 type WorkflowOpenAiModel struct {
 	// This is the provider of the model (`openai`).
-	// This is the specific OpenAI model that will be used.
+	// This is the OpenAI model that will be used.
+	//
+	// When using Vapi OpenAI or your own Azure Credentials, you have the option to specify the region for the selected model. This shouldn't be specified unless you have a specific reason to do so. Vapi will automatically find the fastest region that make sense.
+	// This is helpful when you are required to comply with Data Residency rules. Learn more about Azure regions here https://azure.microsoft.com/en-us/explore/global-infrastructure/data-residency/.
 	Model WorkflowOpenAiModelModel `json:"model" url:"model"`
 	// This is the temperature of the model.
 	Temperature *float64 `json:"temperature,omitempty" url:"temperature,omitempty"`
@@ -87927,10 +92733,16 @@ func (w *WorkflowOpenAiModel) String() string {
 	return fmt.Sprintf("%#v", w)
 }
 
-// This is the specific OpenAI model that will be used.
+// This is the OpenAI model that will be used.
+//
+// When using Vapi OpenAI or your own Azure Credentials, you have the option to specify the region for the selected model. This shouldn't be specified unless you have a specific reason to do so. Vapi will automatically find the fastest region that make sense.
+// This is helpful when you are required to comply with Data Residency rules. Learn more about Azure regions here https://azure.microsoft.com/en-us/explore/global-infrastructure/data-residency/.
 type WorkflowOpenAiModelModel string
 
 const (
+	WorkflowOpenAiModelModelGpt4120250414                    WorkflowOpenAiModelModel = "gpt-4.1-2025-04-14"
+	WorkflowOpenAiModelModelGpt41Mini20250414                WorkflowOpenAiModelModel = "gpt-4.1-mini-2025-04-14"
+	WorkflowOpenAiModelModelGpt41Nano20250414                WorkflowOpenAiModelModel = "gpt-4.1-nano-2025-04-14"
 	WorkflowOpenAiModelModelGpt41                            WorkflowOpenAiModelModel = "gpt-4.1"
 	WorkflowOpenAiModelModelGpt41Mini                        WorkflowOpenAiModelModel = "gpt-4.1-mini"
 	WorkflowOpenAiModelModelGpt41Nano                        WorkflowOpenAiModelModel = "gpt-4.1-nano"
@@ -87964,10 +92776,76 @@ const (
 	WorkflowOpenAiModelModelGpt35Turbo1106                   WorkflowOpenAiModelModel = "gpt-3.5-turbo-1106"
 	WorkflowOpenAiModelModelGpt35Turbo16K                    WorkflowOpenAiModelModel = "gpt-3.5-turbo-16k"
 	WorkflowOpenAiModelModelGpt35Turbo0613                   WorkflowOpenAiModelModel = "gpt-3.5-turbo-0613"
+	WorkflowOpenAiModelModelGpt4120250414Westus              WorkflowOpenAiModelModel = "gpt-4.1-2025-04-14:westus"
+	WorkflowOpenAiModelModelGpt4120250414Eastus2             WorkflowOpenAiModelModel = "gpt-4.1-2025-04-14:eastus2"
+	WorkflowOpenAiModelModelGpt4120250414Eastus              WorkflowOpenAiModelModel = "gpt-4.1-2025-04-14:eastus"
+	WorkflowOpenAiModelModelGpt4120250414Westus3             WorkflowOpenAiModelModel = "gpt-4.1-2025-04-14:westus3"
+	WorkflowOpenAiModelModelGpt4120250414Northcentralus      WorkflowOpenAiModelModel = "gpt-4.1-2025-04-14:northcentralus"
+	WorkflowOpenAiModelModelGpt4120250414Southcentralus      WorkflowOpenAiModelModel = "gpt-4.1-2025-04-14:southcentralus"
+	WorkflowOpenAiModelModelGpt41Mini20250414Westus          WorkflowOpenAiModelModel = "gpt-4.1-mini-2025-04-14:westus"
+	WorkflowOpenAiModelModelGpt41Mini20250414Eastus2         WorkflowOpenAiModelModel = "gpt-4.1-mini-2025-04-14:eastus2"
+	WorkflowOpenAiModelModelGpt41Mini20250414Eastus          WorkflowOpenAiModelModel = "gpt-4.1-mini-2025-04-14:eastus"
+	WorkflowOpenAiModelModelGpt41Mini20250414Westus3         WorkflowOpenAiModelModel = "gpt-4.1-mini-2025-04-14:westus3"
+	WorkflowOpenAiModelModelGpt41Mini20250414Northcentralus  WorkflowOpenAiModelModel = "gpt-4.1-mini-2025-04-14:northcentralus"
+	WorkflowOpenAiModelModelGpt41Mini20250414Southcentralus  WorkflowOpenAiModelModel = "gpt-4.1-mini-2025-04-14:southcentralus"
+	WorkflowOpenAiModelModelGpt41Nano20250414Westus          WorkflowOpenAiModelModel = "gpt-4.1-nano-2025-04-14:westus"
+	WorkflowOpenAiModelModelGpt41Nano20250414Eastus2         WorkflowOpenAiModelModel = "gpt-4.1-nano-2025-04-14:eastus2"
+	WorkflowOpenAiModelModelGpt41Nano20250414Westus3         WorkflowOpenAiModelModel = "gpt-4.1-nano-2025-04-14:westus3"
+	WorkflowOpenAiModelModelGpt41Nano20250414Northcentralus  WorkflowOpenAiModelModel = "gpt-4.1-nano-2025-04-14:northcentralus"
+	WorkflowOpenAiModelModelGpt41Nano20250414Southcentralus  WorkflowOpenAiModelModel = "gpt-4.1-nano-2025-04-14:southcentralus"
+	WorkflowOpenAiModelModelGpt4O20241120Swedencentral       WorkflowOpenAiModelModel = "gpt-4o-2024-11-20:swedencentral"
+	WorkflowOpenAiModelModelGpt4O20241120Westus              WorkflowOpenAiModelModel = "gpt-4o-2024-11-20:westus"
+	WorkflowOpenAiModelModelGpt4O20241120Eastus2             WorkflowOpenAiModelModel = "gpt-4o-2024-11-20:eastus2"
+	WorkflowOpenAiModelModelGpt4O20241120Eastus              WorkflowOpenAiModelModel = "gpt-4o-2024-11-20:eastus"
+	WorkflowOpenAiModelModelGpt4O20241120Westus3             WorkflowOpenAiModelModel = "gpt-4o-2024-11-20:westus3"
+	WorkflowOpenAiModelModelGpt4O20241120Southcentralus      WorkflowOpenAiModelModel = "gpt-4o-2024-11-20:southcentralus"
+	WorkflowOpenAiModelModelGpt4O20240806Westus              WorkflowOpenAiModelModel = "gpt-4o-2024-08-06:westus"
+	WorkflowOpenAiModelModelGpt4O20240806Westus3             WorkflowOpenAiModelModel = "gpt-4o-2024-08-06:westus3"
+	WorkflowOpenAiModelModelGpt4O20240806Eastus              WorkflowOpenAiModelModel = "gpt-4o-2024-08-06:eastus"
+	WorkflowOpenAiModelModelGpt4O20240806Eastus2             WorkflowOpenAiModelModel = "gpt-4o-2024-08-06:eastus2"
+	WorkflowOpenAiModelModelGpt4O20240806Northcentralus      WorkflowOpenAiModelModel = "gpt-4o-2024-08-06:northcentralus"
+	WorkflowOpenAiModelModelGpt4O20240806Southcentralus      WorkflowOpenAiModelModel = "gpt-4o-2024-08-06:southcentralus"
+	WorkflowOpenAiModelModelGpt4OMini20240718Westus          WorkflowOpenAiModelModel = "gpt-4o-mini-2024-07-18:westus"
+	WorkflowOpenAiModelModelGpt4OMini20240718Westus3         WorkflowOpenAiModelModel = "gpt-4o-mini-2024-07-18:westus3"
+	WorkflowOpenAiModelModelGpt4OMini20240718Eastus          WorkflowOpenAiModelModel = "gpt-4o-mini-2024-07-18:eastus"
+	WorkflowOpenAiModelModelGpt4OMini20240718Eastus2         WorkflowOpenAiModelModel = "gpt-4o-mini-2024-07-18:eastus2"
+	WorkflowOpenAiModelModelGpt4OMini20240718Northcentralus  WorkflowOpenAiModelModel = "gpt-4o-mini-2024-07-18:northcentralus"
+	WorkflowOpenAiModelModelGpt4OMini20240718Southcentralus  WorkflowOpenAiModelModel = "gpt-4o-mini-2024-07-18:southcentralus"
+	WorkflowOpenAiModelModelGpt4O20240513Eastus2             WorkflowOpenAiModelModel = "gpt-4o-2024-05-13:eastus2"
+	WorkflowOpenAiModelModelGpt4O20240513Eastus              WorkflowOpenAiModelModel = "gpt-4o-2024-05-13:eastus"
+	WorkflowOpenAiModelModelGpt4O20240513Northcentralus      WorkflowOpenAiModelModel = "gpt-4o-2024-05-13:northcentralus"
+	WorkflowOpenAiModelModelGpt4O20240513Southcentralus      WorkflowOpenAiModelModel = "gpt-4o-2024-05-13:southcentralus"
+	WorkflowOpenAiModelModelGpt4O20240513Westus3             WorkflowOpenAiModelModel = "gpt-4o-2024-05-13:westus3"
+	WorkflowOpenAiModelModelGpt4O20240513Westus              WorkflowOpenAiModelModel = "gpt-4o-2024-05-13:westus"
+	WorkflowOpenAiModelModelGpt4Turbo20240409Eastus2         WorkflowOpenAiModelModel = "gpt-4-turbo-2024-04-09:eastus2"
+	WorkflowOpenAiModelModelGpt40125PreviewEastus            WorkflowOpenAiModelModel = "gpt-4-0125-preview:eastus"
+	WorkflowOpenAiModelModelGpt40125PreviewNorthcentralus    WorkflowOpenAiModelModel = "gpt-4-0125-preview:northcentralus"
+	WorkflowOpenAiModelModelGpt40125PreviewSouthcentralus    WorkflowOpenAiModelModel = "gpt-4-0125-preview:southcentralus"
+	WorkflowOpenAiModelModelGpt41106PreviewAustralia         WorkflowOpenAiModelModel = "gpt-4-1106-preview:australia"
+	WorkflowOpenAiModelModelGpt41106PreviewCanadaeast        WorkflowOpenAiModelModel = "gpt-4-1106-preview:canadaeast"
+	WorkflowOpenAiModelModelGpt41106PreviewFrance            WorkflowOpenAiModelModel = "gpt-4-1106-preview:france"
+	WorkflowOpenAiModelModelGpt41106PreviewIndia             WorkflowOpenAiModelModel = "gpt-4-1106-preview:india"
+	WorkflowOpenAiModelModelGpt41106PreviewNorway            WorkflowOpenAiModelModel = "gpt-4-1106-preview:norway"
+	WorkflowOpenAiModelModelGpt41106PreviewSwedencentral     WorkflowOpenAiModelModel = "gpt-4-1106-preview:swedencentral"
+	WorkflowOpenAiModelModelGpt41106PreviewUk                WorkflowOpenAiModelModel = "gpt-4-1106-preview:uk"
+	WorkflowOpenAiModelModelGpt41106PreviewWestus            WorkflowOpenAiModelModel = "gpt-4-1106-preview:westus"
+	WorkflowOpenAiModelModelGpt41106PreviewWestus3           WorkflowOpenAiModelModel = "gpt-4-1106-preview:westus3"
+	WorkflowOpenAiModelModelGpt40613Canadaeast               WorkflowOpenAiModelModel = "gpt-4-0613:canadaeast"
+	WorkflowOpenAiModelModelGpt35Turbo0125Canadaeast         WorkflowOpenAiModelModel = "gpt-3.5-turbo-0125:canadaeast"
+	WorkflowOpenAiModelModelGpt35Turbo0125Northcentralus     WorkflowOpenAiModelModel = "gpt-3.5-turbo-0125:northcentralus"
+	WorkflowOpenAiModelModelGpt35Turbo0125Southcentralus     WorkflowOpenAiModelModel = "gpt-3.5-turbo-0125:southcentralus"
+	WorkflowOpenAiModelModelGpt35Turbo1106Canadaeast         WorkflowOpenAiModelModel = "gpt-3.5-turbo-1106:canadaeast"
+	WorkflowOpenAiModelModelGpt35Turbo1106Westus             WorkflowOpenAiModelModel = "gpt-3.5-turbo-1106:westus"
 )
 
 func NewWorkflowOpenAiModelModelFromString(s string) (WorkflowOpenAiModelModel, error) {
 	switch s {
+	case "gpt-4.1-2025-04-14":
+		return WorkflowOpenAiModelModelGpt4120250414, nil
+	case "gpt-4.1-mini-2025-04-14":
+		return WorkflowOpenAiModelModelGpt41Mini20250414, nil
+	case "gpt-4.1-nano-2025-04-14":
+		return WorkflowOpenAiModelModelGpt41Nano20250414, nil
 	case "gpt-4.1":
 		return WorkflowOpenAiModelModelGpt41, nil
 	case "gpt-4.1-mini":
@@ -88034,6 +92912,126 @@ func NewWorkflowOpenAiModelModelFromString(s string) (WorkflowOpenAiModelModel, 
 		return WorkflowOpenAiModelModelGpt35Turbo16K, nil
 	case "gpt-3.5-turbo-0613":
 		return WorkflowOpenAiModelModelGpt35Turbo0613, nil
+	case "gpt-4.1-2025-04-14:westus":
+		return WorkflowOpenAiModelModelGpt4120250414Westus, nil
+	case "gpt-4.1-2025-04-14:eastus2":
+		return WorkflowOpenAiModelModelGpt4120250414Eastus2, nil
+	case "gpt-4.1-2025-04-14:eastus":
+		return WorkflowOpenAiModelModelGpt4120250414Eastus, nil
+	case "gpt-4.1-2025-04-14:westus3":
+		return WorkflowOpenAiModelModelGpt4120250414Westus3, nil
+	case "gpt-4.1-2025-04-14:northcentralus":
+		return WorkflowOpenAiModelModelGpt4120250414Northcentralus, nil
+	case "gpt-4.1-2025-04-14:southcentralus":
+		return WorkflowOpenAiModelModelGpt4120250414Southcentralus, nil
+	case "gpt-4.1-mini-2025-04-14:westus":
+		return WorkflowOpenAiModelModelGpt41Mini20250414Westus, nil
+	case "gpt-4.1-mini-2025-04-14:eastus2":
+		return WorkflowOpenAiModelModelGpt41Mini20250414Eastus2, nil
+	case "gpt-4.1-mini-2025-04-14:eastus":
+		return WorkflowOpenAiModelModelGpt41Mini20250414Eastus, nil
+	case "gpt-4.1-mini-2025-04-14:westus3":
+		return WorkflowOpenAiModelModelGpt41Mini20250414Westus3, nil
+	case "gpt-4.1-mini-2025-04-14:northcentralus":
+		return WorkflowOpenAiModelModelGpt41Mini20250414Northcentralus, nil
+	case "gpt-4.1-mini-2025-04-14:southcentralus":
+		return WorkflowOpenAiModelModelGpt41Mini20250414Southcentralus, nil
+	case "gpt-4.1-nano-2025-04-14:westus":
+		return WorkflowOpenAiModelModelGpt41Nano20250414Westus, nil
+	case "gpt-4.1-nano-2025-04-14:eastus2":
+		return WorkflowOpenAiModelModelGpt41Nano20250414Eastus2, nil
+	case "gpt-4.1-nano-2025-04-14:westus3":
+		return WorkflowOpenAiModelModelGpt41Nano20250414Westus3, nil
+	case "gpt-4.1-nano-2025-04-14:northcentralus":
+		return WorkflowOpenAiModelModelGpt41Nano20250414Northcentralus, nil
+	case "gpt-4.1-nano-2025-04-14:southcentralus":
+		return WorkflowOpenAiModelModelGpt41Nano20250414Southcentralus, nil
+	case "gpt-4o-2024-11-20:swedencentral":
+		return WorkflowOpenAiModelModelGpt4O20241120Swedencentral, nil
+	case "gpt-4o-2024-11-20:westus":
+		return WorkflowOpenAiModelModelGpt4O20241120Westus, nil
+	case "gpt-4o-2024-11-20:eastus2":
+		return WorkflowOpenAiModelModelGpt4O20241120Eastus2, nil
+	case "gpt-4o-2024-11-20:eastus":
+		return WorkflowOpenAiModelModelGpt4O20241120Eastus, nil
+	case "gpt-4o-2024-11-20:westus3":
+		return WorkflowOpenAiModelModelGpt4O20241120Westus3, nil
+	case "gpt-4o-2024-11-20:southcentralus":
+		return WorkflowOpenAiModelModelGpt4O20241120Southcentralus, nil
+	case "gpt-4o-2024-08-06:westus":
+		return WorkflowOpenAiModelModelGpt4O20240806Westus, nil
+	case "gpt-4o-2024-08-06:westus3":
+		return WorkflowOpenAiModelModelGpt4O20240806Westus3, nil
+	case "gpt-4o-2024-08-06:eastus":
+		return WorkflowOpenAiModelModelGpt4O20240806Eastus, nil
+	case "gpt-4o-2024-08-06:eastus2":
+		return WorkflowOpenAiModelModelGpt4O20240806Eastus2, nil
+	case "gpt-4o-2024-08-06:northcentralus":
+		return WorkflowOpenAiModelModelGpt4O20240806Northcentralus, nil
+	case "gpt-4o-2024-08-06:southcentralus":
+		return WorkflowOpenAiModelModelGpt4O20240806Southcentralus, nil
+	case "gpt-4o-mini-2024-07-18:westus":
+		return WorkflowOpenAiModelModelGpt4OMini20240718Westus, nil
+	case "gpt-4o-mini-2024-07-18:westus3":
+		return WorkflowOpenAiModelModelGpt4OMini20240718Westus3, nil
+	case "gpt-4o-mini-2024-07-18:eastus":
+		return WorkflowOpenAiModelModelGpt4OMini20240718Eastus, nil
+	case "gpt-4o-mini-2024-07-18:eastus2":
+		return WorkflowOpenAiModelModelGpt4OMini20240718Eastus2, nil
+	case "gpt-4o-mini-2024-07-18:northcentralus":
+		return WorkflowOpenAiModelModelGpt4OMini20240718Northcentralus, nil
+	case "gpt-4o-mini-2024-07-18:southcentralus":
+		return WorkflowOpenAiModelModelGpt4OMini20240718Southcentralus, nil
+	case "gpt-4o-2024-05-13:eastus2":
+		return WorkflowOpenAiModelModelGpt4O20240513Eastus2, nil
+	case "gpt-4o-2024-05-13:eastus":
+		return WorkflowOpenAiModelModelGpt4O20240513Eastus, nil
+	case "gpt-4o-2024-05-13:northcentralus":
+		return WorkflowOpenAiModelModelGpt4O20240513Northcentralus, nil
+	case "gpt-4o-2024-05-13:southcentralus":
+		return WorkflowOpenAiModelModelGpt4O20240513Southcentralus, nil
+	case "gpt-4o-2024-05-13:westus3":
+		return WorkflowOpenAiModelModelGpt4O20240513Westus3, nil
+	case "gpt-4o-2024-05-13:westus":
+		return WorkflowOpenAiModelModelGpt4O20240513Westus, nil
+	case "gpt-4-turbo-2024-04-09:eastus2":
+		return WorkflowOpenAiModelModelGpt4Turbo20240409Eastus2, nil
+	case "gpt-4-0125-preview:eastus":
+		return WorkflowOpenAiModelModelGpt40125PreviewEastus, nil
+	case "gpt-4-0125-preview:northcentralus":
+		return WorkflowOpenAiModelModelGpt40125PreviewNorthcentralus, nil
+	case "gpt-4-0125-preview:southcentralus":
+		return WorkflowOpenAiModelModelGpt40125PreviewSouthcentralus, nil
+	case "gpt-4-1106-preview:australia":
+		return WorkflowOpenAiModelModelGpt41106PreviewAustralia, nil
+	case "gpt-4-1106-preview:canadaeast":
+		return WorkflowOpenAiModelModelGpt41106PreviewCanadaeast, nil
+	case "gpt-4-1106-preview:france":
+		return WorkflowOpenAiModelModelGpt41106PreviewFrance, nil
+	case "gpt-4-1106-preview:india":
+		return WorkflowOpenAiModelModelGpt41106PreviewIndia, nil
+	case "gpt-4-1106-preview:norway":
+		return WorkflowOpenAiModelModelGpt41106PreviewNorway, nil
+	case "gpt-4-1106-preview:swedencentral":
+		return WorkflowOpenAiModelModelGpt41106PreviewSwedencentral, nil
+	case "gpt-4-1106-preview:uk":
+		return WorkflowOpenAiModelModelGpt41106PreviewUk, nil
+	case "gpt-4-1106-preview:westus":
+		return WorkflowOpenAiModelModelGpt41106PreviewWestus, nil
+	case "gpt-4-1106-preview:westus3":
+		return WorkflowOpenAiModelModelGpt41106PreviewWestus3, nil
+	case "gpt-4-0613:canadaeast":
+		return WorkflowOpenAiModelModelGpt40613Canadaeast, nil
+	case "gpt-3.5-turbo-0125:canadaeast":
+		return WorkflowOpenAiModelModelGpt35Turbo0125Canadaeast, nil
+	case "gpt-3.5-turbo-0125:northcentralus":
+		return WorkflowOpenAiModelModelGpt35Turbo0125Northcentralus, nil
+	case "gpt-3.5-turbo-0125:southcentralus":
+		return WorkflowOpenAiModelModelGpt35Turbo0125Southcentralus, nil
+	case "gpt-3.5-turbo-1106:canadaeast":
+		return WorkflowOpenAiModelModelGpt35Turbo1106Canadaeast, nil
+	case "gpt-3.5-turbo-1106:westus":
+		return WorkflowOpenAiModelModelGpt35Turbo1106Westus, nil
 	}
 	var t WorkflowOpenAiModelModel
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -88045,10 +93043,72 @@ func (w WorkflowOpenAiModelModel) Ptr() *WorkflowOpenAiModelModel {
 
 type WorkflowUserEditable struct {
 	Nodes []*WorkflowUserEditableNodesItem `json:"nodes,omitempty" url:"nodes,omitempty"`
-	// These are the options for the workflow's LLM.
-	Model *WorkflowUserEditableModel `json:"model,omitempty" url:"model,omitempty"`
-	Name  string                     `json:"name" url:"name"`
-	Edges []*Edge                    `json:"edges,omitempty" url:"edges,omitempty"`
+	// This is the transcriber for the workflow.
+	//
+	// This can be overridden at node level using `nodes[n].transcriber`.
+	Transcriber *WorkflowUserEditableTranscriber `json:"transcriber,omitempty" url:"transcriber,omitempty"`
+	// This is the voice for the workflow.
+	//
+	// This can be overridden at node level using `nodes[n].voice`.
+	Voice *WorkflowUserEditableVoice `json:"voice,omitempty" url:"voice,omitempty"`
+	// This is the plan for observability of workflow's calls.
+	//
+	// Currently, only Langfuse is supported.
+	ObservabilityPlan *LangfuseObservabilityPlan `json:"observabilityPlan,omitempty" url:"observabilityPlan,omitempty"`
+	// These are dynamic credentials that will be used for the workflow calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials.
+	Credentials  []*WorkflowUserEditableCredentialsItem `json:"credentials,omitempty" url:"credentials,omitempty"`
+	Name         string                                 `json:"name" url:"name"`
+	Edges        []*Edge                                `json:"edges,omitempty" url:"edges,omitempty"`
+	GlobalPrompt *string                                `json:"globalPrompt,omitempty" url:"globalPrompt,omitempty"`
+	// This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
+	//
+	// The order of precedence is:
+	//
+	// 1. tool.server
+	// 2. workflow.server / assistant.server
+	// 3. phoneNumber.server
+	// 4. org.server
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
+	// This is the compliance plan for the workflow. It allows you to configure HIPAA and other compliance settings.
+	CompliancePlan *CompliancePlan `json:"compliancePlan,omitempty" url:"compliancePlan,omitempty"`
+	// This is the plan for analysis of workflow's calls. Stored in `call.analysis`.
+	AnalysisPlan *AnalysisPlan `json:"analysisPlan,omitempty" url:"analysisPlan,omitempty"`
+	// This is the plan for artifacts generated during workflow's calls. Stored in `call.artifact`.
+	ArtifactPlan *ArtifactPlan `json:"artifactPlan,omitempty" url:"artifactPlan,omitempty"`
+	// This is the plan for when the workflow nodes should start talking.
+	//
+	// You should configure this if you're running into these issues:
+	// - The assistant is too slow to start talking after the customer is done speaking.
+	// - The assistant is too fast to start talking after the customer is done speaking.
+	// - The assistant is so fast that it's actually interrupting the customer.
+	StartSpeakingPlan *StartSpeakingPlan `json:"startSpeakingPlan,omitempty" url:"startSpeakingPlan,omitempty"`
+	// This is the plan for when workflow nodes should stop talking on customer interruption.
+	//
+	// You should configure this if you're running into these issues:
+	// - The assistant is too slow to recognize customer's interruption.
+	// - The assistant is too fast to recognize customer's interruption.
+	// - The assistant is getting interrupted by phrases that are just acknowledgments.
+	// - The assistant is getting interrupted by background noises.
+	// - The assistant is not properly stopping -- it starts talking right after getting interrupted.
+	StopSpeakingPlan *StopSpeakingPlan `json:"stopSpeakingPlan,omitempty" url:"stopSpeakingPlan,omitempty"`
+	// This is the plan for real-time monitoring of the workflow's calls.
+	//
+	// Usage:
+	// - To enable live listening of the workflow's calls, set `monitorPlan.listenEnabled` to `true`.
+	// - To enable live control of the workflow's calls, set `monitorPlan.controlEnabled` to `true`.
+	MonitorPlan *MonitorPlan `json:"monitorPlan,omitempty" url:"monitorPlan,omitempty"`
+	// This enables filtering of noise and background speech while the user is talking.
+	//
+	// Features:
+	// - Smart denoising using Krisp
+	// - Fourier denoising
+	//
+	// Both can be used together. Order of precedence:
+	// - Smart denoising
+	// - Fourier denoising
+	BackgroundSpeechDenoisingPlan *BackgroundSpeechDenoisingPlan `json:"backgroundSpeechDenoisingPlan,omitempty" url:"backgroundSpeechDenoisingPlan,omitempty"`
+	// These are the credentials that will be used for the workflow calls. By default, all the credentials are available for use in the call but you can provide a subset using this.
+	CredentialIds []string `json:"credentialIds,omitempty" url:"credentialIds,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -88061,11 +93121,32 @@ func (w *WorkflowUserEditable) GetNodes() []*WorkflowUserEditableNodesItem {
 	return w.Nodes
 }
 
-func (w *WorkflowUserEditable) GetModel() *WorkflowUserEditableModel {
+func (w *WorkflowUserEditable) GetTranscriber() *WorkflowUserEditableTranscriber {
 	if w == nil {
 		return nil
 	}
-	return w.Model
+	return w.Transcriber
+}
+
+func (w *WorkflowUserEditable) GetVoice() *WorkflowUserEditableVoice {
+	if w == nil {
+		return nil
+	}
+	return w.Voice
+}
+
+func (w *WorkflowUserEditable) GetObservabilityPlan() *LangfuseObservabilityPlan {
+	if w == nil {
+		return nil
+	}
+	return w.ObservabilityPlan
+}
+
+func (w *WorkflowUserEditable) GetCredentials() []*WorkflowUserEditableCredentialsItem {
+	if w == nil {
+		return nil
+	}
+	return w.Credentials
 }
 
 func (w *WorkflowUserEditable) GetName() string {
@@ -88080,6 +93161,76 @@ func (w *WorkflowUserEditable) GetEdges() []*Edge {
 		return nil
 	}
 	return w.Edges
+}
+
+func (w *WorkflowUserEditable) GetGlobalPrompt() *string {
+	if w == nil {
+		return nil
+	}
+	return w.GlobalPrompt
+}
+
+func (w *WorkflowUserEditable) GetServer() *Server {
+	if w == nil {
+		return nil
+	}
+	return w.Server
+}
+
+func (w *WorkflowUserEditable) GetCompliancePlan() *CompliancePlan {
+	if w == nil {
+		return nil
+	}
+	return w.CompliancePlan
+}
+
+func (w *WorkflowUserEditable) GetAnalysisPlan() *AnalysisPlan {
+	if w == nil {
+		return nil
+	}
+	return w.AnalysisPlan
+}
+
+func (w *WorkflowUserEditable) GetArtifactPlan() *ArtifactPlan {
+	if w == nil {
+		return nil
+	}
+	return w.ArtifactPlan
+}
+
+func (w *WorkflowUserEditable) GetStartSpeakingPlan() *StartSpeakingPlan {
+	if w == nil {
+		return nil
+	}
+	return w.StartSpeakingPlan
+}
+
+func (w *WorkflowUserEditable) GetStopSpeakingPlan() *StopSpeakingPlan {
+	if w == nil {
+		return nil
+	}
+	return w.StopSpeakingPlan
+}
+
+func (w *WorkflowUserEditable) GetMonitorPlan() *MonitorPlan {
+	if w == nil {
+		return nil
+	}
+	return w.MonitorPlan
+}
+
+func (w *WorkflowUserEditable) GetBackgroundSpeechDenoisingPlan() *BackgroundSpeechDenoisingPlan {
+	if w == nil {
+		return nil
+	}
+	return w.BackgroundSpeechDenoisingPlan
+}
+
+func (w *WorkflowUserEditable) GetCredentialIds() []string {
+	if w == nil {
+		return nil
+	}
+	return w.CredentialIds
 }
 
 func (w *WorkflowUserEditable) GetExtraProperties() map[string]interface{} {
@@ -88114,65 +93265,1030 @@ func (w *WorkflowUserEditable) String() string {
 	return fmt.Sprintf("%#v", w)
 }
 
-// These are the options for the workflow's LLM.
-type WorkflowUserEditableModel struct {
-	WorkflowOpenAiModel    *WorkflowOpenAiModel
-	WorkflowAnthropicModel *WorkflowAnthropicModel
+type WorkflowUserEditableCredentialsItem struct {
+	CreateElevenLabsCredentialDto                        *CreateElevenLabsCredentialDto
+	CreateAnthropicCredentialDto                         *CreateAnthropicCredentialDto
+	CreateAnyscaleCredentialDto                          *CreateAnyscaleCredentialDto
+	CreateAssemblyAiCredentialDto                        *CreateAssemblyAiCredentialDto
+	CreateAzureOpenAiCredentialDto                       *CreateAzureOpenAiCredentialDto
+	CreateAzureCredentialDto                             *CreateAzureCredentialDto
+	CreateByoSipTrunkCredentialDto                       *CreateByoSipTrunkCredentialDto
+	CreateCartesiaCredentialDto                          *CreateCartesiaCredentialDto
+	CreateCerebrasCredentialDto                          *CreateCerebrasCredentialDto
+	CreateCloudflareCredentialDto                        *CreateCloudflareCredentialDto
+	CreateCustomLlmCredentialDto                         *CreateCustomLlmCredentialDto
+	CreateDeepgramCredentialDto                          *CreateDeepgramCredentialDto
+	CreateDeepInfraCredentialDto                         *CreateDeepInfraCredentialDto
+	CreateDeepSeekCredentialDto                          *CreateDeepSeekCredentialDto
+	CreateGcpCredentialDto                               *CreateGcpCredentialDto
+	CreateGladiaCredentialDto                            *CreateGladiaCredentialDto
+	CreateGoHighLevelCredentialDto                       *CreateGoHighLevelCredentialDto
+	CreateGoogleCredentialDto                            *CreateGoogleCredentialDto
+	CreateGroqCredentialDto                              *CreateGroqCredentialDto
+	CreateInflectionAiCredentialDto                      *CreateInflectionAiCredentialDto
+	CreateLangfuseCredentialDto                          *CreateLangfuseCredentialDto
+	CreateLmntCredentialDto                              *CreateLmntCredentialDto
+	CreateMakeCredentialDto                              *CreateMakeCredentialDto
+	CreateOpenAiCredentialDto                            *CreateOpenAiCredentialDto
+	CreateOpenRouterCredentialDto                        *CreateOpenRouterCredentialDto
+	CreatePerplexityAiCredentialDto                      *CreatePerplexityAiCredentialDto
+	CreatePlayHtCredentialDto                            *CreatePlayHtCredentialDto
+	CreateRimeAiCredentialDto                            *CreateRimeAiCredentialDto
+	CreateRunpodCredentialDto                            *CreateRunpodCredentialDto
+	CreateS3CredentialDto                                *CreateS3CredentialDto
+	CreateSupabaseCredentialDto                          *CreateSupabaseCredentialDto
+	CreateSmallestAiCredentialDto                        *CreateSmallestAiCredentialDto
+	CreateTavusCredentialDto                             *CreateTavusCredentialDto
+	CreateTogetherAiCredentialDto                        *CreateTogetherAiCredentialDto
+	CreateTwilioCredentialDto                            *CreateTwilioCredentialDto
+	CreateVonageCredentialDto                            *CreateVonageCredentialDto
+	CreateWebhookCredentialDto                           *CreateWebhookCredentialDto
+	CreateXAiCredentialDto                               *CreateXAiCredentialDto
+	CreateNeuphonicCredentialDto                         *CreateNeuphonicCredentialDto
+	CreateHumeCredentialDto                              *CreateHumeCredentialDto
+	CreateMistralCredentialDto                           *CreateMistralCredentialDto
+	CreateSpeechmaticsCredentialDto                      *CreateSpeechmaticsCredentialDto
+	CreateTrieveCredentialDto                            *CreateTrieveCredentialDto
+	CreateGoogleCalendarOAuth2ClientCredentialDto        *CreateGoogleCalendarOAuth2ClientCredentialDto
+	CreateGoogleCalendarOAuth2AuthorizationCredentialDto *CreateGoogleCalendarOAuth2AuthorizationCredentialDto
+	CreateGoogleSheetsOAuth2AuthorizationCredentialDto   *CreateGoogleSheetsOAuth2AuthorizationCredentialDto
+	CreateSlackOAuth2AuthorizationCredentialDto          *CreateSlackOAuth2AuthorizationCredentialDto
+	CreateGoHighLevelMcpCredentialDto                    *CreateGoHighLevelMcpCredentialDto
 
 	typ string
 }
 
-func (w *WorkflowUserEditableModel) GetWorkflowOpenAiModel() *WorkflowOpenAiModel {
+func (w *WorkflowUserEditableCredentialsItem) GetCreateElevenLabsCredentialDto() *CreateElevenLabsCredentialDto {
 	if w == nil {
 		return nil
 	}
-	return w.WorkflowOpenAiModel
+	return w.CreateElevenLabsCredentialDto
 }
 
-func (w *WorkflowUserEditableModel) GetWorkflowAnthropicModel() *WorkflowAnthropicModel {
+func (w *WorkflowUserEditableCredentialsItem) GetCreateAnthropicCredentialDto() *CreateAnthropicCredentialDto {
 	if w == nil {
 		return nil
 	}
-	return w.WorkflowAnthropicModel
+	return w.CreateAnthropicCredentialDto
 }
 
-func (w *WorkflowUserEditableModel) UnmarshalJSON(data []byte) error {
-	valueWorkflowOpenAiModel := new(WorkflowOpenAiModel)
-	if err := json.Unmarshal(data, &valueWorkflowOpenAiModel); err == nil {
-		w.typ = "WorkflowOpenAiModel"
-		w.WorkflowOpenAiModel = valueWorkflowOpenAiModel
+func (w *WorkflowUserEditableCredentialsItem) GetCreateAnyscaleCredentialDto() *CreateAnyscaleCredentialDto {
+	if w == nil {
 		return nil
 	}
-	valueWorkflowAnthropicModel := new(WorkflowAnthropicModel)
-	if err := json.Unmarshal(data, &valueWorkflowAnthropicModel); err == nil {
-		w.typ = "WorkflowAnthropicModel"
-		w.WorkflowAnthropicModel = valueWorkflowAnthropicModel
+	return w.CreateAnyscaleCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateAssemblyAiCredentialDto() *CreateAssemblyAiCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateAssemblyAiCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateAzureOpenAiCredentialDto() *CreateAzureOpenAiCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateAzureOpenAiCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateAzureCredentialDto() *CreateAzureCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateAzureCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateByoSipTrunkCredentialDto() *CreateByoSipTrunkCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateByoSipTrunkCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateCartesiaCredentialDto() *CreateCartesiaCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateCartesiaCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateCerebrasCredentialDto() *CreateCerebrasCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateCerebrasCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateCloudflareCredentialDto() *CreateCloudflareCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateCloudflareCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateCustomLlmCredentialDto() *CreateCustomLlmCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateCustomLlmCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateDeepgramCredentialDto() *CreateDeepgramCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateDeepgramCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateDeepInfraCredentialDto() *CreateDeepInfraCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateDeepInfraCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateDeepSeekCredentialDto() *CreateDeepSeekCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateDeepSeekCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateGcpCredentialDto() *CreateGcpCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateGcpCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateGladiaCredentialDto() *CreateGladiaCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateGladiaCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateGoHighLevelCredentialDto() *CreateGoHighLevelCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateGoHighLevelCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateGoogleCredentialDto() *CreateGoogleCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateGoogleCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateGroqCredentialDto() *CreateGroqCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateGroqCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateInflectionAiCredentialDto() *CreateInflectionAiCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateInflectionAiCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateLangfuseCredentialDto() *CreateLangfuseCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateLangfuseCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateLmntCredentialDto() *CreateLmntCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateLmntCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateMakeCredentialDto() *CreateMakeCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateMakeCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateOpenAiCredentialDto() *CreateOpenAiCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateOpenAiCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateOpenRouterCredentialDto() *CreateOpenRouterCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateOpenRouterCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreatePerplexityAiCredentialDto() *CreatePerplexityAiCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreatePerplexityAiCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreatePlayHtCredentialDto() *CreatePlayHtCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreatePlayHtCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateRimeAiCredentialDto() *CreateRimeAiCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateRimeAiCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateRunpodCredentialDto() *CreateRunpodCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateRunpodCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateS3CredentialDto() *CreateS3CredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateS3CredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateSupabaseCredentialDto() *CreateSupabaseCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateSupabaseCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateSmallestAiCredentialDto() *CreateSmallestAiCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateSmallestAiCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateTavusCredentialDto() *CreateTavusCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateTavusCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateTogetherAiCredentialDto() *CreateTogetherAiCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateTogetherAiCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateTwilioCredentialDto() *CreateTwilioCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateTwilioCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateVonageCredentialDto() *CreateVonageCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateVonageCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateWebhookCredentialDto() *CreateWebhookCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateWebhookCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateXAiCredentialDto() *CreateXAiCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateXAiCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateNeuphonicCredentialDto() *CreateNeuphonicCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateNeuphonicCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateHumeCredentialDto() *CreateHumeCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateHumeCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateMistralCredentialDto() *CreateMistralCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateMistralCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateSpeechmaticsCredentialDto() *CreateSpeechmaticsCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateSpeechmaticsCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateTrieveCredentialDto() *CreateTrieveCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateTrieveCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateGoogleCalendarOAuth2ClientCredentialDto() *CreateGoogleCalendarOAuth2ClientCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateGoogleCalendarOAuth2ClientCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateGoogleCalendarOAuth2AuthorizationCredentialDto() *CreateGoogleCalendarOAuth2AuthorizationCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateGoogleCalendarOAuth2AuthorizationCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateGoogleSheetsOAuth2AuthorizationCredentialDto() *CreateGoogleSheetsOAuth2AuthorizationCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateGoogleSheetsOAuth2AuthorizationCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateSlackOAuth2AuthorizationCredentialDto() *CreateSlackOAuth2AuthorizationCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateSlackOAuth2AuthorizationCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) GetCreateGoHighLevelMcpCredentialDto() *CreateGoHighLevelMcpCredentialDto {
+	if w == nil {
+		return nil
+	}
+	return w.CreateGoHighLevelMcpCredentialDto
+}
+
+func (w *WorkflowUserEditableCredentialsItem) UnmarshalJSON(data []byte) error {
+	valueCreateElevenLabsCredentialDto := new(CreateElevenLabsCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateElevenLabsCredentialDto); err == nil {
+		w.typ = "CreateElevenLabsCredentialDto"
+		w.CreateElevenLabsCredentialDto = valueCreateElevenLabsCredentialDto
+		return nil
+	}
+	valueCreateAnthropicCredentialDto := new(CreateAnthropicCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateAnthropicCredentialDto); err == nil {
+		w.typ = "CreateAnthropicCredentialDto"
+		w.CreateAnthropicCredentialDto = valueCreateAnthropicCredentialDto
+		return nil
+	}
+	valueCreateAnyscaleCredentialDto := new(CreateAnyscaleCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateAnyscaleCredentialDto); err == nil {
+		w.typ = "CreateAnyscaleCredentialDto"
+		w.CreateAnyscaleCredentialDto = valueCreateAnyscaleCredentialDto
+		return nil
+	}
+	valueCreateAssemblyAiCredentialDto := new(CreateAssemblyAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateAssemblyAiCredentialDto); err == nil {
+		w.typ = "CreateAssemblyAiCredentialDto"
+		w.CreateAssemblyAiCredentialDto = valueCreateAssemblyAiCredentialDto
+		return nil
+	}
+	valueCreateAzureOpenAiCredentialDto := new(CreateAzureOpenAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateAzureOpenAiCredentialDto); err == nil {
+		w.typ = "CreateAzureOpenAiCredentialDto"
+		w.CreateAzureOpenAiCredentialDto = valueCreateAzureOpenAiCredentialDto
+		return nil
+	}
+	valueCreateAzureCredentialDto := new(CreateAzureCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateAzureCredentialDto); err == nil {
+		w.typ = "CreateAzureCredentialDto"
+		w.CreateAzureCredentialDto = valueCreateAzureCredentialDto
+		return nil
+	}
+	valueCreateByoSipTrunkCredentialDto := new(CreateByoSipTrunkCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateByoSipTrunkCredentialDto); err == nil {
+		w.typ = "CreateByoSipTrunkCredentialDto"
+		w.CreateByoSipTrunkCredentialDto = valueCreateByoSipTrunkCredentialDto
+		return nil
+	}
+	valueCreateCartesiaCredentialDto := new(CreateCartesiaCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateCartesiaCredentialDto); err == nil {
+		w.typ = "CreateCartesiaCredentialDto"
+		w.CreateCartesiaCredentialDto = valueCreateCartesiaCredentialDto
+		return nil
+	}
+	valueCreateCerebrasCredentialDto := new(CreateCerebrasCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateCerebrasCredentialDto); err == nil {
+		w.typ = "CreateCerebrasCredentialDto"
+		w.CreateCerebrasCredentialDto = valueCreateCerebrasCredentialDto
+		return nil
+	}
+	valueCreateCloudflareCredentialDto := new(CreateCloudflareCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateCloudflareCredentialDto); err == nil {
+		w.typ = "CreateCloudflareCredentialDto"
+		w.CreateCloudflareCredentialDto = valueCreateCloudflareCredentialDto
+		return nil
+	}
+	valueCreateCustomLlmCredentialDto := new(CreateCustomLlmCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateCustomLlmCredentialDto); err == nil {
+		w.typ = "CreateCustomLlmCredentialDto"
+		w.CreateCustomLlmCredentialDto = valueCreateCustomLlmCredentialDto
+		return nil
+	}
+	valueCreateDeepgramCredentialDto := new(CreateDeepgramCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateDeepgramCredentialDto); err == nil {
+		w.typ = "CreateDeepgramCredentialDto"
+		w.CreateDeepgramCredentialDto = valueCreateDeepgramCredentialDto
+		return nil
+	}
+	valueCreateDeepInfraCredentialDto := new(CreateDeepInfraCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateDeepInfraCredentialDto); err == nil {
+		w.typ = "CreateDeepInfraCredentialDto"
+		w.CreateDeepInfraCredentialDto = valueCreateDeepInfraCredentialDto
+		return nil
+	}
+	valueCreateDeepSeekCredentialDto := new(CreateDeepSeekCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateDeepSeekCredentialDto); err == nil {
+		w.typ = "CreateDeepSeekCredentialDto"
+		w.CreateDeepSeekCredentialDto = valueCreateDeepSeekCredentialDto
+		return nil
+	}
+	valueCreateGcpCredentialDto := new(CreateGcpCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGcpCredentialDto); err == nil {
+		w.typ = "CreateGcpCredentialDto"
+		w.CreateGcpCredentialDto = valueCreateGcpCredentialDto
+		return nil
+	}
+	valueCreateGladiaCredentialDto := new(CreateGladiaCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGladiaCredentialDto); err == nil {
+		w.typ = "CreateGladiaCredentialDto"
+		w.CreateGladiaCredentialDto = valueCreateGladiaCredentialDto
+		return nil
+	}
+	valueCreateGoHighLevelCredentialDto := new(CreateGoHighLevelCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoHighLevelCredentialDto); err == nil {
+		w.typ = "CreateGoHighLevelCredentialDto"
+		w.CreateGoHighLevelCredentialDto = valueCreateGoHighLevelCredentialDto
+		return nil
+	}
+	valueCreateGoogleCredentialDto := new(CreateGoogleCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoogleCredentialDto); err == nil {
+		w.typ = "CreateGoogleCredentialDto"
+		w.CreateGoogleCredentialDto = valueCreateGoogleCredentialDto
+		return nil
+	}
+	valueCreateGroqCredentialDto := new(CreateGroqCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGroqCredentialDto); err == nil {
+		w.typ = "CreateGroqCredentialDto"
+		w.CreateGroqCredentialDto = valueCreateGroqCredentialDto
+		return nil
+	}
+	valueCreateInflectionAiCredentialDto := new(CreateInflectionAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateInflectionAiCredentialDto); err == nil {
+		w.typ = "CreateInflectionAiCredentialDto"
+		w.CreateInflectionAiCredentialDto = valueCreateInflectionAiCredentialDto
+		return nil
+	}
+	valueCreateLangfuseCredentialDto := new(CreateLangfuseCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateLangfuseCredentialDto); err == nil {
+		w.typ = "CreateLangfuseCredentialDto"
+		w.CreateLangfuseCredentialDto = valueCreateLangfuseCredentialDto
+		return nil
+	}
+	valueCreateLmntCredentialDto := new(CreateLmntCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateLmntCredentialDto); err == nil {
+		w.typ = "CreateLmntCredentialDto"
+		w.CreateLmntCredentialDto = valueCreateLmntCredentialDto
+		return nil
+	}
+	valueCreateMakeCredentialDto := new(CreateMakeCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateMakeCredentialDto); err == nil {
+		w.typ = "CreateMakeCredentialDto"
+		w.CreateMakeCredentialDto = valueCreateMakeCredentialDto
+		return nil
+	}
+	valueCreateOpenAiCredentialDto := new(CreateOpenAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateOpenAiCredentialDto); err == nil {
+		w.typ = "CreateOpenAiCredentialDto"
+		w.CreateOpenAiCredentialDto = valueCreateOpenAiCredentialDto
+		return nil
+	}
+	valueCreateOpenRouterCredentialDto := new(CreateOpenRouterCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateOpenRouterCredentialDto); err == nil {
+		w.typ = "CreateOpenRouterCredentialDto"
+		w.CreateOpenRouterCredentialDto = valueCreateOpenRouterCredentialDto
+		return nil
+	}
+	valueCreatePerplexityAiCredentialDto := new(CreatePerplexityAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreatePerplexityAiCredentialDto); err == nil {
+		w.typ = "CreatePerplexityAiCredentialDto"
+		w.CreatePerplexityAiCredentialDto = valueCreatePerplexityAiCredentialDto
+		return nil
+	}
+	valueCreatePlayHtCredentialDto := new(CreatePlayHtCredentialDto)
+	if err := json.Unmarshal(data, &valueCreatePlayHtCredentialDto); err == nil {
+		w.typ = "CreatePlayHtCredentialDto"
+		w.CreatePlayHtCredentialDto = valueCreatePlayHtCredentialDto
+		return nil
+	}
+	valueCreateRimeAiCredentialDto := new(CreateRimeAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateRimeAiCredentialDto); err == nil {
+		w.typ = "CreateRimeAiCredentialDto"
+		w.CreateRimeAiCredentialDto = valueCreateRimeAiCredentialDto
+		return nil
+	}
+	valueCreateRunpodCredentialDto := new(CreateRunpodCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateRunpodCredentialDto); err == nil {
+		w.typ = "CreateRunpodCredentialDto"
+		w.CreateRunpodCredentialDto = valueCreateRunpodCredentialDto
+		return nil
+	}
+	valueCreateS3CredentialDto := new(CreateS3CredentialDto)
+	if err := json.Unmarshal(data, &valueCreateS3CredentialDto); err == nil {
+		w.typ = "CreateS3CredentialDto"
+		w.CreateS3CredentialDto = valueCreateS3CredentialDto
+		return nil
+	}
+	valueCreateSupabaseCredentialDto := new(CreateSupabaseCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateSupabaseCredentialDto); err == nil {
+		w.typ = "CreateSupabaseCredentialDto"
+		w.CreateSupabaseCredentialDto = valueCreateSupabaseCredentialDto
+		return nil
+	}
+	valueCreateSmallestAiCredentialDto := new(CreateSmallestAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateSmallestAiCredentialDto); err == nil {
+		w.typ = "CreateSmallestAiCredentialDto"
+		w.CreateSmallestAiCredentialDto = valueCreateSmallestAiCredentialDto
+		return nil
+	}
+	valueCreateTavusCredentialDto := new(CreateTavusCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateTavusCredentialDto); err == nil {
+		w.typ = "CreateTavusCredentialDto"
+		w.CreateTavusCredentialDto = valueCreateTavusCredentialDto
+		return nil
+	}
+	valueCreateTogetherAiCredentialDto := new(CreateTogetherAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateTogetherAiCredentialDto); err == nil {
+		w.typ = "CreateTogetherAiCredentialDto"
+		w.CreateTogetherAiCredentialDto = valueCreateTogetherAiCredentialDto
+		return nil
+	}
+	valueCreateTwilioCredentialDto := new(CreateTwilioCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateTwilioCredentialDto); err == nil {
+		w.typ = "CreateTwilioCredentialDto"
+		w.CreateTwilioCredentialDto = valueCreateTwilioCredentialDto
+		return nil
+	}
+	valueCreateVonageCredentialDto := new(CreateVonageCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateVonageCredentialDto); err == nil {
+		w.typ = "CreateVonageCredentialDto"
+		w.CreateVonageCredentialDto = valueCreateVonageCredentialDto
+		return nil
+	}
+	valueCreateWebhookCredentialDto := new(CreateWebhookCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateWebhookCredentialDto); err == nil {
+		w.typ = "CreateWebhookCredentialDto"
+		w.CreateWebhookCredentialDto = valueCreateWebhookCredentialDto
+		return nil
+	}
+	valueCreateXAiCredentialDto := new(CreateXAiCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateXAiCredentialDto); err == nil {
+		w.typ = "CreateXAiCredentialDto"
+		w.CreateXAiCredentialDto = valueCreateXAiCredentialDto
+		return nil
+	}
+	valueCreateNeuphonicCredentialDto := new(CreateNeuphonicCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateNeuphonicCredentialDto); err == nil {
+		w.typ = "CreateNeuphonicCredentialDto"
+		w.CreateNeuphonicCredentialDto = valueCreateNeuphonicCredentialDto
+		return nil
+	}
+	valueCreateHumeCredentialDto := new(CreateHumeCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateHumeCredentialDto); err == nil {
+		w.typ = "CreateHumeCredentialDto"
+		w.CreateHumeCredentialDto = valueCreateHumeCredentialDto
+		return nil
+	}
+	valueCreateMistralCredentialDto := new(CreateMistralCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateMistralCredentialDto); err == nil {
+		w.typ = "CreateMistralCredentialDto"
+		w.CreateMistralCredentialDto = valueCreateMistralCredentialDto
+		return nil
+	}
+	valueCreateSpeechmaticsCredentialDto := new(CreateSpeechmaticsCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateSpeechmaticsCredentialDto); err == nil {
+		w.typ = "CreateSpeechmaticsCredentialDto"
+		w.CreateSpeechmaticsCredentialDto = valueCreateSpeechmaticsCredentialDto
+		return nil
+	}
+	valueCreateTrieveCredentialDto := new(CreateTrieveCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateTrieveCredentialDto); err == nil {
+		w.typ = "CreateTrieveCredentialDto"
+		w.CreateTrieveCredentialDto = valueCreateTrieveCredentialDto
+		return nil
+	}
+	valueCreateGoogleCalendarOAuth2ClientCredentialDto := new(CreateGoogleCalendarOAuth2ClientCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoogleCalendarOAuth2ClientCredentialDto); err == nil {
+		w.typ = "CreateGoogleCalendarOAuth2ClientCredentialDto"
+		w.CreateGoogleCalendarOAuth2ClientCredentialDto = valueCreateGoogleCalendarOAuth2ClientCredentialDto
+		return nil
+	}
+	valueCreateGoogleCalendarOAuth2AuthorizationCredentialDto := new(CreateGoogleCalendarOAuth2AuthorizationCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoogleCalendarOAuth2AuthorizationCredentialDto); err == nil {
+		w.typ = "CreateGoogleCalendarOAuth2AuthorizationCredentialDto"
+		w.CreateGoogleCalendarOAuth2AuthorizationCredentialDto = valueCreateGoogleCalendarOAuth2AuthorizationCredentialDto
+		return nil
+	}
+	valueCreateGoogleSheetsOAuth2AuthorizationCredentialDto := new(CreateGoogleSheetsOAuth2AuthorizationCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoogleSheetsOAuth2AuthorizationCredentialDto); err == nil {
+		w.typ = "CreateGoogleSheetsOAuth2AuthorizationCredentialDto"
+		w.CreateGoogleSheetsOAuth2AuthorizationCredentialDto = valueCreateGoogleSheetsOAuth2AuthorizationCredentialDto
+		return nil
+	}
+	valueCreateSlackOAuth2AuthorizationCredentialDto := new(CreateSlackOAuth2AuthorizationCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateSlackOAuth2AuthorizationCredentialDto); err == nil {
+		w.typ = "CreateSlackOAuth2AuthorizationCredentialDto"
+		w.CreateSlackOAuth2AuthorizationCredentialDto = valueCreateSlackOAuth2AuthorizationCredentialDto
+		return nil
+	}
+	valueCreateGoHighLevelMcpCredentialDto := new(CreateGoHighLevelMcpCredentialDto)
+	if err := json.Unmarshal(data, &valueCreateGoHighLevelMcpCredentialDto); err == nil {
+		w.typ = "CreateGoHighLevelMcpCredentialDto"
+		w.CreateGoHighLevelMcpCredentialDto = valueCreateGoHighLevelMcpCredentialDto
 		return nil
 	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, w)
 }
 
-func (w WorkflowUserEditableModel) MarshalJSON() ([]byte, error) {
-	if w.typ == "WorkflowOpenAiModel" || w.WorkflowOpenAiModel != nil {
-		return json.Marshal(w.WorkflowOpenAiModel)
+func (w WorkflowUserEditableCredentialsItem) MarshalJSON() ([]byte, error) {
+	if w.typ == "CreateElevenLabsCredentialDto" || w.CreateElevenLabsCredentialDto != nil {
+		return json.Marshal(w.CreateElevenLabsCredentialDto)
 	}
-	if w.typ == "WorkflowAnthropicModel" || w.WorkflowAnthropicModel != nil {
-		return json.Marshal(w.WorkflowAnthropicModel)
+	if w.typ == "CreateAnthropicCredentialDto" || w.CreateAnthropicCredentialDto != nil {
+		return json.Marshal(w.CreateAnthropicCredentialDto)
+	}
+	if w.typ == "CreateAnyscaleCredentialDto" || w.CreateAnyscaleCredentialDto != nil {
+		return json.Marshal(w.CreateAnyscaleCredentialDto)
+	}
+	if w.typ == "CreateAssemblyAiCredentialDto" || w.CreateAssemblyAiCredentialDto != nil {
+		return json.Marshal(w.CreateAssemblyAiCredentialDto)
+	}
+	if w.typ == "CreateAzureOpenAiCredentialDto" || w.CreateAzureOpenAiCredentialDto != nil {
+		return json.Marshal(w.CreateAzureOpenAiCredentialDto)
+	}
+	if w.typ == "CreateAzureCredentialDto" || w.CreateAzureCredentialDto != nil {
+		return json.Marshal(w.CreateAzureCredentialDto)
+	}
+	if w.typ == "CreateByoSipTrunkCredentialDto" || w.CreateByoSipTrunkCredentialDto != nil {
+		return json.Marshal(w.CreateByoSipTrunkCredentialDto)
+	}
+	if w.typ == "CreateCartesiaCredentialDto" || w.CreateCartesiaCredentialDto != nil {
+		return json.Marshal(w.CreateCartesiaCredentialDto)
+	}
+	if w.typ == "CreateCerebrasCredentialDto" || w.CreateCerebrasCredentialDto != nil {
+		return json.Marshal(w.CreateCerebrasCredentialDto)
+	}
+	if w.typ == "CreateCloudflareCredentialDto" || w.CreateCloudflareCredentialDto != nil {
+		return json.Marshal(w.CreateCloudflareCredentialDto)
+	}
+	if w.typ == "CreateCustomLlmCredentialDto" || w.CreateCustomLlmCredentialDto != nil {
+		return json.Marshal(w.CreateCustomLlmCredentialDto)
+	}
+	if w.typ == "CreateDeepgramCredentialDto" || w.CreateDeepgramCredentialDto != nil {
+		return json.Marshal(w.CreateDeepgramCredentialDto)
+	}
+	if w.typ == "CreateDeepInfraCredentialDto" || w.CreateDeepInfraCredentialDto != nil {
+		return json.Marshal(w.CreateDeepInfraCredentialDto)
+	}
+	if w.typ == "CreateDeepSeekCredentialDto" || w.CreateDeepSeekCredentialDto != nil {
+		return json.Marshal(w.CreateDeepSeekCredentialDto)
+	}
+	if w.typ == "CreateGcpCredentialDto" || w.CreateGcpCredentialDto != nil {
+		return json.Marshal(w.CreateGcpCredentialDto)
+	}
+	if w.typ == "CreateGladiaCredentialDto" || w.CreateGladiaCredentialDto != nil {
+		return json.Marshal(w.CreateGladiaCredentialDto)
+	}
+	if w.typ == "CreateGoHighLevelCredentialDto" || w.CreateGoHighLevelCredentialDto != nil {
+		return json.Marshal(w.CreateGoHighLevelCredentialDto)
+	}
+	if w.typ == "CreateGoogleCredentialDto" || w.CreateGoogleCredentialDto != nil {
+		return json.Marshal(w.CreateGoogleCredentialDto)
+	}
+	if w.typ == "CreateGroqCredentialDto" || w.CreateGroqCredentialDto != nil {
+		return json.Marshal(w.CreateGroqCredentialDto)
+	}
+	if w.typ == "CreateInflectionAiCredentialDto" || w.CreateInflectionAiCredentialDto != nil {
+		return json.Marshal(w.CreateInflectionAiCredentialDto)
+	}
+	if w.typ == "CreateLangfuseCredentialDto" || w.CreateLangfuseCredentialDto != nil {
+		return json.Marshal(w.CreateLangfuseCredentialDto)
+	}
+	if w.typ == "CreateLmntCredentialDto" || w.CreateLmntCredentialDto != nil {
+		return json.Marshal(w.CreateLmntCredentialDto)
+	}
+	if w.typ == "CreateMakeCredentialDto" || w.CreateMakeCredentialDto != nil {
+		return json.Marshal(w.CreateMakeCredentialDto)
+	}
+	if w.typ == "CreateOpenAiCredentialDto" || w.CreateOpenAiCredentialDto != nil {
+		return json.Marshal(w.CreateOpenAiCredentialDto)
+	}
+	if w.typ == "CreateOpenRouterCredentialDto" || w.CreateOpenRouterCredentialDto != nil {
+		return json.Marshal(w.CreateOpenRouterCredentialDto)
+	}
+	if w.typ == "CreatePerplexityAiCredentialDto" || w.CreatePerplexityAiCredentialDto != nil {
+		return json.Marshal(w.CreatePerplexityAiCredentialDto)
+	}
+	if w.typ == "CreatePlayHtCredentialDto" || w.CreatePlayHtCredentialDto != nil {
+		return json.Marshal(w.CreatePlayHtCredentialDto)
+	}
+	if w.typ == "CreateRimeAiCredentialDto" || w.CreateRimeAiCredentialDto != nil {
+		return json.Marshal(w.CreateRimeAiCredentialDto)
+	}
+	if w.typ == "CreateRunpodCredentialDto" || w.CreateRunpodCredentialDto != nil {
+		return json.Marshal(w.CreateRunpodCredentialDto)
+	}
+	if w.typ == "CreateS3CredentialDto" || w.CreateS3CredentialDto != nil {
+		return json.Marshal(w.CreateS3CredentialDto)
+	}
+	if w.typ == "CreateSupabaseCredentialDto" || w.CreateSupabaseCredentialDto != nil {
+		return json.Marshal(w.CreateSupabaseCredentialDto)
+	}
+	if w.typ == "CreateSmallestAiCredentialDto" || w.CreateSmallestAiCredentialDto != nil {
+		return json.Marshal(w.CreateSmallestAiCredentialDto)
+	}
+	if w.typ == "CreateTavusCredentialDto" || w.CreateTavusCredentialDto != nil {
+		return json.Marshal(w.CreateTavusCredentialDto)
+	}
+	if w.typ == "CreateTogetherAiCredentialDto" || w.CreateTogetherAiCredentialDto != nil {
+		return json.Marshal(w.CreateTogetherAiCredentialDto)
+	}
+	if w.typ == "CreateTwilioCredentialDto" || w.CreateTwilioCredentialDto != nil {
+		return json.Marshal(w.CreateTwilioCredentialDto)
+	}
+	if w.typ == "CreateVonageCredentialDto" || w.CreateVonageCredentialDto != nil {
+		return json.Marshal(w.CreateVonageCredentialDto)
+	}
+	if w.typ == "CreateWebhookCredentialDto" || w.CreateWebhookCredentialDto != nil {
+		return json.Marshal(w.CreateWebhookCredentialDto)
+	}
+	if w.typ == "CreateXAiCredentialDto" || w.CreateXAiCredentialDto != nil {
+		return json.Marshal(w.CreateXAiCredentialDto)
+	}
+	if w.typ == "CreateNeuphonicCredentialDto" || w.CreateNeuphonicCredentialDto != nil {
+		return json.Marshal(w.CreateNeuphonicCredentialDto)
+	}
+	if w.typ == "CreateHumeCredentialDto" || w.CreateHumeCredentialDto != nil {
+		return json.Marshal(w.CreateHumeCredentialDto)
+	}
+	if w.typ == "CreateMistralCredentialDto" || w.CreateMistralCredentialDto != nil {
+		return json.Marshal(w.CreateMistralCredentialDto)
+	}
+	if w.typ == "CreateSpeechmaticsCredentialDto" || w.CreateSpeechmaticsCredentialDto != nil {
+		return json.Marshal(w.CreateSpeechmaticsCredentialDto)
+	}
+	if w.typ == "CreateTrieveCredentialDto" || w.CreateTrieveCredentialDto != nil {
+		return json.Marshal(w.CreateTrieveCredentialDto)
+	}
+	if w.typ == "CreateGoogleCalendarOAuth2ClientCredentialDto" || w.CreateGoogleCalendarOAuth2ClientCredentialDto != nil {
+		return json.Marshal(w.CreateGoogleCalendarOAuth2ClientCredentialDto)
+	}
+	if w.typ == "CreateGoogleCalendarOAuth2AuthorizationCredentialDto" || w.CreateGoogleCalendarOAuth2AuthorizationCredentialDto != nil {
+		return json.Marshal(w.CreateGoogleCalendarOAuth2AuthorizationCredentialDto)
+	}
+	if w.typ == "CreateGoogleSheetsOAuth2AuthorizationCredentialDto" || w.CreateGoogleSheetsOAuth2AuthorizationCredentialDto != nil {
+		return json.Marshal(w.CreateGoogleSheetsOAuth2AuthorizationCredentialDto)
+	}
+	if w.typ == "CreateSlackOAuth2AuthorizationCredentialDto" || w.CreateSlackOAuth2AuthorizationCredentialDto != nil {
+		return json.Marshal(w.CreateSlackOAuth2AuthorizationCredentialDto)
+	}
+	if w.typ == "CreateGoHighLevelMcpCredentialDto" || w.CreateGoHighLevelMcpCredentialDto != nil {
+		return json.Marshal(w.CreateGoHighLevelMcpCredentialDto)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", w)
 }
 
-type WorkflowUserEditableModelVisitor interface {
-	VisitWorkflowOpenAiModel(*WorkflowOpenAiModel) error
-	VisitWorkflowAnthropicModel(*WorkflowAnthropicModel) error
+type WorkflowUserEditableCredentialsItemVisitor interface {
+	VisitCreateElevenLabsCredentialDto(*CreateElevenLabsCredentialDto) error
+	VisitCreateAnthropicCredentialDto(*CreateAnthropicCredentialDto) error
+	VisitCreateAnyscaleCredentialDto(*CreateAnyscaleCredentialDto) error
+	VisitCreateAssemblyAiCredentialDto(*CreateAssemblyAiCredentialDto) error
+	VisitCreateAzureOpenAiCredentialDto(*CreateAzureOpenAiCredentialDto) error
+	VisitCreateAzureCredentialDto(*CreateAzureCredentialDto) error
+	VisitCreateByoSipTrunkCredentialDto(*CreateByoSipTrunkCredentialDto) error
+	VisitCreateCartesiaCredentialDto(*CreateCartesiaCredentialDto) error
+	VisitCreateCerebrasCredentialDto(*CreateCerebrasCredentialDto) error
+	VisitCreateCloudflareCredentialDto(*CreateCloudflareCredentialDto) error
+	VisitCreateCustomLlmCredentialDto(*CreateCustomLlmCredentialDto) error
+	VisitCreateDeepgramCredentialDto(*CreateDeepgramCredentialDto) error
+	VisitCreateDeepInfraCredentialDto(*CreateDeepInfraCredentialDto) error
+	VisitCreateDeepSeekCredentialDto(*CreateDeepSeekCredentialDto) error
+	VisitCreateGcpCredentialDto(*CreateGcpCredentialDto) error
+	VisitCreateGladiaCredentialDto(*CreateGladiaCredentialDto) error
+	VisitCreateGoHighLevelCredentialDto(*CreateGoHighLevelCredentialDto) error
+	VisitCreateGoogleCredentialDto(*CreateGoogleCredentialDto) error
+	VisitCreateGroqCredentialDto(*CreateGroqCredentialDto) error
+	VisitCreateInflectionAiCredentialDto(*CreateInflectionAiCredentialDto) error
+	VisitCreateLangfuseCredentialDto(*CreateLangfuseCredentialDto) error
+	VisitCreateLmntCredentialDto(*CreateLmntCredentialDto) error
+	VisitCreateMakeCredentialDto(*CreateMakeCredentialDto) error
+	VisitCreateOpenAiCredentialDto(*CreateOpenAiCredentialDto) error
+	VisitCreateOpenRouterCredentialDto(*CreateOpenRouterCredentialDto) error
+	VisitCreatePerplexityAiCredentialDto(*CreatePerplexityAiCredentialDto) error
+	VisitCreatePlayHtCredentialDto(*CreatePlayHtCredentialDto) error
+	VisitCreateRimeAiCredentialDto(*CreateRimeAiCredentialDto) error
+	VisitCreateRunpodCredentialDto(*CreateRunpodCredentialDto) error
+	VisitCreateS3CredentialDto(*CreateS3CredentialDto) error
+	VisitCreateSupabaseCredentialDto(*CreateSupabaseCredentialDto) error
+	VisitCreateSmallestAiCredentialDto(*CreateSmallestAiCredentialDto) error
+	VisitCreateTavusCredentialDto(*CreateTavusCredentialDto) error
+	VisitCreateTogetherAiCredentialDto(*CreateTogetherAiCredentialDto) error
+	VisitCreateTwilioCredentialDto(*CreateTwilioCredentialDto) error
+	VisitCreateVonageCredentialDto(*CreateVonageCredentialDto) error
+	VisitCreateWebhookCredentialDto(*CreateWebhookCredentialDto) error
+	VisitCreateXAiCredentialDto(*CreateXAiCredentialDto) error
+	VisitCreateNeuphonicCredentialDto(*CreateNeuphonicCredentialDto) error
+	VisitCreateHumeCredentialDto(*CreateHumeCredentialDto) error
+	VisitCreateMistralCredentialDto(*CreateMistralCredentialDto) error
+	VisitCreateSpeechmaticsCredentialDto(*CreateSpeechmaticsCredentialDto) error
+	VisitCreateTrieveCredentialDto(*CreateTrieveCredentialDto) error
+	VisitCreateGoogleCalendarOAuth2ClientCredentialDto(*CreateGoogleCalendarOAuth2ClientCredentialDto) error
+	VisitCreateGoogleCalendarOAuth2AuthorizationCredentialDto(*CreateGoogleCalendarOAuth2AuthorizationCredentialDto) error
+	VisitCreateGoogleSheetsOAuth2AuthorizationCredentialDto(*CreateGoogleSheetsOAuth2AuthorizationCredentialDto) error
+	VisitCreateSlackOAuth2AuthorizationCredentialDto(*CreateSlackOAuth2AuthorizationCredentialDto) error
+	VisitCreateGoHighLevelMcpCredentialDto(*CreateGoHighLevelMcpCredentialDto) error
 }
 
-func (w *WorkflowUserEditableModel) Accept(visitor WorkflowUserEditableModelVisitor) error {
-	if w.typ == "WorkflowOpenAiModel" || w.WorkflowOpenAiModel != nil {
-		return visitor.VisitWorkflowOpenAiModel(w.WorkflowOpenAiModel)
+func (w *WorkflowUserEditableCredentialsItem) Accept(visitor WorkflowUserEditableCredentialsItemVisitor) error {
+	if w.typ == "CreateElevenLabsCredentialDto" || w.CreateElevenLabsCredentialDto != nil {
+		return visitor.VisitCreateElevenLabsCredentialDto(w.CreateElevenLabsCredentialDto)
 	}
-	if w.typ == "WorkflowAnthropicModel" || w.WorkflowAnthropicModel != nil {
-		return visitor.VisitWorkflowAnthropicModel(w.WorkflowAnthropicModel)
+	if w.typ == "CreateAnthropicCredentialDto" || w.CreateAnthropicCredentialDto != nil {
+		return visitor.VisitCreateAnthropicCredentialDto(w.CreateAnthropicCredentialDto)
+	}
+	if w.typ == "CreateAnyscaleCredentialDto" || w.CreateAnyscaleCredentialDto != nil {
+		return visitor.VisitCreateAnyscaleCredentialDto(w.CreateAnyscaleCredentialDto)
+	}
+	if w.typ == "CreateAssemblyAiCredentialDto" || w.CreateAssemblyAiCredentialDto != nil {
+		return visitor.VisitCreateAssemblyAiCredentialDto(w.CreateAssemblyAiCredentialDto)
+	}
+	if w.typ == "CreateAzureOpenAiCredentialDto" || w.CreateAzureOpenAiCredentialDto != nil {
+		return visitor.VisitCreateAzureOpenAiCredentialDto(w.CreateAzureOpenAiCredentialDto)
+	}
+	if w.typ == "CreateAzureCredentialDto" || w.CreateAzureCredentialDto != nil {
+		return visitor.VisitCreateAzureCredentialDto(w.CreateAzureCredentialDto)
+	}
+	if w.typ == "CreateByoSipTrunkCredentialDto" || w.CreateByoSipTrunkCredentialDto != nil {
+		return visitor.VisitCreateByoSipTrunkCredentialDto(w.CreateByoSipTrunkCredentialDto)
+	}
+	if w.typ == "CreateCartesiaCredentialDto" || w.CreateCartesiaCredentialDto != nil {
+		return visitor.VisitCreateCartesiaCredentialDto(w.CreateCartesiaCredentialDto)
+	}
+	if w.typ == "CreateCerebrasCredentialDto" || w.CreateCerebrasCredentialDto != nil {
+		return visitor.VisitCreateCerebrasCredentialDto(w.CreateCerebrasCredentialDto)
+	}
+	if w.typ == "CreateCloudflareCredentialDto" || w.CreateCloudflareCredentialDto != nil {
+		return visitor.VisitCreateCloudflareCredentialDto(w.CreateCloudflareCredentialDto)
+	}
+	if w.typ == "CreateCustomLlmCredentialDto" || w.CreateCustomLlmCredentialDto != nil {
+		return visitor.VisitCreateCustomLlmCredentialDto(w.CreateCustomLlmCredentialDto)
+	}
+	if w.typ == "CreateDeepgramCredentialDto" || w.CreateDeepgramCredentialDto != nil {
+		return visitor.VisitCreateDeepgramCredentialDto(w.CreateDeepgramCredentialDto)
+	}
+	if w.typ == "CreateDeepInfraCredentialDto" || w.CreateDeepInfraCredentialDto != nil {
+		return visitor.VisitCreateDeepInfraCredentialDto(w.CreateDeepInfraCredentialDto)
+	}
+	if w.typ == "CreateDeepSeekCredentialDto" || w.CreateDeepSeekCredentialDto != nil {
+		return visitor.VisitCreateDeepSeekCredentialDto(w.CreateDeepSeekCredentialDto)
+	}
+	if w.typ == "CreateGcpCredentialDto" || w.CreateGcpCredentialDto != nil {
+		return visitor.VisitCreateGcpCredentialDto(w.CreateGcpCredentialDto)
+	}
+	if w.typ == "CreateGladiaCredentialDto" || w.CreateGladiaCredentialDto != nil {
+		return visitor.VisitCreateGladiaCredentialDto(w.CreateGladiaCredentialDto)
+	}
+	if w.typ == "CreateGoHighLevelCredentialDto" || w.CreateGoHighLevelCredentialDto != nil {
+		return visitor.VisitCreateGoHighLevelCredentialDto(w.CreateGoHighLevelCredentialDto)
+	}
+	if w.typ == "CreateGoogleCredentialDto" || w.CreateGoogleCredentialDto != nil {
+		return visitor.VisitCreateGoogleCredentialDto(w.CreateGoogleCredentialDto)
+	}
+	if w.typ == "CreateGroqCredentialDto" || w.CreateGroqCredentialDto != nil {
+		return visitor.VisitCreateGroqCredentialDto(w.CreateGroqCredentialDto)
+	}
+	if w.typ == "CreateInflectionAiCredentialDto" || w.CreateInflectionAiCredentialDto != nil {
+		return visitor.VisitCreateInflectionAiCredentialDto(w.CreateInflectionAiCredentialDto)
+	}
+	if w.typ == "CreateLangfuseCredentialDto" || w.CreateLangfuseCredentialDto != nil {
+		return visitor.VisitCreateLangfuseCredentialDto(w.CreateLangfuseCredentialDto)
+	}
+	if w.typ == "CreateLmntCredentialDto" || w.CreateLmntCredentialDto != nil {
+		return visitor.VisitCreateLmntCredentialDto(w.CreateLmntCredentialDto)
+	}
+	if w.typ == "CreateMakeCredentialDto" || w.CreateMakeCredentialDto != nil {
+		return visitor.VisitCreateMakeCredentialDto(w.CreateMakeCredentialDto)
+	}
+	if w.typ == "CreateOpenAiCredentialDto" || w.CreateOpenAiCredentialDto != nil {
+		return visitor.VisitCreateOpenAiCredentialDto(w.CreateOpenAiCredentialDto)
+	}
+	if w.typ == "CreateOpenRouterCredentialDto" || w.CreateOpenRouterCredentialDto != nil {
+		return visitor.VisitCreateOpenRouterCredentialDto(w.CreateOpenRouterCredentialDto)
+	}
+	if w.typ == "CreatePerplexityAiCredentialDto" || w.CreatePerplexityAiCredentialDto != nil {
+		return visitor.VisitCreatePerplexityAiCredentialDto(w.CreatePerplexityAiCredentialDto)
+	}
+	if w.typ == "CreatePlayHtCredentialDto" || w.CreatePlayHtCredentialDto != nil {
+		return visitor.VisitCreatePlayHtCredentialDto(w.CreatePlayHtCredentialDto)
+	}
+	if w.typ == "CreateRimeAiCredentialDto" || w.CreateRimeAiCredentialDto != nil {
+		return visitor.VisitCreateRimeAiCredentialDto(w.CreateRimeAiCredentialDto)
+	}
+	if w.typ == "CreateRunpodCredentialDto" || w.CreateRunpodCredentialDto != nil {
+		return visitor.VisitCreateRunpodCredentialDto(w.CreateRunpodCredentialDto)
+	}
+	if w.typ == "CreateS3CredentialDto" || w.CreateS3CredentialDto != nil {
+		return visitor.VisitCreateS3CredentialDto(w.CreateS3CredentialDto)
+	}
+	if w.typ == "CreateSupabaseCredentialDto" || w.CreateSupabaseCredentialDto != nil {
+		return visitor.VisitCreateSupabaseCredentialDto(w.CreateSupabaseCredentialDto)
+	}
+	if w.typ == "CreateSmallestAiCredentialDto" || w.CreateSmallestAiCredentialDto != nil {
+		return visitor.VisitCreateSmallestAiCredentialDto(w.CreateSmallestAiCredentialDto)
+	}
+	if w.typ == "CreateTavusCredentialDto" || w.CreateTavusCredentialDto != nil {
+		return visitor.VisitCreateTavusCredentialDto(w.CreateTavusCredentialDto)
+	}
+	if w.typ == "CreateTogetherAiCredentialDto" || w.CreateTogetherAiCredentialDto != nil {
+		return visitor.VisitCreateTogetherAiCredentialDto(w.CreateTogetherAiCredentialDto)
+	}
+	if w.typ == "CreateTwilioCredentialDto" || w.CreateTwilioCredentialDto != nil {
+		return visitor.VisitCreateTwilioCredentialDto(w.CreateTwilioCredentialDto)
+	}
+	if w.typ == "CreateVonageCredentialDto" || w.CreateVonageCredentialDto != nil {
+		return visitor.VisitCreateVonageCredentialDto(w.CreateVonageCredentialDto)
+	}
+	if w.typ == "CreateWebhookCredentialDto" || w.CreateWebhookCredentialDto != nil {
+		return visitor.VisitCreateWebhookCredentialDto(w.CreateWebhookCredentialDto)
+	}
+	if w.typ == "CreateXAiCredentialDto" || w.CreateXAiCredentialDto != nil {
+		return visitor.VisitCreateXAiCredentialDto(w.CreateXAiCredentialDto)
+	}
+	if w.typ == "CreateNeuphonicCredentialDto" || w.CreateNeuphonicCredentialDto != nil {
+		return visitor.VisitCreateNeuphonicCredentialDto(w.CreateNeuphonicCredentialDto)
+	}
+	if w.typ == "CreateHumeCredentialDto" || w.CreateHumeCredentialDto != nil {
+		return visitor.VisitCreateHumeCredentialDto(w.CreateHumeCredentialDto)
+	}
+	if w.typ == "CreateMistralCredentialDto" || w.CreateMistralCredentialDto != nil {
+		return visitor.VisitCreateMistralCredentialDto(w.CreateMistralCredentialDto)
+	}
+	if w.typ == "CreateSpeechmaticsCredentialDto" || w.CreateSpeechmaticsCredentialDto != nil {
+		return visitor.VisitCreateSpeechmaticsCredentialDto(w.CreateSpeechmaticsCredentialDto)
+	}
+	if w.typ == "CreateTrieveCredentialDto" || w.CreateTrieveCredentialDto != nil {
+		return visitor.VisitCreateTrieveCredentialDto(w.CreateTrieveCredentialDto)
+	}
+	if w.typ == "CreateGoogleCalendarOAuth2ClientCredentialDto" || w.CreateGoogleCalendarOAuth2ClientCredentialDto != nil {
+		return visitor.VisitCreateGoogleCalendarOAuth2ClientCredentialDto(w.CreateGoogleCalendarOAuth2ClientCredentialDto)
+	}
+	if w.typ == "CreateGoogleCalendarOAuth2AuthorizationCredentialDto" || w.CreateGoogleCalendarOAuth2AuthorizationCredentialDto != nil {
+		return visitor.VisitCreateGoogleCalendarOAuth2AuthorizationCredentialDto(w.CreateGoogleCalendarOAuth2AuthorizationCredentialDto)
+	}
+	if w.typ == "CreateGoogleSheetsOAuth2AuthorizationCredentialDto" || w.CreateGoogleSheetsOAuth2AuthorizationCredentialDto != nil {
+		return visitor.VisitCreateGoogleSheetsOAuth2AuthorizationCredentialDto(w.CreateGoogleSheetsOAuth2AuthorizationCredentialDto)
+	}
+	if w.typ == "CreateSlackOAuth2AuthorizationCredentialDto" || w.CreateSlackOAuth2AuthorizationCredentialDto != nil {
+		return visitor.VisitCreateSlackOAuth2AuthorizationCredentialDto(w.CreateSlackOAuth2AuthorizationCredentialDto)
+	}
+	if w.typ == "CreateGoHighLevelMcpCredentialDto" || w.CreateGoHighLevelMcpCredentialDto != nil {
+		return visitor.VisitCreateGoHighLevelMcpCredentialDto(w.CreateGoHighLevelMcpCredentialDto)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", w)
 }
@@ -88235,6 +94351,598 @@ func (w *WorkflowUserEditableNodesItem) Accept(visitor WorkflowUserEditableNodes
 	}
 	if w.typ == "ToolNode" || w.ToolNode != nil {
 		return visitor.VisitToolNode(w.ToolNode)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", w)
+}
+
+// This is the transcriber for the workflow.
+//
+// This can be overridden at node level using `nodes[n].transcriber`.
+type WorkflowUserEditableTranscriber struct {
+	AssemblyAiTranscriber   *AssemblyAiTranscriber
+	AzureSpeechTranscriber  *AzureSpeechTranscriber
+	CustomTranscriber       *CustomTranscriber
+	DeepgramTranscriber     *DeepgramTranscriber
+	ElevenLabsTranscriber   *ElevenLabsTranscriber
+	GladiaTranscriber       *GladiaTranscriber
+	GoogleTranscriber       *GoogleTranscriber
+	SpeechmaticsTranscriber *SpeechmaticsTranscriber
+	TalkscriberTranscriber  *TalkscriberTranscriber
+	OpenAiTranscriber       *OpenAiTranscriber
+	CartesiaTranscriber     *CartesiaTranscriber
+
+	typ string
+}
+
+func (w *WorkflowUserEditableTranscriber) GetAssemblyAiTranscriber() *AssemblyAiTranscriber {
+	if w == nil {
+		return nil
+	}
+	return w.AssemblyAiTranscriber
+}
+
+func (w *WorkflowUserEditableTranscriber) GetAzureSpeechTranscriber() *AzureSpeechTranscriber {
+	if w == nil {
+		return nil
+	}
+	return w.AzureSpeechTranscriber
+}
+
+func (w *WorkflowUserEditableTranscriber) GetCustomTranscriber() *CustomTranscriber {
+	if w == nil {
+		return nil
+	}
+	return w.CustomTranscriber
+}
+
+func (w *WorkflowUserEditableTranscriber) GetDeepgramTranscriber() *DeepgramTranscriber {
+	if w == nil {
+		return nil
+	}
+	return w.DeepgramTranscriber
+}
+
+func (w *WorkflowUserEditableTranscriber) GetElevenLabsTranscriber() *ElevenLabsTranscriber {
+	if w == nil {
+		return nil
+	}
+	return w.ElevenLabsTranscriber
+}
+
+func (w *WorkflowUserEditableTranscriber) GetGladiaTranscriber() *GladiaTranscriber {
+	if w == nil {
+		return nil
+	}
+	return w.GladiaTranscriber
+}
+
+func (w *WorkflowUserEditableTranscriber) GetGoogleTranscriber() *GoogleTranscriber {
+	if w == nil {
+		return nil
+	}
+	return w.GoogleTranscriber
+}
+
+func (w *WorkflowUserEditableTranscriber) GetSpeechmaticsTranscriber() *SpeechmaticsTranscriber {
+	if w == nil {
+		return nil
+	}
+	return w.SpeechmaticsTranscriber
+}
+
+func (w *WorkflowUserEditableTranscriber) GetTalkscriberTranscriber() *TalkscriberTranscriber {
+	if w == nil {
+		return nil
+	}
+	return w.TalkscriberTranscriber
+}
+
+func (w *WorkflowUserEditableTranscriber) GetOpenAiTranscriber() *OpenAiTranscriber {
+	if w == nil {
+		return nil
+	}
+	return w.OpenAiTranscriber
+}
+
+func (w *WorkflowUserEditableTranscriber) GetCartesiaTranscriber() *CartesiaTranscriber {
+	if w == nil {
+		return nil
+	}
+	return w.CartesiaTranscriber
+}
+
+func (w *WorkflowUserEditableTranscriber) UnmarshalJSON(data []byte) error {
+	valueAssemblyAiTranscriber := new(AssemblyAiTranscriber)
+	if err := json.Unmarshal(data, &valueAssemblyAiTranscriber); err == nil {
+		w.typ = "AssemblyAiTranscriber"
+		w.AssemblyAiTranscriber = valueAssemblyAiTranscriber
+		return nil
+	}
+	valueAzureSpeechTranscriber := new(AzureSpeechTranscriber)
+	if err := json.Unmarshal(data, &valueAzureSpeechTranscriber); err == nil {
+		w.typ = "AzureSpeechTranscriber"
+		w.AzureSpeechTranscriber = valueAzureSpeechTranscriber
+		return nil
+	}
+	valueCustomTranscriber := new(CustomTranscriber)
+	if err := json.Unmarshal(data, &valueCustomTranscriber); err == nil {
+		w.typ = "CustomTranscriber"
+		w.CustomTranscriber = valueCustomTranscriber
+		return nil
+	}
+	valueDeepgramTranscriber := new(DeepgramTranscriber)
+	if err := json.Unmarshal(data, &valueDeepgramTranscriber); err == nil {
+		w.typ = "DeepgramTranscriber"
+		w.DeepgramTranscriber = valueDeepgramTranscriber
+		return nil
+	}
+	valueElevenLabsTranscriber := new(ElevenLabsTranscriber)
+	if err := json.Unmarshal(data, &valueElevenLabsTranscriber); err == nil {
+		w.typ = "ElevenLabsTranscriber"
+		w.ElevenLabsTranscriber = valueElevenLabsTranscriber
+		return nil
+	}
+	valueGladiaTranscriber := new(GladiaTranscriber)
+	if err := json.Unmarshal(data, &valueGladiaTranscriber); err == nil {
+		w.typ = "GladiaTranscriber"
+		w.GladiaTranscriber = valueGladiaTranscriber
+		return nil
+	}
+	valueGoogleTranscriber := new(GoogleTranscriber)
+	if err := json.Unmarshal(data, &valueGoogleTranscriber); err == nil {
+		w.typ = "GoogleTranscriber"
+		w.GoogleTranscriber = valueGoogleTranscriber
+		return nil
+	}
+	valueSpeechmaticsTranscriber := new(SpeechmaticsTranscriber)
+	if err := json.Unmarshal(data, &valueSpeechmaticsTranscriber); err == nil {
+		w.typ = "SpeechmaticsTranscriber"
+		w.SpeechmaticsTranscriber = valueSpeechmaticsTranscriber
+		return nil
+	}
+	valueTalkscriberTranscriber := new(TalkscriberTranscriber)
+	if err := json.Unmarshal(data, &valueTalkscriberTranscriber); err == nil {
+		w.typ = "TalkscriberTranscriber"
+		w.TalkscriberTranscriber = valueTalkscriberTranscriber
+		return nil
+	}
+	valueOpenAiTranscriber := new(OpenAiTranscriber)
+	if err := json.Unmarshal(data, &valueOpenAiTranscriber); err == nil {
+		w.typ = "OpenAiTranscriber"
+		w.OpenAiTranscriber = valueOpenAiTranscriber
+		return nil
+	}
+	valueCartesiaTranscriber := new(CartesiaTranscriber)
+	if err := json.Unmarshal(data, &valueCartesiaTranscriber); err == nil {
+		w.typ = "CartesiaTranscriber"
+		w.CartesiaTranscriber = valueCartesiaTranscriber
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, w)
+}
+
+func (w WorkflowUserEditableTranscriber) MarshalJSON() ([]byte, error) {
+	if w.typ == "AssemblyAiTranscriber" || w.AssemblyAiTranscriber != nil {
+		return json.Marshal(w.AssemblyAiTranscriber)
+	}
+	if w.typ == "AzureSpeechTranscriber" || w.AzureSpeechTranscriber != nil {
+		return json.Marshal(w.AzureSpeechTranscriber)
+	}
+	if w.typ == "CustomTranscriber" || w.CustomTranscriber != nil {
+		return json.Marshal(w.CustomTranscriber)
+	}
+	if w.typ == "DeepgramTranscriber" || w.DeepgramTranscriber != nil {
+		return json.Marshal(w.DeepgramTranscriber)
+	}
+	if w.typ == "ElevenLabsTranscriber" || w.ElevenLabsTranscriber != nil {
+		return json.Marshal(w.ElevenLabsTranscriber)
+	}
+	if w.typ == "GladiaTranscriber" || w.GladiaTranscriber != nil {
+		return json.Marshal(w.GladiaTranscriber)
+	}
+	if w.typ == "GoogleTranscriber" || w.GoogleTranscriber != nil {
+		return json.Marshal(w.GoogleTranscriber)
+	}
+	if w.typ == "SpeechmaticsTranscriber" || w.SpeechmaticsTranscriber != nil {
+		return json.Marshal(w.SpeechmaticsTranscriber)
+	}
+	if w.typ == "TalkscriberTranscriber" || w.TalkscriberTranscriber != nil {
+		return json.Marshal(w.TalkscriberTranscriber)
+	}
+	if w.typ == "OpenAiTranscriber" || w.OpenAiTranscriber != nil {
+		return json.Marshal(w.OpenAiTranscriber)
+	}
+	if w.typ == "CartesiaTranscriber" || w.CartesiaTranscriber != nil {
+		return json.Marshal(w.CartesiaTranscriber)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", w)
+}
+
+type WorkflowUserEditableTranscriberVisitor interface {
+	VisitAssemblyAiTranscriber(*AssemblyAiTranscriber) error
+	VisitAzureSpeechTranscriber(*AzureSpeechTranscriber) error
+	VisitCustomTranscriber(*CustomTranscriber) error
+	VisitDeepgramTranscriber(*DeepgramTranscriber) error
+	VisitElevenLabsTranscriber(*ElevenLabsTranscriber) error
+	VisitGladiaTranscriber(*GladiaTranscriber) error
+	VisitGoogleTranscriber(*GoogleTranscriber) error
+	VisitSpeechmaticsTranscriber(*SpeechmaticsTranscriber) error
+	VisitTalkscriberTranscriber(*TalkscriberTranscriber) error
+	VisitOpenAiTranscriber(*OpenAiTranscriber) error
+	VisitCartesiaTranscriber(*CartesiaTranscriber) error
+}
+
+func (w *WorkflowUserEditableTranscriber) Accept(visitor WorkflowUserEditableTranscriberVisitor) error {
+	if w.typ == "AssemblyAiTranscriber" || w.AssemblyAiTranscriber != nil {
+		return visitor.VisitAssemblyAiTranscriber(w.AssemblyAiTranscriber)
+	}
+	if w.typ == "AzureSpeechTranscriber" || w.AzureSpeechTranscriber != nil {
+		return visitor.VisitAzureSpeechTranscriber(w.AzureSpeechTranscriber)
+	}
+	if w.typ == "CustomTranscriber" || w.CustomTranscriber != nil {
+		return visitor.VisitCustomTranscriber(w.CustomTranscriber)
+	}
+	if w.typ == "DeepgramTranscriber" || w.DeepgramTranscriber != nil {
+		return visitor.VisitDeepgramTranscriber(w.DeepgramTranscriber)
+	}
+	if w.typ == "ElevenLabsTranscriber" || w.ElevenLabsTranscriber != nil {
+		return visitor.VisitElevenLabsTranscriber(w.ElevenLabsTranscriber)
+	}
+	if w.typ == "GladiaTranscriber" || w.GladiaTranscriber != nil {
+		return visitor.VisitGladiaTranscriber(w.GladiaTranscriber)
+	}
+	if w.typ == "GoogleTranscriber" || w.GoogleTranscriber != nil {
+		return visitor.VisitGoogleTranscriber(w.GoogleTranscriber)
+	}
+	if w.typ == "SpeechmaticsTranscriber" || w.SpeechmaticsTranscriber != nil {
+		return visitor.VisitSpeechmaticsTranscriber(w.SpeechmaticsTranscriber)
+	}
+	if w.typ == "TalkscriberTranscriber" || w.TalkscriberTranscriber != nil {
+		return visitor.VisitTalkscriberTranscriber(w.TalkscriberTranscriber)
+	}
+	if w.typ == "OpenAiTranscriber" || w.OpenAiTranscriber != nil {
+		return visitor.VisitOpenAiTranscriber(w.OpenAiTranscriber)
+	}
+	if w.typ == "CartesiaTranscriber" || w.CartesiaTranscriber != nil {
+		return visitor.VisitCartesiaTranscriber(w.CartesiaTranscriber)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", w)
+}
+
+// This is the voice for the workflow.
+//
+// This can be overridden at node level using `nodes[n].voice`.
+type WorkflowUserEditableVoice struct {
+	AzureVoice      *AzureVoice
+	CartesiaVoice   *CartesiaVoice
+	CustomVoice     *CustomVoice
+	DeepgramVoice   *DeepgramVoice
+	ElevenLabsVoice *ElevenLabsVoice
+	HumeVoice       *HumeVoice
+	LmntVoice       *LmntVoice
+	NeuphonicVoice  *NeuphonicVoice
+	OpenAiVoice     *OpenAiVoice
+	PlayHtVoice     *PlayHtVoice
+	RimeAiVoice     *RimeAiVoice
+	SmallestAiVoice *SmallestAiVoice
+	TavusVoice      *TavusVoice
+	VapiVoice       *VapiVoice
+	SesameVoice     *SesameVoice
+
+	typ string
+}
+
+func (w *WorkflowUserEditableVoice) GetAzureVoice() *AzureVoice {
+	if w == nil {
+		return nil
+	}
+	return w.AzureVoice
+}
+
+func (w *WorkflowUserEditableVoice) GetCartesiaVoice() *CartesiaVoice {
+	if w == nil {
+		return nil
+	}
+	return w.CartesiaVoice
+}
+
+func (w *WorkflowUserEditableVoice) GetCustomVoice() *CustomVoice {
+	if w == nil {
+		return nil
+	}
+	return w.CustomVoice
+}
+
+func (w *WorkflowUserEditableVoice) GetDeepgramVoice() *DeepgramVoice {
+	if w == nil {
+		return nil
+	}
+	return w.DeepgramVoice
+}
+
+func (w *WorkflowUserEditableVoice) GetElevenLabsVoice() *ElevenLabsVoice {
+	if w == nil {
+		return nil
+	}
+	return w.ElevenLabsVoice
+}
+
+func (w *WorkflowUserEditableVoice) GetHumeVoice() *HumeVoice {
+	if w == nil {
+		return nil
+	}
+	return w.HumeVoice
+}
+
+func (w *WorkflowUserEditableVoice) GetLmntVoice() *LmntVoice {
+	if w == nil {
+		return nil
+	}
+	return w.LmntVoice
+}
+
+func (w *WorkflowUserEditableVoice) GetNeuphonicVoice() *NeuphonicVoice {
+	if w == nil {
+		return nil
+	}
+	return w.NeuphonicVoice
+}
+
+func (w *WorkflowUserEditableVoice) GetOpenAiVoice() *OpenAiVoice {
+	if w == nil {
+		return nil
+	}
+	return w.OpenAiVoice
+}
+
+func (w *WorkflowUserEditableVoice) GetPlayHtVoice() *PlayHtVoice {
+	if w == nil {
+		return nil
+	}
+	return w.PlayHtVoice
+}
+
+func (w *WorkflowUserEditableVoice) GetRimeAiVoice() *RimeAiVoice {
+	if w == nil {
+		return nil
+	}
+	return w.RimeAiVoice
+}
+
+func (w *WorkflowUserEditableVoice) GetSmallestAiVoice() *SmallestAiVoice {
+	if w == nil {
+		return nil
+	}
+	return w.SmallestAiVoice
+}
+
+func (w *WorkflowUserEditableVoice) GetTavusVoice() *TavusVoice {
+	if w == nil {
+		return nil
+	}
+	return w.TavusVoice
+}
+
+func (w *WorkflowUserEditableVoice) GetVapiVoice() *VapiVoice {
+	if w == nil {
+		return nil
+	}
+	return w.VapiVoice
+}
+
+func (w *WorkflowUserEditableVoice) GetSesameVoice() *SesameVoice {
+	if w == nil {
+		return nil
+	}
+	return w.SesameVoice
+}
+
+func (w *WorkflowUserEditableVoice) UnmarshalJSON(data []byte) error {
+	valueAzureVoice := new(AzureVoice)
+	if err := json.Unmarshal(data, &valueAzureVoice); err == nil {
+		w.typ = "AzureVoice"
+		w.AzureVoice = valueAzureVoice
+		return nil
+	}
+	valueCartesiaVoice := new(CartesiaVoice)
+	if err := json.Unmarshal(data, &valueCartesiaVoice); err == nil {
+		w.typ = "CartesiaVoice"
+		w.CartesiaVoice = valueCartesiaVoice
+		return nil
+	}
+	valueCustomVoice := new(CustomVoice)
+	if err := json.Unmarshal(data, &valueCustomVoice); err == nil {
+		w.typ = "CustomVoice"
+		w.CustomVoice = valueCustomVoice
+		return nil
+	}
+	valueDeepgramVoice := new(DeepgramVoice)
+	if err := json.Unmarshal(data, &valueDeepgramVoice); err == nil {
+		w.typ = "DeepgramVoice"
+		w.DeepgramVoice = valueDeepgramVoice
+		return nil
+	}
+	valueElevenLabsVoice := new(ElevenLabsVoice)
+	if err := json.Unmarshal(data, &valueElevenLabsVoice); err == nil {
+		w.typ = "ElevenLabsVoice"
+		w.ElevenLabsVoice = valueElevenLabsVoice
+		return nil
+	}
+	valueHumeVoice := new(HumeVoice)
+	if err := json.Unmarshal(data, &valueHumeVoice); err == nil {
+		w.typ = "HumeVoice"
+		w.HumeVoice = valueHumeVoice
+		return nil
+	}
+	valueLmntVoice := new(LmntVoice)
+	if err := json.Unmarshal(data, &valueLmntVoice); err == nil {
+		w.typ = "LmntVoice"
+		w.LmntVoice = valueLmntVoice
+		return nil
+	}
+	valueNeuphonicVoice := new(NeuphonicVoice)
+	if err := json.Unmarshal(data, &valueNeuphonicVoice); err == nil {
+		w.typ = "NeuphonicVoice"
+		w.NeuphonicVoice = valueNeuphonicVoice
+		return nil
+	}
+	valueOpenAiVoice := new(OpenAiVoice)
+	if err := json.Unmarshal(data, &valueOpenAiVoice); err == nil {
+		w.typ = "OpenAiVoice"
+		w.OpenAiVoice = valueOpenAiVoice
+		return nil
+	}
+	valuePlayHtVoice := new(PlayHtVoice)
+	if err := json.Unmarshal(data, &valuePlayHtVoice); err == nil {
+		w.typ = "PlayHtVoice"
+		w.PlayHtVoice = valuePlayHtVoice
+		return nil
+	}
+	valueRimeAiVoice := new(RimeAiVoice)
+	if err := json.Unmarshal(data, &valueRimeAiVoice); err == nil {
+		w.typ = "RimeAiVoice"
+		w.RimeAiVoice = valueRimeAiVoice
+		return nil
+	}
+	valueSmallestAiVoice := new(SmallestAiVoice)
+	if err := json.Unmarshal(data, &valueSmallestAiVoice); err == nil {
+		w.typ = "SmallestAiVoice"
+		w.SmallestAiVoice = valueSmallestAiVoice
+		return nil
+	}
+	valueTavusVoice := new(TavusVoice)
+	if err := json.Unmarshal(data, &valueTavusVoice); err == nil {
+		w.typ = "TavusVoice"
+		w.TavusVoice = valueTavusVoice
+		return nil
+	}
+	valueVapiVoice := new(VapiVoice)
+	if err := json.Unmarshal(data, &valueVapiVoice); err == nil {
+		w.typ = "VapiVoice"
+		w.VapiVoice = valueVapiVoice
+		return nil
+	}
+	valueSesameVoice := new(SesameVoice)
+	if err := json.Unmarshal(data, &valueSesameVoice); err == nil {
+		w.typ = "SesameVoice"
+		w.SesameVoice = valueSesameVoice
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, w)
+}
+
+func (w WorkflowUserEditableVoice) MarshalJSON() ([]byte, error) {
+	if w.typ == "AzureVoice" || w.AzureVoice != nil {
+		return json.Marshal(w.AzureVoice)
+	}
+	if w.typ == "CartesiaVoice" || w.CartesiaVoice != nil {
+		return json.Marshal(w.CartesiaVoice)
+	}
+	if w.typ == "CustomVoice" || w.CustomVoice != nil {
+		return json.Marshal(w.CustomVoice)
+	}
+	if w.typ == "DeepgramVoice" || w.DeepgramVoice != nil {
+		return json.Marshal(w.DeepgramVoice)
+	}
+	if w.typ == "ElevenLabsVoice" || w.ElevenLabsVoice != nil {
+		return json.Marshal(w.ElevenLabsVoice)
+	}
+	if w.typ == "HumeVoice" || w.HumeVoice != nil {
+		return json.Marshal(w.HumeVoice)
+	}
+	if w.typ == "LmntVoice" || w.LmntVoice != nil {
+		return json.Marshal(w.LmntVoice)
+	}
+	if w.typ == "NeuphonicVoice" || w.NeuphonicVoice != nil {
+		return json.Marshal(w.NeuphonicVoice)
+	}
+	if w.typ == "OpenAiVoice" || w.OpenAiVoice != nil {
+		return json.Marshal(w.OpenAiVoice)
+	}
+	if w.typ == "PlayHtVoice" || w.PlayHtVoice != nil {
+		return json.Marshal(w.PlayHtVoice)
+	}
+	if w.typ == "RimeAiVoice" || w.RimeAiVoice != nil {
+		return json.Marshal(w.RimeAiVoice)
+	}
+	if w.typ == "SmallestAiVoice" || w.SmallestAiVoice != nil {
+		return json.Marshal(w.SmallestAiVoice)
+	}
+	if w.typ == "TavusVoice" || w.TavusVoice != nil {
+		return json.Marshal(w.TavusVoice)
+	}
+	if w.typ == "VapiVoice" || w.VapiVoice != nil {
+		return json.Marshal(w.VapiVoice)
+	}
+	if w.typ == "SesameVoice" || w.SesameVoice != nil {
+		return json.Marshal(w.SesameVoice)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", w)
+}
+
+type WorkflowUserEditableVoiceVisitor interface {
+	VisitAzureVoice(*AzureVoice) error
+	VisitCartesiaVoice(*CartesiaVoice) error
+	VisitCustomVoice(*CustomVoice) error
+	VisitDeepgramVoice(*DeepgramVoice) error
+	VisitElevenLabsVoice(*ElevenLabsVoice) error
+	VisitHumeVoice(*HumeVoice) error
+	VisitLmntVoice(*LmntVoice) error
+	VisitNeuphonicVoice(*NeuphonicVoice) error
+	VisitOpenAiVoice(*OpenAiVoice) error
+	VisitPlayHtVoice(*PlayHtVoice) error
+	VisitRimeAiVoice(*RimeAiVoice) error
+	VisitSmallestAiVoice(*SmallestAiVoice) error
+	VisitTavusVoice(*TavusVoice) error
+	VisitVapiVoice(*VapiVoice) error
+	VisitSesameVoice(*SesameVoice) error
+}
+
+func (w *WorkflowUserEditableVoice) Accept(visitor WorkflowUserEditableVoiceVisitor) error {
+	if w.typ == "AzureVoice" || w.AzureVoice != nil {
+		return visitor.VisitAzureVoice(w.AzureVoice)
+	}
+	if w.typ == "CartesiaVoice" || w.CartesiaVoice != nil {
+		return visitor.VisitCartesiaVoice(w.CartesiaVoice)
+	}
+	if w.typ == "CustomVoice" || w.CustomVoice != nil {
+		return visitor.VisitCustomVoice(w.CustomVoice)
+	}
+	if w.typ == "DeepgramVoice" || w.DeepgramVoice != nil {
+		return visitor.VisitDeepgramVoice(w.DeepgramVoice)
+	}
+	if w.typ == "ElevenLabsVoice" || w.ElevenLabsVoice != nil {
+		return visitor.VisitElevenLabsVoice(w.ElevenLabsVoice)
+	}
+	if w.typ == "HumeVoice" || w.HumeVoice != nil {
+		return visitor.VisitHumeVoice(w.HumeVoice)
+	}
+	if w.typ == "LmntVoice" || w.LmntVoice != nil {
+		return visitor.VisitLmntVoice(w.LmntVoice)
+	}
+	if w.typ == "NeuphonicVoice" || w.NeuphonicVoice != nil {
+		return visitor.VisitNeuphonicVoice(w.NeuphonicVoice)
+	}
+	if w.typ == "OpenAiVoice" || w.OpenAiVoice != nil {
+		return visitor.VisitOpenAiVoice(w.OpenAiVoice)
+	}
+	if w.typ == "PlayHtVoice" || w.PlayHtVoice != nil {
+		return visitor.VisitPlayHtVoice(w.PlayHtVoice)
+	}
+	if w.typ == "RimeAiVoice" || w.RimeAiVoice != nil {
+		return visitor.VisitRimeAiVoice(w.RimeAiVoice)
+	}
+	if w.typ == "SmallestAiVoice" || w.SmallestAiVoice != nil {
+		return visitor.VisitSmallestAiVoice(w.SmallestAiVoice)
+	}
+	if w.typ == "TavusVoice" || w.TavusVoice != nil {
+		return visitor.VisitTavusVoice(w.TavusVoice)
+	}
+	if w.typ == "VapiVoice" || w.VapiVoice != nil {
+		return visitor.VisitVapiVoice(w.VapiVoice)
+	}
+	if w.typ == "SesameVoice" || w.SesameVoice != nil {
+		return visitor.VisitSesameVoice(w.SesameVoice)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", w)
 }

@@ -84,8 +84,9 @@ type Assistant struct {
 	ModelOutputInMessagesEnabled *bool `json:"modelOutputInMessagesEnabled,omitempty" url:"modelOutputInMessagesEnabled,omitempty"`
 	// These are the configurations to be passed to the transport providers of assistant's calls, like Twilio. You can store multiple configurations for different transport providers. For a call, only the configuration matching the call transport provider is used.
 	TransportConfigurations []*TransportConfigurationTwilio `json:"transportConfigurations,omitempty" url:"transportConfigurations,omitempty"`
-	// This is the plan for observability configuration of assistant's calls.
-	// Currently supports Langfuse for tracing and monitoring.
+	// This is the plan for observability of assistant's calls.
+	//
+	// Currently, only Langfuse is supported.
 	ObservabilityPlan *LangfuseObservabilityPlan `json:"observabilityPlan,omitempty" url:"observabilityPlan,omitempty"`
 	// These are dynamic credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials.
 	Credentials []*AssistantCredentialsItem `json:"credentials,omitempty" url:"credentials,omitempty"`
@@ -108,11 +109,21 @@ type Assistant struct {
 	CompliancePlan *CompliancePlan `json:"compliancePlan,omitempty" url:"compliancePlan,omitempty"`
 	// This is for metadata you want to store on the assistant.
 	Metadata map[string]interface{} `json:"metadata,omitempty" url:"metadata,omitempty"`
+	// This enables filtering of noise and background speech while the user is talking.
+	//
+	// Features:
+	// - Smart denoising using Krisp
+	// - Fourier denoising
+	//
+	// Smart denoising can be combined with or used independently of Fourier denoising.
+	//
+	// Order of precedence:
+	// - Smart denoising
+	// - Fourier denoising
+	BackgroundSpeechDenoisingPlan *BackgroundSpeechDenoisingPlan `json:"backgroundSpeechDenoisingPlan,omitempty" url:"backgroundSpeechDenoisingPlan,omitempty"`
 	// This is the plan for analysis of assistant's calls. Stored in `call.analysis`.
 	AnalysisPlan *AnalysisPlan `json:"analysisPlan,omitempty" url:"analysisPlan,omitempty"`
 	// This is the plan for artifacts generated during assistant's calls. Stored in `call.artifact`.
-	//
-	// Note: `recordingEnabled` is currently at the root level. It will be moved to `artifactPlan` in the future, but will remain backwards compatible.
 	ArtifactPlan *ArtifactPlan `json:"artifactPlan,omitempty" url:"artifactPlan,omitempty"`
 	// This is the plan for static predefined messages that can be spoken by the assistant during the call, like `idleMessages`.
 	//
@@ -139,8 +150,6 @@ type Assistant struct {
 	// Usage:
 	// - To enable live listening of the assistant's calls, set `monitorPlan.listenEnabled` to `true`.
 	// - To enable live control of the assistant's calls, set `monitorPlan.controlEnabled` to `true`.
-	//
-	// Note, `serverMessages`, `clientMessages`, `serverUrl` and `serverUrlSecret` are currently at the root level but will be moved to `monitorPlan` in the future. Will remain backwards compatible
 	MonitorPlan *MonitorPlan `json:"monitorPlan,omitempty" url:"monitorPlan,omitempty"`
 	// These are the credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can provide a subset using this.
 	CredentialIds []string `json:"credentialIds,omitempty" url:"credentialIds,omitempty"`
@@ -332,6 +341,13 @@ func (a *Assistant) GetMetadata() map[string]interface{} {
 		return nil
 	}
 	return a.Metadata
+}
+
+func (a *Assistant) GetBackgroundSpeechDenoisingPlan() *BackgroundSpeechDenoisingPlan {
+	if a == nil {
+		return nil
+	}
+	return a.BackgroundSpeechDenoisingPlan
 }
 
 func (a *Assistant) GetAnalysisPlan() *AnalysisPlan {
@@ -2170,6 +2186,7 @@ type AssistantTranscriber struct {
 	SpeechmaticsTranscriber *SpeechmaticsTranscriber
 	TalkscriberTranscriber  *TalkscriberTranscriber
 	OpenAiTranscriber       *OpenAiTranscriber
+	CartesiaTranscriber     *CartesiaTranscriber
 
 	typ string
 }
@@ -2244,6 +2261,13 @@ func (a *AssistantTranscriber) GetOpenAiTranscriber() *OpenAiTranscriber {
 	return a.OpenAiTranscriber
 }
 
+func (a *AssistantTranscriber) GetCartesiaTranscriber() *CartesiaTranscriber {
+	if a == nil {
+		return nil
+	}
+	return a.CartesiaTranscriber
+}
+
 func (a *AssistantTranscriber) UnmarshalJSON(data []byte) error {
 	valueAssemblyAiTranscriber := new(AssemblyAiTranscriber)
 	if err := json.Unmarshal(data, &valueAssemblyAiTranscriber); err == nil {
@@ -2305,6 +2329,12 @@ func (a *AssistantTranscriber) UnmarshalJSON(data []byte) error {
 		a.OpenAiTranscriber = valueOpenAiTranscriber
 		return nil
 	}
+	valueCartesiaTranscriber := new(CartesiaTranscriber)
+	if err := json.Unmarshal(data, &valueCartesiaTranscriber); err == nil {
+		a.typ = "CartesiaTranscriber"
+		a.CartesiaTranscriber = valueCartesiaTranscriber
+		return nil
+	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, a)
 }
 
@@ -2339,6 +2369,9 @@ func (a AssistantTranscriber) MarshalJSON() ([]byte, error) {
 	if a.typ == "OpenAiTranscriber" || a.OpenAiTranscriber != nil {
 		return json.Marshal(a.OpenAiTranscriber)
 	}
+	if a.typ == "CartesiaTranscriber" || a.CartesiaTranscriber != nil {
+		return json.Marshal(a.CartesiaTranscriber)
+	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", a)
 }
 
@@ -2353,6 +2386,7 @@ type AssistantTranscriberVisitor interface {
 	VisitSpeechmaticsTranscriber(*SpeechmaticsTranscriber) error
 	VisitTalkscriberTranscriber(*TalkscriberTranscriber) error
 	VisitOpenAiTranscriber(*OpenAiTranscriber) error
+	VisitCartesiaTranscriber(*CartesiaTranscriber) error
 }
 
 func (a *AssistantTranscriber) Accept(visitor AssistantTranscriberVisitor) error {
@@ -2385,6 +2419,9 @@ func (a *AssistantTranscriber) Accept(visitor AssistantTranscriberVisitor) error
 	}
 	if a.typ == "OpenAiTranscriber" || a.OpenAiTranscriber != nil {
 		return visitor.VisitOpenAiTranscriber(a.OpenAiTranscriber)
+	}
+	if a.typ == "CartesiaTranscriber" || a.CartesiaTranscriber != nil {
+		return visitor.VisitCartesiaTranscriber(a.CartesiaTranscriber)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", a)
 }
@@ -4523,6 +4560,7 @@ type UpdateAssistantDtoTranscriber struct {
 	SpeechmaticsTranscriber *SpeechmaticsTranscriber
 	TalkscriberTranscriber  *TalkscriberTranscriber
 	OpenAiTranscriber       *OpenAiTranscriber
+	CartesiaTranscriber     *CartesiaTranscriber
 
 	typ string
 }
@@ -4597,6 +4635,13 @@ func (u *UpdateAssistantDtoTranscriber) GetOpenAiTranscriber() *OpenAiTranscribe
 	return u.OpenAiTranscriber
 }
 
+func (u *UpdateAssistantDtoTranscriber) GetCartesiaTranscriber() *CartesiaTranscriber {
+	if u == nil {
+		return nil
+	}
+	return u.CartesiaTranscriber
+}
+
 func (u *UpdateAssistantDtoTranscriber) UnmarshalJSON(data []byte) error {
 	valueAssemblyAiTranscriber := new(AssemblyAiTranscriber)
 	if err := json.Unmarshal(data, &valueAssemblyAiTranscriber); err == nil {
@@ -4658,6 +4703,12 @@ func (u *UpdateAssistantDtoTranscriber) UnmarshalJSON(data []byte) error {
 		u.OpenAiTranscriber = valueOpenAiTranscriber
 		return nil
 	}
+	valueCartesiaTranscriber := new(CartesiaTranscriber)
+	if err := json.Unmarshal(data, &valueCartesiaTranscriber); err == nil {
+		u.typ = "CartesiaTranscriber"
+		u.CartesiaTranscriber = valueCartesiaTranscriber
+		return nil
+	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, u)
 }
 
@@ -4692,6 +4743,9 @@ func (u UpdateAssistantDtoTranscriber) MarshalJSON() ([]byte, error) {
 	if u.typ == "OpenAiTranscriber" || u.OpenAiTranscriber != nil {
 		return json.Marshal(u.OpenAiTranscriber)
 	}
+	if u.typ == "CartesiaTranscriber" || u.CartesiaTranscriber != nil {
+		return json.Marshal(u.CartesiaTranscriber)
+	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", u)
 }
 
@@ -4706,6 +4760,7 @@ type UpdateAssistantDtoTranscriberVisitor interface {
 	VisitSpeechmaticsTranscriber(*SpeechmaticsTranscriber) error
 	VisitTalkscriberTranscriber(*TalkscriberTranscriber) error
 	VisitOpenAiTranscriber(*OpenAiTranscriber) error
+	VisitCartesiaTranscriber(*CartesiaTranscriber) error
 }
 
 func (u *UpdateAssistantDtoTranscriber) Accept(visitor UpdateAssistantDtoTranscriberVisitor) error {
@@ -4738,6 +4793,9 @@ func (u *UpdateAssistantDtoTranscriber) Accept(visitor UpdateAssistantDtoTranscr
 	}
 	if u.typ == "OpenAiTranscriber" || u.OpenAiTranscriber != nil {
 		return visitor.VisitOpenAiTranscriber(u.OpenAiTranscriber)
+	}
+	if u.typ == "CartesiaTranscriber" || u.CartesiaTranscriber != nil {
+		return visitor.VisitCartesiaTranscriber(u.CartesiaTranscriber)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", u)
 }
@@ -5239,8 +5297,9 @@ type UpdateAssistantDto struct {
 	ModelOutputInMessagesEnabled *bool `json:"modelOutputInMessagesEnabled,omitempty" url:"-"`
 	// These are the configurations to be passed to the transport providers of assistant's calls, like Twilio. You can store multiple configurations for different transport providers. For a call, only the configuration matching the call transport provider is used.
 	TransportConfigurations []*TransportConfigurationTwilio `json:"transportConfigurations,omitempty" url:"-"`
-	// This is the plan for observability configuration of assistant's calls.
-	// Currently supports Langfuse for tracing and monitoring.
+	// This is the plan for observability of assistant's calls.
+	//
+	// Currently, only Langfuse is supported.
 	ObservabilityPlan *LangfuseObservabilityPlan `json:"observabilityPlan,omitempty" url:"-"`
 	// These are dynamic credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can supplement an additional credentials using this. Dynamic credentials override existing credentials.
 	Credentials []*UpdateAssistantDtoCredentialsItem `json:"credentials,omitempty" url:"-"`
@@ -5263,11 +5322,21 @@ type UpdateAssistantDto struct {
 	CompliancePlan *CompliancePlan `json:"compliancePlan,omitempty" url:"-"`
 	// This is for metadata you want to store on the assistant.
 	Metadata map[string]interface{} `json:"metadata,omitempty" url:"-"`
+	// This enables filtering of noise and background speech while the user is talking.
+	//
+	// Features:
+	// - Smart denoising using Krisp
+	// - Fourier denoising
+	//
+	// Smart denoising can be combined with or used independently of Fourier denoising.
+	//
+	// Order of precedence:
+	// - Smart denoising
+	// - Fourier denoising
+	BackgroundSpeechDenoisingPlan *BackgroundSpeechDenoisingPlan `json:"backgroundSpeechDenoisingPlan,omitempty" url:"-"`
 	// This is the plan for analysis of assistant's calls. Stored in `call.analysis`.
 	AnalysisPlan *AnalysisPlan `json:"analysisPlan,omitempty" url:"-"`
 	// This is the plan for artifacts generated during assistant's calls. Stored in `call.artifact`.
-	//
-	// Note: `recordingEnabled` is currently at the root level. It will be moved to `artifactPlan` in the future, but will remain backwards compatible.
 	ArtifactPlan *ArtifactPlan `json:"artifactPlan,omitempty" url:"-"`
 	// This is the plan for static predefined messages that can be spoken by the assistant during the call, like `idleMessages`.
 	//
@@ -5294,8 +5363,6 @@ type UpdateAssistantDto struct {
 	// Usage:
 	// - To enable live listening of the assistant's calls, set `monitorPlan.listenEnabled` to `true`.
 	// - To enable live control of the assistant's calls, set `monitorPlan.controlEnabled` to `true`.
-	//
-	// Note, `serverMessages`, `clientMessages`, `serverUrl` and `serverUrlSecret` are currently at the root level but will be moved to `monitorPlan` in the future. Will remain backwards compatible
 	MonitorPlan *MonitorPlan `json:"monitorPlan,omitempty" url:"-"`
 	// These are the credentials that will be used for the assistant calls. By default, all the credentials are available for use in the call but you can provide a subset using this.
 	CredentialIds []string `json:"credentialIds,omitempty" url:"-"`

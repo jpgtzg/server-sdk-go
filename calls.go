@@ -50,8 +50,6 @@ type CreateCallDto struct {
 	// - Squad, use `squad` or `squadId`
 	// - Workflow, use `workflow` or `workflowId`
 	Squad *CreateSquadDto `json:"squad,omitempty" url:"-"`
-	// [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
-	//
 	// This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
 	//
 	// To start a call with:
@@ -59,8 +57,6 @@ type CreateCallDto struct {
 	// - Squad, use `squad` or `squadId`
 	// - Workflow, use `workflow` or `workflowId`
 	WorkflowId *string `json:"workflowId,omitempty" url:"-"`
-	// [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
-	//
 	// This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
 	//
 	// To start a call with:
@@ -68,6 +64,8 @@ type CreateCallDto struct {
 	// - Squad, use `squad` or `squadId`
 	// - Workflow, use `workflow` or `workflowId`
 	Workflow *CreateWorkflowDto `json:"workflow,omitempty" url:"-"`
+	// These are the overrides for the `workflow` or `workflowId`'s settings and template variables.
+	WorkflowOverrides *WorkflowOverrides `json:"workflowOverrides,omitempty" url:"-"`
 	// This is the phone number that will be used for the call. To use a transient number, use `phoneNumber` instead.
 	//
 	// Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
@@ -492,6 +490,8 @@ type Call struct {
 	//
 	// Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
 	PhoneCallProviderId *string `json:"phoneCallProviderId,omitempty" url:"phoneCallProviderId,omitempty"`
+	// This is the campaign ID that the call belongs to.
+	CampaignId *string `json:"campaignId,omitempty" url:"campaignId,omitempty"`
 	// This is the assistant ID that will be used for the call. To use a transient assistant, use `assistant` instead.
 	//
 	// To start a call with:
@@ -522,8 +522,6 @@ type Call struct {
 	// - Squad, use `squad` or `squadId`
 	// - Workflow, use `workflow` or `workflowId`
 	Squad *CreateSquadDto `json:"squad,omitempty" url:"squad,omitempty"`
-	// [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
-	//
 	// This is the workflow that will be used for the call. To use a transient workflow, use `workflow` instead.
 	//
 	// To start a call with:
@@ -531,8 +529,6 @@ type Call struct {
 	// - Squad, use `squad` or `squadId`
 	// - Workflow, use `workflow` or `workflowId`
 	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
-	// [BETA] This feature is in active development. The API and behavior are subject to change as we refine it based on user feedback.
-	//
 	// This is a workflow that will be used for the call. To use an existing workflow, use `workflowId` instead.
 	//
 	// To start a call with:
@@ -540,6 +536,8 @@ type Call struct {
 	// - Squad, use `squad` or `squadId`
 	// - Workflow, use `workflow` or `workflowId`
 	Workflow *CreateWorkflowDto `json:"workflow,omitempty" url:"workflow,omitempty"`
+	// These are the overrides for the `workflow` or `workflowId`'s settings and template variables.
+	WorkflowOverrides *WorkflowOverrides `json:"workflowOverrides,omitempty" url:"workflowOverrides,omitempty"`
 	// This is the phone number that will be used for the call. To use a transient number, use `phoneNumber` instead.
 	//
 	// Only relevant for `outboundPhoneCall` and `inboundPhoneCall` type.
@@ -714,6 +712,13 @@ func (c *Call) GetPhoneCallProviderId() *string {
 	return c.PhoneCallProviderId
 }
 
+func (c *Call) GetCampaignId() *string {
+	if c == nil {
+		return nil
+	}
+	return c.CampaignId
+}
+
 func (c *Call) GetAssistantId() *string {
 	if c == nil {
 		return nil
@@ -761,6 +766,13 @@ func (c *Call) GetWorkflow() *CreateWorkflowDto {
 		return nil
 	}
 	return c.Workflow
+}
+
+func (c *Call) GetWorkflowOverrides() *WorkflowOverrides {
+	if c == nil {
+		return nil
+	}
+	return c.WorkflowOverrides
 }
 
 func (c *Call) GetPhoneNumberId() *string {
@@ -1246,8 +1258,9 @@ const (
 	CallEndedReasonAssistantRequestReturnedInvalidAssistant                                                                  CallEndedReason = "assistant-request-returned-invalid-assistant"
 	CallEndedReasonAssistantRequestReturnedNoAssistant                                                                       CallEndedReason = "assistant-request-returned-no-assistant"
 	CallEndedReasonAssistantRequestReturnedForwardingPhoneNumber                                                             CallEndedReason = "assistant-request-returned-forwarding-phone-number"
-	CallEndedReasonCallStartErrorGetOrg                                                                                      CallEndedReason = "call.start.error-get-org"
-	CallEndedReasonCallStartErrorGetSubscription                                                                             CallEndedReason = "call.start.error-get-subscription"
+	CallEndedReasonScheduledCallDeleted                                                                                      CallEndedReason = "scheduled-call-deleted"
+	CallEndedReasonCallStartErrorVapifaultGetOrg                                                                             CallEndedReason = "call.start.error-vapifault-get-org"
+	CallEndedReasonCallStartErrorVapifaultGetSubscription                                                                    CallEndedReason = "call.start.error-vapifault-get-subscription"
 	CallEndedReasonCallStartErrorGetAssistant                                                                                CallEndedReason = "call.start.error-get-assistant"
 	CallEndedReasonCallStartErrorGetPhoneNumber                                                                              CallEndedReason = "call.start.error-get-phone-number"
 	CallEndedReasonCallStartErrorGetCustomer                                                                                 CallEndedReason = "call.start.error-get-customer"
@@ -1255,6 +1268,11 @@ const (
 	CallEndedReasonCallStartErrorVapiNumberInternational                                                                     CallEndedReason = "call.start.error-vapi-number-international"
 	CallEndedReasonCallStartErrorVapiNumberOutboundDailyLimit                                                                CallEndedReason = "call.start.error-vapi-number-outbound-daily-limit"
 	CallEndedReasonCallStartErrorGetTransport                                                                                CallEndedReason = "call.start.error-get-transport"
+	CallEndedReasonCallStartErrorSubscriptionWalletDoesNotExist                                                              CallEndedReason = "call.start.error-subscription-wallet-does-not-exist"
+	CallEndedReasonCallStartErrorSubscriptionFrozen                                                                          CallEndedReason = "call.start.error-subscription-frozen"
+	CallEndedReasonCallStartErrorSubscriptionInsufficientCredits                                                             CallEndedReason = "call.start.error-subscription-insufficient-credits"
+	CallEndedReasonCallStartErrorSubscriptionUpgradeFailed                                                                   CallEndedReason = "call.start.error-subscription-upgrade-failed"
+	CallEndedReasonCallStartErrorSubscriptionConcurrencyLimitReached                                                         CallEndedReason = "call.start.error-subscription-concurrency-limit-reached"
 	CallEndedReasonAssistantNotValid                                                                                         CallEndedReason = "assistant-not-valid"
 	CallEndedReasonDatabaseError                                                                                             CallEndedReason = "database-error"
 	CallEndedReasonAssistantNotFound                                                                                         CallEndedReason = "assistant-not-found"
@@ -1322,7 +1340,6 @@ const (
 	CallEndedReasonCallInProgressErrorVapifaultAzureSpeechTranscriberFailed                                                  CallEndedReason = "call.in-progress.error-vapifault-azure-speech-transcriber-failed"
 	CallEndedReasonCallInProgressErrorPipelineNoAvailableLlmModel                                                            CallEndedReason = "call.in-progress.error-pipeline-no-available-llm-model"
 	CallEndedReasonWorkerShutdown                                                                                            CallEndedReason = "worker-shutdown"
-	CallEndedReasonUnknownError                                                                                              CallEndedReason = "unknown-error"
 	CallEndedReasonVonageDisconnected                                                                                        CallEndedReason = "vonage-disconnected"
 	CallEndedReasonVonageFailedToConnectCall                                                                                 CallEndedReason = "vonage-failed-to-connect-call"
 	CallEndedReasonVonageCompleted                                                                                           CallEndedReason = "vonage-completed"
@@ -1332,6 +1349,9 @@ const (
 	CallEndedReasonCallInProgressErrorVapifaultTransportNeverConnected                                                       CallEndedReason = "call.in-progress.error-vapifault-transport-never-connected"
 	CallEndedReasonCallInProgressErrorVapifaultTransportConnectedButCallNotActive                                            CallEndedReason = "call.in-progress.error-vapifault-transport-connected-but-call-not-active"
 	CallEndedReasonCallInProgressErrorVapifaultCallStartedButConnectionToTransportMissing                                    CallEndedReason = "call.in-progress.error-vapifault-call-started-but-connection-to-transport-missing"
+	CallEndedReasonCallInProgressErrorVapifaultWorkerDied                                                                    CallEndedReason = "call.in-progress.error-vapifault-worker-died"
+	CallEndedReasonCallInProgressTwilioCompletedCall                                                                         CallEndedReason = "call.in-progress.twilio-completed-call"
+	CallEndedReasonCallInProgressSipCompletedCall                                                                            CallEndedReason = "call.in-progress.sip-completed-call"
 	CallEndedReasonCallInProgressErrorVapifaultOpenaiLlmFailed                                                               CallEndedReason = "call.in-progress.error-vapifault-openai-llm-failed"
 	CallEndedReasonCallInProgressErrorVapifaultAzureOpenaiLlmFailed                                                          CallEndedReason = "call.in-progress.error-vapifault-azure-openai-llm-failed"
 	CallEndedReasonCallInProgressErrorVapifaultGroqLlmFailed                                                                 CallEndedReason = "call.in-progress.error-vapifault-groq-llm-failed"
@@ -1341,6 +1361,7 @@ const (
 	CallEndedReasonCallInProgressErrorVapifaultInflectionAiLlmFailed                                                         CallEndedReason = "call.in-progress.error-vapifault-inflection-ai-llm-failed"
 	CallEndedReasonCallInProgressErrorVapifaultCerebrasLlmFailed                                                             CallEndedReason = "call.in-progress.error-vapifault-cerebras-llm-failed"
 	CallEndedReasonCallInProgressErrorVapifaultDeepSeekLlmFailed                                                             CallEndedReason = "call.in-progress.error-vapifault-deep-seek-llm-failed"
+	CallEndedReasonCallInProgressErrorVapifaultChatPipelineFailedToStart                                                     CallEndedReason = "call.in-progress.error-vapifault-chat-pipeline-failed-to-start"
 	CallEndedReasonPipelineErrorOpenai400BadRequestValidationFailed                                                          CallEndedReason = "pipeline-error-openai-400-bad-request-validation-failed"
 	CallEndedReasonPipelineErrorOpenai401Unauthorized                                                                        CallEndedReason = "pipeline-error-openai-401-unauthorized"
 	CallEndedReasonPipelineErrorOpenai401IncorrectApiKey                                                                     CallEndedReason = "pipeline-error-openai-401-incorrect-api-key"
@@ -1608,6 +1629,7 @@ const (
 	CallEndedReasonPipelineErrorCartesiaSocketHangUp                                                                         CallEndedReason = "pipeline-error-cartesia-socket-hang-up"
 	CallEndedReasonPipelineErrorCartesiaRequestedPayment                                                                     CallEndedReason = "pipeline-error-cartesia-requested-payment"
 	CallEndedReasonPipelineErrorCartesia500ServerError                                                                       CallEndedReason = "pipeline-error-cartesia-500-server-error"
+	CallEndedReasonPipelineErrorCartesia502ServerError                                                                       CallEndedReason = "pipeline-error-cartesia-502-server-error"
 	CallEndedReasonPipelineErrorCartesia503ServerError                                                                       CallEndedReason = "pipeline-error-cartesia-503-server-error"
 	CallEndedReasonPipelineErrorCartesia522ServerError                                                                       CallEndedReason = "pipeline-error-cartesia-522-server-error"
 	CallEndedReasonCallInProgressErrorVapifaultCartesiaSocketHangUp                                                          CallEndedReason = "call.in-progress.error-vapifault-cartesia-socket-hang-up"
@@ -1628,6 +1650,7 @@ const (
 	CallEndedReasonPipelineErrorElevenLabsInvalidApiKey                                                                      CallEndedReason = "pipeline-error-eleven-labs-invalid-api-key"
 	CallEndedReasonPipelineErrorElevenLabsInvalidVoiceSamples                                                                CallEndedReason = "pipeline-error-eleven-labs-invalid-voice-samples"
 	CallEndedReasonPipelineErrorElevenLabsVoiceDisabledByOwner                                                               CallEndedReason = "pipeline-error-eleven-labs-voice-disabled-by-owner"
+	CallEndedReasonPipelineErrorElevenLabsVapiVoiceDisabledByOwner                                                           CallEndedReason = "pipeline-error-eleven-labs-vapi-voice-disabled-by-owner"
 	CallEndedReasonPipelineErrorElevenLabsBlockedAccountInProbation                                                          CallEndedReason = "pipeline-error-eleven-labs-blocked-account-in-probation"
 	CallEndedReasonPipelineErrorElevenLabsBlockedContentAgainstTheirPolicy                                                   CallEndedReason = "pipeline-error-eleven-labs-blocked-content-against-their-policy"
 	CallEndedReasonPipelineErrorElevenLabsMissingSamplesForVoiceClone                                                        CallEndedReason = "pipeline-error-eleven-labs-missing-samples-for-voice-clone"
@@ -1636,6 +1659,7 @@ const (
 	CallEndedReasonPipelineErrorElevenLabsMaxCharacterLimitExceeded                                                          CallEndedReason = "pipeline-error-eleven-labs-max-character-limit-exceeded"
 	CallEndedReasonPipelineErrorElevenLabsBlockedVoicePotentiallyAgainstTermsOfServiceAndAwaitingVerification                CallEndedReason = "pipeline-error-eleven-labs-blocked-voice-potentially-against-terms-of-service-and-awaiting-verification"
 	CallEndedReasonPipelineErrorElevenLabs500ServerError                                                                     CallEndedReason = "pipeline-error-eleven-labs-500-server-error"
+	CallEndedReasonPipelineErrorElevenLabs503ServerError                                                                     CallEndedReason = "pipeline-error-eleven-labs-503-server-error"
 	CallEndedReasonCallInProgressErrorVapifaultElevenLabsVoiceNotFound                                                       CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-voice-not-found"
 	CallEndedReasonCallInProgressErrorVapifaultElevenLabsQuotaExceeded                                                       CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-quota-exceeded"
 	CallEndedReasonCallInProgressErrorVapifaultElevenLabsUnauthorizedAccess                                                  CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-unauthorized-access"
@@ -1657,6 +1681,7 @@ const (
 	CallEndedReasonCallInProgressErrorVapifaultElevenLabsMaxCharacterLimitExceeded                                           CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-max-character-limit-exceeded"
 	CallEndedReasonCallInProgressErrorVapifaultElevenLabsBlockedVoicePotentiallyAgainstTermsOfServiceAndAwaitingVerification CallEndedReason = "call.in-progress.error-vapifault-eleven-labs-blocked-voice-potentially-against-terms-of-service-and-awaiting-verification"
 	CallEndedReasonCallInProgressErrorProviderfaultElevenLabs500ServerError                                                  CallEndedReason = "call.in-progress.error-providerfault-eleven-labs-500-server-error"
+	CallEndedReasonCallInProgressErrorProviderfaultElevenLabs503ServerError                                                  CallEndedReason = "call.in-progress.error-providerfault-eleven-labs-503-server-error"
 	CallEndedReasonPipelineErrorPlayhtRequestTimedOut                                                                        CallEndedReason = "pipeline-error-playht-request-timed-out"
 	CallEndedReasonPipelineErrorPlayhtInvalidVoice                                                                           CallEndedReason = "pipeline-error-playht-invalid-voice"
 	CallEndedReasonPipelineErrorPlayhtUnexpectedError                                                                        CallEndedReason = "pipeline-error-playht-unexpected-error"
@@ -1710,6 +1735,7 @@ const (
 	CallEndedReasonAssistantForwardedCall                                                                                    CallEndedReason = "assistant-forwarded-call"
 	CallEndedReasonAssistantJoinTimedOut                                                                                     CallEndedReason = "assistant-join-timed-out"
 	CallEndedReasonCallInProgressErrorAssistantDidNotReceiveCustomerAudio                                                    CallEndedReason = "call.in-progress.error-assistant-did-not-receive-customer-audio"
+	CallEndedReasonCallInProgressErrorTransferFailed                                                                         CallEndedReason = "call.in-progress.error-transfer-failed"
 	CallEndedReasonCustomerBusy                                                                                              CallEndedReason = "customer-busy"
 	CallEndedReasonCustomerEndedCall                                                                                         CallEndedReason = "customer-ended-call"
 	CallEndedReasonCustomerDidNotAnswer                                                                                      CallEndedReason = "customer-did-not-answer"
@@ -1719,9 +1745,16 @@ const (
 	CallEndedReasonPhoneCallProviderClosedWebsocket                                                                          CallEndedReason = "phone-call-provider-closed-websocket"
 	CallEndedReasonCallForwardingOperatorBusy                                                                                CallEndedReason = "call.forwarding.operator-busy"
 	CallEndedReasonSilenceTimedOut                                                                                           CallEndedReason = "silence-timed-out"
-	CallEndedReasonCallInProgressErrorSipTelephonyProviderFailedToConnectCall                                                CallEndedReason = "call.in-progress.error-sip-telephony-provider-failed-to-connect-call"
+	CallEndedReasonCallInProgressErrorSipInboundCallFailedToConnect                                                          CallEndedReason = "call.in-progress.error-sip-inbound-call-failed-to-connect"
+	CallEndedReasonCallInProgressErrorProviderfaultOutboundSip403Forbidden                                                   CallEndedReason = "call.in-progress.error-providerfault-outbound-sip-403-forbidden"
+	CallEndedReasonCallInProgressErrorProviderfaultOutboundSip407ProxyAuthenticationRequired                                 CallEndedReason = "call.in-progress.error-providerfault-outbound-sip-407-proxy-authentication-required"
+	CallEndedReasonCallInProgressErrorProviderfaultOutboundSip503ServiceUnavailable                                          CallEndedReason = "call.in-progress.error-providerfault-outbound-sip-503-service-unavailable"
+	CallEndedReasonCallInProgressErrorProviderfaultOutboundSip480TemporarilyUnavailable                                      CallEndedReason = "call.in-progress.error-providerfault-outbound-sip-480-temporarily-unavailable"
+	CallEndedReasonCallInProgressErrorSipOutboundCallFailedToConnect                                                         CallEndedReason = "call.in-progress.error-sip-outbound-call-failed-to-connect"
 	CallEndedReasonCallRingingHookExecutedSay                                                                                CallEndedReason = "call.ringing.hook-executed-say"
 	CallEndedReasonCallRingingHookExecutedTransfer                                                                           CallEndedReason = "call.ringing.hook-executed-transfer"
+	CallEndedReasonCallRingingSipInboundCallerHungupBeforeCallConnect                                                        CallEndedReason = "call.ringing.sip-inbound-caller-hungup-before-call-connect"
+	CallEndedReasonCallRingingErrorSipInboundCallFailedToConnect                                                             CallEndedReason = "call.ringing.error-sip-inbound-call-failed-to-connect"
 	CallEndedReasonTwilioFailedToConnectCall                                                                                 CallEndedReason = "twilio-failed-to-connect-call"
 	CallEndedReasonTwilioReportedCustomerMisdialed                                                                           CallEndedReason = "twilio-reported-customer-misdialed"
 	CallEndedReasonVonageRejected                                                                                            CallEndedReason = "vonage-rejected"
@@ -1744,10 +1777,12 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonAssistantRequestReturnedNoAssistant, nil
 	case "assistant-request-returned-forwarding-phone-number":
 		return CallEndedReasonAssistantRequestReturnedForwardingPhoneNumber, nil
-	case "call.start.error-get-org":
-		return CallEndedReasonCallStartErrorGetOrg, nil
-	case "call.start.error-get-subscription":
-		return CallEndedReasonCallStartErrorGetSubscription, nil
+	case "scheduled-call-deleted":
+		return CallEndedReasonScheduledCallDeleted, nil
+	case "call.start.error-vapifault-get-org":
+		return CallEndedReasonCallStartErrorVapifaultGetOrg, nil
+	case "call.start.error-vapifault-get-subscription":
+		return CallEndedReasonCallStartErrorVapifaultGetSubscription, nil
 	case "call.start.error-get-assistant":
 		return CallEndedReasonCallStartErrorGetAssistant, nil
 	case "call.start.error-get-phone-number":
@@ -1762,6 +1797,16 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonCallStartErrorVapiNumberOutboundDailyLimit, nil
 	case "call.start.error-get-transport":
 		return CallEndedReasonCallStartErrorGetTransport, nil
+	case "call.start.error-subscription-wallet-does-not-exist":
+		return CallEndedReasonCallStartErrorSubscriptionWalletDoesNotExist, nil
+	case "call.start.error-subscription-frozen":
+		return CallEndedReasonCallStartErrorSubscriptionFrozen, nil
+	case "call.start.error-subscription-insufficient-credits":
+		return CallEndedReasonCallStartErrorSubscriptionInsufficientCredits, nil
+	case "call.start.error-subscription-upgrade-failed":
+		return CallEndedReasonCallStartErrorSubscriptionUpgradeFailed, nil
+	case "call.start.error-subscription-concurrency-limit-reached":
+		return CallEndedReasonCallStartErrorSubscriptionConcurrencyLimitReached, nil
 	case "assistant-not-valid":
 		return CallEndedReasonAssistantNotValid, nil
 	case "database-error":
@@ -1896,8 +1941,6 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonCallInProgressErrorPipelineNoAvailableLlmModel, nil
 	case "worker-shutdown":
 		return CallEndedReasonWorkerShutdown, nil
-	case "unknown-error":
-		return CallEndedReasonUnknownError, nil
 	case "vonage-disconnected":
 		return CallEndedReasonVonageDisconnected, nil
 	case "vonage-failed-to-connect-call":
@@ -1916,6 +1959,12 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonCallInProgressErrorVapifaultTransportConnectedButCallNotActive, nil
 	case "call.in-progress.error-vapifault-call-started-but-connection-to-transport-missing":
 		return CallEndedReasonCallInProgressErrorVapifaultCallStartedButConnectionToTransportMissing, nil
+	case "call.in-progress.error-vapifault-worker-died":
+		return CallEndedReasonCallInProgressErrorVapifaultWorkerDied, nil
+	case "call.in-progress.twilio-completed-call":
+		return CallEndedReasonCallInProgressTwilioCompletedCall, nil
+	case "call.in-progress.sip-completed-call":
+		return CallEndedReasonCallInProgressSipCompletedCall, nil
 	case "call.in-progress.error-vapifault-openai-llm-failed":
 		return CallEndedReasonCallInProgressErrorVapifaultOpenaiLlmFailed, nil
 	case "call.in-progress.error-vapifault-azure-openai-llm-failed":
@@ -1934,6 +1983,8 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonCallInProgressErrorVapifaultCerebrasLlmFailed, nil
 	case "call.in-progress.error-vapifault-deep-seek-llm-failed":
 		return CallEndedReasonCallInProgressErrorVapifaultDeepSeekLlmFailed, nil
+	case "call.in-progress.error-vapifault-chat-pipeline-failed-to-start":
+		return CallEndedReasonCallInProgressErrorVapifaultChatPipelineFailedToStart, nil
 	case "pipeline-error-openai-400-bad-request-validation-failed":
 		return CallEndedReasonPipelineErrorOpenai400BadRequestValidationFailed, nil
 	case "pipeline-error-openai-401-unauthorized":
@@ -2468,6 +2519,8 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonPipelineErrorCartesiaRequestedPayment, nil
 	case "pipeline-error-cartesia-500-server-error":
 		return CallEndedReasonPipelineErrorCartesia500ServerError, nil
+	case "pipeline-error-cartesia-502-server-error":
+		return CallEndedReasonPipelineErrorCartesia502ServerError, nil
 	case "pipeline-error-cartesia-503-server-error":
 		return CallEndedReasonPipelineErrorCartesia503ServerError, nil
 	case "pipeline-error-cartesia-522-server-error":
@@ -2508,6 +2561,8 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonPipelineErrorElevenLabsInvalidVoiceSamples, nil
 	case "pipeline-error-eleven-labs-voice-disabled-by-owner":
 		return CallEndedReasonPipelineErrorElevenLabsVoiceDisabledByOwner, nil
+	case "pipeline-error-eleven-labs-vapi-voice-disabled-by-owner":
+		return CallEndedReasonPipelineErrorElevenLabsVapiVoiceDisabledByOwner, nil
 	case "pipeline-error-eleven-labs-blocked-account-in-probation":
 		return CallEndedReasonPipelineErrorElevenLabsBlockedAccountInProbation, nil
 	case "pipeline-error-eleven-labs-blocked-content-against-their-policy":
@@ -2524,6 +2579,8 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonPipelineErrorElevenLabsBlockedVoicePotentiallyAgainstTermsOfServiceAndAwaitingVerification, nil
 	case "pipeline-error-eleven-labs-500-server-error":
 		return CallEndedReasonPipelineErrorElevenLabs500ServerError, nil
+	case "pipeline-error-eleven-labs-503-server-error":
+		return CallEndedReasonPipelineErrorElevenLabs503ServerError, nil
 	case "call.in-progress.error-vapifault-eleven-labs-voice-not-found":
 		return CallEndedReasonCallInProgressErrorVapifaultElevenLabsVoiceNotFound, nil
 	case "call.in-progress.error-vapifault-eleven-labs-quota-exceeded":
@@ -2566,6 +2623,8 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonCallInProgressErrorVapifaultElevenLabsBlockedVoicePotentiallyAgainstTermsOfServiceAndAwaitingVerification, nil
 	case "call.in-progress.error-providerfault-eleven-labs-500-server-error":
 		return CallEndedReasonCallInProgressErrorProviderfaultElevenLabs500ServerError, nil
+	case "call.in-progress.error-providerfault-eleven-labs-503-server-error":
+		return CallEndedReasonCallInProgressErrorProviderfaultElevenLabs503ServerError, nil
 	case "pipeline-error-playht-request-timed-out":
 		return CallEndedReasonPipelineErrorPlayhtRequestTimedOut, nil
 	case "pipeline-error-playht-invalid-voice":
@@ -2672,6 +2731,8 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonAssistantJoinTimedOut, nil
 	case "call.in-progress.error-assistant-did-not-receive-customer-audio":
 		return CallEndedReasonCallInProgressErrorAssistantDidNotReceiveCustomerAudio, nil
+	case "call.in-progress.error-transfer-failed":
+		return CallEndedReasonCallInProgressErrorTransferFailed, nil
 	case "customer-busy":
 		return CallEndedReasonCustomerBusy, nil
 	case "customer-ended-call":
@@ -2690,12 +2751,26 @@ func NewCallEndedReasonFromString(s string) (CallEndedReason, error) {
 		return CallEndedReasonCallForwardingOperatorBusy, nil
 	case "silence-timed-out":
 		return CallEndedReasonSilenceTimedOut, nil
-	case "call.in-progress.error-sip-telephony-provider-failed-to-connect-call":
-		return CallEndedReasonCallInProgressErrorSipTelephonyProviderFailedToConnectCall, nil
+	case "call.in-progress.error-sip-inbound-call-failed-to-connect":
+		return CallEndedReasonCallInProgressErrorSipInboundCallFailedToConnect, nil
+	case "call.in-progress.error-providerfault-outbound-sip-403-forbidden":
+		return CallEndedReasonCallInProgressErrorProviderfaultOutboundSip403Forbidden, nil
+	case "call.in-progress.error-providerfault-outbound-sip-407-proxy-authentication-required":
+		return CallEndedReasonCallInProgressErrorProviderfaultOutboundSip407ProxyAuthenticationRequired, nil
+	case "call.in-progress.error-providerfault-outbound-sip-503-service-unavailable":
+		return CallEndedReasonCallInProgressErrorProviderfaultOutboundSip503ServiceUnavailable, nil
+	case "call.in-progress.error-providerfault-outbound-sip-480-temporarily-unavailable":
+		return CallEndedReasonCallInProgressErrorProviderfaultOutboundSip480TemporarilyUnavailable, nil
+	case "call.in-progress.error-sip-outbound-call-failed-to-connect":
+		return CallEndedReasonCallInProgressErrorSipOutboundCallFailedToConnect, nil
 	case "call.ringing.hook-executed-say":
 		return CallEndedReasonCallRingingHookExecutedSay, nil
 	case "call.ringing.hook-executed-transfer":
 		return CallEndedReasonCallRingingHookExecutedTransfer, nil
+	case "call.ringing.sip-inbound-caller-hungup-before-call-connect":
+		return CallEndedReasonCallRingingSipInboundCallerHungupBeforeCallConnect, nil
+	case "call.ringing.error-sip-inbound-call-failed-to-connect":
+		return CallEndedReasonCallRingingErrorSipInboundCallFailedToConnect, nil
 	case "twilio-failed-to-connect-call":
 		return CallEndedReasonTwilioFailedToConnectCall, nil
 	case "twilio-reported-customer-misdialed":
@@ -2969,6 +3044,8 @@ type CostBreakdown struct {
 	Tts *float64 `json:"tts,omitempty" url:"tts,omitempty"`
 	// This is the cost of Vapi.
 	Vapi *float64 `json:"vapi,omitempty" url:"vapi,omitempty"`
+	// This is the cost of chat interactions.
+	Chat *float64 `json:"chat,omitempty" url:"chat,omitempty"`
 	// This is the total cost of the call.
 	Total *float64 `json:"total,omitempty" url:"total,omitempty"`
 	// This is the LLM prompt tokens used for the call.
@@ -3017,6 +3094,13 @@ func (c *CostBreakdown) GetVapi() *float64 {
 		return nil
 	}
 	return c.Vapi
+}
+
+func (c *CostBreakdown) GetChat() *float64 {
+	if c == nil {
+		return nil
+	}
+	return c.Chat
 }
 
 func (c *CostBreakdown) GetTotal() *float64 {
@@ -3084,354 +3168,6 @@ func (c *CostBreakdown) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", c)
-}
-
-type CreateCustomerDto struct {
-	// This is the flag to toggle the E164 check for the `number` field. This is an advanced property which should be used if you know your use case requires it.
-	//
-	// Use cases:
-	// - `false`: To allow non-E164 numbers like `+001234567890`, `1234`, or `abc`. This is useful for dialing out to non-E164 numbers on your SIP trunks.
-	// - `true` (default): To allow only E164 numbers like `+14155551234`. This is standard for PSTN calls.
-	//
-	// If `false`, the `number` is still required to only contain alphanumeric characters (regex: `/^\+?[a-zA-Z0-9]+$/`).
-	//
-	// @default true (E164 check is enabled)
-	NumberE164CheckEnabled *bool `json:"numberE164CheckEnabled,omitempty" url:"numberE164CheckEnabled,omitempty"`
-	// This is the extension that will be dialed after the call is answered.
-	Extension *string `json:"extension,omitempty" url:"extension,omitempty"`
-	// These are the overrides for the assistant's settings and template variables specific to this customer.
-	// This allows customization of the assistant's behavior for individual customers in batch calls.
-	AssistantOverrides *AssistantOverrides `json:"assistantOverrides,omitempty" url:"assistantOverrides,omitempty"`
-	// This is the number of the customer.
-	Number *string `json:"number,omitempty" url:"number,omitempty"`
-	// This is the SIP URI of the customer.
-	SipUri *string `json:"sipUri,omitempty" url:"sipUri,omitempty"`
-	// This is the name of the customer. This is just for your own reference.
-	//
-	// For SIP inbound calls, this is extracted from the `From` SIP header with format `"Display Name" <sip:username@domain>`.
-	Name *string `json:"name,omitempty" url:"name,omitempty"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (c *CreateCustomerDto) GetNumberE164CheckEnabled() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.NumberE164CheckEnabled
-}
-
-func (c *CreateCustomerDto) GetExtension() *string {
-	if c == nil {
-		return nil
-	}
-	return c.Extension
-}
-
-func (c *CreateCustomerDto) GetAssistantOverrides() *AssistantOverrides {
-	if c == nil {
-		return nil
-	}
-	return c.AssistantOverrides
-}
-
-func (c *CreateCustomerDto) GetNumber() *string {
-	if c == nil {
-		return nil
-	}
-	return c.Number
-}
-
-func (c *CreateCustomerDto) GetSipUri() *string {
-	if c == nil {
-		return nil
-	}
-	return c.SipUri
-}
-
-func (c *CreateCustomerDto) GetName() *string {
-	if c == nil {
-		return nil
-	}
-	return c.Name
-}
-
-func (c *CreateCustomerDto) GetExtraProperties() map[string]interface{} {
-	return c.extraProperties
-}
-
-func (c *CreateCustomerDto) UnmarshalJSON(data []byte) error {
-	type unmarshaler CreateCustomerDto
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*c = CreateCustomerDto(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *c)
-	if err != nil {
-		return err
-	}
-	c.extraProperties = extraProperties
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c *CreateCustomerDto) String() string {
-	if len(c.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(c); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", c)
-}
-
-type ImportTwilioPhoneNumberDto struct {
-	// This is the fallback destination an inbound call will be transferred to if:
-	// 1. `assistantId` is not set
-	// 2. `squadId` is not set
-	// 3. and, `assistant-request` message to the `serverUrl` fails
-	//
-	// If this is not set and above conditions are met, the inbound call is hung up with an error message.
-	FallbackDestination *ImportTwilioPhoneNumberDtoFallbackDestination `json:"fallbackDestination,omitempty" url:"fallbackDestination,omitempty"`
-	// This is the hooks that will be used for incoming calls to this phone number.
-	Hooks []*PhoneNumberHookCallRinging `json:"hooks,omitempty" url:"hooks,omitempty"`
-	// Controls whether Vapi sets the messaging webhook URL on the Twilio number during import.
-	//
-	// If set to `false`, Vapi will not update the Twilio messaging URL, leaving it as is.
-	// If `true` or omitted (default), Vapi will configure both the voice and messaging URLs.
-	//
-	// @default true
-	SmsEnabled *bool `json:"smsEnabled,omitempty" url:"smsEnabled,omitempty"`
-	// These are the digits of the phone number you own on your Twilio.
-	TwilioPhoneNumber string `json:"twilioPhoneNumber" url:"twilioPhoneNumber"`
-	// This is your Twilio Account SID that will be used to handle this phone number.
-	TwilioAccountSid string `json:"twilioAccountSid" url:"twilioAccountSid"`
-	// This is the Twilio Auth Token that will be used to handle this phone number.
-	TwilioAuthToken *string `json:"twilioAuthToken,omitempty" url:"twilioAuthToken,omitempty"`
-	// This is the Twilio API Key that will be used to handle this phone number. If AuthToken is provided, this will be ignored.
-	TwilioApiKey *string `json:"twilioApiKey,omitempty" url:"twilioApiKey,omitempty"`
-	// This is the Twilio API Secret that will be used to handle this phone number. If AuthToken is provided, this will be ignored.
-	TwilioApiSecret *string `json:"twilioApiSecret,omitempty" url:"twilioApiSecret,omitempty"`
-	// This is the name of the phone number. This is just for your own reference.
-	Name *string `json:"name,omitempty" url:"name,omitempty"`
-	// This is the assistant that will be used for incoming calls to this phone number.
-	//
-	// If neither `assistantId`, `squadId` nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
-	AssistantId *string `json:"assistantId,omitempty" url:"assistantId,omitempty"`
-	// This is the workflow that will be used for incoming calls to this phone number.
-	//
-	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
-	WorkflowId *string `json:"workflowId,omitempty" url:"workflowId,omitempty"`
-	// This is the squad that will be used for incoming calls to this phone number.
-	//
-	// If neither `assistantId`, `squadId`, nor `workflowId` is set, `assistant-request` will be sent to your Server URL. Check `ServerMessage` and `ServerMessageResponse` for the shape of the message and response that is expected.
-	SquadId *string `json:"squadId,omitempty" url:"squadId,omitempty"`
-	// This is where Vapi will send webhooks. You can find all webhooks available along with their shape in ServerMessage schema.
-	//
-	// The order of precedence is:
-	//
-	// 1. assistant.server
-	// 2. phoneNumber.server
-	// 3. org.server
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (i *ImportTwilioPhoneNumberDto) GetFallbackDestination() *ImportTwilioPhoneNumberDtoFallbackDestination {
-	if i == nil {
-		return nil
-	}
-	return i.FallbackDestination
-}
-
-func (i *ImportTwilioPhoneNumberDto) GetHooks() []*PhoneNumberHookCallRinging {
-	if i == nil {
-		return nil
-	}
-	return i.Hooks
-}
-
-func (i *ImportTwilioPhoneNumberDto) GetSmsEnabled() *bool {
-	if i == nil {
-		return nil
-	}
-	return i.SmsEnabled
-}
-
-func (i *ImportTwilioPhoneNumberDto) GetTwilioPhoneNumber() string {
-	if i == nil {
-		return ""
-	}
-	return i.TwilioPhoneNumber
-}
-
-func (i *ImportTwilioPhoneNumberDto) GetTwilioAccountSid() string {
-	if i == nil {
-		return ""
-	}
-	return i.TwilioAccountSid
-}
-
-func (i *ImportTwilioPhoneNumberDto) GetTwilioAuthToken() *string {
-	if i == nil {
-		return nil
-	}
-	return i.TwilioAuthToken
-}
-
-func (i *ImportTwilioPhoneNumberDto) GetTwilioApiKey() *string {
-	if i == nil {
-		return nil
-	}
-	return i.TwilioApiKey
-}
-
-func (i *ImportTwilioPhoneNumberDto) GetTwilioApiSecret() *string {
-	if i == nil {
-		return nil
-	}
-	return i.TwilioApiSecret
-}
-
-func (i *ImportTwilioPhoneNumberDto) GetName() *string {
-	if i == nil {
-		return nil
-	}
-	return i.Name
-}
-
-func (i *ImportTwilioPhoneNumberDto) GetAssistantId() *string {
-	if i == nil {
-		return nil
-	}
-	return i.AssistantId
-}
-
-func (i *ImportTwilioPhoneNumberDto) GetWorkflowId() *string {
-	if i == nil {
-		return nil
-	}
-	return i.WorkflowId
-}
-
-func (i *ImportTwilioPhoneNumberDto) GetSquadId() *string {
-	if i == nil {
-		return nil
-	}
-	return i.SquadId
-}
-
-func (i *ImportTwilioPhoneNumberDto) GetServer() *Server {
-	if i == nil {
-		return nil
-	}
-	return i.Server
-}
-
-func (i *ImportTwilioPhoneNumberDto) GetExtraProperties() map[string]interface{} {
-	return i.extraProperties
-}
-
-func (i *ImportTwilioPhoneNumberDto) UnmarshalJSON(data []byte) error {
-	type unmarshaler ImportTwilioPhoneNumberDto
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*i = ImportTwilioPhoneNumberDto(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *i)
-	if err != nil {
-		return err
-	}
-	i.extraProperties = extraProperties
-	i.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (i *ImportTwilioPhoneNumberDto) String() string {
-	if len(i.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(i); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", i)
-}
-
-// This is the fallback destination an inbound call will be transferred to if:
-// 1. `assistantId` is not set
-// 2. `squadId` is not set
-// 3. and, `assistant-request` message to the `serverUrl` fails
-//
-// If this is not set and above conditions are met, the inbound call is hung up with an error message.
-type ImportTwilioPhoneNumberDtoFallbackDestination struct {
-	TransferDestinationNumber *TransferDestinationNumber
-	TransferDestinationSip    *TransferDestinationSip
-
-	typ string
-}
-
-func (i *ImportTwilioPhoneNumberDtoFallbackDestination) GetTransferDestinationNumber() *TransferDestinationNumber {
-	if i == nil {
-		return nil
-	}
-	return i.TransferDestinationNumber
-}
-
-func (i *ImportTwilioPhoneNumberDtoFallbackDestination) GetTransferDestinationSip() *TransferDestinationSip {
-	if i == nil {
-		return nil
-	}
-	return i.TransferDestinationSip
-}
-
-func (i *ImportTwilioPhoneNumberDtoFallbackDestination) UnmarshalJSON(data []byte) error {
-	valueTransferDestinationNumber := new(TransferDestinationNumber)
-	if err := json.Unmarshal(data, &valueTransferDestinationNumber); err == nil {
-		i.typ = "TransferDestinationNumber"
-		i.TransferDestinationNumber = valueTransferDestinationNumber
-		return nil
-	}
-	valueTransferDestinationSip := new(TransferDestinationSip)
-	if err := json.Unmarshal(data, &valueTransferDestinationSip); err == nil {
-		i.typ = "TransferDestinationSip"
-		i.TransferDestinationSip = valueTransferDestinationSip
-		return nil
-	}
-	return fmt.Errorf("%s cannot be deserialized as a %T", data, i)
-}
-
-func (i ImportTwilioPhoneNumberDtoFallbackDestination) MarshalJSON() ([]byte, error) {
-	if i.typ == "TransferDestinationNumber" || i.TransferDestinationNumber != nil {
-		return json.Marshal(i.TransferDestinationNumber)
-	}
-	if i.typ == "TransferDestinationSip" || i.TransferDestinationSip != nil {
-		return json.Marshal(i.TransferDestinationSip)
-	}
-	return nil, fmt.Errorf("type %T does not include a non-empty union type", i)
-}
-
-type ImportTwilioPhoneNumberDtoFallbackDestinationVisitor interface {
-	VisitTransferDestinationNumber(*TransferDestinationNumber) error
-	VisitTransferDestinationSip(*TransferDestinationSip) error
-}
-
-func (i *ImportTwilioPhoneNumberDtoFallbackDestination) Accept(visitor ImportTwilioPhoneNumberDtoFallbackDestinationVisitor) error {
-	if i.typ == "TransferDestinationNumber" || i.TransferDestinationNumber != nil {
-		return visitor.VisitTransferDestinationNumber(i.TransferDestinationNumber)
-	}
-	if i.typ == "TransferDestinationSip" || i.TransferDestinationSip != nil {
-		return visitor.VisitTransferDestinationSip(i.TransferDestinationSip)
-	}
-	return fmt.Errorf("type %T does not include a non-empty union type", i)
 }
 
 type KnowledgeBaseCost struct {
@@ -3535,115 +3271,6 @@ func (k *KnowledgeBaseCost) String() string {
 	return fmt.Sprintf("%#v", k)
 }
 
-type ModelCost struct {
-	// This is the type of cost, always 'model' for this class.
-	// This is the model that was used during the call.
-	//
-	// This matches one of the following:
-	// - `call.assistant.model`,
-	// - `call.assistantId->model`,
-	// - `call.squad[n].assistant.model`,
-	// - `call.squad[n].assistantId->model`,
-	// - `call.squadId->[n].assistant.model`,
-	// - `call.squadId->[n].assistantId->model`.
-	Model map[string]interface{} `json:"model,omitempty" url:"model,omitempty"`
-	// This is the number of prompt tokens used in the call. These should be total prompt tokens used in the call for single assistant calls, while squad calls will have multiple model costs one for each assistant that was used.
-	PromptTokens float64 `json:"promptTokens" url:"promptTokens"`
-	// This is the number of completion tokens generated in the call. These should be total completion tokens used in the call for single assistant calls, while squad calls will have multiple model costs one for each assistant that was used.
-	CompletionTokens float64 `json:"completionTokens" url:"completionTokens"`
-	// This is the cost of the component in USD.
-	Cost  float64 `json:"cost" url:"cost"`
-	type_ string
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (m *ModelCost) GetModel() map[string]interface{} {
-	if m == nil {
-		return nil
-	}
-	return m.Model
-}
-
-func (m *ModelCost) GetPromptTokens() float64 {
-	if m == nil {
-		return 0
-	}
-	return m.PromptTokens
-}
-
-func (m *ModelCost) GetCompletionTokens() float64 {
-	if m == nil {
-		return 0
-	}
-	return m.CompletionTokens
-}
-
-func (m *ModelCost) GetCost() float64 {
-	if m == nil {
-		return 0
-	}
-	return m.Cost
-}
-
-func (m *ModelCost) Type() string {
-	return m.type_
-}
-
-func (m *ModelCost) GetExtraProperties() map[string]interface{} {
-	return m.extraProperties
-}
-
-func (m *ModelCost) UnmarshalJSON(data []byte) error {
-	type embed ModelCost
-	var unmarshaler = struct {
-		embed
-		Type string `json:"type"`
-	}{
-		embed: embed(*m),
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
-		return err
-	}
-	*m = ModelCost(unmarshaler.embed)
-	if unmarshaler.Type != "model" {
-		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", m, "model", unmarshaler.Type)
-	}
-	m.type_ = unmarshaler.Type
-	extraProperties, err := internal.ExtractExtraProperties(data, *m, "type")
-	if err != nil {
-		return err
-	}
-	m.extraProperties = extraProperties
-	m.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (m *ModelCost) MarshalJSON() ([]byte, error) {
-	type embed ModelCost
-	var marshaler = struct {
-		embed
-		Type string `json:"type"`
-	}{
-		embed: embed(*m),
-		Type:  "model",
-	}
-	return json.Marshal(marshaler)
-}
-
-func (m *ModelCost) String() string {
-	if len(m.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(m); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", m)
-}
-
 type Monitor struct {
 	// This is the URL where the assistant's calls can be listened to in real-time. To enable, set `assistant.monitorPlan.listenEnabled` to `true`.
 	ListenUrl *string `json:"listenUrl,omitempty" url:"listenUrl,omitempty"`
@@ -3698,84 +3325,6 @@ func (m *Monitor) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", m)
-}
-
-type SchedulePlan struct {
-	// This is the ISO 8601 date-time string of the earliest time the call can be scheduled.
-	EarliestAt time.Time `json:"earliestAt" url:"earliestAt"`
-	// This is the ISO 8601 date-time string of the latest time the call can be scheduled.
-	LatestAt *time.Time `json:"latestAt,omitempty" url:"latestAt,omitempty"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (s *SchedulePlan) GetEarliestAt() time.Time {
-	if s == nil {
-		return time.Time{}
-	}
-	return s.EarliestAt
-}
-
-func (s *SchedulePlan) GetLatestAt() *time.Time {
-	if s == nil {
-		return nil
-	}
-	return s.LatestAt
-}
-
-func (s *SchedulePlan) GetExtraProperties() map[string]interface{} {
-	return s.extraProperties
-}
-
-func (s *SchedulePlan) UnmarshalJSON(data []byte) error {
-	type embed SchedulePlan
-	var unmarshaler = struct {
-		embed
-		EarliestAt *internal.DateTime `json:"earliestAt"`
-		LatestAt   *internal.DateTime `json:"latestAt,omitempty"`
-	}{
-		embed: embed(*s),
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
-		return err
-	}
-	*s = SchedulePlan(unmarshaler.embed)
-	s.EarliestAt = unmarshaler.EarliestAt.Time()
-	s.LatestAt = unmarshaler.LatestAt.TimePtr()
-	extraProperties, err := internal.ExtractExtraProperties(data, *s)
-	if err != nil {
-		return err
-	}
-	s.extraProperties = extraProperties
-	s.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (s *SchedulePlan) MarshalJSON() ([]byte, error) {
-	type embed SchedulePlan
-	var marshaler = struct {
-		embed
-		EarliestAt *internal.DateTime `json:"earliestAt"`
-		LatestAt   *internal.DateTime `json:"latestAt,omitempty"`
-	}{
-		embed:      embed(*s),
-		EarliestAt: internal.NewDateTime(s.EarliestAt),
-		LatestAt:   internal.NewOptionalDateTime(s.LatestAt),
-	}
-	return json.Marshal(marshaler)
-}
-
-func (s *SchedulePlan) String() string {
-	if len(s.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(s); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", s)
 }
 
 type TranscriberCost struct {
@@ -4364,6 +3913,60 @@ func NewVoicemailDetectionCostProviderFromString(s string) (VoicemailDetectionCo
 
 func (v VoicemailDetectionCostProvider) Ptr() *VoicemailDetectionCostProvider {
 	return &v
+}
+
+type WorkflowOverrides struct {
+	// These are values that will be used to replace the template variables in the workflow messages and other text-based fields.
+	// This uses LiquidJS syntax. https://liquidjs.com/tutorials/intro-to-liquid.html
+	//
+	// So for example, `{{ name }}` will be replaced with the value of `name` in `variableValues`.
+	// `{{"now" | date: "%b %d, %Y, %I:%M %p", "America/New_York"}}` will be replaced with the current date and time in New York.
+	//
+	//	Some VAPI reserved defaults:
+	//	- *customer* - the customer object
+	VariableValues map[string]interface{} `json:"variableValues,omitempty" url:"variableValues,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (w *WorkflowOverrides) GetVariableValues() map[string]interface{} {
+	if w == nil {
+		return nil
+	}
+	return w.VariableValues
+}
+
+func (w *WorkflowOverrides) GetExtraProperties() map[string]interface{} {
+	return w.extraProperties
+}
+
+func (w *WorkflowOverrides) UnmarshalJSON(data []byte) error {
+	type unmarshaler WorkflowOverrides
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*w = WorkflowOverrides(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *w)
+	if err != nil {
+		return err
+	}
+	w.extraProperties = extraProperties
+	w.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (w *WorkflowOverrides) String() string {
+	if len(w.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(w.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(w); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", w)
 }
 
 type CallsCreateResponse struct {

@@ -6,6 +6,8 @@ import (
 	analytics "github.com/VapiAI/server-sdk-go/analytics"
 	assistants "github.com/VapiAI/server-sdk-go/assistants"
 	calls "github.com/VapiAI/server-sdk-go/calls"
+	campaigns "github.com/VapiAI/server-sdk-go/campaigns"
+	chats "github.com/VapiAI/server-sdk-go/chats"
 	core "github.com/VapiAI/server-sdk-go/core"
 	files "github.com/VapiAI/server-sdk-go/files"
 	internal "github.com/VapiAI/server-sdk-go/internal"
@@ -13,6 +15,7 @@ import (
 	logs "github.com/VapiAI/server-sdk-go/logs"
 	option "github.com/VapiAI/server-sdk-go/option"
 	phonenumbers "github.com/VapiAI/server-sdk-go/phonenumbers"
+	sessions "github.com/VapiAI/server-sdk-go/sessions"
 	squads "github.com/VapiAI/server-sdk-go/squads"
 	testsuiteruns "github.com/VapiAI/server-sdk-go/testsuiteruns"
 	testsuites "github.com/VapiAI/server-sdk-go/testsuites"
@@ -28,6 +31,9 @@ type Client struct {
 	header  http.Header
 
 	Calls          *calls.Client
+	Chats          *chats.Client
+	Campaigns      *campaigns.Client
+	Sessions       *sessions.Client
 	Assistants     *assistants.Client
 	PhoneNumbers   *phonenumbers.Client
 	Tools          *tools.Client
@@ -54,6 +60,9 @@ func NewClient(opts ...option.RequestOption) *Client {
 		),
 		header:         options.ToHeader(),
 		Calls:          calls.NewClient(opts...),
+		Chats:          chats.NewClient(opts...),
+		Campaigns:      campaigns.NewClient(opts...),
+		Sessions:       sessions.NewClient(opts...),
 		Assistants:     assistants.NewClient(opts...),
 		PhoneNumbers:   phonenumbers.NewClient(opts...),
 		Tools:          tools.NewClient(opts...),

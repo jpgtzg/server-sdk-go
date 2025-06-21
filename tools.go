@@ -30,20 +30,16 @@ type ToolsListRequest struct {
 	UpdatedAtLe *time.Time `json:"-" url:"updatedAtLe,omitempty"`
 }
 
-type BashTool struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
+type ApiRequestTool struct {
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-	Messages []*BashToolMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
-	// The sub type of tool.
+	Messages []*ApiRequestToolMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
+	Method   ApiRequestToolMethod          `json:"method" url:"method"`
+	// This is the timeout in seconds for the request. Defaults to 20 seconds.
+	//
+	// @default 20
+	TimeoutSeconds *float64 `json:"timeoutSeconds,omitempty" url:"timeoutSeconds,omitempty"`
 	// This is the unique identifier for the tool.
 	Id string `json:"id" url:"id"`
 	// This is the unique identifier for the organization that this tool belongs to.
@@ -58,12 +54,356 @@ type BashTool struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
+	// This is the name of the tool. This will be passed to the model.
 	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
+	// Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 40.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// This is the description of the tool. This will be passed to the model.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	// This is where the request will be sent.
+	Url string `json:"url" url:"url"`
+	// This is the body of the request.
+	Body *JsonSchema `json:"body,omitempty" url:"body,omitempty"`
+	// These are the headers to send in the request.
+	Headers *JsonSchema `json:"headers,omitempty" url:"headers,omitempty"`
+	// This is the backoff plan if the request fails. Defaults to undefined (the request will not be retried).
 	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
+	// @default undefined (the request will not be retried)
+	BackoffPlan *BackoffPlan `json:"backoffPlan,omitempty" url:"backoffPlan,omitempty"`
+	// This is the plan that controls the variable extraction from the tool's response.
+	VariableExtractionPlan *VariableExtractionPlan `json:"variableExtractionPlan,omitempty" url:"variableExtractionPlan,omitempty"`
+	type_                  string
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (a *ApiRequestTool) GetMessages() []*ApiRequestToolMessagesItem {
+	if a == nil {
+		return nil
+	}
+	return a.Messages
+}
+
+func (a *ApiRequestTool) GetMethod() ApiRequestToolMethod {
+	if a == nil {
+		return ""
+	}
+	return a.Method
+}
+
+func (a *ApiRequestTool) GetTimeoutSeconds() *float64 {
+	if a == nil {
+		return nil
+	}
+	return a.TimeoutSeconds
+}
+
+func (a *ApiRequestTool) GetId() string {
+	if a == nil {
+		return ""
+	}
+	return a.Id
+}
+
+func (a *ApiRequestTool) GetOrgId() string {
+	if a == nil {
+		return ""
+	}
+	return a.OrgId
+}
+
+func (a *ApiRequestTool) GetCreatedAt() time.Time {
+	if a == nil {
+		return time.Time{}
+	}
+	return a.CreatedAt
+}
+
+func (a *ApiRequestTool) GetUpdatedAt() time.Time {
+	if a == nil {
+		return time.Time{}
+	}
+	return a.UpdatedAt
+}
+
+func (a *ApiRequestTool) GetFunction() *OpenAiFunction {
+	if a == nil {
+		return nil
+	}
+	return a.Function
+}
+
+func (a *ApiRequestTool) GetName() *string {
+	if a == nil {
+		return nil
+	}
+	return a.Name
+}
+
+func (a *ApiRequestTool) GetDescription() *string {
+	if a == nil {
+		return nil
+	}
+	return a.Description
+}
+
+func (a *ApiRequestTool) GetUrl() string {
+	if a == nil {
+		return ""
+	}
+	return a.Url
+}
+
+func (a *ApiRequestTool) GetBody() *JsonSchema {
+	if a == nil {
+		return nil
+	}
+	return a.Body
+}
+
+func (a *ApiRequestTool) GetHeaders() *JsonSchema {
+	if a == nil {
+		return nil
+	}
+	return a.Headers
+}
+
+func (a *ApiRequestTool) GetBackoffPlan() *BackoffPlan {
+	if a == nil {
+		return nil
+	}
+	return a.BackoffPlan
+}
+
+func (a *ApiRequestTool) GetVariableExtractionPlan() *VariableExtractionPlan {
+	if a == nil {
+		return nil
+	}
+	return a.VariableExtractionPlan
+}
+
+func (a *ApiRequestTool) Type() string {
+	return a.type_
+}
+
+func (a *ApiRequestTool) GetExtraProperties() map[string]interface{} {
+	return a.extraProperties
+}
+
+func (a *ApiRequestTool) UnmarshalJSON(data []byte) error {
+	type embed ApiRequestTool
+	var unmarshaler = struct {
+		embed
+		CreatedAt *internal.DateTime `json:"createdAt"`
+		UpdatedAt *internal.DateTime `json:"updatedAt"`
+		Type      string             `json:"type"`
+	}{
+		embed: embed(*a),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*a = ApiRequestTool(unmarshaler.embed)
+	a.CreatedAt = unmarshaler.CreatedAt.Time()
+	a.UpdatedAt = unmarshaler.UpdatedAt.Time()
+	if unmarshaler.Type != "apiRequest" {
+		return fmt.Errorf("unexpected value for literal on type %T; expected %v got %v", a, "apiRequest", unmarshaler.Type)
+	}
+	a.type_ = unmarshaler.Type
+	extraProperties, err := internal.ExtractExtraProperties(data, *a, "type")
+	if err != nil {
+		return err
+	}
+	a.extraProperties = extraProperties
+	a.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (a *ApiRequestTool) MarshalJSON() ([]byte, error) {
+	type embed ApiRequestTool
+	var marshaler = struct {
+		embed
+		CreatedAt *internal.DateTime `json:"createdAt"`
+		UpdatedAt *internal.DateTime `json:"updatedAt"`
+		Type      string             `json:"type"`
+	}{
+		embed:     embed(*a),
+		CreatedAt: internal.NewDateTime(a.CreatedAt),
+		UpdatedAt: internal.NewDateTime(a.UpdatedAt),
+		Type:      "apiRequest",
+	}
+	return json.Marshal(marshaler)
+}
+
+func (a *ApiRequestTool) String() string {
+	if len(a.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(a); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", a)
+}
+
+type ApiRequestToolMessagesItem struct {
+	ToolMessageStart    *ToolMessageStart
+	ToolMessageComplete *ToolMessageComplete
+	ToolMessageFailed   *ToolMessageFailed
+	ToolMessageDelayed  *ToolMessageDelayed
+
+	typ string
+}
+
+func (a *ApiRequestToolMessagesItem) GetToolMessageStart() *ToolMessageStart {
+	if a == nil {
+		return nil
+	}
+	return a.ToolMessageStart
+}
+
+func (a *ApiRequestToolMessagesItem) GetToolMessageComplete() *ToolMessageComplete {
+	if a == nil {
+		return nil
+	}
+	return a.ToolMessageComplete
+}
+
+func (a *ApiRequestToolMessagesItem) GetToolMessageFailed() *ToolMessageFailed {
+	if a == nil {
+		return nil
+	}
+	return a.ToolMessageFailed
+}
+
+func (a *ApiRequestToolMessagesItem) GetToolMessageDelayed() *ToolMessageDelayed {
+	if a == nil {
+		return nil
+	}
+	return a.ToolMessageDelayed
+}
+
+func (a *ApiRequestToolMessagesItem) UnmarshalJSON(data []byte) error {
+	valueToolMessageStart := new(ToolMessageStart)
+	if err := json.Unmarshal(data, &valueToolMessageStart); err == nil {
+		a.typ = "ToolMessageStart"
+		a.ToolMessageStart = valueToolMessageStart
+		return nil
+	}
+	valueToolMessageComplete := new(ToolMessageComplete)
+	if err := json.Unmarshal(data, &valueToolMessageComplete); err == nil {
+		a.typ = "ToolMessageComplete"
+		a.ToolMessageComplete = valueToolMessageComplete
+		return nil
+	}
+	valueToolMessageFailed := new(ToolMessageFailed)
+	if err := json.Unmarshal(data, &valueToolMessageFailed); err == nil {
+		a.typ = "ToolMessageFailed"
+		a.ToolMessageFailed = valueToolMessageFailed
+		return nil
+	}
+	valueToolMessageDelayed := new(ToolMessageDelayed)
+	if err := json.Unmarshal(data, &valueToolMessageDelayed); err == nil {
+		a.typ = "ToolMessageDelayed"
+		a.ToolMessageDelayed = valueToolMessageDelayed
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, a)
+}
+
+func (a ApiRequestToolMessagesItem) MarshalJSON() ([]byte, error) {
+	if a.typ == "ToolMessageStart" || a.ToolMessageStart != nil {
+		return json.Marshal(a.ToolMessageStart)
+	}
+	if a.typ == "ToolMessageComplete" || a.ToolMessageComplete != nil {
+		return json.Marshal(a.ToolMessageComplete)
+	}
+	if a.typ == "ToolMessageFailed" || a.ToolMessageFailed != nil {
+		return json.Marshal(a.ToolMessageFailed)
+	}
+	if a.typ == "ToolMessageDelayed" || a.ToolMessageDelayed != nil {
+		return json.Marshal(a.ToolMessageDelayed)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
+type ApiRequestToolMessagesItemVisitor interface {
+	VisitToolMessageStart(*ToolMessageStart) error
+	VisitToolMessageComplete(*ToolMessageComplete) error
+	VisitToolMessageFailed(*ToolMessageFailed) error
+	VisitToolMessageDelayed(*ToolMessageDelayed) error
+}
+
+func (a *ApiRequestToolMessagesItem) Accept(visitor ApiRequestToolMessagesItemVisitor) error {
+	if a.typ == "ToolMessageStart" || a.ToolMessageStart != nil {
+		return visitor.VisitToolMessageStart(a.ToolMessageStart)
+	}
+	if a.typ == "ToolMessageComplete" || a.ToolMessageComplete != nil {
+		return visitor.VisitToolMessageComplete(a.ToolMessageComplete)
+	}
+	if a.typ == "ToolMessageFailed" || a.ToolMessageFailed != nil {
+		return visitor.VisitToolMessageFailed(a.ToolMessageFailed)
+	}
+	if a.typ == "ToolMessageDelayed" || a.ToolMessageDelayed != nil {
+		return visitor.VisitToolMessageDelayed(a.ToolMessageDelayed)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", a)
+}
+
+type ApiRequestToolMethod string
+
+const (
+	ApiRequestToolMethodPost ApiRequestToolMethod = "POST"
+	ApiRequestToolMethodGet  ApiRequestToolMethod = "GET"
+)
+
+func NewApiRequestToolMethodFromString(s string) (ApiRequestToolMethod, error) {
+	switch s {
+	case "POST":
+		return ApiRequestToolMethodPost, nil
+	case "GET":
+		return ApiRequestToolMethodGet, nil
+	}
+	var t ApiRequestToolMethod
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (a ApiRequestToolMethod) Ptr() *ApiRequestToolMethod {
+	return &a
+}
+
+type BashTool struct {
+	// These are the messages that will be spoken to the user as the tool is running.
+	//
+	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+	Messages []*BashToolMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
+	// The sub type of tool.
+	//
+	//	This is the server where a `tool-calls` webhook will be sent.
+	//
+	//	Notes:
+	//	- Webhook is sent to this server when a tool call is made.
+	//	- Webhook contains the call, assistant, and phone number objects.
+	//	- Webhook contains the variables set on the assistant.
+	//	- Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+	//	- Webhook expects a response with tool call result.
 	Server *Server `json:"server,omitempty" url:"server,omitempty"`
+	// This is the unique identifier for the tool.
+	Id string `json:"id" url:"id"`
+	// This is the unique identifier for the organization that this tool belongs to.
+	OrgId string `json:"orgId" url:"orgId"`
+	// This is the ISO 8601 date-time string of when the tool was created.
+	CreatedAt time.Time `json:"createdAt" url:"createdAt"`
+	// This is the ISO 8601 date-time string of when the tool was last updated.
+	UpdatedAt time.Time `json:"updatedAt" url:"updatedAt"`
+	// This is the function definition of the tool.
+	//
+	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+	//
+	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
 	// The name of the tool, fixed to 'bash'
 	type_   string
 	subType string
@@ -73,18 +413,18 @@ type BashTool struct {
 	rawJSON         json.RawMessage
 }
 
-func (b *BashTool) GetAsync() *bool {
-	if b == nil {
-		return nil
-	}
-	return b.Async
-}
-
 func (b *BashTool) GetMessages() []*BashToolMessagesItem {
 	if b == nil {
 		return nil
 	}
 	return b.Messages
+}
+
+func (b *BashTool) GetServer() *Server {
+	if b == nil {
+		return nil
+	}
+	return b.Server
 }
 
 func (b *BashTool) GetId() string {
@@ -120,13 +460,6 @@ func (b *BashTool) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return b.Function
-}
-
-func (b *BashTool) GetServer() *Server {
-	if b == nil {
-		return nil
-	}
-	return b.Server
 }
 
 func (b *BashTool) Type() string {
@@ -321,19 +654,21 @@ func (b *BashToolMessagesItem) Accept(visitor BashToolMessagesItemVisitor) error
 }
 
 type ComputerTool struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
 	Messages []*ComputerToolMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
 	// The sub type of tool.
+	//
+	//	This is the server where a `tool-calls` webhook will be sent.
+	//
+	//	Notes:
+	//	- Webhook is sent to this server when a tool call is made.
+	//	- Webhook contains the call, assistant, and phone number objects.
+	//	- Webhook contains the variables set on the assistant.
+	//	- Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+	//	- Webhook expects a response with tool call result.
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 	// This is the unique identifier for the tool.
 	Id string `json:"id" url:"id"`
 	// This is the unique identifier for the organization that this tool belongs to.
@@ -348,12 +683,6 @@ type ComputerTool struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 	// The name of the tool, fixed to 'computer'
 	// The display width in pixels
 	DisplayWidthPx float64 `json:"displayWidthPx" url:"displayWidthPx"`
@@ -369,18 +698,18 @@ type ComputerTool struct {
 	rawJSON         json.RawMessage
 }
 
-func (c *ComputerTool) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
-}
-
 func (c *ComputerTool) GetMessages() []*ComputerToolMessagesItem {
 	if c == nil {
 		return nil
 	}
 	return c.Messages
+}
+
+func (c *ComputerTool) GetServer() *Server {
+	if c == nil {
+		return nil
+	}
+	return c.Server
 }
 
 func (c *ComputerTool) GetId() string {
@@ -416,13 +745,6 @@ func (c *ComputerTool) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return c.Function
-}
-
-func (c *ComputerTool) GetServer() *Server {
-	if c == nil {
-		return nil
-	}
-	return c.Server
 }
 
 func (c *ComputerTool) GetDisplayWidthPx() float64 {
@@ -638,14 +960,6 @@ func (c *ComputerToolMessagesItem) Accept(visitor ComputerToolMessagesItemVisito
 }
 
 type CreateGhlToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -657,23 +971,10 @@ type CreateGhlToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateGhlToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
 }
 
 func (c *CreateGhlToolDto) GetMessages() []*CreateGhlToolDtoMessagesItem {
@@ -695,13 +996,6 @@ func (c *CreateGhlToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return c.Function
-}
-
-func (c *CreateGhlToolDto) GetServer() *Server {
-	if c == nil {
-		return nil
-	}
-	return c.Server
 }
 
 func (c *CreateGhlToolDto) Type() string {
@@ -866,14 +1160,6 @@ func (c *CreateGhlToolDtoMessagesItem) Accept(visitor CreateGhlToolDtoMessagesIt
 }
 
 type CreateMakeToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -885,23 +1171,10 @@ type CreateMakeToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateMakeToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
 }
 
 func (c *CreateMakeToolDto) GetMessages() []*CreateMakeToolDtoMessagesItem {
@@ -923,13 +1196,6 @@ func (c *CreateMakeToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return c.Function
-}
-
-func (c *CreateMakeToolDto) GetServer() *Server {
-	if c == nil {
-		return nil
-	}
-	return c.Server
 }
 
 func (c *CreateMakeToolDto) Type() string {
@@ -1094,14 +1360,6 @@ func (c *CreateMakeToolDtoMessagesItem) Accept(visitor CreateMakeToolDtoMessages
 }
 
 type CreateOutputToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -1112,23 +1370,10 @@ type CreateOutputToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateOutputToolDto) GetAsync() *bool {
-	if c == nil {
-		return nil
-	}
-	return c.Async
 }
 
 func (c *CreateOutputToolDto) GetMessages() []*CreateOutputToolDtoMessagesItem {
@@ -1143,13 +1388,6 @@ func (c *CreateOutputToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return c.Function
-}
-
-func (c *CreateOutputToolDto) GetServer() *Server {
-	if c == nil {
-		return nil
-	}
-	return c.Server
 }
 
 func (c *CreateOutputToolDto) Type() string {
@@ -1314,14 +1552,6 @@ func (c *CreateOutputToolDtoMessagesItem) Accept(visitor CreateOutputToolDtoMess
 }
 
 type DtmfTool struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -1340,23 +1570,10 @@ type DtmfTool struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (d *DtmfTool) GetAsync() *bool {
-	if d == nil {
-		return nil
-	}
-	return d.Async
 }
 
 func (d *DtmfTool) GetMessages() []*DtmfToolMessagesItem {
@@ -1399,13 +1616,6 @@ func (d *DtmfTool) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return d.Function
-}
-
-func (d *DtmfTool) GetServer() *Server {
-	if d == nil {
-		return nil
-	}
-	return d.Server
 }
 
 func (d *DtmfTool) Type() string {
@@ -1578,14 +1788,6 @@ func (d *DtmfToolMessagesItem) Accept(visitor DtmfToolMessagesItemVisitor) error
 }
 
 type EndCallTool struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -1604,23 +1806,10 @@ type EndCallTool struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (e *EndCallTool) GetAsync() *bool {
-	if e == nil {
-		return nil
-	}
-	return e.Async
 }
 
 func (e *EndCallTool) GetMessages() []*EndCallToolMessagesItem {
@@ -1663,13 +1852,6 @@ func (e *EndCallTool) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return e.Function
-}
-
-func (e *EndCallTool) GetServer() *Server {
-	if e == nil {
-		return nil
-	}
-	return e.Server
 }
 
 func (e *EndCallTool) Type() string {
@@ -1842,18 +2024,27 @@ func (e *EndCallToolMessagesItem) Accept(visitor EndCallToolMessagesItemVisitor)
 }
 
 type FunctionTool struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
 	Messages []*FunctionToolMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
+	// This determines if the tool is async.
+	//
+	//	If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+	//
+	//	If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+	//
+	//	Defaults to synchronous (`false`).
+	Async *bool `json:"async,omitempty" url:"async,omitempty"`
+	// This is the server where a `tool-calls` webhook will be sent.
+	//
+	// Notes:
+	// - Webhook is sent to this server when a tool call is made.
+	// - Webhook contains the call, assistant, and phone number objects.
+	// - Webhook contains the variables set on the assistant.
+	// - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+	// - Webhook expects a response with tool call result.
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 	// This is the unique identifier for the tool.
 	Id string `json:"id" url:"id"`
 	// This is the unique identifier for the organization that this tool belongs to.
@@ -1868,16 +2059,17 @@ type FunctionTool struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (f *FunctionTool) GetMessages() []*FunctionToolMessagesItem {
+	if f == nil {
+		return nil
+	}
+	return f.Messages
 }
 
 func (f *FunctionTool) GetAsync() *bool {
@@ -1887,11 +2079,11 @@ func (f *FunctionTool) GetAsync() *bool {
 	return f.Async
 }
 
-func (f *FunctionTool) GetMessages() []*FunctionToolMessagesItem {
+func (f *FunctionTool) GetServer() *Server {
 	if f == nil {
 		return nil
 	}
-	return f.Messages
+	return f.Server
 }
 
 func (f *FunctionTool) GetId() string {
@@ -1927,13 +2119,6 @@ func (f *FunctionTool) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return f.Function
-}
-
-func (f *FunctionTool) GetServer() *Server {
-	if f == nil {
-		return nil
-	}
-	return f.Server
 }
 
 func (f *FunctionTool) Type() string {
@@ -2106,14 +2291,6 @@ func (f *FunctionToolMessagesItem) Accept(visitor FunctionToolMessagesItemVisito
 }
 
 type GhlTool struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -2131,25 +2308,12 @@ type GhlTool struct {
 	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
-	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server   *Server          `json:"server,omitempty" url:"server,omitempty"`
+	Function *OpenAiFunction  `json:"function,omitempty" url:"function,omitempty"`
 	Metadata *GhlToolMetadata `json:"metadata,omitempty" url:"metadata,omitempty"`
 	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (g *GhlTool) GetAsync() *bool {
-	if g == nil {
-		return nil
-	}
-	return g.Async
 }
 
 func (g *GhlTool) GetMessages() []*GhlToolMessagesItem {
@@ -2192,13 +2356,6 @@ func (g *GhlTool) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return g.Function
-}
-
-func (g *GhlTool) GetServer() *Server {
-	if g == nil {
-		return nil
-	}
-	return g.Server
 }
 
 func (g *GhlTool) GetMetadata() *GhlToolMetadata {
@@ -2432,14 +2589,6 @@ func (g *GhlToolMetadata) String() string {
 }
 
 type GoHighLevelCalendarAvailabilityTool struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -2458,23 +2607,10 @@ type GoHighLevelCalendarAvailabilityTool struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (g *GoHighLevelCalendarAvailabilityTool) GetAsync() *bool {
-	if g == nil {
-		return nil
-	}
-	return g.Async
 }
 
 func (g *GoHighLevelCalendarAvailabilityTool) GetMessages() []*GoHighLevelCalendarAvailabilityToolMessagesItem {
@@ -2517,13 +2653,6 @@ func (g *GoHighLevelCalendarAvailabilityTool) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return g.Function
-}
-
-func (g *GoHighLevelCalendarAvailabilityTool) GetServer() *Server {
-	if g == nil {
-		return nil
-	}
-	return g.Server
 }
 
 func (g *GoHighLevelCalendarAvailabilityTool) Type() string {
@@ -2696,14 +2825,6 @@ func (g *GoHighLevelCalendarAvailabilityToolMessagesItem) Accept(visitor GoHighL
 }
 
 type GoHighLevelCalendarEventCreateTool struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -2722,23 +2843,10 @@ type GoHighLevelCalendarEventCreateTool struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (g *GoHighLevelCalendarEventCreateTool) GetAsync() *bool {
-	if g == nil {
-		return nil
-	}
-	return g.Async
 }
 
 func (g *GoHighLevelCalendarEventCreateTool) GetMessages() []*GoHighLevelCalendarEventCreateToolMessagesItem {
@@ -2781,13 +2889,6 @@ func (g *GoHighLevelCalendarEventCreateTool) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return g.Function
-}
-
-func (g *GoHighLevelCalendarEventCreateTool) GetServer() *Server {
-	if g == nil {
-		return nil
-	}
-	return g.Server
 }
 
 func (g *GoHighLevelCalendarEventCreateTool) Type() string {
@@ -2960,14 +3061,6 @@ func (g *GoHighLevelCalendarEventCreateToolMessagesItem) Accept(visitor GoHighLe
 }
 
 type GoHighLevelContactCreateTool struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -2986,23 +3079,10 @@ type GoHighLevelContactCreateTool struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (g *GoHighLevelContactCreateTool) GetAsync() *bool {
-	if g == nil {
-		return nil
-	}
-	return g.Async
 }
 
 func (g *GoHighLevelContactCreateTool) GetMessages() []*GoHighLevelContactCreateToolMessagesItem {
@@ -3045,13 +3125,6 @@ func (g *GoHighLevelContactCreateTool) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return g.Function
-}
-
-func (g *GoHighLevelContactCreateTool) GetServer() *Server {
-	if g == nil {
-		return nil
-	}
-	return g.Server
 }
 
 func (g *GoHighLevelContactCreateTool) Type() string {
@@ -3224,14 +3297,6 @@ func (g *GoHighLevelContactCreateToolMessagesItem) Accept(visitor GoHighLevelCon
 }
 
 type GoHighLevelContactGetTool struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -3250,23 +3315,10 @@ type GoHighLevelContactGetTool struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (g *GoHighLevelContactGetTool) GetAsync() *bool {
-	if g == nil {
-		return nil
-	}
-	return g.Async
 }
 
 func (g *GoHighLevelContactGetTool) GetMessages() []*GoHighLevelContactGetToolMessagesItem {
@@ -3309,13 +3361,6 @@ func (g *GoHighLevelContactGetTool) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return g.Function
-}
-
-func (g *GoHighLevelContactGetTool) GetServer() *Server {
-	if g == nil {
-		return nil
-	}
-	return g.Server
 }
 
 func (g *GoHighLevelContactGetTool) Type() string {
@@ -3488,14 +3533,6 @@ func (g *GoHighLevelContactGetToolMessagesItem) Accept(visitor GoHighLevelContac
 }
 
 type GoogleCalendarCheckAvailabilityTool struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -3514,23 +3551,10 @@ type GoogleCalendarCheckAvailabilityTool struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (g *GoogleCalendarCheckAvailabilityTool) GetAsync() *bool {
-	if g == nil {
-		return nil
-	}
-	return g.Async
 }
 
 func (g *GoogleCalendarCheckAvailabilityTool) GetMessages() []*GoogleCalendarCheckAvailabilityToolMessagesItem {
@@ -3573,13 +3597,6 @@ func (g *GoogleCalendarCheckAvailabilityTool) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return g.Function
-}
-
-func (g *GoogleCalendarCheckAvailabilityTool) GetServer() *Server {
-	if g == nil {
-		return nil
-	}
-	return g.Server
 }
 
 func (g *GoogleCalendarCheckAvailabilityTool) Type() string {
@@ -3752,14 +3769,6 @@ func (g *GoogleCalendarCheckAvailabilityToolMessagesItem) Accept(visitor GoogleC
 }
 
 type GoogleCalendarCreateEventTool struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -3778,23 +3787,10 @@ type GoogleCalendarCreateEventTool struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (g *GoogleCalendarCreateEventTool) GetAsync() *bool {
-	if g == nil {
-		return nil
-	}
-	return g.Async
 }
 
 func (g *GoogleCalendarCreateEventTool) GetMessages() []*GoogleCalendarCreateEventToolMessagesItem {
@@ -3837,13 +3833,6 @@ func (g *GoogleCalendarCreateEventTool) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return g.Function
-}
-
-func (g *GoogleCalendarCreateEventTool) GetServer() *Server {
-	if g == nil {
-		return nil
-	}
-	return g.Server
 }
 
 func (g *GoogleCalendarCreateEventTool) Type() string {
@@ -4016,14 +4005,6 @@ func (g *GoogleCalendarCreateEventToolMessagesItem) Accept(visitor GoogleCalenda
 }
 
 type GoogleSheetsRowAppendTool struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -4042,23 +4023,10 @@ type GoogleSheetsRowAppendTool struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (g *GoogleSheetsRowAppendTool) GetAsync() *bool {
-	if g == nil {
-		return nil
-	}
-	return g.Async
 }
 
 func (g *GoogleSheetsRowAppendTool) GetMessages() []*GoogleSheetsRowAppendToolMessagesItem {
@@ -4101,13 +4069,6 @@ func (g *GoogleSheetsRowAppendTool) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return g.Function
-}
-
-func (g *GoogleSheetsRowAppendTool) GetServer() *Server {
-	if g == nil {
-		return nil
-	}
-	return g.Server
 }
 
 func (g *GoogleSheetsRowAppendTool) Type() string {
@@ -4280,14 +4241,6 @@ func (g *GoogleSheetsRowAppendToolMessagesItem) Accept(visitor GoogleSheetsRowAp
 }
 
 type MakeTool struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -4305,25 +4258,12 @@ type MakeTool struct {
 	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
-	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server   *Server           `json:"server,omitempty" url:"server,omitempty"`
+	Function *OpenAiFunction   `json:"function,omitempty" url:"function,omitempty"`
 	Metadata *MakeToolMetadata `json:"metadata,omitempty" url:"metadata,omitempty"`
 	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (m *MakeTool) GetAsync() *bool {
-	if m == nil {
-		return nil
-	}
-	return m.Async
 }
 
 func (m *MakeTool) GetMessages() []*MakeToolMessagesItem {
@@ -4366,13 +4306,6 @@ func (m *MakeTool) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return m.Function
-}
-
-func (m *MakeTool) GetServer() *Server {
-	if m == nil {
-		return nil
-	}
-	return m.Server
 }
 
 func (m *MakeTool) GetMetadata() *MakeToolMetadata {
@@ -4606,18 +4539,19 @@ func (m *MakeToolMetadata) String() string {
 }
 
 type McpTool struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
 	Messages []*McpToolMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
+	// This is the server where a `tool-calls` webhook will be sent.
+	//
+	// Notes:
+	// - Webhook is sent to this server when a tool call is made.
+	// - Webhook contains the call, assistant, and phone number objects.
+	// - Webhook contains the variables set on the assistant.
+	// - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+	// - Webhook expects a response with tool call result.
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 	// This is the unique identifier for the tool.
 	Id string `json:"id" url:"id"`
 	// This is the unique identifier for the organization that this tool belongs to.
@@ -4632,23 +4566,10 @@ type McpTool struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (m *McpTool) GetAsync() *bool {
-	if m == nil {
-		return nil
-	}
-	return m.Async
 }
 
 func (m *McpTool) GetMessages() []*McpToolMessagesItem {
@@ -4656,6 +4577,13 @@ func (m *McpTool) GetMessages() []*McpToolMessagesItem {
 		return nil
 	}
 	return m.Messages
+}
+
+func (m *McpTool) GetServer() *Server {
+	if m == nil {
+		return nil
+	}
+	return m.Server
 }
 
 func (m *McpTool) GetId() string {
@@ -4691,13 +4619,6 @@ func (m *McpTool) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return m.Function
-}
-
-func (m *McpTool) GetServer() *Server {
-	if m == nil {
-		return nil
-	}
-	return m.Server
 }
 
 func (m *McpTool) Type() string {
@@ -4870,14 +4791,6 @@ func (m *McpToolMessagesItem) Accept(visitor McpToolMessagesItemVisitor) error {
 }
 
 type OutputTool struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -4896,23 +4809,10 @@ type OutputTool struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (o *OutputTool) GetAsync() *bool {
-	if o == nil {
-		return nil
-	}
-	return o.Async
 }
 
 func (o *OutputTool) GetMessages() []*OutputToolMessagesItem {
@@ -4955,13 +4855,6 @@ func (o *OutputTool) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return o.Function
-}
-
-func (o *OutputTool) GetServer() *Server {
-	if o == nil {
-		return nil
-	}
-	return o.Server
 }
 
 func (o *OutputTool) Type() string {
@@ -5134,14 +5027,6 @@ func (o *OutputToolMessagesItem) Accept(visitor OutputToolMessagesItemVisitor) e
 }
 
 type QueryTool struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -5162,23 +5047,10 @@ type QueryTool struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (q *QueryTool) GetAsync() *bool {
-	if q == nil {
-		return nil
-	}
-	return q.Async
 }
 
 func (q *QueryTool) GetMessages() []*QueryToolMessagesItem {
@@ -5228,13 +5100,6 @@ func (q *QueryTool) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return q.Function
-}
-
-func (q *QueryTool) GetServer() *Server {
-	if q == nil {
-		return nil
-	}
-	return q.Server
 }
 
 func (q *QueryTool) Type() string {
@@ -5407,14 +5272,6 @@ func (q *QueryToolMessagesItem) Accept(visitor QueryToolMessagesItemVisitor) err
 }
 
 type SlackSendMessageTool struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -5433,23 +5290,10 @@ type SlackSendMessageTool struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (s *SlackSendMessageTool) GetAsync() *bool {
-	if s == nil {
-		return nil
-	}
-	return s.Async
 }
 
 func (s *SlackSendMessageTool) GetMessages() []*SlackSendMessageToolMessagesItem {
@@ -5492,13 +5336,6 @@ func (s *SlackSendMessageTool) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return s.Function
-}
-
-func (s *SlackSendMessageTool) GetServer() *Server {
-	if s == nil {
-		return nil
-	}
-	return s.Server
 }
 
 func (s *SlackSendMessageTool) Type() string {
@@ -5671,14 +5508,6 @@ func (s *SlackSendMessageToolMessagesItem) Accept(visitor SlackSendMessageToolMe
 }
 
 type SmsTool struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -5697,23 +5526,10 @@ type SmsTool struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (s *SmsTool) GetAsync() *bool {
-	if s == nil {
-		return nil
-	}
-	return s.Async
 }
 
 func (s *SmsTool) GetMessages() []*SmsToolMessagesItem {
@@ -5756,13 +5572,6 @@ func (s *SmsTool) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return s.Function
-}
-
-func (s *SmsTool) GetServer() *Server {
-	if s == nil {
-		return nil
-	}
-	return s.Server
 }
 
 func (s *SmsTool) Type() string {
@@ -5935,19 +5744,21 @@ func (s *SmsToolMessagesItem) Accept(visitor SmsToolMessagesItemVisitor) error {
 }
 
 type TextEditorTool struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
 	Messages []*TextEditorToolMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
 	// The sub type of tool.
+	//
+	//	This is the server where a `tool-calls` webhook will be sent.
+	//
+	//	Notes:
+	//	- Webhook is sent to this server when a tool call is made.
+	//	- Webhook contains the call, assistant, and phone number objects.
+	//	- Webhook contains the variables set on the assistant.
+	//	- Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+	//	- Webhook expects a response with tool call result.
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 	// This is the unique identifier for the tool.
 	Id string `json:"id" url:"id"`
 	// This is the unique identifier for the organization that this tool belongs to.
@@ -5962,12 +5773,6 @@ type TextEditorTool struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 	// The name of the tool, fixed to 'str_replace_editor'
 	type_   string
 	subType string
@@ -5977,18 +5782,18 @@ type TextEditorTool struct {
 	rawJSON         json.RawMessage
 }
 
-func (t *TextEditorTool) GetAsync() *bool {
-	if t == nil {
-		return nil
-	}
-	return t.Async
-}
-
 func (t *TextEditorTool) GetMessages() []*TextEditorToolMessagesItem {
 	if t == nil {
 		return nil
 	}
 	return t.Messages
+}
+
+func (t *TextEditorTool) GetServer() *Server {
+	if t == nil {
+		return nil
+	}
+	return t.Server
 }
 
 func (t *TextEditorTool) GetId() string {
@@ -6024,13 +5829,6 @@ func (t *TextEditorTool) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return t.Function
-}
-
-func (t *TextEditorTool) GetServer() *Server {
-	if t == nil {
-		return nil
-	}
-	return t.Server
 }
 
 func (t *TextEditorTool) Type() string {
@@ -6225,14 +6023,6 @@ func (t *TextEditorToolMessagesItem) Accept(visitor TextEditorToolMessagesItemVi
 }
 
 type TransferCallTool struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -6253,23 +6043,10 @@ type TransferCallTool struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	type_  string
+	type_    string
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (t *TransferCallTool) GetAsync() *bool {
-	if t == nil {
-		return nil
-	}
-	return t.Async
 }
 
 func (t *TransferCallTool) GetMessages() []*TransferCallToolMessagesItem {
@@ -6319,13 +6096,6 @@ func (t *TransferCallTool) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return t.Function
-}
-
-func (t *TransferCallTool) GetServer() *Server {
-	if t == nil {
-		return nil
-	}
-	return t.Server
 }
 
 func (t *TransferCallTool) Type() string {
@@ -6580,45 +6350,307 @@ func (t *TransferCallToolMessagesItem) Accept(visitor TransferCallToolMessagesIt
 	return fmt.Errorf("type %T does not include a non-empty union type", t)
 }
 
-type UpdateBashToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
+type UpdateApiRequestToolDto struct {
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
-	Messages []*UpdateBashToolDtoMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
-	// The sub type of tool.
-	SubType *string `json:"subType,omitempty" url:"subType,omitempty"`
+	Messages []*UpdateApiRequestToolDtoMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
+	Method   *UpdateApiRequestToolDtoMethod         `json:"method,omitempty" url:"method,omitempty"`
+	// This is the timeout in seconds for the request. Defaults to 20 seconds.
+	//
+	// @default 20
+	TimeoutSeconds *float64 `json:"timeoutSeconds,omitempty" url:"timeoutSeconds,omitempty"`
 	// This is the function definition of the tool.
 	//
 	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
+	// This is the name of the tool. This will be passed to the model.
 	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
-	// The name of the tool, fixed to 'bash'
+	// Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 40.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// This is the description of the tool. This will be passed to the model.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	// This is where the request will be sent.
+	Url *string `json:"url,omitempty" url:"url,omitempty"`
+	// This is the body of the request.
+	Body *JsonSchema `json:"body,omitempty" url:"body,omitempty"`
+	// These are the headers to send in the request.
+	Headers *JsonSchema `json:"headers,omitempty" url:"headers,omitempty"`
+	// This is the backoff plan if the request fails. Defaults to undefined (the request will not be retried).
+	//
+	// @default undefined (the request will not be retried)
+	BackoffPlan *BackoffPlan `json:"backoffPlan,omitempty" url:"backoffPlan,omitempty"`
+	// This is the plan that controls the variable extraction from the tool's response.
+	VariableExtractionPlan *VariableExtractionPlan `json:"variableExtractionPlan,omitempty" url:"variableExtractionPlan,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
 }
 
-func (u *UpdateBashToolDto) GetAsync() *bool {
+func (u *UpdateApiRequestToolDto) GetMessages() []*UpdateApiRequestToolDtoMessagesItem {
 	if u == nil {
 		return nil
 	}
-	return u.Async
+	return u.Messages
+}
+
+func (u *UpdateApiRequestToolDto) GetMethod() *UpdateApiRequestToolDtoMethod {
+	if u == nil {
+		return nil
+	}
+	return u.Method
+}
+
+func (u *UpdateApiRequestToolDto) GetTimeoutSeconds() *float64 {
+	if u == nil {
+		return nil
+	}
+	return u.TimeoutSeconds
+}
+
+func (u *UpdateApiRequestToolDto) GetFunction() *OpenAiFunction {
+	if u == nil {
+		return nil
+	}
+	return u.Function
+}
+
+func (u *UpdateApiRequestToolDto) GetName() *string {
+	if u == nil {
+		return nil
+	}
+	return u.Name
+}
+
+func (u *UpdateApiRequestToolDto) GetDescription() *string {
+	if u == nil {
+		return nil
+	}
+	return u.Description
+}
+
+func (u *UpdateApiRequestToolDto) GetUrl() *string {
+	if u == nil {
+		return nil
+	}
+	return u.Url
+}
+
+func (u *UpdateApiRequestToolDto) GetBody() *JsonSchema {
+	if u == nil {
+		return nil
+	}
+	return u.Body
+}
+
+func (u *UpdateApiRequestToolDto) GetHeaders() *JsonSchema {
+	if u == nil {
+		return nil
+	}
+	return u.Headers
+}
+
+func (u *UpdateApiRequestToolDto) GetBackoffPlan() *BackoffPlan {
+	if u == nil {
+		return nil
+	}
+	return u.BackoffPlan
+}
+
+func (u *UpdateApiRequestToolDto) GetVariableExtractionPlan() *VariableExtractionPlan {
+	if u == nil {
+		return nil
+	}
+	return u.VariableExtractionPlan
+}
+
+func (u *UpdateApiRequestToolDto) GetExtraProperties() map[string]interface{} {
+	return u.extraProperties
+}
+
+func (u *UpdateApiRequestToolDto) UnmarshalJSON(data []byte) error {
+	type unmarshaler UpdateApiRequestToolDto
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*u = UpdateApiRequestToolDto(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *u)
+	if err != nil {
+		return err
+	}
+	u.extraProperties = extraProperties
+	u.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (u *UpdateApiRequestToolDto) String() string {
+	if len(u.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(u); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", u)
+}
+
+type UpdateApiRequestToolDtoMessagesItem struct {
+	ToolMessageStart    *ToolMessageStart
+	ToolMessageComplete *ToolMessageComplete
+	ToolMessageFailed   *ToolMessageFailed
+	ToolMessageDelayed  *ToolMessageDelayed
+
+	typ string
+}
+
+func (u *UpdateApiRequestToolDtoMessagesItem) GetToolMessageStart() *ToolMessageStart {
+	if u == nil {
+		return nil
+	}
+	return u.ToolMessageStart
+}
+
+func (u *UpdateApiRequestToolDtoMessagesItem) GetToolMessageComplete() *ToolMessageComplete {
+	if u == nil {
+		return nil
+	}
+	return u.ToolMessageComplete
+}
+
+func (u *UpdateApiRequestToolDtoMessagesItem) GetToolMessageFailed() *ToolMessageFailed {
+	if u == nil {
+		return nil
+	}
+	return u.ToolMessageFailed
+}
+
+func (u *UpdateApiRequestToolDtoMessagesItem) GetToolMessageDelayed() *ToolMessageDelayed {
+	if u == nil {
+		return nil
+	}
+	return u.ToolMessageDelayed
+}
+
+func (u *UpdateApiRequestToolDtoMessagesItem) UnmarshalJSON(data []byte) error {
+	valueToolMessageStart := new(ToolMessageStart)
+	if err := json.Unmarshal(data, &valueToolMessageStart); err == nil {
+		u.typ = "ToolMessageStart"
+		u.ToolMessageStart = valueToolMessageStart
+		return nil
+	}
+	valueToolMessageComplete := new(ToolMessageComplete)
+	if err := json.Unmarshal(data, &valueToolMessageComplete); err == nil {
+		u.typ = "ToolMessageComplete"
+		u.ToolMessageComplete = valueToolMessageComplete
+		return nil
+	}
+	valueToolMessageFailed := new(ToolMessageFailed)
+	if err := json.Unmarshal(data, &valueToolMessageFailed); err == nil {
+		u.typ = "ToolMessageFailed"
+		u.ToolMessageFailed = valueToolMessageFailed
+		return nil
+	}
+	valueToolMessageDelayed := new(ToolMessageDelayed)
+	if err := json.Unmarshal(data, &valueToolMessageDelayed); err == nil {
+		u.typ = "ToolMessageDelayed"
+		u.ToolMessageDelayed = valueToolMessageDelayed
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, u)
+}
+
+func (u UpdateApiRequestToolDtoMessagesItem) MarshalJSON() ([]byte, error) {
+	if u.typ == "ToolMessageStart" || u.ToolMessageStart != nil {
+		return json.Marshal(u.ToolMessageStart)
+	}
+	if u.typ == "ToolMessageComplete" || u.ToolMessageComplete != nil {
+		return json.Marshal(u.ToolMessageComplete)
+	}
+	if u.typ == "ToolMessageFailed" || u.ToolMessageFailed != nil {
+		return json.Marshal(u.ToolMessageFailed)
+	}
+	if u.typ == "ToolMessageDelayed" || u.ToolMessageDelayed != nil {
+		return json.Marshal(u.ToolMessageDelayed)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", u)
+}
+
+type UpdateApiRequestToolDtoMessagesItemVisitor interface {
+	VisitToolMessageStart(*ToolMessageStart) error
+	VisitToolMessageComplete(*ToolMessageComplete) error
+	VisitToolMessageFailed(*ToolMessageFailed) error
+	VisitToolMessageDelayed(*ToolMessageDelayed) error
+}
+
+func (u *UpdateApiRequestToolDtoMessagesItem) Accept(visitor UpdateApiRequestToolDtoMessagesItemVisitor) error {
+	if u.typ == "ToolMessageStart" || u.ToolMessageStart != nil {
+		return visitor.VisitToolMessageStart(u.ToolMessageStart)
+	}
+	if u.typ == "ToolMessageComplete" || u.ToolMessageComplete != nil {
+		return visitor.VisitToolMessageComplete(u.ToolMessageComplete)
+	}
+	if u.typ == "ToolMessageFailed" || u.ToolMessageFailed != nil {
+		return visitor.VisitToolMessageFailed(u.ToolMessageFailed)
+	}
+	if u.typ == "ToolMessageDelayed" || u.ToolMessageDelayed != nil {
+		return visitor.VisitToolMessageDelayed(u.ToolMessageDelayed)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", u)
+}
+
+type UpdateApiRequestToolDtoMethod string
+
+const (
+	UpdateApiRequestToolDtoMethodPost UpdateApiRequestToolDtoMethod = "POST"
+	UpdateApiRequestToolDtoMethodGet  UpdateApiRequestToolDtoMethod = "GET"
+)
+
+func NewUpdateApiRequestToolDtoMethodFromString(s string) (UpdateApiRequestToolDtoMethod, error) {
+	switch s {
+	case "POST":
+		return UpdateApiRequestToolDtoMethodPost, nil
+	case "GET":
+		return UpdateApiRequestToolDtoMethodGet, nil
+	}
+	var t UpdateApiRequestToolDtoMethod
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (u UpdateApiRequestToolDtoMethod) Ptr() *UpdateApiRequestToolDtoMethod {
+	return &u
+}
+
+type UpdateBashToolDto struct {
+	// These are the messages that will be spoken to the user as the tool is running.
+	//
+	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
+	Messages []*UpdateBashToolDtoMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
+	// The sub type of tool.
+	SubType *string `json:"subType,omitempty" url:"subType,omitempty"`
+	// This is the server where a `tool-calls` webhook will be sent.
+	//
+	// Notes:
+	// - Webhook is sent to this server when a tool call is made.
+	// - Webhook contains the call, assistant, and phone number objects.
+	// - Webhook contains the variables set on the assistant.
+	// - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+	// - Webhook expects a response with tool call result.
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
+	// This is the function definition of the tool.
+	//
+	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
+	//
+	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
+	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
+	// The name of the tool, fixed to 'bash'
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
 }
 
 func (u *UpdateBashToolDto) GetMessages() []*UpdateBashToolDtoMessagesItem {
@@ -6628,18 +6660,18 @@ func (u *UpdateBashToolDto) GetMessages() []*UpdateBashToolDtoMessagesItem {
 	return u.Messages
 }
 
-func (u *UpdateBashToolDto) GetFunction() *OpenAiFunction {
-	if u == nil {
-		return nil
-	}
-	return u.Function
-}
-
 func (u *UpdateBashToolDto) GetServer() *Server {
 	if u == nil {
 		return nil
 	}
 	return u.Server
+}
+
+func (u *UpdateBashToolDto) GetFunction() *OpenAiFunction {
+	if u == nil {
+		return nil
+	}
+	return u.Function
 }
 
 func (u *UpdateBashToolDto) GetExtraProperties() map[string]interface{} {
@@ -6779,32 +6811,27 @@ func (u *UpdateBashToolDtoMessagesItem) Accept(visitor UpdateBashToolDtoMessages
 }
 
 type UpdateComputerToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
 	Messages []*UpdateComputerToolDtoMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
 	// The sub type of tool.
 	SubType *string `json:"subType,omitempty" url:"subType,omitempty"`
+	// This is the server where a `tool-calls` webhook will be sent.
+	//
+	// Notes:
+	// - Webhook is sent to this server when a tool call is made.
+	// - Webhook contains the call, assistant, and phone number objects.
+	// - Webhook contains the variables set on the assistant.
+	// - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+	// - Webhook expects a response with tool call result.
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 	// This is the function definition of the tool.
 	//
 	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 	// The name of the tool, fixed to 'computer'
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// The display width in pixels
@@ -6818,13 +6845,6 @@ type UpdateComputerToolDto struct {
 	rawJSON         json.RawMessage
 }
 
-func (u *UpdateComputerToolDto) GetAsync() *bool {
-	if u == nil {
-		return nil
-	}
-	return u.Async
-}
-
 func (u *UpdateComputerToolDto) GetMessages() []*UpdateComputerToolDtoMessagesItem {
 	if u == nil {
 		return nil
@@ -6832,18 +6852,18 @@ func (u *UpdateComputerToolDto) GetMessages() []*UpdateComputerToolDtoMessagesIt
 	return u.Messages
 }
 
-func (u *UpdateComputerToolDto) GetFunction() *OpenAiFunction {
-	if u == nil {
-		return nil
-	}
-	return u.Function
-}
-
 func (u *UpdateComputerToolDto) GetServer() *Server {
 	if u == nil {
 		return nil
 	}
 	return u.Server
+}
+
+func (u *UpdateComputerToolDto) GetFunction() *OpenAiFunction {
+	if u == nil {
+		return nil
+	}
+	return u.Function
 }
 
 func (u *UpdateComputerToolDto) GetDisplayWidthPx() *float64 {
@@ -7004,14 +7024,6 @@ func (u *UpdateComputerToolDtoMessagesItem) Accept(visitor UpdateComputerToolDto
 }
 
 type UpdateDtmfToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -7022,22 +7034,9 @@ type UpdateDtmfToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (u *UpdateDtmfToolDto) GetAsync() *bool {
-	if u == nil {
-		return nil
-	}
-	return u.Async
 }
 
 func (u *UpdateDtmfToolDto) GetMessages() []*UpdateDtmfToolDtoMessagesItem {
@@ -7052,13 +7051,6 @@ func (u *UpdateDtmfToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return u.Function
-}
-
-func (u *UpdateDtmfToolDto) GetServer() *Server {
-	if u == nil {
-		return nil
-	}
-	return u.Server
 }
 
 func (u *UpdateDtmfToolDto) GetExtraProperties() map[string]interface{} {
@@ -7198,14 +7190,6 @@ func (u *UpdateDtmfToolDtoMessagesItem) Accept(visitor UpdateDtmfToolDtoMessages
 }
 
 type UpdateEndCallToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -7216,22 +7200,9 @@ type UpdateEndCallToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (u *UpdateEndCallToolDto) GetAsync() *bool {
-	if u == nil {
-		return nil
-	}
-	return u.Async
 }
 
 func (u *UpdateEndCallToolDto) GetMessages() []*UpdateEndCallToolDtoMessagesItem {
@@ -7246,13 +7217,6 @@ func (u *UpdateEndCallToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return u.Function
-}
-
-func (u *UpdateEndCallToolDto) GetServer() *Server {
-	if u == nil {
-		return nil
-	}
-	return u.Server
 }
 
 func (u *UpdateEndCallToolDto) GetExtraProperties() map[string]interface{} {
@@ -7392,40 +7356,36 @@ func (u *UpdateEndCallToolDtoMessagesItem) Accept(visitor UpdateEndCallToolDtoMe
 }
 
 type UpdateFunctionToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
 	Messages []*UpdateFunctionToolDtoMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
+	// This determines if the tool is async.
+	//
+	//	If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
+	//
+	//	If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
+	//
+	//	Defaults to synchronous (`false`).
+	Async *bool `json:"async,omitempty" url:"async,omitempty"`
+	// This is the server where a `tool-calls` webhook will be sent.
+	//
+	// Notes:
+	// - Webhook is sent to this server when a tool call is made.
+	// - Webhook contains the call, assistant, and phone number objects.
+	// - Webhook contains the variables set on the assistant.
+	// - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+	// - Webhook expects a response with tool call result.
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 	// This is the function definition of the tool.
 	//
 	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (u *UpdateFunctionToolDto) GetAsync() *bool {
-	if u == nil {
-		return nil
-	}
-	return u.Async
 }
 
 func (u *UpdateFunctionToolDto) GetMessages() []*UpdateFunctionToolDtoMessagesItem {
@@ -7435,11 +7395,11 @@ func (u *UpdateFunctionToolDto) GetMessages() []*UpdateFunctionToolDtoMessagesIt
 	return u.Messages
 }
 
-func (u *UpdateFunctionToolDto) GetFunction() *OpenAiFunction {
+func (u *UpdateFunctionToolDto) GetAsync() *bool {
 	if u == nil {
 		return nil
 	}
-	return u.Function
+	return u.Async
 }
 
 func (u *UpdateFunctionToolDto) GetServer() *Server {
@@ -7447,6 +7407,13 @@ func (u *UpdateFunctionToolDto) GetServer() *Server {
 		return nil
 	}
 	return u.Server
+}
+
+func (u *UpdateFunctionToolDto) GetFunction() *OpenAiFunction {
+	if u == nil {
+		return nil
+	}
+	return u.Function
 }
 
 func (u *UpdateFunctionToolDto) GetExtraProperties() map[string]interface{} {
@@ -7586,14 +7553,6 @@ func (u *UpdateFunctionToolDtoMessagesItem) Accept(visitor UpdateFunctionToolDto
 }
 
 type UpdateGhlToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -7603,24 +7562,11 @@ type UpdateGhlToolDto struct {
 	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
-	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server   *Server          `json:"server,omitempty" url:"server,omitempty"`
+	Function *OpenAiFunction  `json:"function,omitempty" url:"function,omitempty"`
 	Metadata *GhlToolMetadata `json:"metadata,omitempty" url:"metadata,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (u *UpdateGhlToolDto) GetAsync() *bool {
-	if u == nil {
-		return nil
-	}
-	return u.Async
 }
 
 func (u *UpdateGhlToolDto) GetMessages() []*UpdateGhlToolDtoMessagesItem {
@@ -7635,13 +7581,6 @@ func (u *UpdateGhlToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return u.Function
-}
-
-func (u *UpdateGhlToolDto) GetServer() *Server {
-	if u == nil {
-		return nil
-	}
-	return u.Server
 }
 
 func (u *UpdateGhlToolDto) GetMetadata() *GhlToolMetadata {
@@ -7788,14 +7727,6 @@ func (u *UpdateGhlToolDtoMessagesItem) Accept(visitor UpdateGhlToolDtoMessagesIt
 }
 
 type UpdateGoHighLevelCalendarAvailabilityToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -7806,22 +7737,9 @@ type UpdateGoHighLevelCalendarAvailabilityToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (u *UpdateGoHighLevelCalendarAvailabilityToolDto) GetAsync() *bool {
-	if u == nil {
-		return nil
-	}
-	return u.Async
 }
 
 func (u *UpdateGoHighLevelCalendarAvailabilityToolDto) GetMessages() []*UpdateGoHighLevelCalendarAvailabilityToolDtoMessagesItem {
@@ -7836,13 +7754,6 @@ func (u *UpdateGoHighLevelCalendarAvailabilityToolDto) GetFunction() *OpenAiFunc
 		return nil
 	}
 	return u.Function
-}
-
-func (u *UpdateGoHighLevelCalendarAvailabilityToolDto) GetServer() *Server {
-	if u == nil {
-		return nil
-	}
-	return u.Server
 }
 
 func (u *UpdateGoHighLevelCalendarAvailabilityToolDto) GetExtraProperties() map[string]interface{} {
@@ -7982,14 +7893,6 @@ func (u *UpdateGoHighLevelCalendarAvailabilityToolDtoMessagesItem) Accept(visito
 }
 
 type UpdateGoHighLevelCalendarEventCreateToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -8000,22 +7903,9 @@ type UpdateGoHighLevelCalendarEventCreateToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (u *UpdateGoHighLevelCalendarEventCreateToolDto) GetAsync() *bool {
-	if u == nil {
-		return nil
-	}
-	return u.Async
 }
 
 func (u *UpdateGoHighLevelCalendarEventCreateToolDto) GetMessages() []*UpdateGoHighLevelCalendarEventCreateToolDtoMessagesItem {
@@ -8030,13 +7920,6 @@ func (u *UpdateGoHighLevelCalendarEventCreateToolDto) GetFunction() *OpenAiFunct
 		return nil
 	}
 	return u.Function
-}
-
-func (u *UpdateGoHighLevelCalendarEventCreateToolDto) GetServer() *Server {
-	if u == nil {
-		return nil
-	}
-	return u.Server
 }
 
 func (u *UpdateGoHighLevelCalendarEventCreateToolDto) GetExtraProperties() map[string]interface{} {
@@ -8176,14 +8059,6 @@ func (u *UpdateGoHighLevelCalendarEventCreateToolDtoMessagesItem) Accept(visitor
 }
 
 type UpdateGoHighLevelContactCreateToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -8194,22 +8069,9 @@ type UpdateGoHighLevelContactCreateToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (u *UpdateGoHighLevelContactCreateToolDto) GetAsync() *bool {
-	if u == nil {
-		return nil
-	}
-	return u.Async
 }
 
 func (u *UpdateGoHighLevelContactCreateToolDto) GetMessages() []*UpdateGoHighLevelContactCreateToolDtoMessagesItem {
@@ -8224,13 +8086,6 @@ func (u *UpdateGoHighLevelContactCreateToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return u.Function
-}
-
-func (u *UpdateGoHighLevelContactCreateToolDto) GetServer() *Server {
-	if u == nil {
-		return nil
-	}
-	return u.Server
 }
 
 func (u *UpdateGoHighLevelContactCreateToolDto) GetExtraProperties() map[string]interface{} {
@@ -8370,14 +8225,6 @@ func (u *UpdateGoHighLevelContactCreateToolDtoMessagesItem) Accept(visitor Updat
 }
 
 type UpdateGoHighLevelContactGetToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -8388,22 +8235,9 @@ type UpdateGoHighLevelContactGetToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (u *UpdateGoHighLevelContactGetToolDto) GetAsync() *bool {
-	if u == nil {
-		return nil
-	}
-	return u.Async
 }
 
 func (u *UpdateGoHighLevelContactGetToolDto) GetMessages() []*UpdateGoHighLevelContactGetToolDtoMessagesItem {
@@ -8418,13 +8252,6 @@ func (u *UpdateGoHighLevelContactGetToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return u.Function
-}
-
-func (u *UpdateGoHighLevelContactGetToolDto) GetServer() *Server {
-	if u == nil {
-		return nil
-	}
-	return u.Server
 }
 
 func (u *UpdateGoHighLevelContactGetToolDto) GetExtraProperties() map[string]interface{} {
@@ -8564,14 +8391,6 @@ func (u *UpdateGoHighLevelContactGetToolDtoMessagesItem) Accept(visitor UpdateGo
 }
 
 type UpdateGoogleCalendarCheckAvailabilityToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -8582,22 +8401,9 @@ type UpdateGoogleCalendarCheckAvailabilityToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (u *UpdateGoogleCalendarCheckAvailabilityToolDto) GetAsync() *bool {
-	if u == nil {
-		return nil
-	}
-	return u.Async
 }
 
 func (u *UpdateGoogleCalendarCheckAvailabilityToolDto) GetMessages() []*UpdateGoogleCalendarCheckAvailabilityToolDtoMessagesItem {
@@ -8612,13 +8418,6 @@ func (u *UpdateGoogleCalendarCheckAvailabilityToolDto) GetFunction() *OpenAiFunc
 		return nil
 	}
 	return u.Function
-}
-
-func (u *UpdateGoogleCalendarCheckAvailabilityToolDto) GetServer() *Server {
-	if u == nil {
-		return nil
-	}
-	return u.Server
 }
 
 func (u *UpdateGoogleCalendarCheckAvailabilityToolDto) GetExtraProperties() map[string]interface{} {
@@ -8758,14 +8557,6 @@ func (u *UpdateGoogleCalendarCheckAvailabilityToolDtoMessagesItem) Accept(visito
 }
 
 type UpdateGoogleCalendarCreateEventToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -8776,22 +8567,9 @@ type UpdateGoogleCalendarCreateEventToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (u *UpdateGoogleCalendarCreateEventToolDto) GetAsync() *bool {
-	if u == nil {
-		return nil
-	}
-	return u.Async
 }
 
 func (u *UpdateGoogleCalendarCreateEventToolDto) GetMessages() []*UpdateGoogleCalendarCreateEventToolDtoMessagesItem {
@@ -8806,13 +8584,6 @@ func (u *UpdateGoogleCalendarCreateEventToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return u.Function
-}
-
-func (u *UpdateGoogleCalendarCreateEventToolDto) GetServer() *Server {
-	if u == nil {
-		return nil
-	}
-	return u.Server
 }
 
 func (u *UpdateGoogleCalendarCreateEventToolDto) GetExtraProperties() map[string]interface{} {
@@ -8952,14 +8723,6 @@ func (u *UpdateGoogleCalendarCreateEventToolDtoMessagesItem) Accept(visitor Upda
 }
 
 type UpdateGoogleSheetsRowAppendToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -8970,22 +8733,9 @@ type UpdateGoogleSheetsRowAppendToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (u *UpdateGoogleSheetsRowAppendToolDto) GetAsync() *bool {
-	if u == nil {
-		return nil
-	}
-	return u.Async
 }
 
 func (u *UpdateGoogleSheetsRowAppendToolDto) GetMessages() []*UpdateGoogleSheetsRowAppendToolDtoMessagesItem {
@@ -9000,13 +8750,6 @@ func (u *UpdateGoogleSheetsRowAppendToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return u.Function
-}
-
-func (u *UpdateGoogleSheetsRowAppendToolDto) GetServer() *Server {
-	if u == nil {
-		return nil
-	}
-	return u.Server
 }
 
 func (u *UpdateGoogleSheetsRowAppendToolDto) GetExtraProperties() map[string]interface{} {
@@ -9146,14 +8889,6 @@ func (u *UpdateGoogleSheetsRowAppendToolDtoMessagesItem) Accept(visitor UpdateGo
 }
 
 type UpdateMakeToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -9163,24 +8898,11 @@ type UpdateMakeToolDto struct {
 	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
-	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server   *Server           `json:"server,omitempty" url:"server,omitempty"`
+	Function *OpenAiFunction   `json:"function,omitempty" url:"function,omitempty"`
 	Metadata *MakeToolMetadata `json:"metadata,omitempty" url:"metadata,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (u *UpdateMakeToolDto) GetAsync() *bool {
-	if u == nil {
-		return nil
-	}
-	return u.Async
 }
 
 func (u *UpdateMakeToolDto) GetMessages() []*UpdateMakeToolDtoMessagesItem {
@@ -9195,13 +8917,6 @@ func (u *UpdateMakeToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return u.Function
-}
-
-func (u *UpdateMakeToolDto) GetServer() *Server {
-	if u == nil {
-		return nil
-	}
-	return u.Server
 }
 
 func (u *UpdateMakeToolDto) GetMetadata() *MakeToolMetadata {
@@ -9348,40 +9063,28 @@ func (u *UpdateMakeToolDtoMessagesItem) Accept(visitor UpdateMakeToolDtoMessages
 }
 
 type UpdateMcpToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
 	Messages []*UpdateMcpToolDtoMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
+	// This is the server where a `tool-calls` webhook will be sent.
+	//
+	// Notes:
+	// - Webhook is sent to this server when a tool call is made.
+	// - Webhook contains the call, assistant, and phone number objects.
+	// - Webhook contains the variables set on the assistant.
+	// - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+	// - Webhook expects a response with tool call result.
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 	// This is the function definition of the tool.
 	//
 	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (u *UpdateMcpToolDto) GetAsync() *bool {
-	if u == nil {
-		return nil
-	}
-	return u.Async
 }
 
 func (u *UpdateMcpToolDto) GetMessages() []*UpdateMcpToolDtoMessagesItem {
@@ -9391,18 +9094,18 @@ func (u *UpdateMcpToolDto) GetMessages() []*UpdateMcpToolDtoMessagesItem {
 	return u.Messages
 }
 
-func (u *UpdateMcpToolDto) GetFunction() *OpenAiFunction {
-	if u == nil {
-		return nil
-	}
-	return u.Function
-}
-
 func (u *UpdateMcpToolDto) GetServer() *Server {
 	if u == nil {
 		return nil
 	}
 	return u.Server
+}
+
+func (u *UpdateMcpToolDto) GetFunction() *OpenAiFunction {
+	if u == nil {
+		return nil
+	}
+	return u.Function
 }
 
 func (u *UpdateMcpToolDto) GetExtraProperties() map[string]interface{} {
@@ -9542,14 +9245,6 @@ func (u *UpdateMcpToolDtoMessagesItem) Accept(visitor UpdateMcpToolDtoMessagesIt
 }
 
 type UpdateOutputToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -9560,22 +9255,9 @@ type UpdateOutputToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (u *UpdateOutputToolDto) GetAsync() *bool {
-	if u == nil {
-		return nil
-	}
-	return u.Async
 }
 
 func (u *UpdateOutputToolDto) GetMessages() []*UpdateOutputToolDtoMessagesItem {
@@ -9590,13 +9272,6 @@ func (u *UpdateOutputToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return u.Function
-}
-
-func (u *UpdateOutputToolDto) GetServer() *Server {
-	if u == nil {
-		return nil
-	}
-	return u.Server
 }
 
 func (u *UpdateOutputToolDto) GetExtraProperties() map[string]interface{} {
@@ -9736,14 +9411,6 @@ func (u *UpdateOutputToolDtoMessagesItem) Accept(visitor UpdateOutputToolDtoMess
 }
 
 type UpdateQueryToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -9756,22 +9423,9 @@ type UpdateQueryToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (u *UpdateQueryToolDto) GetAsync() *bool {
-	if u == nil {
-		return nil
-	}
-	return u.Async
 }
 
 func (u *UpdateQueryToolDto) GetMessages() []*UpdateQueryToolDtoMessagesItem {
@@ -9793,13 +9447,6 @@ func (u *UpdateQueryToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return u.Function
-}
-
-func (u *UpdateQueryToolDto) GetServer() *Server {
-	if u == nil {
-		return nil
-	}
-	return u.Server
 }
 
 func (u *UpdateQueryToolDto) GetExtraProperties() map[string]interface{} {
@@ -9939,14 +9586,6 @@ func (u *UpdateQueryToolDtoMessagesItem) Accept(visitor UpdateQueryToolDtoMessag
 }
 
 type UpdateSlackSendMessageToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -9957,22 +9596,9 @@ type UpdateSlackSendMessageToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (u *UpdateSlackSendMessageToolDto) GetAsync() *bool {
-	if u == nil {
-		return nil
-	}
-	return u.Async
 }
 
 func (u *UpdateSlackSendMessageToolDto) GetMessages() []*UpdateSlackSendMessageToolDtoMessagesItem {
@@ -9987,13 +9613,6 @@ func (u *UpdateSlackSendMessageToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return u.Function
-}
-
-func (u *UpdateSlackSendMessageToolDto) GetServer() *Server {
-	if u == nil {
-		return nil
-	}
-	return u.Server
 }
 
 func (u *UpdateSlackSendMessageToolDto) GetExtraProperties() map[string]interface{} {
@@ -10133,14 +9752,6 @@ func (u *UpdateSlackSendMessageToolDtoMessagesItem) Accept(visitor UpdateSlackSe
 }
 
 type UpdateSmsToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -10151,22 +9762,9 @@ type UpdateSmsToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (u *UpdateSmsToolDto) GetAsync() *bool {
-	if u == nil {
-		return nil
-	}
-	return u.Async
 }
 
 func (u *UpdateSmsToolDto) GetMessages() []*UpdateSmsToolDtoMessagesItem {
@@ -10181,13 +9779,6 @@ func (u *UpdateSmsToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return u.Function
-}
-
-func (u *UpdateSmsToolDto) GetServer() *Server {
-	if u == nil {
-		return nil
-	}
-	return u.Server
 }
 
 func (u *UpdateSmsToolDto) GetExtraProperties() map[string]interface{} {
@@ -10327,44 +9918,32 @@ func (u *UpdateSmsToolDtoMessagesItem) Accept(visitor UpdateSmsToolDtoMessagesIt
 }
 
 type UpdateTextEditorToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
 	Messages []*UpdateTextEditorToolDtoMessagesItem `json:"messages,omitempty" url:"messages,omitempty"`
 	// The sub type of tool.
 	SubType *string `json:"subType,omitempty" url:"subType,omitempty"`
+	// This is the server where a `tool-calls` webhook will be sent.
+	//
+	// Notes:
+	// - Webhook is sent to this server when a tool call is made.
+	// - Webhook contains the call, assistant, and phone number objects.
+	// - Webhook contains the variables set on the assistant.
+	// - Webhook is sent to the first available URL in this order: {{tool.server.url}}, {{assistant.server.url}}, {{phoneNumber.server.url}}, {{org.server.url}}.
+	// - Webhook expects a response with tool call result.
+	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 	// This is the function definition of the tool.
 	//
 	// For `endCall`, `transferCall`, and `dtmf` tools, this is auto-filled based on tool-specific fields like `tool.destinations`. But, even in those cases, you can provide a custom function definition for advanced use cases.
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 	// The name of the tool, fixed to 'str_replace_editor'
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (u *UpdateTextEditorToolDto) GetAsync() *bool {
-	if u == nil {
-		return nil
-	}
-	return u.Async
 }
 
 func (u *UpdateTextEditorToolDto) GetMessages() []*UpdateTextEditorToolDtoMessagesItem {
@@ -10374,18 +9953,18 @@ func (u *UpdateTextEditorToolDto) GetMessages() []*UpdateTextEditorToolDtoMessag
 	return u.Messages
 }
 
-func (u *UpdateTextEditorToolDto) GetFunction() *OpenAiFunction {
-	if u == nil {
-		return nil
-	}
-	return u.Function
-}
-
 func (u *UpdateTextEditorToolDto) GetServer() *Server {
 	if u == nil {
 		return nil
 	}
 	return u.Server
+}
+
+func (u *UpdateTextEditorToolDto) GetFunction() *OpenAiFunction {
+	if u == nil {
+		return nil
+	}
+	return u.Function
 }
 
 func (u *UpdateTextEditorToolDto) GetExtraProperties() map[string]interface{} {
@@ -10525,14 +10104,6 @@ func (u *UpdateTextEditorToolDtoMessagesItem) Accept(visitor UpdateTextEditorToo
 }
 
 type UpdateTransferCallToolDto struct {
-	// This determines if the tool is async.
-	//
-	// If async, the assistant will move forward without waiting for your server to respond. This is useful if you just want to trigger something on your server.
-	//
-	// If sync, the assistant will wait for your server to respond. This is useful if want assistant to respond with the result from your server.
-	//
-	// Defaults to synchronous (`false`).
-	Async *bool `json:"async,omitempty" url:"async,omitempty"`
 	// These are the messages that will be spoken to the user as the tool is running.
 	//
 	// For some tools, this is auto-filled based on special fields like `tool.destinations`. For others like the function tool, these can be custom configured.
@@ -10545,22 +10116,9 @@ type UpdateTransferCallToolDto struct {
 	//
 	// An example of an advanced use case is if you want to customize the message that's spoken for `endCall` tool. You can specify a function where it returns an argument "reason". Then, in `messages` array, you can have many "request-complete" messages. One of these messages will be triggered if the `messages[].conditions` matches the "reason" argument.
 	Function *OpenAiFunction `json:"function,omitempty" url:"function,omitempty"`
-	// This is the server that will be hit when this tool is requested by the model.
-	//
-	// All requests will be sent with the call object among other things. You can find more details in the Server URL documentation.
-	//
-	// This overrides the serverUrl set on the org and the phoneNumber. Order of precedence: highest tool.server.url, then assistant.serverUrl, then phoneNumber.serverUrl, then org.serverUrl.
-	Server *Server `json:"server,omitempty" url:"server,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (u *UpdateTransferCallToolDto) GetAsync() *bool {
-	if u == nil {
-		return nil
-	}
-	return u.Async
 }
 
 func (u *UpdateTransferCallToolDto) GetMessages() []*UpdateTransferCallToolDtoMessagesItem {
@@ -10582,13 +10140,6 @@ func (u *UpdateTransferCallToolDto) GetFunction() *OpenAiFunction {
 		return nil
 	}
 	return u.Function
-}
-
-func (u *UpdateTransferCallToolDto) GetServer() *Server {
-	if u == nil {
-		return nil
-	}
-	return u.Server
 }
 
 func (u *UpdateTransferCallToolDto) GetExtraProperties() map[string]interface{} {
@@ -10811,6 +10362,7 @@ func (u *UpdateTransferCallToolDtoMessagesItem) Accept(visitor UpdateTransferCal
 }
 
 type ToolsCreateRequest struct {
+	CreateApiRequestToolDto                      *CreateApiRequestToolDto
 	CreateDtmfToolDto                            *CreateDtmfToolDto
 	CreateEndCallToolDto                         *CreateEndCallToolDto
 	CreateFunctionToolDto                        *CreateFunctionToolDto
@@ -10834,6 +10386,13 @@ type ToolsCreateRequest struct {
 	CreateGoHighLevelContactGetToolDto           *CreateGoHighLevelContactGetToolDto
 
 	typ string
+}
+
+func (t *ToolsCreateRequest) GetCreateApiRequestToolDto() *CreateApiRequestToolDto {
+	if t == nil {
+		return nil
+	}
+	return t.CreateApiRequestToolDto
 }
 
 func (t *ToolsCreateRequest) GetCreateDtmfToolDto() *CreateDtmfToolDto {
@@ -10984,6 +10543,12 @@ func (t *ToolsCreateRequest) GetCreateGoHighLevelContactGetToolDto() *CreateGoHi
 }
 
 func (t *ToolsCreateRequest) UnmarshalJSON(data []byte) error {
+	valueCreateApiRequestToolDto := new(CreateApiRequestToolDto)
+	if err := json.Unmarshal(data, &valueCreateApiRequestToolDto); err == nil {
+		t.typ = "CreateApiRequestToolDto"
+		t.CreateApiRequestToolDto = valueCreateApiRequestToolDto
+		return nil
+	}
 	valueCreateDtmfToolDto := new(CreateDtmfToolDto)
 	if err := json.Unmarshal(data, &valueCreateDtmfToolDto); err == nil {
 		t.typ = "CreateDtmfToolDto"
@@ -11114,6 +10679,9 @@ func (t *ToolsCreateRequest) UnmarshalJSON(data []byte) error {
 }
 
 func (t ToolsCreateRequest) MarshalJSON() ([]byte, error) {
+	if t.typ == "CreateApiRequestToolDto" || t.CreateApiRequestToolDto != nil {
+		return json.Marshal(t.CreateApiRequestToolDto)
+	}
 	if t.typ == "CreateDtmfToolDto" || t.CreateDtmfToolDto != nil {
 		return json.Marshal(t.CreateDtmfToolDto)
 	}
@@ -11181,6 +10749,7 @@ func (t ToolsCreateRequest) MarshalJSON() ([]byte, error) {
 }
 
 type ToolsCreateRequestVisitor interface {
+	VisitCreateApiRequestToolDto(*CreateApiRequestToolDto) error
 	VisitCreateDtmfToolDto(*CreateDtmfToolDto) error
 	VisitCreateEndCallToolDto(*CreateEndCallToolDto) error
 	VisitCreateFunctionToolDto(*CreateFunctionToolDto) error
@@ -11205,6 +10774,9 @@ type ToolsCreateRequestVisitor interface {
 }
 
 func (t *ToolsCreateRequest) Accept(visitor ToolsCreateRequestVisitor) error {
+	if t.typ == "CreateApiRequestToolDto" || t.CreateApiRequestToolDto != nil {
+		return visitor.VisitCreateApiRequestToolDto(t.CreateApiRequestToolDto)
+	}
 	if t.typ == "CreateDtmfToolDto" || t.CreateDtmfToolDto != nil {
 		return visitor.VisitCreateDtmfToolDto(t.CreateDtmfToolDto)
 	}
@@ -11272,6 +10844,7 @@ func (t *ToolsCreateRequest) Accept(visitor ToolsCreateRequestVisitor) error {
 }
 
 type ToolsCreateResponse struct {
+	ApiRequestTool                      *ApiRequestTool
 	DtmfTool                            *DtmfTool
 	EndCallTool                         *EndCallTool
 	FunctionTool                        *FunctionTool
@@ -11295,6 +10868,13 @@ type ToolsCreateResponse struct {
 	GoHighLevelContactGetTool           *GoHighLevelContactGetTool
 
 	typ string
+}
+
+func (t *ToolsCreateResponse) GetApiRequestTool() *ApiRequestTool {
+	if t == nil {
+		return nil
+	}
+	return t.ApiRequestTool
 }
 
 func (t *ToolsCreateResponse) GetDtmfTool() *DtmfTool {
@@ -11445,6 +11025,12 @@ func (t *ToolsCreateResponse) GetGoHighLevelContactGetTool() *GoHighLevelContact
 }
 
 func (t *ToolsCreateResponse) UnmarshalJSON(data []byte) error {
+	valueApiRequestTool := new(ApiRequestTool)
+	if err := json.Unmarshal(data, &valueApiRequestTool); err == nil {
+		t.typ = "ApiRequestTool"
+		t.ApiRequestTool = valueApiRequestTool
+		return nil
+	}
 	valueDtmfTool := new(DtmfTool)
 	if err := json.Unmarshal(data, &valueDtmfTool); err == nil {
 		t.typ = "DtmfTool"
@@ -11575,6 +11161,9 @@ func (t *ToolsCreateResponse) UnmarshalJSON(data []byte) error {
 }
 
 func (t ToolsCreateResponse) MarshalJSON() ([]byte, error) {
+	if t.typ == "ApiRequestTool" || t.ApiRequestTool != nil {
+		return json.Marshal(t.ApiRequestTool)
+	}
 	if t.typ == "DtmfTool" || t.DtmfTool != nil {
 		return json.Marshal(t.DtmfTool)
 	}
@@ -11642,6 +11231,7 @@ func (t ToolsCreateResponse) MarshalJSON() ([]byte, error) {
 }
 
 type ToolsCreateResponseVisitor interface {
+	VisitApiRequestTool(*ApiRequestTool) error
 	VisitDtmfTool(*DtmfTool) error
 	VisitEndCallTool(*EndCallTool) error
 	VisitFunctionTool(*FunctionTool) error
@@ -11666,6 +11256,9 @@ type ToolsCreateResponseVisitor interface {
 }
 
 func (t *ToolsCreateResponse) Accept(visitor ToolsCreateResponseVisitor) error {
+	if t.typ == "ApiRequestTool" || t.ApiRequestTool != nil {
+		return visitor.VisitApiRequestTool(t.ApiRequestTool)
+	}
 	if t.typ == "DtmfTool" || t.DtmfTool != nil {
 		return visitor.VisitDtmfTool(t.DtmfTool)
 	}
@@ -11733,6 +11326,7 @@ func (t *ToolsCreateResponse) Accept(visitor ToolsCreateResponseVisitor) error {
 }
 
 type ToolsDeleteResponse struct {
+	ApiRequestTool                      *ApiRequestTool
 	DtmfTool                            *DtmfTool
 	EndCallTool                         *EndCallTool
 	FunctionTool                        *FunctionTool
@@ -11756,6 +11350,13 @@ type ToolsDeleteResponse struct {
 	GoHighLevelContactGetTool           *GoHighLevelContactGetTool
 
 	typ string
+}
+
+func (t *ToolsDeleteResponse) GetApiRequestTool() *ApiRequestTool {
+	if t == nil {
+		return nil
+	}
+	return t.ApiRequestTool
 }
 
 func (t *ToolsDeleteResponse) GetDtmfTool() *DtmfTool {
@@ -11906,6 +11507,12 @@ func (t *ToolsDeleteResponse) GetGoHighLevelContactGetTool() *GoHighLevelContact
 }
 
 func (t *ToolsDeleteResponse) UnmarshalJSON(data []byte) error {
+	valueApiRequestTool := new(ApiRequestTool)
+	if err := json.Unmarshal(data, &valueApiRequestTool); err == nil {
+		t.typ = "ApiRequestTool"
+		t.ApiRequestTool = valueApiRequestTool
+		return nil
+	}
 	valueDtmfTool := new(DtmfTool)
 	if err := json.Unmarshal(data, &valueDtmfTool); err == nil {
 		t.typ = "DtmfTool"
@@ -12036,6 +11643,9 @@ func (t *ToolsDeleteResponse) UnmarshalJSON(data []byte) error {
 }
 
 func (t ToolsDeleteResponse) MarshalJSON() ([]byte, error) {
+	if t.typ == "ApiRequestTool" || t.ApiRequestTool != nil {
+		return json.Marshal(t.ApiRequestTool)
+	}
 	if t.typ == "DtmfTool" || t.DtmfTool != nil {
 		return json.Marshal(t.DtmfTool)
 	}
@@ -12103,6 +11713,7 @@ func (t ToolsDeleteResponse) MarshalJSON() ([]byte, error) {
 }
 
 type ToolsDeleteResponseVisitor interface {
+	VisitApiRequestTool(*ApiRequestTool) error
 	VisitDtmfTool(*DtmfTool) error
 	VisitEndCallTool(*EndCallTool) error
 	VisitFunctionTool(*FunctionTool) error
@@ -12127,6 +11738,9 @@ type ToolsDeleteResponseVisitor interface {
 }
 
 func (t *ToolsDeleteResponse) Accept(visitor ToolsDeleteResponseVisitor) error {
+	if t.typ == "ApiRequestTool" || t.ApiRequestTool != nil {
+		return visitor.VisitApiRequestTool(t.ApiRequestTool)
+	}
 	if t.typ == "DtmfTool" || t.DtmfTool != nil {
 		return visitor.VisitDtmfTool(t.DtmfTool)
 	}
@@ -12194,6 +11808,7 @@ func (t *ToolsDeleteResponse) Accept(visitor ToolsDeleteResponseVisitor) error {
 }
 
 type ToolsGetResponse struct {
+	ApiRequestTool                      *ApiRequestTool
 	DtmfTool                            *DtmfTool
 	EndCallTool                         *EndCallTool
 	FunctionTool                        *FunctionTool
@@ -12217,6 +11832,13 @@ type ToolsGetResponse struct {
 	GoHighLevelContactGetTool           *GoHighLevelContactGetTool
 
 	typ string
+}
+
+func (t *ToolsGetResponse) GetApiRequestTool() *ApiRequestTool {
+	if t == nil {
+		return nil
+	}
+	return t.ApiRequestTool
 }
 
 func (t *ToolsGetResponse) GetDtmfTool() *DtmfTool {
@@ -12367,6 +11989,12 @@ func (t *ToolsGetResponse) GetGoHighLevelContactGetTool() *GoHighLevelContactGet
 }
 
 func (t *ToolsGetResponse) UnmarshalJSON(data []byte) error {
+	valueApiRequestTool := new(ApiRequestTool)
+	if err := json.Unmarshal(data, &valueApiRequestTool); err == nil {
+		t.typ = "ApiRequestTool"
+		t.ApiRequestTool = valueApiRequestTool
+		return nil
+	}
 	valueDtmfTool := new(DtmfTool)
 	if err := json.Unmarshal(data, &valueDtmfTool); err == nil {
 		t.typ = "DtmfTool"
@@ -12497,6 +12125,9 @@ func (t *ToolsGetResponse) UnmarshalJSON(data []byte) error {
 }
 
 func (t ToolsGetResponse) MarshalJSON() ([]byte, error) {
+	if t.typ == "ApiRequestTool" || t.ApiRequestTool != nil {
+		return json.Marshal(t.ApiRequestTool)
+	}
 	if t.typ == "DtmfTool" || t.DtmfTool != nil {
 		return json.Marshal(t.DtmfTool)
 	}
@@ -12564,6 +12195,7 @@ func (t ToolsGetResponse) MarshalJSON() ([]byte, error) {
 }
 
 type ToolsGetResponseVisitor interface {
+	VisitApiRequestTool(*ApiRequestTool) error
 	VisitDtmfTool(*DtmfTool) error
 	VisitEndCallTool(*EndCallTool) error
 	VisitFunctionTool(*FunctionTool) error
@@ -12588,6 +12220,9 @@ type ToolsGetResponseVisitor interface {
 }
 
 func (t *ToolsGetResponse) Accept(visitor ToolsGetResponseVisitor) error {
+	if t.typ == "ApiRequestTool" || t.ApiRequestTool != nil {
+		return visitor.VisitApiRequestTool(t.ApiRequestTool)
+	}
 	if t.typ == "DtmfTool" || t.DtmfTool != nil {
 		return visitor.VisitDtmfTool(t.DtmfTool)
 	}
@@ -12655,6 +12290,7 @@ func (t *ToolsGetResponse) Accept(visitor ToolsGetResponseVisitor) error {
 }
 
 type ToolsListResponseItem struct {
+	ApiRequestTool                      *ApiRequestTool
 	DtmfTool                            *DtmfTool
 	EndCallTool                         *EndCallTool
 	FunctionTool                        *FunctionTool
@@ -12678,6 +12314,13 @@ type ToolsListResponseItem struct {
 	GoHighLevelContactGetTool           *GoHighLevelContactGetTool
 
 	typ string
+}
+
+func (t *ToolsListResponseItem) GetApiRequestTool() *ApiRequestTool {
+	if t == nil {
+		return nil
+	}
+	return t.ApiRequestTool
 }
 
 func (t *ToolsListResponseItem) GetDtmfTool() *DtmfTool {
@@ -12828,6 +12471,12 @@ func (t *ToolsListResponseItem) GetGoHighLevelContactGetTool() *GoHighLevelConta
 }
 
 func (t *ToolsListResponseItem) UnmarshalJSON(data []byte) error {
+	valueApiRequestTool := new(ApiRequestTool)
+	if err := json.Unmarshal(data, &valueApiRequestTool); err == nil {
+		t.typ = "ApiRequestTool"
+		t.ApiRequestTool = valueApiRequestTool
+		return nil
+	}
 	valueDtmfTool := new(DtmfTool)
 	if err := json.Unmarshal(data, &valueDtmfTool); err == nil {
 		t.typ = "DtmfTool"
@@ -12958,6 +12607,9 @@ func (t *ToolsListResponseItem) UnmarshalJSON(data []byte) error {
 }
 
 func (t ToolsListResponseItem) MarshalJSON() ([]byte, error) {
+	if t.typ == "ApiRequestTool" || t.ApiRequestTool != nil {
+		return json.Marshal(t.ApiRequestTool)
+	}
 	if t.typ == "DtmfTool" || t.DtmfTool != nil {
 		return json.Marshal(t.DtmfTool)
 	}
@@ -13025,6 +12677,7 @@ func (t ToolsListResponseItem) MarshalJSON() ([]byte, error) {
 }
 
 type ToolsListResponseItemVisitor interface {
+	VisitApiRequestTool(*ApiRequestTool) error
 	VisitDtmfTool(*DtmfTool) error
 	VisitEndCallTool(*EndCallTool) error
 	VisitFunctionTool(*FunctionTool) error
@@ -13049,6 +12702,9 @@ type ToolsListResponseItemVisitor interface {
 }
 
 func (t *ToolsListResponseItem) Accept(visitor ToolsListResponseItemVisitor) error {
+	if t.typ == "ApiRequestTool" || t.ApiRequestTool != nil {
+		return visitor.VisitApiRequestTool(t.ApiRequestTool)
+	}
 	if t.typ == "DtmfTool" || t.DtmfTool != nil {
 		return visitor.VisitDtmfTool(t.DtmfTool)
 	}
@@ -13116,6 +12772,7 @@ func (t *ToolsListResponseItem) Accept(visitor ToolsListResponseItemVisitor) err
 }
 
 type ToolsUpdateRequest struct {
+	UpdateApiRequestToolDto                      *UpdateApiRequestToolDto
 	UpdateDtmfToolDto                            *UpdateDtmfToolDto
 	UpdateEndCallToolDto                         *UpdateEndCallToolDto
 	UpdateFunctionToolDto                        *UpdateFunctionToolDto
@@ -13139,6 +12796,13 @@ type ToolsUpdateRequest struct {
 	UpdateGoHighLevelContactGetToolDto           *UpdateGoHighLevelContactGetToolDto
 
 	typ string
+}
+
+func (t *ToolsUpdateRequest) GetUpdateApiRequestToolDto() *UpdateApiRequestToolDto {
+	if t == nil {
+		return nil
+	}
+	return t.UpdateApiRequestToolDto
 }
 
 func (t *ToolsUpdateRequest) GetUpdateDtmfToolDto() *UpdateDtmfToolDto {
@@ -13289,6 +12953,12 @@ func (t *ToolsUpdateRequest) GetUpdateGoHighLevelContactGetToolDto() *UpdateGoHi
 }
 
 func (t *ToolsUpdateRequest) UnmarshalJSON(data []byte) error {
+	valueUpdateApiRequestToolDto := new(UpdateApiRequestToolDto)
+	if err := json.Unmarshal(data, &valueUpdateApiRequestToolDto); err == nil {
+		t.typ = "UpdateApiRequestToolDto"
+		t.UpdateApiRequestToolDto = valueUpdateApiRequestToolDto
+		return nil
+	}
 	valueUpdateDtmfToolDto := new(UpdateDtmfToolDto)
 	if err := json.Unmarshal(data, &valueUpdateDtmfToolDto); err == nil {
 		t.typ = "UpdateDtmfToolDto"
@@ -13419,6 +13089,9 @@ func (t *ToolsUpdateRequest) UnmarshalJSON(data []byte) error {
 }
 
 func (t ToolsUpdateRequest) MarshalJSON() ([]byte, error) {
+	if t.typ == "UpdateApiRequestToolDto" || t.UpdateApiRequestToolDto != nil {
+		return json.Marshal(t.UpdateApiRequestToolDto)
+	}
 	if t.typ == "UpdateDtmfToolDto" || t.UpdateDtmfToolDto != nil {
 		return json.Marshal(t.UpdateDtmfToolDto)
 	}
@@ -13486,6 +13159,7 @@ func (t ToolsUpdateRequest) MarshalJSON() ([]byte, error) {
 }
 
 type ToolsUpdateRequestVisitor interface {
+	VisitUpdateApiRequestToolDto(*UpdateApiRequestToolDto) error
 	VisitUpdateDtmfToolDto(*UpdateDtmfToolDto) error
 	VisitUpdateEndCallToolDto(*UpdateEndCallToolDto) error
 	VisitUpdateFunctionToolDto(*UpdateFunctionToolDto) error
@@ -13510,6 +13184,9 @@ type ToolsUpdateRequestVisitor interface {
 }
 
 func (t *ToolsUpdateRequest) Accept(visitor ToolsUpdateRequestVisitor) error {
+	if t.typ == "UpdateApiRequestToolDto" || t.UpdateApiRequestToolDto != nil {
+		return visitor.VisitUpdateApiRequestToolDto(t.UpdateApiRequestToolDto)
+	}
 	if t.typ == "UpdateDtmfToolDto" || t.UpdateDtmfToolDto != nil {
 		return visitor.VisitUpdateDtmfToolDto(t.UpdateDtmfToolDto)
 	}
@@ -13577,6 +13254,7 @@ func (t *ToolsUpdateRequest) Accept(visitor ToolsUpdateRequestVisitor) error {
 }
 
 type ToolsUpdateResponse struct {
+	ApiRequestTool                      *ApiRequestTool
 	DtmfTool                            *DtmfTool
 	EndCallTool                         *EndCallTool
 	FunctionTool                        *FunctionTool
@@ -13600,6 +13278,13 @@ type ToolsUpdateResponse struct {
 	GoHighLevelContactGetTool           *GoHighLevelContactGetTool
 
 	typ string
+}
+
+func (t *ToolsUpdateResponse) GetApiRequestTool() *ApiRequestTool {
+	if t == nil {
+		return nil
+	}
+	return t.ApiRequestTool
 }
 
 func (t *ToolsUpdateResponse) GetDtmfTool() *DtmfTool {
@@ -13750,6 +13435,12 @@ func (t *ToolsUpdateResponse) GetGoHighLevelContactGetTool() *GoHighLevelContact
 }
 
 func (t *ToolsUpdateResponse) UnmarshalJSON(data []byte) error {
+	valueApiRequestTool := new(ApiRequestTool)
+	if err := json.Unmarshal(data, &valueApiRequestTool); err == nil {
+		t.typ = "ApiRequestTool"
+		t.ApiRequestTool = valueApiRequestTool
+		return nil
+	}
 	valueDtmfTool := new(DtmfTool)
 	if err := json.Unmarshal(data, &valueDtmfTool); err == nil {
 		t.typ = "DtmfTool"
@@ -13880,6 +13571,9 @@ func (t *ToolsUpdateResponse) UnmarshalJSON(data []byte) error {
 }
 
 func (t ToolsUpdateResponse) MarshalJSON() ([]byte, error) {
+	if t.typ == "ApiRequestTool" || t.ApiRequestTool != nil {
+		return json.Marshal(t.ApiRequestTool)
+	}
 	if t.typ == "DtmfTool" || t.DtmfTool != nil {
 		return json.Marshal(t.DtmfTool)
 	}
@@ -13947,6 +13641,7 @@ func (t ToolsUpdateResponse) MarshalJSON() ([]byte, error) {
 }
 
 type ToolsUpdateResponseVisitor interface {
+	VisitApiRequestTool(*ApiRequestTool) error
 	VisitDtmfTool(*DtmfTool) error
 	VisitEndCallTool(*EndCallTool) error
 	VisitFunctionTool(*FunctionTool) error
@@ -13971,6 +13666,9 @@ type ToolsUpdateResponseVisitor interface {
 }
 
 func (t *ToolsUpdateResponse) Accept(visitor ToolsUpdateResponseVisitor) error {
+	if t.typ == "ApiRequestTool" || t.ApiRequestTool != nil {
+		return visitor.VisitApiRequestTool(t.ApiRequestTool)
+	}
 	if t.typ == "DtmfTool" || t.DtmfTool != nil {
 		return visitor.VisitDtmfTool(t.DtmfTool)
 	}
